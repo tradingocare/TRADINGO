@@ -1,0 +1,21 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY packages/ packages/
+RUN pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm --filter @tradingo/api exec prisma generate
+RUN pnpm --filter @tradingo/api build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+RUN rm -rf prisma/migrations
+EXPOSE 3001
+CMD ["node", "dist/main"]

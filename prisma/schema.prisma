@@ -1,0 +1,618 @@
+// Migration command sequence:
+//   1. pnpm db:generate    — generate Prisma client
+//   2. pnpm db:migrate     — run prisma migrate dev
+//   3. pnpm db:seed        — ts-node prisma/seed.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum OrgMemberRole {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum BusinessType {
+  MANUFACTURER
+  EXPORTER
+  IMPORTER
+  DISTRIBUTOR
+  WHOLESALER
+  RETAILER
+  TRADER
+  BROKER
+  SERVICE_PROVIDER
+  OEM
+  CONTRACT_MANUFACTURER
+}
+
+enum GeographicReach {
+  LOCAL
+  DISTRICT
+  STATE
+  PAN_INDIA
+  GLOBAL
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  VERIFIED
+}
+
+enum VerificationLevel {
+  LEVEL_0
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+  LEVEL_5
+  LEVEL_6
+}
+
+enum LocationType {
+  HEAD_OFFICE
+  BRANCH
+  WAREHOUSE
+  FACTORY
+  PICKUP
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DocumentType {
+  PAN
+  GST
+  AADHAAR
+  BUSINESS_REGISTRATION
+  CANCELLED_CHEQUE
+  BANK_VERIFICATION
+}
+
+enum ProductType {
+  PHYSICAL
+  DIGITAL
+  SERVICE
+  RAW_MATERIAL
+  MACHINERY
+  EQUIPMENT
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
+enum VariantType {
+  COLOR
+  SIZE
+  WEIGHT
+  GRADE
+  THICKNESS
+  LENGTH
+  WIDTH
+  HEIGHT
+  CAPACITY
+  VOLTAGE
+  POWER_RATING
+  MATERIAL
+  FINISH
+  MODEL_NUMBER
+  PACKAGING_TYPE
+  DENSITY
+  DIAMETER
+  GSM
+  MICRON
+  CUSTOM
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role      @default(VIEWER)
+  permissions  String[]  @default([])
+  isActive     Boolean   @default(true)
+  emailVerifiedAt DateTime?
+  deletedAt    DateTime?
+  loginAttempts Int      @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions              Session[]
+  auditLogs             AuditLog[]
+  organizationMembers   OrganizationMember[]
+  organizationInvitationsSent OrganizationInvitation[] @relation("InvitationsSent")
+  ownedCompanies        CompanyOwner[]
+  companyVerifications  CompanyVerification[]  @relation("CompanyVerifications")
+  verificationReviews   CompanyVerification[]  @relation("VerificationReviews")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  resource  String
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  website     String?
+  email       String?
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  createdBy   String?
+  updatedBy   String?
+
+  members     OrganizationMember[]
+  invitations OrganizationInvitation[]
+  companies   Company[]
+
+  @@index([slug])
+  @@index([deletedAt])
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  role           OrgMemberRole @default(MEMBER)
+  invitedBy      String?
+  joinedAt       DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model OrganizationInvitation {
+  id             String           @id @default(uuid())
+  organizationId String
+  email          String
+  role           OrgMemberRole    @default(MEMBER)
+  token          String           @unique
+  status         InvitationStatus @default(PENDING)
+  invitedBy      String
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter        User             @relation("InvitationsSent", fields: [invitedBy], references: [id])
+
+  @@index([organizationId])
+  @@index([token])
+  @@index([email])
+}
+
+model Category {
+  id            String     @id @default(uuid())
+  parentId      String?
+  name          String
+  slug          String     @unique
+  description   String?
+  icon          String?
+  image         String?
+  seoTitle      String?
+  seoDescription String?
+  isActive      Boolean    @default(true)
+  sortOrder     Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  parent        Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children      Category[] @relation("CategoryTree")
+  companies     CompanyCategory[]
+  products      Product[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([isActive])
+}
+
+model Industry {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companies   CompanyIndustry[]
+  products    Product[]
+
+  @@index([slug])
+}
+
+model Company {
+  id               String           @id @default(uuid())
+  organizationId   String?
+  name             String
+  slug             String           @unique
+  logo             String?
+  banner           String?
+  description      String?
+  businessType     BusinessType?
+  establishedYear  Int?
+  employeeCount    Int?
+  gstNumber        String?
+  panNumber        String?
+  website          String?
+  email            String?
+  mobile           String?
+  trustScore       Int              @default(0)
+  verificationLevel VerificationLevel @default(LEVEL_0)
+  geographicReach  GeographicReach?
+  status           CompanyStatus    @default(ACTIVE)
+  totalProducts    Int              @default(0)
+  responseRate     Float            @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+  createdBy        String
+  updatedBy        String?
+
+  organization     Organization?         @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  owners           CompanyOwner[]
+  locations        CompanyLocation[]
+  categories       CompanyCategory[]
+  industries       CompanyIndustry[]
+  verifications    CompanyVerification[]
+  tradTrustScores  TradTrustScore[]
+  products         Product[]
+
+  @@index([slug])
+  @@index([organizationId])
+  @@index([businessType])
+  @@index([trustScore])
+  @@index([deletedAt])
+}
+
+model CompanyOwner {
+  id        String   @id @default(uuid())
+  companyId String
+  userId    String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([companyId])
+  @@index([userId])
+}
+
+model CompanyLocation {
+  id           String       @id @default(uuid())
+  companyId    String
+  type         LocationType @default(HEAD_OFFICE)
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  district     String?
+  state        String
+  country      String       @default("India")
+  pincode      String?
+  latitude     Float?
+  longitude    Float?
+  isPrimary    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([city])
+  @@index([state])
+}
+
+model CompanyCategory {
+  companyId  String
+  categoryId String
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, categoryId])
+  @@index([companyId])
+  @@index([categoryId])
+}
+
+model CompanyIndustry {
+  companyId  String
+  industryId String
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  industry   Industry @relation(fields: [industryId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, industryId])
+  @@index([companyId])
+  @@index([industryId])
+}
+
+model CompanyVerification {
+  id          String             @id @default(uuid())
+  companyId   String
+  level       VerificationLevel
+  status      VerificationStatus @default(PENDING)
+  submittedBy String
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  submitter   User               @relation("CompanyVerifications", fields: [submittedBy], references: [id])
+  reviewer    User?              @relation("VerificationReviews", fields: [reviewedBy], references: [id])
+  documents   CompanyVerificationDocument[]
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model CompanyVerificationDocument {
+  id             String         @id @default(uuid())
+  verificationId String
+  documentType   DocumentType
+  documentUrl    String
+  status         VerificationStatus @default(PENDING)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  verification   CompanyVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@index([verificationId])
+  @@index([documentType])
+}
+
+model TradTrustScore {
+  id          String   @id @default(uuid())
+  companyId   String
+  score       Int
+  factors     Json
+  calculatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([score])
+}
+
+model Product {
+  id                  String        @id @default(uuid())
+  companyId           String
+  categoryId          String?
+  industryId          String?
+  name                String
+  slug                String        @unique
+  shortDescription    String?
+  description         String?
+  productType         ProductType   @default(PHYSICAL)
+  status              ProductStatus @default(DRAFT)
+  brand               String?
+  model               String?
+  sku                 String?
+  moq                 Int           @default(1)
+  unit                String?
+  visibilityRadius    GeographicReach?
+  isFeatured          Boolean       @default(false)
+  trustScoreSnapshot  Int           @default(0)
+  latitude            Float?
+  longitude           Float?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  deletedAt           DateTime?
+  createdBy           String
+  updatedBy           String?
+
+  company           Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category          Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  industry          Industry?            @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  media             ProductMedia[]
+  specifications    ProductSpecification[]
+  variants          ProductVariant[]
+  inventory         ProductInventory?
+  priceSlabs        ProductPriceSlab[]
+
+  @@index([slug])
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([industryId])
+  @@index([status])
+  @@index([productType])
+  @@index([trustScoreSnapshot])
+  @@index([deletedAt])
+}
+
+model ProductMedia {
+  id        String    @id @default(uuid())
+  productId String
+  type      MediaType @default(IMAGE)
+  url       String
+  title     String?
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([type])
+}
+
+model ProductSpecification {
+  id        String @id @default(uuid())
+  productId String
+  key       String
+  value     String
+  sortOrder Int    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([key])
+}
+
+model ProductVariant {
+  id          String       @id @default(uuid())
+  productId   String
+  variantType VariantType
+  customName  String?
+  value       String
+  sku         String?
+  price       Decimal?     @db.Decimal(12, 2)
+  compareAtPrice Decimal?  @db.Decimal(12, 2)
+  currency    String       @default("INR")
+  isActive    Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory   VariantInventory?
+
+  @@index([productId])
+  @@index([variantType])
+  @@index([sku])
+}
+
+model VariantInventory {
+  id                String      @id @default(uuid())
+  variantId         String      @unique
+  availableQuantity Int         @default(0)
+  reservedQuantity  Int         @default(0)
+  minimumThreshold  Int         @default(5)
+  stockStatus       StockStatus @default(OUT_OF_STOCK)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  variant           ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
+
+model ProductInventory {
+  id                String      @id @default(uuid())
+  productId         String      @unique
+  availableQuantity Int         @default(0)
+  reservedQuantity  Int         @default(0)
+  minimumThreshold  Int         @default(5)
+  stockStatus       StockStatus @default(OUT_OF_STOCK)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  product           Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductPriceSlab {
+  id        String   @id @default(uuid())
+  productId String
+  minQty    Int
+  maxQty    Int?
+  price     Decimal  @db.Decimal(12, 2)
+  currency  String   @default("INR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([minQty])
+}
+
+model RecentSearch {
+  id        String   @id @default(uuid())
+  userId    String
+  query     String
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([userId, timestamp])
+}

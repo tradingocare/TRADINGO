@@ -1,0 +1,53 @@
+{
+  "family": "tradingo-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "tradingo-api",
+      "image": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/tradingo-api:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "3001" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/DATABASE_URL" },
+        { "name": "REDIS_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/REDIS_URL" },
+        { "name": "JWT_SECRET", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/JWT_SECRET" },
+        { "name": "JWT_REFRESH_SECRET", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/JWT_REFRESH_SECRET" },
+        { "name": "AWS_ACCESS_KEY_ID", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/AWS_ACCESS_KEY_ID" },
+        { "name": "AWS_SECRET_ACCESS_KEY", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/AWS_SECRET_ACCESS_KEY" },
+        { "name": "AWS_BUCKET", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/AWS_BUCKET" },
+        { "name": "CLOUDFRONT_DOMAIN", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/CLOUDFRONT_DOMAIN" },
+        { "name": "OPENSEARCH_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/OPENSEARCH_URL" },
+        { "name": "SENTRY_DSN", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/SENTRY_DSN" },
+        { "name": "CLICKHOUSE_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/CLICKHOUSE_URL" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/tradingo-api",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "api"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3
+      }
+    }
+  ]
+}
