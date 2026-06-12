@@ -169,6 +169,10 @@ export const INDEX_MAPPINGS: Record<string, Record<string, unknown>> = {
         updatedAt: { type: 'date' },
         isGstVerified: { type: 'boolean' },
         isBankVerified: { type: 'boolean' },
+        vendorCode: { type: 'keyword' },
+        subscriptionStatus: { type: 'keyword' },
+        goCashBalance: { type: 'integer' },
+        profileCompletionPercentage: { type: 'integer' },
         name_suggest: {
           type: 'completion',
           analyzer: 'simple',

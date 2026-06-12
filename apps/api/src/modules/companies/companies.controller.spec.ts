@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CompaniesController } from './companies.controller';
 import { CompaniesService } from './companies.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 import { CanActivate } from '@nestjs/common';
 
 describe('CompaniesController', () => {
@@ -20,6 +21,12 @@ describe('CompaniesController', () => {
       remove: jest.fn(),
       addOwner: jest.fn(),
       removeOwner: jest.fn(),
+      getProfileCompletion: jest.fn(),
+      getProfileCompletionDetails: jest.fn(),
+      getOnboardingStatus: jest.fn(),
+      updateSubscription: jest.fn(),
+      assignRm: jest.fn(),
+      removeRm: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -27,6 +34,8 @@ describe('CompaniesController', () => {
       providers: [{ provide: CompaniesService, useValue: service }],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(CompanyOwnerGuard)
       .useValue(mockGuard)
       .compile();
 

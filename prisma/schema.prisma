@@ -86,6 +86,92 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
+enum OnboardingStep {
+  ACCOUNT_CREATED
+  BUSINESS_ADDED
+  KYC_STARTED
+  KYC_COMPLETED
+  PRODUCTS_ADDED
+  SUBSCRIPTION_ACTIVATED
+}
+
+enum CertificationType {
+  MSME
+  IEC
+  FSSAI
+  ISO
+  BIS
+  CE
+  OTHERS
+}
+
+enum CertificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum GalleryModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum GoCashTransactionType {
+  EARNED
+  REDEEMED
+  BONUS
+  REFERRAL
+  ADMIN_CREDIT
+  ADMIN_DEBIT
+  EXPIRED
+}
+
+enum GoCashRedemptionType {
+  PLANS
+  RFQ_PACKS
+  FEATURED_LISTINGS
+  SPONSORED_LISTINGS
+  ORDERS
+}
+
+enum AnalyticsEventType {
+  PROFILE_VIEW
+  PRODUCT_VIEW
+  RFQ_SUBMITTED
+  ORDER_PLACED
+  SEARCH_IMPRESSION
+  SEARCH_CLICK
+  QUOTE_SENT
+  QUOTE_ACCEPTED
+}
+
+enum PlanType {
+  TRADE_START
+  TRADE_SMART
+  TRADE_PLUS
+  TRADE_PRO
+  TRADE_PREMIUM
+  TRADE_ELITE
+}
+
+enum SubscriptionAlertPeriod {
+  DAY_30
+  DAY_15
+  DAY_7
+  DAY_3
+  DAY_1
+}
+
 enum DocumentType {
   PAN
   GST
@@ -159,16 +245,22 @@ model User {
   deletedAt    DateTime?
   loginAttempts Int      @default(0)
   lockedUntil  DateTime?
+  rmCode       String?  @unique
+  meCode       String?  @unique
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  sessions              Session[]
-  auditLogs             AuditLog[]
-  organizationMembers   OrganizationMember[]
+  sessions                    Session[]
+  auditLogs                   AuditLog[]
+  organizationMembers         OrganizationMember[]
   organizationInvitationsSent OrganizationInvitation[] @relation("InvitationsSent")
-  ownedCompanies        CompanyOwner[]
-  companyVerifications  CompanyVerification[]  @relation("CompanyVerifications")
-  verificationReviews   CompanyVerification[]  @relation("VerificationReviews")
+  ownedCompanies              CompanyOwner[]
+  companyVerifications        CompanyVerification[]  @relation("CompanyVerifications")
+  verificationReviews         CompanyVerification[]  @relation("VerificationReviews")
+  rmAttributions              CodeAttribution[]      @relation("RMAttributions")
+  meAttributions              CodeAttribution[]      @relation("MEAttributions")
+  managedCompanies            Company[]              @relation("RMManagedCompanies")
+  rmCertificationReviews      CompanyCertification[] @relation("CertificationReviews")
 }
 
 model Session {
@@ -325,6 +417,24 @@ model Company {
   status           CompanyStatus    @default(ACTIVE)
   totalProducts    Int              @default(0)
   responseRate     Float            @default(0)
+  vendorCode       String?          @unique
+  onboardedByCode  String?
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  subscriptionPlan PlanType?
+  subscriptionActivatedAt DateTime?
+  subscriptionExpiresAt DateTime?
+  subscriptionGraceStart DateTime?
+  goCashBalance      Int              @default(0)
+  certifications   Json?
+  gallery          Json?
+  maxSampleProducts Int             @default(5)
+  profileCompletionPercentage Int   @default(0)
+  onboardingStatus OnboardingStep?
+  onboardingStartedAt DateTime?
+  onboardingCompletedAt DateTime?
+  assignedRmId     String?
+  assignedAt       DateTime?
+  referralRewardedAt DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   deletedAt        DateTime?
@@ -339,11 +449,20 @@ model Company {
   verifications    CompanyVerification[]
   tradTrustScores  TradTrustScore[]
   products         Product[]
+  certificationDocs CompanyCertification[]
+  galleryImages    CompanyGalleryImage[]
+  goCashTransactions GoCashTransaction[]
+  analyticsEvents  SellerAnalyticsEvent[]
+  onboardingLogs   CompanyOnboardingLog[]
+  subscriptionEvents SubscriptionEvent[]
+  assignedRm       User?                @relation("RMManagedCompanies", fields: [assignedRmId], references: [id], onDelete: SetNull)
 
   @@index([slug])
   @@index([organizationId])
   @@index([businessType])
   @@index([trustScore])
+  @@index([vendorCode])
+  @@index([assignedRmId])
   @@index([deletedAt])
 }
 
@@ -461,6 +580,121 @@ model TradTrustScore {
 
   @@index([companyId])
   @@index([score])
+}
+
+model CompanyOnboardingLog {
+  id        String         @id @default(uuid())
+  companyId String
+  step      OnboardingStep
+  completed Boolean        @default(true)
+  createdAt DateTime       @default(now())
+
+  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, step])
+}
+
+model CompanyCertification {
+  id                  String              @id @default(uuid())
+  companyId           String
+  type                CertificationType
+  documentUrl         String
+  documentNumber      String?
+  issuedBy            String?
+  issuedAt            DateTime?
+  expiresAt           DateTime?
+  status              CertificationStatus  @default(PENDING)
+  reviewedBy          String?
+  reviewedAt          DateTime?
+  notes               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reviewer            User?                @relation("CertificationReviews", fields: [reviewedBy], references: [id])
+
+  @@index([companyId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model CompanyGalleryImage {
+  id          String                 @id @default(uuid())
+  companyId   String
+  url         String
+  title       String?
+  altText     String?
+  sortOrder   Int                    @default(0)
+  moderationStatus GalleryModerationStatus @default(PENDING)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  company     Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([moderationStatus])
+  @@index([companyId, sortOrder])
+}
+
+model GoCashTransaction {
+  id            String                @id @default(uuid())
+  companyId     String
+  userId        String?
+  type          GoCashTransactionType
+  amount        Int
+  balanceBefore Int                   @default(0)
+  balanceAfter  Int                   @default(0)
+  reason        String?
+  sourceModule  String?
+  redemptionType GoCashRedemptionType?
+  referenceId   String?
+  createdAt     DateTime              @default(now())
+
+  company       Company               @relation(fields: [companyId], references: [id], onDelete: NoAction)
+
+  @@index([companyId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([companyId, createdAt])
+  @@unique([companyId, type, reason])
+}
+
+model SellerAnalyticsEvent {
+  id          String             @id @default(uuid())
+  companyId   String
+  userId      String?
+  eventType   AnalyticsEventType
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime           @default(now())
+
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: NoAction)
+
+  @@index([companyId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([companyId, createdAt])
+}
+
+model SubscriptionEvent {
+  id              String               @id @default(uuid())
+  companyId       String
+  status          SubscriptionStatus
+  planType        PlanType?
+  alertPeriod     SubscriptionAlertPeriod?
+  alertSentAt     DateTime?
+  graceEndAt      DateTime?
+  metadata        Json?
+  createdAt       DateTime             @default(now())
+
+  company         Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Product {
@@ -603,6 +837,40 @@ model ProductPriceSlab {
 
   @@index([productId])
   @@index([minQty])
+}
+
+model VendorCodeSequence {
+  id        String   @id @default(uuid())
+  prefix    String
+  period    String
+  sequence  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([prefix, period])
+  @@index([prefix, period])
+}
+
+model CodeAttribution {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  codeType        String
+  leadCount       Int      @default(0)
+  revenueAttribution Decimal @default(0)
+  sellerCount     Int      @default(0)
+  buyerCount      Int      @default(0)
+  commissionAmount Decimal  @default(0)
+  rmOwnerId       String?
+  meOwnerId       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  rmOwner         User?    @relation("RMAttributions", fields: [rmOwnerId], references: [id], onDelete: SetNull)
+  meOwner         User?    @relation("MEAttributions", fields: [meOwnerId], references: [id], onDelete: SetNull)
+
+  @@index([codeType])
+  @@index([rmOwnerId])
+  @@index([meOwnerId])
 }
 
 model RecentSearch {

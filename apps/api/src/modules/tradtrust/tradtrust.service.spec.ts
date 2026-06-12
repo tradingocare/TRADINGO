@@ -31,6 +31,8 @@ describe('TradTrustService', () => {
     locations: [{ id: 'loc-1' }],
     categories: [{ id: 'cat-1' }],
     owners: [{ id: 'owner-1' }],
+    onboardingCompletedAt: new Date(),
+    certificationDocs: [{ status: 'APPROVED', expiresAt: null }],
   };
 
   beforeEach(async () => {
@@ -104,6 +106,8 @@ describe('TradTrustService', () => {
         locations: [],
         categories: [],
         owners: [],
+        onboardingCompletedAt: null,
+        certificationDocs: [],
       });
       const score = await service.calculateScore('company-1');
       expect(score).toBeLessThanOrEqual(32);

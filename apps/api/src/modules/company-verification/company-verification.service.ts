@@ -4,12 +4,16 @@ import { SubmitVerificationDto } from './dto/submit-verification.dto';
 import { ReviewVerificationDto } from './dto/review-verification.dto';
 import { Role } from '../../common/enums/role.enum';
 import { Prisma, VerificationLevel } from '@prisma/client';
+import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
 
 @Injectable()
 export class CompanyVerificationService {
   private readonly logger = new Logger(CompanyVerificationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly vendorCodesService: VendorCodesService,
+  ) {}
 
   async submit(dto: SubmitVerificationDto, userId: string) {
     const company = await this.prisma.company.findFirst({
@@ -107,6 +111,20 @@ export class CompanyVerificationService {
           where: { id: verification.companyId },
           data: { verificationLevel: verification.level, updatedBy: userId },
         });
+      }
+
+      const company = await this.prisma.company.findUnique({
+        where: { id: verification.companyId },
+        select: { vendorCode: true },
+      });
+
+      if (!company?.vendorCode) {
+        try {
+          await this.vendorCodesService.generateVendorCode(verification.companyId);
+          this.logger.log(`Vendor code generated for company ${verification.companyId}`);
+        } catch (err) {
+          this.logger.error(`Failed to generate vendor code: ${(err as Error).message}`);
+        }
       }
     }
 

@@ -1,11 +1,17 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PlanType, SubscriptionStatus, OnboardingStep } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { ProfileCompletionService } from '../profile-completion/profile-completion.service';
+import { OnboardingService } from '../onboarding/onboarding.service';
+import { TradTrustService } from '../tradtrust/tradtrust.service';
+import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
 import { Role } from '../../common/enums/role.enum';
 import { v4 as uuid } from 'uuid';
+
+const MAX_ELITE_SELLERS_PER_RM = 100;
 
 function slugify(name: string): string {
   return name
@@ -24,6 +30,10 @@ export class CompaniesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly searchService: SearchService,
+    private readonly profileCompletionService: ProfileCompletionService,
+    private readonly onboardingService: OnboardingService,
+    private readonly tradTrustService: TradTrustService,
+    private readonly vendorCodesService: VendorCodesService,
   ) {}
 
   private async generateUniqueSlug(name: string): Promise<string> {
@@ -95,6 +105,9 @@ export class CompaniesService {
     } catch (err) {
       this.logger.warn(`Failed to index company ${company.id} in OpenSearch: ${err}`);
     }
+
+    await this.onboardingService.advanceStep(company.id, 'ACCOUNT_CREATED', userId);
+    await this.onboardingService.advanceStep(company.id, 'BUSINESS_ADDED', userId);
 
     this.logger.log(`Company ${company.id} created by ${userId}`);
     return company;
@@ -364,6 +377,142 @@ export class CompaniesService {
       owners: company.owners.map((o) => ({ name: o.user.name })),
       isGstVerified: company.verificationLevel >= VerificationLevelThresholds.GST_VERIFIED,
     };
+  }
+
+  async getProfileCompletion(id: string) {
+    const company = await this.prisma.company.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true, profileCompletionPercentage: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    return { companyId: id, percentage: company.profileCompletionPercentage };
+  }
+
+  async getProfileCompletionDetails(id: string) {
+    const company = await this.prisma.company.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    return this.profileCompletionService.getDetails(id);
+  }
+
+  async getOnboardingStatus(id: string) {
+    const company = await this.prisma.company.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    return this.onboardingService.getStatus(id);
+  }
+
+  async updateSubscription(id: string, plan: string, status: string, expiresAt: string | undefined, userId: string) {
+    const company = await this.prisma.company.findFirst({ where: { id, deletedAt: null } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const data: Record<string, unknown> = {
+      subscriptionPlan: plan as PlanType,
+      subscriptionStatus: status as SubscriptionStatus,
+      updatedBy: userId,
+    };
+    if (status === 'ACTIVE' || status === 'TRIAL') {
+      data.subscriptionActivatedAt = company.subscriptionActivatedAt ?? new Date();
+    }
+    if (expiresAt) {
+      data.subscriptionExpiresAt = new Date(expiresAt);
+    }
+    if (status === 'EXPIRED') {
+      data.subscriptionGraceStart = new Date();
+    }
+
+    const updated = await this.prisma.company.update({ where: { id }, data });
+
+    await this.prisma.subscriptionEvent.create({
+      data: {
+        companyId: id,
+        status: status as SubscriptionStatus,
+        planType: plan as PlanType,
+        metadata: { previousStatus: company.subscriptionStatus },
+      },
+    });
+
+    if (plan === 'TRADE_ELITE') {
+      await this.autoAssignRm(id);
+    }
+
+    if (status === 'ACTIVE' || status === 'TRIAL') {
+      await this.onboardingService.advanceStep(id, 'SUBSCRIPTION_ACTIVATED', userId);
+    }
+
+    return updated;
+  }
+
+  async removeRm(companyId: string, userId: string) {
+    const company = await this.prisma.company.findFirst({ where: { id: companyId, deletedAt: null } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: { assignedRmId: null, assignedAt: null, updatedBy: userId },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        action: 'REMOVE_RM',
+        resource: `company:${companyId}`,
+      },
+    });
+  }
+
+  async assignRm(companyId: string, rmUserId: string, userId: string) {
+    const company = await this.prisma.company.findFirst({ where: { id: companyId, deletedAt: null } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const rmUser = await this.prisma.user.findUnique({ where: { id: rmUserId, isActive: true } });
+    if (!rmUser) throw new NotFoundException('RM user not found');
+
+    const managedCount = await this.prisma.company.count({ where: { assignedRmId: rmUserId, deletedAt: null } });
+    if (managedCount >= MAX_ELITE_SELLERS_PER_RM) {
+      throw new ForbiddenException(`RM can manage maximum ${MAX_ELITE_SELLERS_PER_RM} sellers`);
+    }
+
+    const updated = await this.prisma.company.update({
+      where: { id: companyId },
+      data: { assignedRmId: rmUserId, assignedAt: new Date(), updatedBy: userId },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        action: 'ASSIGN_RM',
+        resource: `company:${companyId}`,
+        metadata: { rmUserId },
+      },
+    });
+
+    return updated;
+  }
+
+  private async autoAssignRm(companyId: string) {
+    const rms = await this.prisma.user.findMany({
+      where: { isActive: true, role: 'MANAGER', rmCode: { not: null } },
+      select: { id: true, _count: { select: { managedCompanies: true } } },
+      orderBy: { managedCompanies: { _count: 'asc' } },
+    });
+
+    for (const rm of rms) {
+      if (rm._count.managedCompanies < MAX_ELITE_SELLERS_PER_RM) {
+        await this.prisma.company.update({
+          where: { id: companyId },
+          data: { assignedRmId: rm.id, assignedAt: new Date() },
+        });
+        this.logger.log(`Auto-assigned RM ${rm.id} to company ${companyId}`);
+        return;
+      }
+    }
+
+    this.logger.warn(`No available RM found for auto-assignment to company ${companyId}`);
   }
 
   private async requireOwnerOrAdmin(companyId: string, userId: string) {

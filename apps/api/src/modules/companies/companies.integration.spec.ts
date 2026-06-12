@@ -5,14 +5,22 @@ import { CompaniesService } from './companies.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
+import { ProfileCompletionService } from '../profile-completion/profile-completion.service';
+import { OnboardingService } from '../onboarding/onboarding.service';
+import { TradTrustService } from '../tradtrust/tradtrust.service';
+import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
 
 const mockPrisma = {
   company: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
   companyOwner: { findUnique: jest.fn(), create: jest.fn(), delete: jest.fn(), count: jest.fn() },
-  user: { findUnique: jest.fn() },
+  user: { findUnique: jest.fn(), findMany: jest.fn() },
   auditLog: { create: jest.fn() },
+  companyOnboardingLog: { findFirst: jest.fn(), create: jest.fn() },
+  subscriptionEvent: { create: jest.fn() },
 };
 const mockSearch = { indexDocument: jest.fn(), search: jest.fn(), deleteDocument: jest.fn() };
+const mockGuard = { canActivate: jest.fn(() => true) };
 
 describe('Company Flow Integration', () => {
   let controller: CompaniesController;
@@ -25,10 +33,16 @@ describe('Company Flow Integration', () => {
         CompaniesService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: SearchService, useValue: mockSearch },
+        { provide: ProfileCompletionService, useValue: { getDetails: jest.fn(), calculateAndStore: jest.fn() } },
+        { provide: OnboardingService, useValue: { advanceStep: jest.fn(), getStatus: jest.fn(), isOnboardingComplete: jest.fn() } },
+        { provide: TradTrustService, useValue: { calculateScore: jest.fn(), recalculateByCompany: jest.fn() } },
+        { provide: VendorCodesService, useValue: { generateVendorCode: jest.fn() } },
       ],
     })
       .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: jest.fn(() => true) })
+      .useValue(mockGuard)
+      .overrideGuard(CompanyOwnerGuard)
+      .useValue(mockGuard)
       .compile();
 
     controller = module.get<CompaniesController>(CompaniesController);

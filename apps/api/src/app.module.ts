@@ -33,6 +33,11 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { IndustriesModule } from './modules/industries/industries.module';
 import { ProductsModule } from './modules/products/products.module';
 import { TradfindModule } from './modules/tradfind/tradfind.module';
+import { VendorCodesModule } from './modules/vendor-codes/vendor-codes.module';
+import { CertificationsModule } from './modules/certifications/certifications.module';
+import { GalleryModule } from './modules/gallery/gallery.module';
+import { GoCashModule } from './modules/go-cash/go-cash.module';
+import { SellerAnalyticsModule } from './modules/seller-analytics/seller-analytics.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -83,6 +88,11 @@ import { AppService } from './app.service';
     IndustriesModule,
     ProductsModule,
     TradfindModule,
+    VendorCodesModule,
+    CertificationsModule,
+    GalleryModule,
+    GoCashModule,
+    SellerAnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

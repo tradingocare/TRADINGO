@@ -2,6 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CompaniesService } from './companies.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
+import { ProfileCompletionService } from '../profile-completion/profile-completion.service';
+import { OnboardingService } from '../onboarding/onboarding.service';
+import { TradTrustService } from '../tradtrust/tradtrust.service';
+import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
 import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 
 describe('CompaniesService', () => {
@@ -38,8 +42,10 @@ describe('CompaniesService', () => {
         delete: jest.fn(),
         count: jest.fn(),
       },
-      user: { findUnique: jest.fn() },
+      user: { findUnique: jest.fn(), findMany: jest.fn() },
       auditLog: { create: jest.fn() },
+      companyOnboardingLog: { create: jest.fn(), findFirst: jest.fn() },
+      subscriptionEvent: { create: jest.fn() },
     };
     searchService = {
       indexDocument: jest.fn(),
@@ -52,6 +58,10 @@ describe('CompaniesService', () => {
         CompaniesService,
         { provide: PrismaService, useValue: prisma },
         { provide: SearchService, useValue: searchService },
+        { provide: ProfileCompletionService, useValue: { getDetails: jest.fn(), calculateAndStore: jest.fn() } },
+        { provide: OnboardingService, useValue: { advanceStep: jest.fn(), getStatus: jest.fn(), isOnboardingComplete: jest.fn() } },
+        { provide: TradTrustService, useValue: { calculateScore: jest.fn(), recalculateByCompany: jest.fn() } },
+        { provide: VendorCodesService, useValue: { generateVendorCode: jest.fn(), assignReferral: jest.fn(), rewardReferral: jest.fn() } },
       ],
     }).compile();
 
@@ -71,6 +81,7 @@ describe('CompaniesService', () => {
         locations: [],
         categories: [],
       });
+      prisma.companyOnboardingLog.findFirst.mockResolvedValue(null);
 
       const result = await service.create({ name: 'Test Company' }, 'user-1');
       expect(result.name).toBe('Test Company');
@@ -195,8 +206,8 @@ describe('CompaniesService', () => {
       prisma.company.findFirst.mockResolvedValue(mockCompany);
       prisma.user.findUnique.mockResolvedValue({ role: 'VIEWER' });
       prisma.companyOwner.findUnique
-        .mockResolvedValueOnce({ id: 'owner-1' }) // existing owner check
-        .mockResolvedValueOnce(null); // not already owner
+        .mockResolvedValueOnce({ id: 'owner-1' })
+        .mockResolvedValueOnce(null);
       prisma.companyOwner.create.mockResolvedValue({ id: 'owner-2', companyId: 'company-1', userId: 'user-2' });
 
       const result = await service.addOwner('company-1', 'user-2', 'user-1');

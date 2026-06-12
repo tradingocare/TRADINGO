@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CompanyVerificationService } from './company-verification.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
 
 describe('CompanyVerificationService', () => {
   let service: CompanyVerificationService;
@@ -9,7 +10,7 @@ describe('CompanyVerificationService', () => {
 
   beforeEach(async () => {
     prisma = {
-      company: { findFirst: jest.fn(), update: jest.fn() },
+      company: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
       companyOwner: { findUnique: jest.fn() },
       companyVerification: {
         findUnique: jest.fn(),
@@ -27,6 +28,10 @@ describe('CompanyVerificationService', () => {
       providers: [
         CompanyVerificationService,
         { provide: PrismaService, useValue: prisma },
+        {
+          provide: VendorCodesService,
+          useValue: { generateVendorCode: jest.fn().mockResolvedValue('TRV000001') },
+        },
       ],
     }).compile();
 

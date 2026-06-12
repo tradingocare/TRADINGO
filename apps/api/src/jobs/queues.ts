@@ -2,6 +2,8 @@ export enum QueueNames {
   EMAIL = 'email',
   EXPORT = 'export',
   NOTIFICATION = 'notification',
+  CERTIFICATION = 'certification',
+  SUBSCRIPTION = 'subscription',
 }
 
 export enum EmailJobTypes {
@@ -37,6 +39,8 @@ export enum NotificationJobTypes {
   VERIFICATION_APPROVED = 'VERIFICATION_APPROVED',
   VERIFICATION_REJECTED = 'VERIFICATION_REJECTED',
   TRUST_SCORE_UPDATED = 'TRUST_SCORE_UPDATED',
+  CERTIFICATION_EXPIRED = 'CERTIFICATION_EXPIRED',
+  SUBSCRIPTION_RENEWAL = 'SUBSCRIPTION_RENEWAL',
 }
 
 export interface NotificationJobData {
@@ -45,4 +49,27 @@ export interface NotificationJobData {
   title: string;
   message: string;
   metadata?: Record<string, unknown>;
+}
+
+export enum CertificationJobTypes {
+  CHECK_EXPIRY = 'CHECK_EXPIRY',
+  RECALCULATE_TRUST = 'RECALCULATE_TRUST',
+}
+
+export interface CertificationJobData {
+  type: CertificationJobTypes;
+  companyId?: string;
+  certificationId?: string;
+}
+
+export enum SubscriptionJobTypes {
+  CHECK_RENEWAL = 'CHECK_RENEWAL',
+  APPLY_GRACE = 'APPLY_GRACE',
+  AUTO_EXPIRE = 'AUTO_EXPIRE',
+}
+
+export interface SubscriptionJobData {
+  type: SubscriptionJobTypes;
+  companyId?: string;
+  alertPeriod?: string;
 }

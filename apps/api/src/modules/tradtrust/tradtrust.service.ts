@@ -5,10 +5,12 @@ import { Prisma } from '@prisma/client';
 const MAX_SCORE = 100;
 
 const WEIGHTS = {
-  verificationLevel: 35,
-  profileCompletion: 30,
-  companyAge: 20,
-  activeStatus: 15,
+  verificationLevel: 30,
+  profileCompletion: 25,
+  companyAge: 15,
+  activeStatus: 10,
+  certifications: 10,
+  onboarding: 10,
 };
 
 @Injectable()
@@ -24,6 +26,7 @@ export class TradTrustService {
         locations: { where: { deletedAt: null } },
         categories: true,
         owners: true,
+        certificationDocs: { select: { status: true, expiresAt: true } },
       },
     });
 
@@ -32,18 +35,25 @@ export class TradTrustService {
       return 0;
     }
 
+    const certificationScore = this.calculateCertificationScore(company.certificationDocs);
+    const onboardingScore = this.calculateOnboardingScore(company.onboardingCompletedAt);
+
     const factors = {
       verificationLevelScore: this.calculateVerificationLevelScore(company.verificationLevel),
       profileCompletionScore: this.calculateProfileCompletionScore(company),
       companyAgeScore: this.calculateCompanyAgeScore(company.createdAt),
       activeStatusScore: this.calculateActiveStatusScore(company.status),
+      certificationScore,
+      onboardingScore,
     };
 
     const totalScore = Math.round(
       (factors.verificationLevelScore * WEIGHTS.verificationLevel +
         factors.profileCompletionScore * WEIGHTS.profileCompletion +
         factors.companyAgeScore * WEIGHTS.companyAge +
-        factors.activeStatusScore * WEIGHTS.activeStatus) / MAX_SCORE,
+        factors.activeStatusScore * WEIGHTS.activeStatus +
+        factors.certificationScore * WEIGHTS.certifications +
+        factors.onboardingScore * WEIGHTS.onboarding) / MAX_SCORE,
     );
 
     const finalScore = Math.max(0, Math.min(MAX_SCORE, totalScore));
@@ -158,5 +168,22 @@ export class TradTrustService {
       case 'SUSPENDED': return 0;
       default: return 50;
     }
+  }
+
+  private calculateCertificationScore(certs: { status: string; expiresAt: Date | null }[]): number {
+    if (certs.length === 0) return 0;
+
+    const activeCerts = certs.filter((c) => c.status === 'APPROVED' || c.status === 'PENDING');
+    const expiredCerts = certs.filter((c) => c.status === 'EXPIRED' || (c.expiresAt && c.expiresAt < new Date()));
+
+    const activeRatio = certs.length > 0 ? activeCerts.length / certs.length : 0;
+    const expiredPenalty = expiredCerts.length * 15;
+
+    const baseScore = Math.round(activeRatio * 100);
+    return Math.max(0, baseScore - expiredPenalty);
+  }
+
+  private calculateOnboardingScore(onboardingCompletedAt: Date | null): number {
+    return onboardingCompletedAt ? 100 : 0;
   }
 }
