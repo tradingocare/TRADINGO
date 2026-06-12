@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellerAnalyticsService } from './seller-analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
-import { AnalyticsQueryDto, AnalyticsTimeRange } from './dto/analytics-query.dto';
+import { AnalyticsQueryDto } from './dto/analytics-query.dto';
 
 @ApiTags('Seller Analytics')
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)

@@ -3,12 +3,7 @@ import {
   Get,
   Delete,
   Query,
-  Param,
-  Body,
-  Post,
   UseGuards,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { TradfindService } from './tradfind.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';

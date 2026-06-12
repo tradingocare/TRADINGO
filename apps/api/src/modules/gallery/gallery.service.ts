@@ -107,7 +107,7 @@ export class GalleryService {
     return this.findAll(companyId);
   }
 
-  async moderate(id: string, status: 'APPROVED' | 'REJECTED', userId: string) {
+  async moderate(id: string, status: 'APPROVED' | 'REJECTED', _userId: string) {
     const image = await this.prisma.companyGalleryImage.findUnique({ where: { id } });
     if (!image) throw new NotFoundException('Gallery image not found');
 

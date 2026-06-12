@@ -93,13 +93,6 @@ export class ProductSearchService {
     };
 
     try {
-      const response = await this.searchService.search<Record<string, unknown>>(
-        PRODUCTS_INDEX,
-        '',
-        {},
-        { page, limit },
-      );
-
       const openSearchClient = (this.searchService as any).client;
       const osResponse = await openSearchClient.search({
         index: PRODUCTS_INDEX,

@@ -40,8 +40,6 @@ export class DiscoveryFeedService {
     const items: DiscoveryFeedItem[] = [];
     const perSection = Math.max(1, Math.ceil(limit / 6));
 
-    const hasGeo = latitude !== undefined && longitude !== undefined;
-
     const [trendingProducts, featuredCompanies, recentProducts, verifiedCompanies, popularCategories, dealsAndOffers] =
       await Promise.all([
         this.getTrendingProducts(perSection),

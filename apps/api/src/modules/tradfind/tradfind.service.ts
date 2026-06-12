@@ -31,7 +31,7 @@ import {
   CATEGORIES_INDEX,
   INDUSTRIES_INDEX,
 } from './tradfind.config';
-import { SearchEntity, SearchEvent } from './enums/search.enums';
+import { SearchEntity } from './enums/search.enums';
 
 @Injectable()
 export class TradfindService {

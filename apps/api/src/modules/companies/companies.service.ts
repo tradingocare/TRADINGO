@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException, Logger } from '@nestjs/common';
-import { Prisma, PlanType, SubscriptionStatus, OnboardingStep } from '@prisma/client';
+import { Prisma, PlanType, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { CreateCompanyDto } from './dto/create-company.dto';

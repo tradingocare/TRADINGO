@@ -46,7 +46,7 @@ export class OnboardingService {
     };
   }
 
-  async advanceStep(companyId: string, step: OnboardingStep, userId?: string) {
+  async advanceStep(companyId: string, step: OnboardingStep, _userId?: string) {
     const company = await this.prisma.company.findFirst({
       where: { id: companyId, deletedAt: null },
     });
@@ -57,7 +57,7 @@ export class OnboardingService {
     });
     if (existing) return this.getStatus(companyId);
 
-    const log = await this.prisma.companyOnboardingLog.create({
+    await this.prisma.companyOnboardingLog.create({
       data: { companyId, step, completed: true },
     });
 

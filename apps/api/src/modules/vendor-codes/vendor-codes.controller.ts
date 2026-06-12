@@ -66,7 +66,7 @@ export class VendorCodesController {
   async assignReferral(
     @Param('companyId') companyId: string,
     @Body('referralCode') referralCode: string,
-    @CurrentUser() user: any,
+    @CurrentUser() _user: any,
   ) {
     const owner = await this.vendorCodesService.assignReferral(companyId, referralCode);
     return { onboardedByCode: referralCode, referredBy: owner };

@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { GoCashTransactionType, GoCashRedemptionType } from '@prisma/client';
+import { GoCashRedemptionType } from '@prisma/client';
 
 const GC_TO_INR_RATE = 10;
 const MAX_REDEMPTION_PERCENT = 50;

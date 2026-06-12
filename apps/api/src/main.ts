@@ -1,3 +1,4 @@
+import helmet from '@fastify/helmet';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -14,8 +15,11 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: true }),
+    new FastifyAdapter({ logger: true, bodyLimit: 10 * 1024 * 1024 }),
   );
+
+  // Security headers
+  await app.register(helmet, { contentSecurityPolicy: false });
 
   const configService = app.get(ConfigService);
 

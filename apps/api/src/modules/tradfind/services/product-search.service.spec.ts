@@ -112,7 +112,7 @@ describe('ProductSearchService', () => {
         limit: 20,
       });
 
-      const searchCall = mockOpenSearchClient.search.mock.calls[1][0];
+      const searchCall = mockOpenSearchClient.search.mock.calls[0][0];
       const filters = searchCall.body.query.bool.filter;
       expect(filters).toEqual(
         expect.arrayContaining([
@@ -169,7 +169,7 @@ describe('ProductSearchService', () => {
         limit: 20,
       });
 
-      const searchCall = mockOpenSearchClient.search.mock.calls[1][0];
+      const searchCall = mockOpenSearchClient.search.mock.calls[0][0];
       const filters = searchCall.body.query.bool.filter;
       expect(filters).toEqual(
         expect.arrayContaining([

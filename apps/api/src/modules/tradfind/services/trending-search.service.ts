@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../../../common/services/redis.service';
 import { TrendingSearchEntry } from '../interfaces/search-types';
-import { TRENDING_SEARCHES_LIMIT, SUGGESTIONS_CACHE_TTL } from '../enums/search.enums';
+import { SUGGESTIONS_CACHE_TTL } from '../enums/search.enums';
 
 @Injectable()
 export class TrendingSearchService {
@@ -15,7 +15,6 @@ export class TrendingSearchService {
   async trackSearch(query: string): Promise<void> {
     if (!query || query.trim().length === 0) return;
 
-    const now = Date.now();
     const today = new Date().toISOString().slice(0, 10);
 
     try {
