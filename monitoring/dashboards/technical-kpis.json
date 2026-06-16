@@ -1,0 +1,26 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus" }],
+  "title": "TRADINGO - Technical KPIs",
+  "uid": "tradingo-technical-kpis",
+  "timezone": "utc",
+  "panels": [
+    { "id": 1, "title": "API Request Rate (QPS)", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "sum(rate(http_requests_total[5m]))", "legendFormat": "QPS" }] },
+    { "id": 2, "title": "API Latency (p50/p95/p99)", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [
+      { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50" },
+      { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95" },
+      { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99" }
+    ]},
+    { "id": 3, "title": "Error Rate %", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [
+      { "expr": "sum(rate(http_requests_total{status=~\"4..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100", "legendFormat": "4xx" },
+      { "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100", "legendFormat": "5xx" }
+    ]},
+    { "id": 4, "title": "CPU Utilization", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "avg by(service) (ecs_cpu_utilization{service=~\"tradingo-.+\"})", "legendFormat": "{{service}}" }] },
+    { "id": 5, "title": "Memory Utilization", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "avg by(service) (ecs_memory_utilization{service=~\"tradingo-.+\"})", "legendFormat": "{{service}}" }] },
+    { "id": 6, "title": "Database Connections", "type": "gauge", "gridPos": { "h": 6, "w": 4, "x": 16, "y": 8 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "pg_stat_database_numbackends / pg_settings_max_connections * 100", "legendFormat": "% Used" }] },
+    { "id": 7, "title": "DB Query Time p95", "type": "timeseries", "gridPos": { "h": 6, "w": 8, "x": 0, "y": 16 }, "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(pg_stat_activity_query_duration_bucket[5m])) by (le))" }] },
+    { "id": 8, "title": "Redis Hit Rate", "type": "timeseries", "gridPos": { "h": 6, "w": 8, "x": 8, "y": 16 }, "targets": [{ "expr": "rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) * 100" }] },
+    { "id": 9, "title": "CDN Cache Hit Rate", "type": "stat", "gridPos": { "h": 4, "w": 4, "x": 16, "y": 14 }, "targets": [{ "expr": "sum(rate(cloudfront_hits[5m])) / sum(rate(cloudfront_requests[5m])) * 100" }] },
+    { "id": 10, "title": "Active WebSocket Connections", "type": "timeseries", "gridPos": { "h": 6, "w": 8, "x": 0, "y": 22 }, "targets": [{ "expr": "tradingo_websocket_connections_active", "legendFormat": "Active" }] },
+    { "id": 11, "title": "Queue Depth", "type": "timeseries", "gridPos": { "h": 6, "w": 8, "x": 8, "y": 22 }, "targets": [{ "expr": "sum by(queue) (bull_queue_depth)", "legendFormat": "{{queue}}" }] }
+  ]
+}

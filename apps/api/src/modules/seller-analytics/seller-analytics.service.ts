@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventIngestionService } from '../analytics/event-ingestion.service';
 import { AnalyticsTimeRange } from './dto/analytics-query.dto';
 
 @Injectable()
 export class SellerAnalyticsService {
   private readonly logger = new Logger(SellerAnalyticsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventIngestion: EventIngestionService,
+  ) {}
 
   private getDateRange(range: AnalyticsTimeRange): { start: Date; end: Date } {
     const end = new Date();
@@ -147,19 +151,13 @@ export class SellerAnalyticsService {
     eventType: string,
     metadata: Record<string, unknown> | null,
     userId?: string,
-    ipAddress?: string,
-    userAgent?: string,
   ) {
-    const event = await this.prisma.sellerAnalyticsEvent.create({
-      data: {
-        companyId,
-        userId,
-        eventType: eventType as any,
-        metadata: (metadata ?? undefined) as any,
-        ipAddress,
-        userAgent,
-      },
+    await this.eventIngestion.track('seller_analytics_events', {
+      companyId,
+      eventType,
+      metadata: metadata ?? undefined,
+      userId,
     });
-    return event;
+    this.logger.log({ msg: 'SellerAnalyticsEvent', companyId, eventType, metadata, userId });
   }
 }

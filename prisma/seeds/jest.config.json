@@ -1,0 +1,36 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testRegex": "seeds/__tests__/.*\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": ["ts-jest", {
+      "tsconfig": {
+        "esModuleInterop": true,
+        "module": "commonjs",
+        "target": "ES2022",
+        "lib": ["ES2022"],
+        "skipLibCheck": true,
+        "strictNullChecks": false,
+        "allowImportingTsExtensions": true,
+        "noEmit": true
+      }
+    }]
+  },
+  "collectCoverageFrom": [
+    "seeds/**/*.ts",
+    "!seeds/**/*.spec.ts",
+    "!seeds/jest.config.ts",
+    "!seeds/jest.config.json",
+    "!seeds/seed.ts"
+  ],
+  "coverageDirectory": "./seeds/coverage",
+  "coverageThreshold": {
+    "global": {
+      "branches": 60,
+      "functions": 90,
+      "lines": 90,
+      "statements": 90
+    }
+  },
+  "testEnvironment": "node"
+}

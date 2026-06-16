@@ -1,0 +1,137 @@
+{
+  "family": "tradingo-api",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/tradingo-api-task-role",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/tradingo-ecs-execution-role",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "2048",
+  "memory": "4096",
+  "containerDefinitions": [
+    {
+      "name": "tradingo-api",
+      "image": "ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/tradingo/api:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "hostPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:3001/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "environment": [
+        { "name": "NODE_ENV",            "value": "production" },
+        { "name": "PORT",                "value": "3001" },
+        { "name": "DB_HOST",             "value": "tradingo-db.internal" },
+        { "name": "DB_PORT",             "value": "5432" },
+        { "name": "DB_NAME",             "value": "tradingo_prod" },
+        { "name": "DB_SCHEMA",           "value": "public" },
+        { "name": "DB_SSL",              "value": "true" },
+        { "name": "DB_POOL_MIN",         "value": "2" },
+        { "name": "DB_POOL_MAX",         "value": "20" },
+        { "name": "DB_IDLE_TIMEOUT_MS",  "value": "10000" },
+        { "name": "DB_CONNECTION_TIMEOUT_MS", "value": "5000" },
+        { "name": "REDIS_URL",           "value": "redis://tradingo-redis.internal:6379" },
+        { "name": "REDIS_PREFIX",        "value": "tradingo:" },
+        { "name": "REDIS_MAX_RETRIES",   "value": "3" },
+        { "name": "REDIS_ENABLE_AUTO_PIPELINING", "value": "false" },
+        { "name": "OPENSEARCH_URL",      "value": "https://tradingo-os.internal:9200" },
+        { "name": "OPENSEARCH_INDEX_PREFIX", "value": "tradingo" },
+        { "name": "S3_ASSETS_BUCKET",    "value": "tradingo-assets-prod" },
+        { "name": "S3_UPLOADS_BUCKET",   "value": "tradingo-uploads-prod" },
+        { "name": "AWS_REGION",          "value": "ap-south-1" },
+        { "name": "LOG_LEVEL",           "value": "info" },
+        { "name": "LOG_FORMAT",          "value": "json" },
+        { "name": "SENTRY_ENVIRONMENT",  "value": "production" },
+        { "name": "RATE_LIMIT_WINDOW_MS","value": "60000" },
+        { "name": "RATE_LIMIT_MAX",      "value": "200" },
+        { "name": "CORS_ORIGIN",         "value": "https://tradingo.io" },
+        { "name": "CORS_CREDENTIALS",    "value": "true" },
+        { "name": "MAX_BODY_SIZE",       "value": "10mb" },
+        { "name": "REQUEST_TIMEOUT_MS",  "value": "30000" },
+        { "name": "WEBSOCKET_HEARTBEAT_INTERVAL_MS", "value": "30000" },
+        { "name": "TRADING_SESSION_TIMEOUT_MINUTES", "value": "60" },
+        { "name": "ORDER_EXPIRY_SECONDS", "value": "300" },
+        { "name": "RFQ_EXPIRY_SECONDS",  "value": "120" },
+        { "name": "MAX_OPEN_ORDERS",     "value": "100" },
+        { "name": "CURRENCY_PAIRS_CACHE_TTL_SECONDS", "value": "60" },
+        { "name": "MARKET_DATA_REFRESH_INTERVAL_MS", "value": "1000" }
+      ],
+      "secrets": [
+        { "name": "SENTRY_DSN",           "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/sentry-dsn" },
+        { "name": "DB_USER",              "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/db-username" },
+        { "name": "DB_PASSWORD",          "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/db-password" },
+        { "name": "JWT_SECRET",           "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/jwt-secret" },
+        { "name": "JWT_REFRESH_SECRET",   "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/jwt-refresh-secret" },
+        { "name": "JWT_ISSUER",           "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/jwt-issuer" },
+        { "name": "ENCRYPTION_KEY",       "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/encryption-key" },
+        { "name": "OPENSEARCH_USERNAME",  "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/opensearch-username" },
+        { "name": "OPENSEARCH_PASSWORD",  "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/opensearch-password" },
+        { "name": "SMTP_HOST",            "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/smtp-host" },
+        { "name": "SMTP_USERNAME",        "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/smtp-username" },
+        { "name": "SMTP_PASSWORD",        "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/smtp-password" },
+        { "name": "API_KEYS",             "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/api-keys" },
+        { "name": "WEBHOOK_SECRET",       "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/webhook-secret" },
+        { "name": "LIQUIDITY_PROVIDER_API_KEY", "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/liquidity-api-key" },
+        { "name": "LIQUIDITY_PROVIDER_API_SECRET", "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/liquidity-api-secret" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/tradingo-api",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "api",
+          "awslogs-create-group": "true"
+        }
+      },
+      "ulimits": [
+        {
+          "name": "nofile",
+          "softLimit": 65536,
+          "hardLimit": 65536
+        },
+        {
+          "name": "nproc",
+          "softLimit": 4096,
+          "hardLimit": 4096
+        }
+      ],
+      "readonlyRootFilesystem": false,
+      "privileged": false,
+      "user": "node",
+      "workingDirectory": "/app",
+      "linuxParameters": {
+        "initProcessEnabled": true
+      }
+    }
+  ],
+  "tags": [
+    {
+      "key": "Service",
+      "value": "tradingo-api"
+    },
+    {
+      "key": "Environment",
+      "value": "production"
+    },
+    {
+      "key": "ManagedBy",
+      "value": "terraform"
+    }
+  ],
+  "runtimePlatform": {
+    "operatingSystemFamily": "LINUX",
+    "cpuArchitecture": "X86_64"
+  },
+  "ephemeralStorage": {
+    "sizeInGiB": 21
+  },
+  "proxyConfiguration": null,
+  "pidMode": null
+}

@@ -1,24 +1,33 @@
 import { create } from 'zustand';
+import type { User } from '@/lib/api/types';
 
-export interface UserDto {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-}
-
-interface AuthStore {
-  user: UserDto | null;
+interface AuthState {
+  user: User | null;
   accessToken: string | null;
-  setAuth: (user: UserDto, accessToken: string) => void;
-  setAccessToken: (token: string) => void;
+  isAuthenticated: boolean;
+  rememberMe: boolean;
+  twoFactorEnabled: boolean;
+  setAuth: (user: User, accessToken: string) => void;
+  setUser: (user: User) => void;
   clearAuth: () => void;
+  setRememberMe: (value: boolean) => void;
+  setTwoFactorEnabled: (value: boolean) => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   accessToken: null,
-  setAuth: (user, accessToken) => set({ user, accessToken }),
-  setAccessToken: (accessToken) => set({ accessToken }),
-  clearAuth: () => set({ user: null, accessToken: null }),
+  isAuthenticated: false,
+  rememberMe: typeof window !== 'undefined' ? localStorage.getItem('rememberMe') === 'true' : false,
+  twoFactorEnabled: false,
+  setAuth: (user, accessToken) =>
+    set({ user, accessToken, isAuthenticated: true }),
+  setUser: (user) => set({ user }),
+  clearAuth: () =>
+    set({ user: null, accessToken: null, isAuthenticated: false }),
+  setRememberMe: (value) => {
+    localStorage.setItem('rememberMe', value ? 'true' : '');
+    set({ rememberMe: value });
+  },
+  setTwoFactorEnabled: (value) => set({ twoFactorEnabled: value }),
 }));

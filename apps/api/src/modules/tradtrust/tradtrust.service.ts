@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { NotificationService } from '../notification/notification.service';
+import { Prisma, NotificationType } from '@prisma/client';
 
 const MAX_SCORE = 100;
 
@@ -17,7 +18,10 @@ const WEIGHTS = {
 export class TradTrustService {
   private readonly logger = new Logger(TradTrustService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async calculateScore(companyId: string): Promise<number> {
     const company = await this.prisma.company.findFirst({
@@ -72,6 +76,18 @@ export class TradTrustService {
     });
 
     this.logger.log(`TradTrust score for company ${companyId}: ${finalScore}`);
+
+    try {
+      await this.notificationService.createWithTemplate(
+        companyId,
+        company.createdBy ?? undefined,
+        NotificationType.TRUST_SCORE_CHANGED,
+        { score: finalScore },
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to send trust score notification for ${companyId}: ${(err as Error).message}`);
+    }
+
     return finalScore;
   }
 

@@ -150,87 +150,91 @@ export class ProductsService {
     if (dto.media?.length) this.validateMediaLimits(dto.media);
     if (dto.priceSlabs?.length) this.validatePriceSlabs(dto.priceSlabs);
 
-    const product = await this.prisma.product.create({
-      data: {
-        companyId: dto.companyId,
-        categoryId: dto.categoryId,
-        industryId: dto.industryId,
-        name: dto.name,
-        slug,
-        shortDescription: dto.shortDescription,
-        description: dto.description,
-        productType: dto.productType || 'PHYSICAL',
-        status: dto.status || 'DRAFT',
-        brand: dto.brand,
-        model: dto.model,
-        sku: dto.sku,
-        moq: dto.moq ?? 1,
-        unit: dto.unit,
-        visibilityRadius: dto.visibilityRadius,
-        isFeatured: dto.isFeatured ?? false,
-        trustScoreSnapshot: company.trustScore,
-        latitude: dto.latitude,
-        longitude: dto.longitude,
-        createdBy: userId,
-        updatedBy: userId,
-        media: dto.media?.length ? { create: dto.media } : undefined,
-        specifications: dto.specifications?.length
-          ? { create: dto.specifications.map((s) => ({ key: s.key, value: s.value, sortOrder: s.sortOrder ?? 0 })) }
-          : undefined,
-        variants: dto.variants?.length
-          ? {
-              create: dto.variants.map((v) => ({
-                variantType: v.variantType,
-                customName: v.customName,
-                value: v.value,
-                sku: v.sku,
-                price: v.price !== undefined ? v.price : undefined,
-                compareAtPrice: v.compareAtPrice !== undefined ? v.compareAtPrice : undefined,
-                currency: v.currency || 'INR',
-                inventory: v.availableQuantity !== undefined
-                  ? {
-                      create: {
-                        availableQuantity: v.availableQuantity,
-                        minimumThreshold: v.minimumThreshold ?? 5,
-                        stockStatus: this.determineStockStatus(v.availableQuantity, v.minimumThreshold ?? 5),
-                      },
-                    }
-                  : undefined,
-              })),
-            }
-          : undefined,
-        inventory: dto.availableQuantity !== undefined
-          ? {
-              create: {
-                availableQuantity: dto.availableQuantity,
-                minimumThreshold: dto.minimumThreshold ?? 5,
-                stockStatus: this.determineStockStatus(dto.availableQuantity, dto.minimumThreshold ?? 5),
-              },
-            }
-          : undefined,
-        priceSlabs: dto.priceSlabs?.length
-          ? { create: dto.priceSlabs.map((s) => ({ minQty: s.minQty, maxQty: s.maxQty, price: s.price, currency: s.currency || 'INR' })) }
-          : undefined,
-      },
-      include: {
-        company: { select: { id: true, name: true, slug: true } },
-        category: { select: { id: true, name: true, slug: true } },
-        industry: { select: { id: true, name: true, slug: true } },
-        media: { orderBy: { sortOrder: 'asc' } },
-        specifications: { orderBy: { sortOrder: 'asc' } },
-        variants: { include: { inventory: true }, orderBy: { sortOrder: 'asc' } },
-        inventory: true,
-        priceSlabs: { orderBy: { minQty: 'asc' } },
-      },
-    });
+    const product = await this.prisma.$transaction(async (tx) => {
+      const p = await tx.product.create({
+        data: {
+          companyId: dto.companyId,
+          categoryId: dto.categoryId,
+          industryId: dto.industryId,
+          name: dto.name,
+          slug,
+          shortDescription: dto.shortDescription,
+          description: dto.description,
+          productType: dto.productType || 'PHYSICAL',
+          status: dto.status || 'DRAFT',
+          brand: dto.brand,
+          model: dto.model,
+          sku: dto.sku,
+          moq: dto.moq ?? 1,
+          unit: dto.unit,
+          visibilityRadius: dto.visibilityRadius,
+          isFeatured: dto.isFeatured ?? false,
+          trustScoreSnapshot: company.trustScore,
+          latitude: dto.latitude,
+          longitude: dto.longitude,
+          createdBy: userId,
+          updatedBy: userId,
+          media: dto.media?.length ? { create: dto.media } : undefined,
+          specifications: dto.specifications?.length
+            ? { create: dto.specifications.map((s) => ({ key: s.key, value: s.value, sortOrder: s.sortOrder ?? 0 })) }
+            : undefined,
+          variants: dto.variants?.length
+            ? {
+                create: dto.variants.map((v) => ({
+                  variantType: v.variantType,
+                  customName: v.customName,
+                  value: v.value,
+                  sku: v.sku,
+                  price: v.price !== undefined ? v.price : undefined,
+                  compareAtPrice: v.compareAtPrice !== undefined ? v.compareAtPrice : undefined,
+                  currency: v.currency || 'INR',
+                  inventory: v.availableQuantity !== undefined
+                    ? {
+                        create: {
+                          availableQuantity: v.availableQuantity,
+                          minimumThreshold: v.minimumThreshold ?? 5,
+                          stockStatus: this.determineStockStatus(v.availableQuantity, v.minimumThreshold ?? 5),
+                        },
+                      }
+                    : undefined,
+                })),
+              }
+            : undefined,
+          inventory: dto.availableQuantity !== undefined
+            ? {
+                create: {
+                  availableQuantity: dto.availableQuantity,
+                  minimumThreshold: dto.minimumThreshold ?? 5,
+                  stockStatus: this.determineStockStatus(dto.availableQuantity, dto.minimumThreshold ?? 5),
+                },
+              }
+            : undefined,
+          priceSlabs: dto.priceSlabs?.length
+            ? { create: dto.priceSlabs.map((s) => ({ minQty: s.minQty, maxQty: s.maxQty, price: s.price, currency: s.currency || 'INR' })) }
+            : undefined,
+        },
+        include: {
+          company: { select: { id: true, name: true, slug: true } },
+          category: { select: { id: true, name: true, slug: true } },
+          industry: { select: { id: true, name: true, slug: true } },
+          media: { orderBy: { sortOrder: 'asc' } },
+          specifications: { orderBy: { sortOrder: 'asc' } },
+          variants: { include: { inventory: true }, orderBy: { sortOrder: 'asc' } },
+          inventory: true,
+          priceSlabs: { orderBy: { minQty: 'asc' } },
+        },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'PRODUCT_CREATED', resource: `product:${product.id}`, metadata: { name: dto.name, slug, companyId: dto.companyId } },
-    });
+      await tx.auditLog.create({
+        data: { userId, action: 'PRODUCT_CREATED', resource: `product:${p.id}`, metadata: { name: dto.name, slug, companyId: dto.companyId } },
+      });
 
-    await this.prisma.company.update({
-      where: { id: dto.companyId },
-      data: { totalProducts: { increment: 1 }, updatedBy: userId },
+      await tx.company.update({
+        where: { id: dto.companyId },
+        data: { totalProducts: { increment: 1 }, updatedBy: userId },
+      });
+
+      return p;
     });
 
     await this.syncOpenSearch(product.id);
@@ -282,6 +286,30 @@ export class ProductsService {
     return { data, meta: { total, limit, cursor: data.length > 0 ? data[data.length - 1].id : undefined } };
   }
 
+  async findByCompany(companyId: string, query: { status?: string; page?: number; limit?: number }, userId: string) {
+    await this.requireCompanyOwner(companyId, userId);
+    const { status, page = 1, limit = 20 } = query;
+    const where: Prisma.ProductWhereInput = { companyId, deletedAt: null };
+    if (status) where.status = status as any;
+
+    const [data, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          category: { select: { id: true, name: true } },
+          media: { select: { id: true, url: true, type: true }, take: 1, orderBy: { sortOrder: 'asc' } },
+          inventory: { select: { availableQuantity: true, stockStatus: true } },
+        },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
   async findById(id: string) {
     const product = await this.prisma.product.findFirst({
       where: { id, deletedAt: null },
@@ -304,7 +332,7 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({
       where: { slug, deletedAt: null },
       include: {
-        company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true } },
+        company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true, responseRate: true, gstNumber: true, totalProducts: true, locations: { where: { isPrimary: true }, select: { city: true, state: true }, take: 1 } } },
         category: { select: { id: true, name: true, slug: true } },
         industry: { select: { id: true, name: true, slug: true } },
         media: { orderBy: { sortOrder: 'asc' } },
@@ -315,6 +343,13 @@ export class ProductsService {
       },
     });
     if (!product) throw new NotFoundException('Product not found');
+
+    // Track view
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: { viewCount: { increment: 1 } },
+    }).catch(() => {});
+
     return product;
   }
 
@@ -328,60 +363,64 @@ export class ProductsService {
 
     const { media, specifications, variants, availableQuantity, minimumThreshold, priceSlabs, ...updateData } = dto;
 
-    const updated = await this.prisma.product.update({
-      where: { id },
-      data: {
-        ...updateData,
-        updatedBy: userId,
-        media: media !== undefined
-          ? { deleteMany: {}, create: media.map((m) => ({ type: m.type, url: m.url, title: m.title, sortOrder: m.sortOrder ?? 0 })) }
-          : undefined,
-        specifications: specifications !== undefined
-          ? { deleteMany: {}, create: specifications.map((s) => ({ key: s.key, value: s.value, sortOrder: s.sortOrder ?? 0 })) }
-          : undefined,
-        variants: variants !== undefined
-          ? {
-              deleteMany: {},
-              create: variants.map((v) => ({
-                variantType: v.variantType,
-                customName: v.customName,
-                value: v.value,
-                sku: v.sku,
-                price: v.price !== undefined ? v.price : undefined,
-                compareAtPrice: v.compareAtPrice !== undefined ? v.compareAtPrice : undefined,
-                currency: v.currency || 'INR',
-                inventory: v.availableQuantity !== undefined
-                  ? { create: { availableQuantity: v.availableQuantity, minimumThreshold: v.minimumThreshold ?? 5, stockStatus: this.determineStockStatus(v.availableQuantity, v.minimumThreshold ?? 5) } }
-                  : undefined,
-              })),
-            }
-          : undefined,
-        priceSlabs: priceSlabs !== undefined
-          ? { deleteMany: {}, create: priceSlabs.map((s) => ({ minQty: s.minQty, maxQty: s.maxQty, price: s.price, currency: s.currency || 'INR' })) }
-          : undefined,
-        inventory: availableQuantity !== undefined
-          ? {
-              upsert: {
-                create: { availableQuantity, minimumThreshold: minimumThreshold ?? 5, stockStatus: this.determineStockStatus(availableQuantity, minimumThreshold ?? 5) },
-                update: { availableQuantity, minimumThreshold: minimumThreshold ?? 5, stockStatus: this.determineStockStatus(availableQuantity, minimumThreshold ?? 5) },
-              },
-            }
-          : undefined,
-      },
-      include: {
-        company: { select: { id: true, name: true, slug: true } },
-        category: { select: { id: true, name: true, slug: true } },
-        industry: { select: { id: true, name: true, slug: true } },
-        media: { orderBy: { sortOrder: 'asc' } },
-        specifications: { orderBy: { sortOrder: 'asc' } },
-        variants: { include: { inventory: true }, orderBy: { sortOrder: 'asc' } },
-        inventory: true,
-        priceSlabs: { orderBy: { minQty: 'asc' } },
-      },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.product.update({
+        where: { id },
+        data: {
+          ...updateData,
+          updatedBy: userId,
+          media: media !== undefined
+            ? { deleteMany: {}, create: media.map((m) => ({ type: m.type, url: m.url, title: m.title, sortOrder: m.sortOrder ?? 0 })) }
+            : undefined,
+          specifications: specifications !== undefined
+            ? { deleteMany: {}, create: specifications.map((s) => ({ key: s.key, value: s.value, sortOrder: s.sortOrder ?? 0 })) }
+            : undefined,
+          variants: variants !== undefined
+            ? {
+                deleteMany: {},
+                create: variants.map((v) => ({
+                  variantType: v.variantType,
+                  customName: v.customName,
+                  value: v.value,
+                  sku: v.sku,
+                  price: v.price !== undefined ? v.price : undefined,
+                  compareAtPrice: v.compareAtPrice !== undefined ? v.compareAtPrice : undefined,
+                  currency: v.currency || 'INR',
+                  inventory: v.availableQuantity !== undefined
+                    ? { create: { availableQuantity: v.availableQuantity, minimumThreshold: v.minimumThreshold ?? 5, stockStatus: this.determineStockStatus(v.availableQuantity, v.minimumThreshold ?? 5) } }
+                    : undefined,
+                })),
+              }
+            : undefined,
+          priceSlabs: priceSlabs !== undefined
+            ? { deleteMany: {}, create: priceSlabs.map((s) => ({ minQty: s.minQty, maxQty: s.maxQty, price: s.price, currency: s.currency || 'INR' })) }
+            : undefined,
+          inventory: availableQuantity !== undefined
+            ? {
+                upsert: {
+                  create: { availableQuantity, minimumThreshold: minimumThreshold ?? 5, stockStatus: this.determineStockStatus(availableQuantity, minimumThreshold ?? 5) },
+                  update: { availableQuantity, minimumThreshold: minimumThreshold ?? 5, stockStatus: this.determineStockStatus(availableQuantity, minimumThreshold ?? 5) },
+                },
+              }
+            : undefined,
+        },
+        include: {
+          company: { select: { id: true, name: true, slug: true } },
+          category: { select: { id: true, name: true, slug: true } },
+          industry: { select: { id: true, name: true, slug: true } },
+          media: { orderBy: { sortOrder: 'asc' } },
+          specifications: { orderBy: { sortOrder: 'asc' } },
+          variants: { include: { inventory: true }, orderBy: { sortOrder: 'asc' } },
+          inventory: true,
+          priceSlabs: { orderBy: { minQty: 'asc' } },
+        },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'PRODUCT_UPDATED', resource: `product:${id}`, metadata: { changes: JSON.parse(JSON.stringify(dto)) } },
+      await tx.auditLog.create({
+        data: { userId, action: 'PRODUCT_UPDATED', resource: `product:${id}`, metadata: { changes: JSON.parse(JSON.stringify(dto)) } },
+      });
+
+      return u;
     });
 
     await this.syncOpenSearch(id);
@@ -394,18 +433,20 @@ export class ProductsService {
     if (!product) throw new NotFoundException('Product not found');
     await this.requireCompanyOwner(product.companyId, userId);
 
-    await this.prisma.product.update({
-      where: { id },
-      data: { deletedAt: new Date(), status: 'DISCONTINUED', updatedBy: userId },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id },
+        data: { deletedAt: new Date(), status: 'DISCONTINUED', updatedBy: userId },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'PRODUCT_DELETED', resource: `product:${id}`, metadata: { name: product.name } },
-    });
+      await tx.auditLog.create({
+        data: { userId, action: 'PRODUCT_DELETED', resource: `product:${id}`, metadata: { name: product.name } },
+      });
 
-    await this.prisma.company.update({
-      where: { id: product.companyId },
-      data: { totalProducts: { decrement: 1 }, updatedBy: userId },
+      await tx.company.update({
+        where: { id: product.companyId },
+        data: { totalProducts: { decrement: 1 }, updatedBy: userId },
+      });
     });
 
     try {
@@ -422,13 +463,17 @@ export class ProductsService {
     if (!product) throw new NotFoundException('Product not found');
     await this.requireCompanyOwner(product.companyId, userId);
 
-    const updated = await this.prisma.product.update({
-      where: { id },
-      data: { status: 'ACTIVE', updatedBy: userId },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.product.update({
+        where: { id },
+        data: { status: 'ACTIVE', updatedBy: userId },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'PRODUCT_PUBLISHED', resource: `product:${id}` },
+      await tx.auditLog.create({
+        data: { userId, action: 'PRODUCT_PUBLISHED', resource: `product:${id}` },
+      });
+
+      return u;
     });
 
     await this.syncOpenSearch(id);
@@ -440,13 +485,17 @@ export class ProductsService {
     if (!product) throw new NotFoundException('Product not found');
     await this.requireCompanyOwner(product.companyId, userId);
 
-    const updated = await this.prisma.product.update({
-      where: { id },
-      data: { status: 'INACTIVE', updatedBy: userId },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.product.update({
+        where: { id },
+        data: { status: 'INACTIVE', updatedBy: userId },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'PRODUCT_UNPUBLISHED', resource: `product:${id}` },
+      await tx.auditLog.create({
+        data: { userId, action: 'PRODUCT_UNPUBLISHED', resource: `product:${id}` },
+      });
+
+      return u;
     });
 
     await this.syncOpenSearch(id);
@@ -458,13 +507,17 @@ export class ProductsService {
     if (!product) throw new NotFoundException('Product not found');
     await this.requireCompanyOwner(product.companyId, userId);
 
-    const updated = await this.prisma.product.update({
-      where: { id },
-      data: { status: 'DISCONTINUED', updatedBy: userId },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.product.update({
+        where: { id },
+        data: { status: 'DISCONTINUED', updatedBy: userId },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'PRODUCT_ARCHIVED', resource: `product:${id}` },
+      await tx.auditLog.create({
+        data: { userId, action: 'PRODUCT_ARCHIVED', resource: `product:${id}` },
+      });
+
+      return u;
     });
 
     await this.syncOpenSearch(id);
@@ -492,50 +545,54 @@ export class ProductsService {
 
     const slug = await this.generateUniqueSlug(original.name, company.slug);
 
-    const duplicate = await this.prisma.product.create({
-      data: {
-        companyId: original.companyId,
-        categoryId: original.categoryId,
-        industryId: original.industryId,
-        name: `${original.name} (Copy)`,
-        slug,
-        shortDescription: original.shortDescription,
-        description: original.description,
-        productType: original.productType,
-        status: 'DRAFT',
-        brand: original.brand,
-        model: original.model,
-        sku: original.sku ? `${original.sku}-copy` : undefined,
-        moq: original.moq,
-        unit: original.unit,
-        visibilityRadius: original.visibilityRadius,
-        isFeatured: false,
-        trustScoreSnapshot: company.trustScore,
-        createdBy: userId,
-        updatedBy: userId,
-        media: original.media.length ? { create: original.media.map((m) => ({ type: m.type, url: m.url, title: m.title, sortOrder: m.sortOrder })) } : undefined,
-        specifications: original.specifications.length
-          ? { create: original.specifications.map((s) => ({ key: s.key, value: s.value, sortOrder: s.sortOrder })) }
-          : undefined,
-        priceSlabs: original.priceSlabs.length
-          ? { create: original.priceSlabs.map((s) => ({ minQty: s.minQty, maxQty: s.maxQty, price: s.price, currency: s.currency })) }
-          : undefined,
-      },
-      include: {
-        company: { select: { id: true, name: true, slug: true } },
-        media: { orderBy: { sortOrder: 'asc' } },
-        specifications: { orderBy: { sortOrder: 'asc' } },
-        priceSlabs: { orderBy: { minQty: 'asc' } },
-      },
-    });
+    const duplicate = await this.prisma.$transaction(async (tx) => {
+      const d = await tx.product.create({
+        data: {
+          companyId: original.companyId,
+          categoryId: original.categoryId,
+          industryId: original.industryId,
+          name: `${original.name} (Copy)`,
+          slug,
+          shortDescription: original.shortDescription,
+          description: original.description,
+          productType: original.productType,
+          status: 'DRAFT',
+          brand: original.brand,
+          model: original.model,
+          sku: original.sku ? `${original.sku}-copy` : undefined,
+          moq: original.moq,
+          unit: original.unit,
+          visibilityRadius: original.visibilityRadius,
+          isFeatured: false,
+          trustScoreSnapshot: company.trustScore,
+          createdBy: userId,
+          updatedBy: userId,
+          media: original.media.length ? { create: original.media.map((m) => ({ type: m.type, url: m.url, title: m.title, sortOrder: m.sortOrder })) } : undefined,
+          specifications: original.specifications.length
+            ? { create: original.specifications.map((s) => ({ key: s.key, value: s.value, sortOrder: s.sortOrder })) }
+            : undefined,
+          priceSlabs: original.priceSlabs.length
+            ? { create: original.priceSlabs.map((s) => ({ minQty: s.minQty, maxQty: s.maxQty, price: s.price, currency: s.currency })) }
+            : undefined,
+        },
+        include: {
+          company: { select: { id: true, name: true, slug: true } },
+          media: { orderBy: { sortOrder: 'asc' } },
+          specifications: { orderBy: { sortOrder: 'asc' } },
+          priceSlabs: { orderBy: { minQty: 'asc' } },
+        },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'PRODUCT_DUPLICATED', resource: `product:${duplicate.id}`, metadata: { originalProductId: id } },
-    });
+      await tx.auditLog.create({
+        data: { userId, action: 'PRODUCT_DUPLICATED', resource: `product:${d.id}`, metadata: { originalProductId: id } },
+      });
 
-    await this.prisma.company.update({
-      where: { id: original.companyId },
-      data: { totalProducts: { increment: 1 }, updatedBy: userId },
+      await tx.company.update({
+        where: { id: original.companyId },
+        data: { totalProducts: { increment: 1 }, updatedBy: userId },
+      });
+
+      return d;
     });
 
     await this.syncOpenSearch(duplicate.id);
@@ -550,25 +607,92 @@ export class ProductsService {
 
     const stockStatus = this.determineStockStatus(availableQuantity, minimumThreshold);
 
-    const inventory = await this.prisma.productInventory.upsert({
-      where: { productId },
-      create: { productId, availableQuantity, minimumThreshold, stockStatus },
-      update: { availableQuantity, minimumThreshold, stockStatus },
-    });
+    const inventory = await this.prisma.$transaction(async (tx) => {
+      const inv = await tx.productInventory.upsert({
+        where: { productId },
+        create: { productId, availableQuantity, minimumThreshold, stockStatus },
+        update: { availableQuantity, minimumThreshold, stockStatus },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'INVENTORY_CHANGED', resource: `product:${productId}`, metadata: { availableQuantity, minimumThreshold, stockStatus } },
-    });
+      await tx.auditLog.create({
+        data: { userId, action: 'INVENTORY_CHANGED', resource: `product:${productId}`, metadata: { availableQuantity, minimumThreshold, stockStatus } },
+      });
 
-    if (stockStatus === 'OUT_OF_STOCK') {
-      await this.prisma.product.update({ where: { id: productId }, data: { status: 'OUT_OF_STOCK', updatedBy: userId } });
-    } else if (product.status === 'OUT_OF_STOCK') {
-      await this.prisma.product.update({ where: { id: productId }, data: { status: 'ACTIVE', updatedBy: userId } });
-    }
+      if (stockStatus === 'OUT_OF_STOCK') {
+        await tx.product.update({ where: { id: productId }, data: { status: 'OUT_OF_STOCK', updatedBy: userId } });
+      } else if (product.status === 'OUT_OF_STOCK') {
+        await tx.product.update({ where: { id: productId }, data: { status: 'ACTIVE', updatedBy: userId } });
+      }
+
+      return inv;
+    });
 
     await this.syncOpenSearch(productId);
 
     return inventory;
+  }
+
+  async findRelated(slug: string, limit = 8) {
+    const product = await this.prisma.product.findFirst({
+      where: { slug, deletedAt: null },
+      select: { id: true, categoryId: true, companyId: true },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+
+    const related = await this.prisma.product.findMany({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        id: { not: product.id },
+        OR: [
+          { categoryId: product.categoryId },
+          { companyId: product.companyId },
+        ],
+      },
+      take: limit,
+      orderBy: [{ isFeatured: 'desc' }, { viewCount: 'desc' }],
+      include: {
+        company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true, responseRate: true, gstNumber: true } },
+        media: { take: 1, orderBy: { sortOrder: 'asc' }, select: { id: true, type: true, url: true, title: true } },
+        inventory: { select: { availableQuantity: true, stockStatus: true } },
+        priceSlabs: { orderBy: { minQty: 'asc' }, select: { id: true, minQty: true, maxQty: true, price: true, currency: true } },
+        specifications: { take: 6, orderBy: { sortOrder: 'asc' }, select: { id: true, key: true, value: true, label: true } },
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    return related.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      moq: p.moq,
+      unit: p.unit,
+      trustScoreSnapshot: p.company.trustScore,
+      monthlyOrders: p.monthlyOrders,
+      isBestseller: p.isBestseller,
+      isFeatured: p.isFeatured,
+      viewCount: p.viewCount,
+      originalPrice: p.originalPrice ? Number(p.originalPrice) : undefined,
+      videoUrl: p.videoUrl,
+      gstInvoiceAvailable: p.gstInvoiceAvailable,
+      tradeCreditEligible: p.tradeCreditEligible,
+      returnPolicy: p.returnPolicy,
+      deliveryEta: p.deliveryEta,
+      freeDeliveryAbove: p.freeDeliveryAbove ? Number(p.freeDeliveryAbove) : undefined,
+      maxOrderQty: p.maxOrderQty,
+      savedCount: p.savedCount,
+      company: p.company,
+      companyName: p.company.name,
+      companySlug: p.company.slug,
+      media: p.media,
+      image: p.media[0]?.url || null,
+      inventory: p.inventory,
+      priceSlabs: p.priceSlabs,
+      specifications: p.specifications,
+      category: p.category,
+      minPrice: p.priceSlabs[0]?.price || null,
+      maxPrice: p.priceSlabs.length > 1 ? p.priceSlabs[p.priceSlabs.length - 1].price : null,
+    }));
   }
 
   async searchProducts(query: string, filters: {

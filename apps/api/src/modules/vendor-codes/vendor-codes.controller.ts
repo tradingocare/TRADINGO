@@ -1,7 +1,9 @@
 import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { VendorCodesService } from './vendor-codes.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -42,6 +44,7 @@ export class VendorCodesController {
   }
 
   @Get('lookup/:code')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Look up code owner by code value' })
   async lookupCode(@Param('code') code: string) {
     const owner = await this.vendorCodesService.getCodeOwner(code);
@@ -60,7 +63,7 @@ export class VendorCodesController {
   }
 
   @Post('referral/:companyId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Assign referral code to a company during onboarding' })
   async assignReferral(

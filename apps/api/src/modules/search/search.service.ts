@@ -13,7 +13,7 @@ interface PaginationOptions {
   limit?: number;
 }
 
-interface SearchResult<T> {
+export interface SearchResult<T> {
   hits: T[];
   total: number;
   page: number;

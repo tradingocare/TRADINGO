@@ -20,23 +20,32 @@ jest.mock('bullmq', () => {
   return { ...original, Worker: MockWorker };
 });
 
+jest.mock('@opensearch-project/opensearch', () => ({
+  Client: jest.fn(() => ({ index: jest.fn(), search: jest.fn(), delete: jest.fn() })),
+}));
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
   compare: jest.fn().mockResolvedValue(true),
 }));
 jest.mock('uuid', () => ({ v4: jest.fn().mockReturnValue('e2e-uuid') }));
-jest.mock('@opensearch-project/opensearch', () => ({
-  Client: jest.fn(() => ({ index: jest.fn(), search: jest.fn(), delete: jest.fn() })),
-}));
-jest.mock('crypto', () => ({
-  ...jest.requireActual('crypto'),
-  randomBytes: jest.fn().mockReturnValue({ toString: jest.fn().mockReturnValue('e2e-token') }),
-  createHash: jest.fn().mockReturnValue({ update: jest.fn().mockReturnValue({ digest: jest.fn().mockReturnValue('e2e-hash') }) }),
-}));
+
+const mockQueue = () => ({
+  add: jest.fn().mockResolvedValue(undefined),
+  opts: {},
+  upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
+  close: jest.fn().mockResolvedValue(undefined),
+  getJob: jest.fn().mockResolvedValue(null),
+  getJobs: jest.fn().mockResolvedValue([]),
+  getRepeatableJobs: jest.fn().mockResolvedValue([]),
+  getJobCounts: jest.fn().mockResolvedValue({}),
+  obliterate: jest.fn().mockResolvedValue(undefined),
+  drain: jest.fn().mockResolvedValue(undefined),
+  clean: jest.fn().mockResolvedValue([]),
+});
 
 describe('Business Flow (e2e)', () => {
   let app: INestApplication;
-  let mockPrisma: Record<string, Record<string, jest.Mock>>;
+  let mockPrisma: Record<string, any>;
   let mockSearch: Record<string, jest.Mock>;
   let mockJwt: Record<string, jest.Mock>;
 
@@ -52,6 +61,7 @@ describe('Business Flow (e2e)', () => {
       product: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
       productInventory: { upsert: jest.fn() },
       auditLog: { create: jest.fn() },
+      $transaction: jest.fn((cb: any) => cb(mockPrisma)),
     };
     mockSearch = { indexDocument: jest.fn(), search: jest.fn(), deleteDocument: jest.fn() };
     mockJwt = {
@@ -71,9 +81,25 @@ describe('Business Flow (e2e)', () => {
       .overrideProvider(SearchService)
       .useValue(mockSearch)
       .overrideProvider(getQueueToken('email'))
-      .useValue({ add: jest.fn(), opts: { connection: {} } })
+      .useValue(mockQueue())
       .overrideProvider(getQueueToken('export'))
-      .useValue({ add: jest.fn(), opts: { connection: {} } })
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('notification'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('certification'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('subscription'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('rfq'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('escrow'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('settlement'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('dispute'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('analytics'))
+      .useValue(mockQueue())
       .overrideGuard(JwtAuthGuard)
       .useValue({
         canActivate: jest.fn((context) => {

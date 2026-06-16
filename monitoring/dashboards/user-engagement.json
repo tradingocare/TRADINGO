@@ -1,0 +1,25 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus" }],
+  "title": "TRADINGO - User Engagement",
+  "uid": "tradingo-user-engagement",
+  "timezone": "utc",
+  "panels": [
+    { "id": 1, "title": "Sessions per User", "type": "barchart", "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 }, "targets": [{ "expr": "histogram_quantile(0.50, sum(rate(tradingo_sessions_per_user_bucket[7d])) by (le))" }] },
+    { "id": 2, "title": "Avg Session Duration", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 }, "targets": [{ "expr": "avg(tradingo_session_duration_seconds)", "legendFormat": "Avg Duration (s)" }] },
+    { "id": 3, "title": "Pages per Session", "type": "stat", "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 }, "targets": [{ "expr": "avg(tradingo_pages_per_session)", "legendFormat": "Pages" }] },
+    { "id": 4, "title": "Top Pages", "type": "table", "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 }, "targets": [{ "expr": "topk(20, sum by(path) (rate(http_requests_total{service=\"web\"}[7d])))", "legendFormat": "{{path}}" }] },
+    { "id": 5, "title": "Bounce Rate", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 }, "targets": [{ "expr": "sum(rate(tradingo_bounces_total[5m])) / sum(rate(tradingo_sessions_total[5m])) * 100", "legendFormat": "Bounce %" }] },
+    { "id": 6, "title": "Feature Usage", "type": "barchart", "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 }, "targets": [
+      { "expr": "increase(tradingo_rfq_created_total[24h])", "legendFormat": "RFQ" },
+      { "expr": "increase(tradingo_order_created_total[24h])", "legendFormat": "Order" },
+      { "expr": "increase(tradingo_chat_messages_total[24h])", "legendFormat": "Chat" },
+      { "expr": "increase(tradingo_searches_total[24h])", "legendFormat": "Search" }
+    ]},
+    { "id": 7, "title": "Device Breakdown", "type": "piechart", "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 }, "targets": [{ "expr": "sum by(device) (increase(tradingo_sessions_total[7d]))" }] },
+    { "id": 8, "title": "Browser Breakdown", "type": "piechart", "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 }, "targets": [{ "expr": "sum by(browser) (increase(tradingo_sessions_total[7d]))" }] },
+    { "id": 9, "title": "New vs Returning Users", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 }, "targets": [
+      { "expr": "increase(tradingo_new_users_total[24h])", "legendFormat": "New" },
+      { "expr": "increase(tradingo_returning_users_total[24h])", "legendFormat": "Returning" }
+    ]}
+  ]
+}

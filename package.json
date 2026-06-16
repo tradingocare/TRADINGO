@@ -19,15 +19,17 @@
     "db:generate": "pnpm --filter @tradingo/api exec prisma generate",
     "db:push": "pnpm --filter @tradingo/api exec prisma db push",
     "db:seed": "pnpm --filter @tradingo/api exec ts-node prisma/seed.ts",
+    "db:seed:catalog": "pnpm exec ts-node --project prisma/seeds/tsconfig.json prisma/seeds/seed.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,css,md}\""
   },
   "devDependencies": {
-    "turbo": "^2.4.0",
-    "typescript": "^5.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
     "eslint": "^9.16.0",
     "prettier": "^3.4.0",
-    "@typescript-eslint/eslint-plugin": "^8.18.0",
-    "@typescript-eslint/parser": "^8.18.0"
+    "ts-node": "^10.9.2",
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
   },
   "engines": {
     "node": ">=20.0.0",

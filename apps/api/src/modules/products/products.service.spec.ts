@@ -288,6 +288,41 @@ describe('ProductsService', () => {
     });
   });
 
+  describe('findByCompany', () => {
+    it('should return paginated products for company', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'SUPER_ADMIN' });
+      prisma.product.findMany.mockResolvedValue([{ id: 'p1' }]);
+      prisma.product.count.mockResolvedValue(1);
+
+      const result = await service.findByCompany('c1', { status: 'ACTIVE', page: 1, limit: 10 }, 'u1');
+
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.total).toBe(1);
+      expect(result.meta.page).toBe(1);
+    });
+
+    it('should filter by status', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'SUPER_ADMIN' });
+      prisma.product.findMany.mockResolvedValue([]);
+      prisma.product.count.mockResolvedValue(0);
+
+      await service.findByCompany('c1', { status: 'ACTIVE' }, 'u1');
+
+      expect(prisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: 'ACTIVE' }),
+        })
+      );
+    });
+
+    it('should throw if not company owner', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'VIEWER' });
+      prisma.companyOwner.findUnique.mockResolvedValue(null);
+
+      await expect(service.findByCompany('c1', {}, 'u1')).rejects.toThrow(ForbiddenException);
+    });
+  });
+
   describe('searchProducts', () => {
     it('should search and return products in order', async () => {
       searchService.search.mockResolvedValue({

@@ -1,0 +1,106 @@
+{
+  "family": "tradingo-web",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/tradingo-web-task-role",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/tradingo-ecs-execution-role",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "containerDefinitions": [
+    {
+      "name": "tradingo-web",
+      "image": "ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/tradingo/web:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "environment": [
+        { "name": "NODE_ENV",         "value": "production" },
+        { "name": "PORT",             "value": "3000" },
+        { "name": "API_URL",          "value": "http://tradingo-api:3001" },
+        { "name": "NEXT_PUBLIC_API_URL", "value": "https://api.tradingo.io" },
+        { "name": "LOG_LEVEL",        "value": "info" },
+        { "name": "LOG_FORMAT",       "value": "json" },
+        { "name": "AWS_REGION",       "value": "ap-south-1" },
+        { "name": "SENTRY_ENVIRONMENT", "value": "production" },
+        { "name": "REDIS_URL",        "value": "redis://tradingo-redis.internal:6379" },
+        { "name": "COOKIE_DOMAIN",    "value": ".tradingo.io" },
+        { "name": "SESSION_TTL_SECONDS", "value": "86400" },
+        { "name": "RATE_LIMIT_WINDOW_MS", "value": "60000" },
+        { "name": "RATE_LIMIT_MAX",     "value": "100" },
+        { "name": "MAX_FILE_SIZE_MB",   "value": "10" },
+        { "name": "CORS_ORIGIN",        "value": "https://tradingo.io" }
+      ],
+      "secrets": [
+        { "name": "SENTRY_DSN",              "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/sentry-dsn" },
+        { "name": "SESSION_SECRET",          "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/session-secret" },
+        { "name": "JWT_SECRET",              "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/jwt-secret" },
+        { "name": "JWT_REFRESH_SECRET",      "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/jwt-refresh-secret" },
+        { "name": "ENCRYPTION_KEY",          "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/encryption-key" },
+        { "name": "NEXT_PUBLIC_SENTRY_DSN",  "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/sentry-dsn-public" },
+        { "name": "GOOGLE_CLIENT_ID",        "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/google-client-id" },
+        { "name": "GOOGLE_CLIENT_SECRET",    "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/google-client-secret" },
+        { "name": "SMTP_HOST",               "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/smtp-host" },
+        { "name": "SMTP_USERNAME",           "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/smtp-username" },
+        { "name": "SMTP_PASSWORD",           "valueFrom": "arn:aws:secretsmanager:ap-south-1:ACCOUNT_ID:secret:tradingo/smtp-password" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/tradingo-web",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "web",
+          "awslogs-create-group": "true"
+        }
+      },
+      "ulimits": [
+        {
+          "name": "nofile",
+          "softLimit": 65536,
+          "hardLimit": 65536
+        }
+      ],
+      "readonlyRootFilesystem": false,
+      "privileged": false,
+      "user": "node",
+      "workingDirectory": "/app",
+      "linuxParameters": {
+        "initProcessEnabled": true
+      }
+    }
+  ],
+  "tags": [
+    {
+      "key": "Service",
+      "value": "tradingo-web"
+    },
+    {
+      "key": "Environment",
+      "value": "production"
+    },
+    {
+      "key": "ManagedBy",
+      "value": "terraform"
+    }
+  ],
+  "runtimePlatform": {
+    "operatingSystemFamily": "LINUX",
+    "cpuArchitecture": "X86_64"
+  },
+  "ephemeralStorage": {
+    "sizeInGiB": 21
+  },
+  "proxyConfiguration": null,
+  "pidMode": null
+}

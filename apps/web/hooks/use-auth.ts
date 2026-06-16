@@ -10,10 +10,9 @@ export function useAuth() {
 
   useEffect(() => {
     if (getAccessToken() && !user) {
-      apiClient.get<{ data: { id: string; email: string; name: string; role: string } }>('/users/me')
+      apiClient.get<{ id: string; email: string; name: string; role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN'; isVerified: boolean; createdAt: string }>('/users/me')
         .then((res) => {
-          const data = res.data || res;
-          setAuth(data, getAccessToken()!);
+          setAuth(res, getAccessToken()!);
         })
         .catch(() => {
           clearTokens();
@@ -24,7 +23,7 @@ export function useAuth() {
 
   const login = async (email: string, password: string) => {
     const res = await apiClient.post<{
-      user: { id: string; email: string; name: string; role: string };
+      user: { id: string; email: string; name: string; role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN'; isVerified: boolean; createdAt: string };
       accessToken: string;
       refreshToken: string;
     }>('/auth/login', { email, password });
@@ -42,7 +41,7 @@ export function useAuth() {
 
   const register = async (name: string, email: string, password: string) => {
     const res = await apiClient.post<{
-      user: { id: string; email: string; name: string; role: string };
+      user: { id: string; email: string; name: string; role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN'; isVerified: boolean; createdAt: string };
       accessToken: string;
       refreshToken: string;
     }>('/auth/register', { name, email, password });

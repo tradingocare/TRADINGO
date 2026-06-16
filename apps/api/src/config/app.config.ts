@@ -41,6 +41,12 @@ export const sentryConfig = registerAs('sentry', () => ({
   enabled: process.env.SENTRY_ENABLED === 'true',
 }));
 
+export const razorpayConfig = registerAs('razorpay', () => ({
+  keyId: process.env.RAZORPAY_KEY_ID || '',
+  keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+  webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
+}));
+
 export const clickhouseConfig = registerAs('clickhouse', () => ({
   url: process.env.CLICKHOUSE_URL || 'http://localhost:8123',
   username: process.env.CLICKHOUSE_USERNAME || 'default',
@@ -70,4 +76,7 @@ export const validationSchema = Joi.object({
   CLICKHOUSE_URL: Joi.string().uri().required(),
   CLICKHOUSE_USERNAME: Joi.string().default('default'),
   CLICKHOUSE_PASSWORD: Joi.string().allow(''),
+  RAZORPAY_KEY_ID: Joi.string().allow(''),
+  RAZORPAY_KEY_SECRET: Joi.string().allow(''),
+  RAZORPAY_WEBHOOK_SECRET: Joi.string().allow(''),
 });

@@ -6,5 +6,8 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "setupFiles": ["<rootDir>/jest-setup.js"]
+  "setupFiles": ["<rootDir>/jest-setup.js"],
+  "moduleNameMapper": {
+    "^ioredis$": "<rootDir>/__mocks__/ioredis.js"
+  }
 }

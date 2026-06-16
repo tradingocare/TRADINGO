@@ -11,6 +11,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { RedisIoAdapter } from './modules/chat/redis-io-adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -22,6 +23,11 @@ async function bootstrap() {
   await app.register(helmet, { contentSecurityPolicy: false });
 
   const configService = app.get(ConfigService);
+
+  // Redis Socket.io adapter for horizontal scaling
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis(configService);
+  app.useWebSocketAdapter(redisIoAdapter);
 
   // Sentry initializes via @sentry/nestjs/setup in AppModule
 

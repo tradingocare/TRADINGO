@@ -19,19 +19,28 @@ jest.mock('bullmq', () => {
   return { ...original, Worker: MockWorker };
 });
 
+jest.mock('@opensearch-project/opensearch', () => ({
+  Client: jest.fn(() => ({ index: jest.fn(), search: jest.fn(), delete: jest.fn() })),
+}));
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
   compare: jest.fn().mockResolvedValue(true),
 }));
 jest.mock('uuid', () => ({ v4: jest.fn().mockReturnValue('e2e-session-id') }));
-jest.mock('crypto', () => ({
-  ...jest.requireActual('crypto'),
-  randomBytes: jest.fn().mockReturnValue({ toString: jest.fn().mockReturnValue('e2e-verify-token') }),
-  createHash: jest.fn().mockReturnValue({ update: jest.fn().mockReturnValue({ digest: jest.fn().mockReturnValue('e2e-hashed-refresh') }) }),
-}));
-jest.mock('@opensearch-project/opensearch', () => ({
-  Client: jest.fn(() => ({ index: jest.fn(), search: jest.fn(), delete: jest.fn() })),
-}));
+
+const mockQueue = () => ({
+  add: jest.fn().mockResolvedValue(undefined),
+  opts: {},
+  upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
+  close: jest.fn().mockResolvedValue(undefined),
+  getJob: jest.fn().mockResolvedValue(null),
+  getJobs: jest.fn().mockResolvedValue([]),
+  getRepeatableJobs: jest.fn().mockResolvedValue([]),
+  getJobCounts: jest.fn().mockResolvedValue({}),
+  obliterate: jest.fn().mockResolvedValue(undefined),
+  drain: jest.fn().mockResolvedValue(undefined),
+  clean: jest.fn().mockResolvedValue([]),
+});
 
 describe('Auth Flow (e2e)', () => {
   let app: INestApplication;
@@ -59,9 +68,25 @@ describe('Auth Flow (e2e)', () => {
       .overrideProvider(SearchService)
       .useValue({ indexDocument: jest.fn(), search: jest.fn(), deleteDocument: jest.fn() })
       .overrideProvider(getQueueToken('email'))
-      .useValue({ add: jest.fn(), opts: { connection: {} } })
+      .useValue(mockQueue())
       .overrideProvider(getQueueToken('export'))
-      .useValue({ add: jest.fn(), opts: { connection: {} } })
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('notification'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('certification'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('subscription'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('rfq'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('escrow'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('settlement'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('dispute'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('analytics'))
+      .useValue(mockQueue())
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -83,7 +108,7 @@ describe('Auth Flow (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
         .send({ email: 'e2e@test.com', password: 'ComplexP@ss1', name: 'E2E Tester' })
-        .expect(201);
+      expect(res.status).toBe(201);
 
       expect(res.body.user.email).toBe('e2e@test.com');
       expect(res.body.accessToken).toBe('e2e-access-token');

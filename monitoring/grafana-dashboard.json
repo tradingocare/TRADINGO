@@ -1,0 +1,414 @@
+{
+  "dashboard": {
+    "title": "TRADINGO Platform Overview",
+    "description": "Production monitoring dashboard for the TRADINGO trading platform",
+    "tags": ["tradingo", "production", "overview"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Request Rate (QPS)",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "sum(rate(api_http_requests_total[1m]))",
+            "legendFormat": "Total QPS",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(api_http_requests_total{method=\"GET\"}[1m]))",
+            "legendFormat": "GET",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(api_http_requests_total{method=\"POST\"}[1m]))",
+            "legendFormat": "POST",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(api_http_requests_total{method=\"PUT\"}[1m]))",
+            "legendFormat": "PUT",
+            "refId": "D"
+          },
+          {
+            "expr": "sum(rate(api_http_requests_total{method=\"DELETE\"}[1m]))",
+            "legendFormat": "DELETE",
+            "refId": "E"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 500 },
+                { "color": "red", "value": 1000 }
+              ]
+            },
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "API Latency (p50 / p95 / p99)",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(api_http_request_duration_seconds_bucket[1m])) by (le))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(api_http_request_duration_seconds_bucket[1m])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(api_http_request_duration_seconds_bucket[1m])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1.0 },
+                { "color": "orange", "value": 2.0 },
+                { "color": "red", "value": 3.0 }
+              ]
+            },
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Error Rate (% of 5xx)",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "sum(rate(api_http_requests_total{status=~\"5..\"}[1m])) / sum(rate(api_http_requests_total[1m])) * 100",
+            "legendFormat": "Error Rate %",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1 },
+                { "color": "orange", "value": 3 },
+                { "color": "red", "value": 5 }
+              ]
+            },
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Active Users (Last 15 min)",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+        "targets": [
+          {
+            "expr": "sum(rate(api_active_users_total[5m]))",
+            "legendFormat": "Active Users",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(api_unique_users_total[5m]))",
+            "legendFormat": "Unique Users",
+            "refId": "B"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Order Volume",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(trading_orders_total[5m]))",
+            "legendFormat": "Orders/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(trading_order_volume_usd_total[5m]))",
+            "legendFormat": "Volume USD/sec",
+            "refId": "B"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "RFQ Volume",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(trading_rfqs_total[5m]))",
+            "legendFormat": "RFQs/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(trading_rfq_volume_usd_total[5m]))",
+            "legendFormat": "RFQ Volume USD/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(trading_rfq_acceptance_rate_total[5m]))",
+            "legendFormat": "Acceptance Rate",
+            "refId": "C"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Database Connections",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+        "targets": [
+          {
+            "expr": "pg_stat_database_numbackends",
+            "legendFormat": "Active Connections",
+            "refId": "A"
+          },
+          {
+            "expr": "pg_settings_max_connections",
+            "legendFormat": "Max Connections",
+            "refId": "B"
+          },
+          {
+            "expr": "pg_stat_database_numbackends / pg_settings_max_connections * 100",
+            "legendFormat": "Usage %",
+            "refId": "C"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 60 },
+                { "color": "orange", "value": 80 },
+                { "color": "red", "value": 90 }
+              ]
+            },
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Redis Cache Hit Ratio",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(redis_keyspace_hits_total[5m])) / (sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m]))) * 100",
+            "legendFormat": "Cache Hit Ratio",
+            "refId": "A"
+          },
+          {
+            "expr": "redis_memory_used_bytes / redis_memory_max_bytes * 100",
+            "legendFormat": "Memory Usage %",
+            "refId": "B"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 80 },
+                { "color": "red", "value": 95 }
+              ]
+            },
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "System CPU / Memory",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total[1m]))",
+            "legendFormat": "CPU Usage (cores)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(container_memory_usage_bytes) / (1024 * 1024 * 1024)",
+            "legendFormat": "Memory Usage (GB)",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(container_memory_working_set_bytes) / (1024 * 1024 * 1024)",
+            "legendFormat": "Memory Working Set (GB)",
+            "refId": "C"
+          }
+        ],
+        "options": {
+          "legend": { "show": true, "values": true, "min": true, "max": true, "avg": true, "current": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Alert Status",
+        "type": "stat",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+        "targets": [
+          {
+            "expr": "count(ALERTS{alertstate=\"firing\"})",
+            "legendFormat": "Firing Alerts",
+            "refId": "A"
+          },
+          {
+            "expr": "count(ALERTS{alertstate=\"pending\"})",
+            "legendFormat": "Pending Alerts",
+            "refId": "B"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 3 }
+              ]
+            },
+            "min": 0
+          }
+        }
+      }
+    ],
+    "rows": [],
+    "schemaVersion": 27,
+    "version": 0,
+    "links": [],
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "graphTooltip": 0,
+    "refresh": "30s",
+    "time": { "from": "now-1h", "to": "now" },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    },
+    "templating": {
+      "list": [
+        {
+          "type": "interval",
+          "name": "interval",
+          "label": "Interval",
+          "query": "1m,5m,15m,30m,1h,2h",
+          "current": { "text": "1m", "value": "1m" },
+          "refresh": 2
+        },
+        {
+          "type": "datasource",
+          "name": "ds_prometheus",
+          "label": "Prometheus",
+          "query": "prometheus",
+          "current": { "text": "Prometheus", "value": "Prometheus" },
+          "refresh": 1
+        }
+      ]
+    }
+  }
+}

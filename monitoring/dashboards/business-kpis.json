@@ -1,0 +1,19 @@
+{
+  "__inputs": [{ "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus" }],
+  "__requires": [{ "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }],
+  "title": "TRADINGO - Business KPIs",
+  "uid": "tradingo-business-kpis",
+  "timezone": "utc",
+  "panels": [
+    { "id": 1, "title": "Daily Active Users", "type": "barchart", "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "sum(increase(http_requests_total{service=\"web\"}[24h]))", "legendFormat": "DAU" }] },
+    { "id": 2, "title": "New Registrations", "type": "barchart", "gridPos": { "h": 8, "w": 4, "x": 8, "y": 0 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "increase(tradingo_registrations_total[24h])", "legendFormat": "Registrations" }] },
+    { "id": 3, "title": "Total Orders", "type": "barchart", "gridPos": { "h": 8, "w": 4, "x": 12, "y": 0 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "increase(tradingo_orders_total[24h])", "legendFormat": "Orders" }] },
+    { "id": 4, "title": "Total RFQs", "type": "barchart", "gridPos": { "h": 8, "w": 4, "x": 16, "y": 0 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "increase(tradingo_rfqs_total[24h])", "legendFormat": "RFQs" }] },
+    { "id": 5, "title": "Revenue (Daily)", "type": "timeseries", "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "sum(increase(tradingo_revenue_total[24h]))", "legendFormat": "Revenue" }] },
+    { "id": 6, "title": "Average Order Value", "type": "stat", "gridPos": { "h": 4, "w": 4, "x": 8, "y": 8 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "sum(rate(tradingo_revenue_total[7d])) / sum(rate(tradingo_orders_total[7d]))", "legendFormat": "AOV" }] },
+    { "id": 7, "title": "RFQ→Quote→Order Funnel", "type": "stat", "gridPos": { "h": 4, "w": 4, "x": 12, "y": 8 }, "targets": [ { "expr": "increase(tradingo_rfqs_total[7d])", "legendFormat": "RFQs" }, { "expr": "increase(tradingo_quotes_total[7d])", "legendFormat": "Quotes" }, { "expr": "increase(tradingo_orders_total[7d])", "legendFormat": "Orders" } ] },
+    { "id": 8, "title": "Top Products", "type": "table", "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 }, "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "targets": [{ "expr": "topk(10, sum by(product) (rate(tradingo_order_products_total[7d])))", "legendFormat": "{{product}}" }] },
+    { "id": 9, "title": "Top Categories", "type": "barchart", "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 }, "targets": [{ "expr": "topk(10, sum by(category) (rate(tradingo_category_orders_total[7d])))" }] },
+    { "id": 10, "title": "NPS Score", "type": "stat", "gridPos": { "h": 4, "w": 4, "x": 16, "y": 16 }, "targets": [{ "expr": "avg(tradingo_nps_score)", "legendFormat": "NPS" }], "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 7 }, { "color": "green", "value": 9 }] } } } }
+  ]
+}

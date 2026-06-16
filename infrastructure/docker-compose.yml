@@ -69,3 +69,9 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  clamav:
+    image: clamav/clamav
+    restart: unless-stopped
+    ports:
+      - "3310:3310" # ClamAV daemon port

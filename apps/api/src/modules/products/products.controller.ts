@@ -1,14 +1,43 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus, NotFoundException, ValidationPipe } from '@nestjs/common';
 import { ProductsService } from './products.service';
+import { ReviewsService } from './reviews.service';
+import { WishlistService } from './wishlist.service';
+import { QaService } from './qa.service';
+import { BestsellerService } from './bestseller.service';
+import { BestsellerQueryDto } from './dto/bestseller-query.dto';
+import { TrendingQueryDto, TopCategoriesQueryDto, TopSellersQueryDto, NearMeQueryDto } from './dto/ranking-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { CreateQuestionDto } from './dto/create-question.dto';
+import { AnswerQuestionDto } from './dto/answer-question.dto';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly reviewsService: ReviewsService,
+    private readonly wishlistService: WishlistService,
+    private readonly qaService: QaService,
+    private readonly bestsellerService: BestsellerService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  private async resolveProductId(slug: string): Promise<string> {
+    const product = await this.prisma.product.findUnique({ where: { slug }, select: { id: true, companyId: true } });
+    if (!product) throw new NotFoundException('Product not found');
+    return product.id;
+  }
+
+  private async resolveProduct(slug: string): Promise<{ id: string; companyId: string }> {
+    const product = await this.prisma.product.findUnique({ where: { slug }, select: { id: true, companyId: true } });
+    if (!product) throw new NotFoundException('Product not found');
+    return product;
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -26,6 +55,18 @@ export class ProductsController {
     return this.productsService.findAll(query);
   }
 
+  @Get('companies/:companyId/products')
+  @UseGuards(JwtAuthGuard)
+  async findByCompany(
+    @Param('companyId') companyId: string,
+    @CurrentUser('sub') userId: string,
+    @Query('status') status?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.productsService.findByCompany(companyId, { status, page, limit }, userId);
+  }
+
   @Get('search')
   @Public()
   async search(@Query('q') query: string,
@@ -36,6 +77,36 @@ export class ProductsController {
     @Query('city') city?: string,
     @Query('state') state?: string) {
     return this.productsService.searchProducts(query, { categoryId, industryId, productType, companyId, city, state });
+  }
+
+  @Get('bestsellers')
+  @Public()
+  async getBestsellers(@Query(new ValidationPipe({ transform: true })) query: BestsellerQueryDto) {
+    return this.bestsellerService.getBestsellers(query);
+  }
+
+  @Get('trending')
+  @Public()
+  async getTrending(@Query(new ValidationPipe({ transform: true })) query: TrendingQueryDto) {
+    return this.bestsellerService.getTrending(query);
+  }
+
+  @Get('categories/top')
+  @Public()
+  async getTopCategories(@Query(new ValidationPipe({ transform: true })) query: TopCategoriesQueryDto) {
+    return this.bestsellerService.getTopCategories(query);
+  }
+
+  @Get('sellers/top')
+  @Public()
+  async getTopSellers(@Query(new ValidationPipe({ transform: true })) query: TopSellersQueryDto) {
+    return this.bestsellerService.getTopSellers(query);
+  }
+
+  @Get('near-me/top')
+  @Public()
+  async getNearMeTop(@Query(new ValidationPipe({ transform: true })) query: NearMeQueryDto) {
+    return this.bestsellerService.getNearMeTop(query);
   }
 
   @Get(':slug')
@@ -94,5 +165,105 @@ export class ProductsController {
     @CurrentUser('sub') userId: string,
   ) {
     return this.productsService.updateInventory(id, availableQuantity, minimumThreshold, userId);
+  }
+
+  @Get(':slug/related')
+  @Public()
+  async getRelated(@Param('slug') slug: string, @Query('limit') limit?: number) {
+    return this.productsService.findRelated(slug, limit);
+  }
+
+  @Get(':slug/reviews')
+  @Public()
+  async getReviews(@Param('slug') slug: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    const productId = await this.resolveProductId(slug);
+    return this.reviewsService.getReviews(productId, page, limit);
+  }
+
+  @Post(':slug/reviews')
+  @UseGuards(JwtAuthGuard)
+  async createReview(
+    @Param('slug') slug: string,
+    @Body() dto: CreateReviewDto,
+    @CurrentUser('sub') userId: string,
+  ) {
+    const product = await this.resolveProduct(slug);
+    return this.reviewsService.createReview(product.id, userId, product.companyId, dto);
+  }
+
+  @Post(':slug/reviews/:id/helpful')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async markHelpful(@Param('id') reviewId: string) {
+    return this.reviewsService.markHelpful(reviewId);
+  }
+
+  @Get(':slug/reviews/stats')
+  @Public()
+  async getReviewStats(@Param('slug') slug: string) {
+    const productId = await this.resolveProductId(slug);
+    return this.reviewsService.getReviewStats(productId);
+  }
+
+  @Get(':slug/qa')
+  @Public()
+  async getQuestions(@Param('slug') slug: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    const productId = await this.resolveProductId(slug);
+    return this.qaService.getQuestions(productId, page, limit);
+  }
+
+  @Post(':slug/qa')
+  @UseGuards(JwtAuthGuard)
+  async askQuestion(
+    @Param('slug') slug: string,
+    @Body() dto: CreateQuestionDto,
+    @CurrentUser('sub') userId: string,
+  ) {
+    const productId = await this.resolveProductId(slug);
+    return this.qaService.askQuestion(productId, userId, dto.question);
+  }
+
+  @Post(':slug/qa/:id/answer')
+  @UseGuards(JwtAuthGuard)
+  async answerQuestion(
+    @Param('id') qaId: string,
+    @Body() dto: AnswerQuestionDto,
+    @CurrentUser('sub') userId: string,
+  ) {
+    const companyOwner = await this.prisma.companyOwner.findFirst({
+      where: { userId },
+      select: { companyId: true },
+    });
+    if (!companyOwner) throw new NotFoundException('Company not found for user');
+    return this.qaService.answerQuestion(qaId, companyOwner.companyId, dto.answer);
+  }
+
+  @Get('wishlist')
+  @UseGuards(JwtAuthGuard)
+  async getWishlist(@CurrentUser('sub') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.wishlistService.getWishlist(userId, page, limit);
+  }
+
+  @Post('wishlist/:productId')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async addToWishlist(
+    @Param('productId') productId: string,
+    @Body('notes') notes: string | undefined,
+    @CurrentUser('sub') userId: string,
+  ) {
+    return this.wishlistService.addToWishlist(userId, productId, notes);
+  }
+
+  @Delete('wishlist/:productId')
+  @UseGuards(JwtAuthGuard)
+  async removeFromWishlist(@Param('productId') productId: string, @CurrentUser('sub') userId: string) {
+    return this.wishlistService.removeFromWishlist(userId, productId);
+  }
+
+  @Get('wishlist/:productId/check')
+  @UseGuards(JwtAuthGuard)
+  async checkWishlist(@Param('productId') productId: string, @CurrentUser('sub') userId: string) {
+    return this.wishlistService.isInWishlist(userId, productId);
   }
 }

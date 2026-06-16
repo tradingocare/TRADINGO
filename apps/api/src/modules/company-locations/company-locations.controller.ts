@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { CompanyLocationsService } from './company-locations.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateCompanyLocationDto } from './dto/create-company-location.dto';
 import { UpdateCompanyLocationDto } from './dto/update-company-location.dto';
@@ -16,6 +17,7 @@ export class CompanyLocationsController {
   }
 
   @Get('company/:companyId')
+  @UseGuards(CompanyOwnerGuard)
   async findByCompany(@Param('companyId') companyId: string) {
     return this.companyLocationsService.findByCompany(companyId);
   }

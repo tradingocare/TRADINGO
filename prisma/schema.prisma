@@ -162,6 +162,125 @@ enum PlanType {
   TRADE_PRO
   TRADE_PREMIUM
   TRADE_ELITE
+  TRADBUY
+}
+
+enum RfqType {
+  PRODUCT
+  SERVICE
+  BULK
+  URGENT
+}
+
+enum RfqStatus {
+  DRAFT
+  ACTIVE
+  MATCHED
+  QUOTED
+  NEGOTIATING
+  ACCEPTED
+  CONVERTED
+  CLOSED
+  EXPIRED
+  CANCELLED
+}
+
+enum RfqVisibility {
+  PUBLIC
+  PRIVATE
+  INVITE_ONLY
+}
+
+enum RfqUrgency {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum RfqAttachmentType {
+  IMAGE
+  PDF
+  VIDEO
+  DOCUMENT
+}
+
+enum QuoteStatus {
+  DRAFT
+  SUBMITTED
+  VIEWED
+  NEGOTIATING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  WITHDRAWN
+}
+
+enum QuoteEventType {
+  QUOTE_CREATED
+  QUOTE_VIEWED
+  QUOTE_ACCEPTED
+  QUOTE_REJECTED
+  QUOTE_EXPIRED
+}
+
+enum DeliveryTerms {
+  EX_WORKS
+  FOB
+  CIF
+  CFR
+  CPT
+  CIP
+  DAP
+  DDP
+  FAS
+  FCA
+  OTHER
+}
+
+enum PaymentTerms {
+  ADVANCE
+  LC_AT_SIGHT
+  LC_USANCE
+  TT
+  DD
+  CHEQUE
+  COD
+  CREDIT_30
+  CREDIT_60
+  CREDIT_90
+  SIGN_AGAINST_DOCUMENTS
+  DOCUMENT_AGAINST_PAYMENT
+  OTHER
+}
+
+enum MatchStatus {
+  PENDING
+  SENT
+  VIEWED
+  QUOTED
+  DECLINED
+  EXPIRED
+}
+
+enum CreditTransactionType {
+  PURCHASE
+  USED
+  REFUNDED
+  BONUS
+  EXPIRED
+  ADMIN_CREDIT
+  ADMIN_DEBIT
+}
+
+enum RfqAnalyticsEventType {
+  CREATED
+  PUBLISHED
+  MATCHED
+  QUOTED
+  ACCEPTED
+  CONVERTED
+  EXPIRED
 }
 
 enum SubscriptionAlertPeriod {
@@ -208,6 +327,14 @@ enum StockStatus {
   IN_STOCK
   LOW_STOCK
   OUT_OF_STOCK
+}
+
+enum ClaimStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  PUBLISHED
 }
 
 enum VariantType {
@@ -261,6 +388,13 @@ model User {
   meAttributions              CodeAttribution[]      @relation("MEAttributions")
   managedCompanies            Company[]              @relation("RMManagedCompanies")
   rmCertificationReviews      CompanyCertification[] @relation("CertificationReviews")
+  rfqsCreated                 Rfq[]                   @relation("RfqCreators")
+  quotesSubmitted             Quote[]                 @relation("QuoteCreators")
+  chatParticipants            ConversationParticipant[]
+  notifications               Notification[]
+  notificationPreferences     NotificationPreference[]
+  verifiedPaymentProofs       ManualPaymentProof[]
+  disputeMessages             DisputeMessage[]
 }
 
 model Session {
@@ -373,7 +507,15 @@ model Category {
   parent        Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children      Category[] @relation("CategoryTree")
   companies     CompanyCategory[]
-  products      Product[]
+  products          Product[]
+  productMasters    ProductMaster[]
+  serviceMasters    ServiceMaster[]
+  productDrafts     ProductDraft[]
+  attributeTemplates AttributeTemplate[]
+  templates         CategoryTemplate[]
+  productLocationIndexes ProductLocationIndex[]
+  rfqProductItems   RfqProductItem[]
+  rfqs              Rfq[]
 
   @@index([slug])
   @@index([parentId])
@@ -391,6 +533,7 @@ model Industry {
 
   companies   CompanyIndustry[]
   products    Product[]
+  rfqs        Rfq[]
 
   @@index([slug])
 }
@@ -449,6 +592,7 @@ model Company {
   verifications    CompanyVerification[]
   tradTrustScores  TradTrustScore[]
   products         Product[]
+  productLocationIndexes ProductLocationIndex[]
   certificationDocs CompanyCertification[]
   galleryImages    CompanyGalleryImage[]
   goCashTransactions GoCashTransaction[]
@@ -456,6 +600,32 @@ model Company {
   onboardingLogs   CompanyOnboardingLog[]
   subscriptionEvents SubscriptionEvent[]
   assignedRm       User?                @relation("RMManagedCompanies", fields: [assignedRmId], references: [id], onDelete: SetNull)
+
+  rfqsCreated      Rfq[]                @relation("BuyerRfqs")
+  rfqMatches       RfqVendorMatch[]     @relation("MatchedSellers")
+  quotesSubmitted  Quote[]              @relation("SellerQuotes")
+  rfqCreditLedgers RfqCreditLedger[]
+  rfqCreditPacks   RfqCreditPack[]
+  rfqAnalytics     RfqAnalytics?
+  rfqAnalyticsEvents RfqAnalyticsEvent[]
+  chatParticipants   ConversationParticipant[]
+  buyerOrders        Order[]              @relation("OrderBuyer")
+  sellerOrders       Order[]              @relation("OrderSeller")
+  payments           Payment[]
+  invoices           Invoice[]
+  payouts            Payout[]
+  fileScans          FileScan[]
+  escrowsAsBuyer     Escrow[]             @relation("EscrowBuyer")
+  escrowsAsSeller    Escrow[]             @relation("EscrowSeller")
+  manualPaymentProofs ManualPaymentProof[]
+  disputesRaised     Dispute[]            @relation("DisputeRaisedBy")
+  disputesAgainst    Dispute[]            @relation("DisputeAgainst")
+  notifications      Notification[]
+  notificationPreferences NotificationPreference[]
+  productDrafts      ProductDraft[]
+  productClaims      ProductClaim[]
+  reviews            ProductReview[]
+  qa                 ProductQa[]
 
   @@index([slug])
   @@index([organizationId])
@@ -702,6 +872,7 @@ model Product {
   companyId           String
   categoryId          String?
   industryId          String?
+  productMasterId     String?
   name                String
   slug                String        @unique
   shortDescription    String?
@@ -715,6 +886,18 @@ model Product {
   unit                String?
   visibilityRadius    GeographicReach?
   isFeatured          Boolean       @default(false)
+  isBestseller        Boolean       @default(false)
+  originalPrice       Decimal?      @db.Decimal(12, 2)
+  viewCount           Int           @default(0)
+  savedCount          Int           @default(0)
+  monthlyOrders       Int           @default(0)
+  videoUrl            String?
+  maxOrderQty         Int?
+  deliveryEta         String?
+  freeDeliveryAbove   Decimal?      @db.Decimal(12, 2)
+  gstInvoiceAvailable Boolean       @default(true)
+  tradeCreditEligible Boolean       @default(false)
+  returnPolicy        String?
   trustScoreSnapshot  Int           @default(0)
   latitude            Float?
   longitude           Float?
@@ -727,16 +910,25 @@ model Product {
   company           Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   category          Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   industry          Industry?            @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  productMaster     ProductMaster? @relation(fields: [productMasterId], references: [id], onDelete: SetNull)
+  claim             ProductClaim?  @relation("ProductClaimProduct")
   media             ProductMedia[]
   specifications    ProductSpecification[]
   variants          ProductVariant[]
   inventory         ProductInventory?
   priceSlabs        ProductPriceSlab[]
+  reviews           ProductReview[]
+  qa                ProductQa[]
+  savedBy           SavedProduct[]
+  attachments       ProductAttachment[]
+  attributes        ProductAttribute[]
+  locationIndex     ProductLocationIndex?
 
   @@index([slug])
   @@index([companyId])
   @@index([categoryId])
   @@index([industryId])
+  @@index([productMasterId])
   @@index([status])
   @@index([productType])
   @@index([trustScoreSnapshot])
@@ -759,10 +951,30 @@ model ProductMedia {
   @@index([type])
 }
 
+model ProductAttachment {
+  id          String   @id @default(uuid())
+  claimId     String?
+  productId   String?
+  fileName    String
+  fileUrl     String
+  mimeType    String?
+  fileSize    Int?
+  type        String   @default("IMAGE")
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+
+  claim       ProductClaim? @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  product     Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([productId])
+}
+
 model ProductSpecification {
   id        String @id @default(uuid())
   productId String
   key       String
+  label     String?
   value     String
   sortOrder Int    @default(0)
   createdAt DateTime @default(now())
@@ -883,4 +1095,2552 @@ model RecentSearch {
   @@index([userId])
   @@index([timestamp])
   @@index([userId, timestamp])
+}
+
+// ─────────────────────────────────────────────────────
+// RFQ + TRADMATCH — Phase 3A.7
+// ─────────────────────────────────────────────────────
+
+model Rfq {
+  id              String        @id @default(uuid())
+  companyId       String
+  userId          String?
+  categoryId      String?
+  industryId      String?
+  rfqNumber       String?       @unique
+  stateCode       String?
+  title           String
+  description     String?
+  rfqType         RfqType
+  visibility      RfqVisibility  @default(PUBLIC)
+  urgency         RfqUrgency     @default(NORMAL)
+  status          RfqStatus      @default(DRAFT)
+  budgetMin       Decimal?       @db.Decimal(14, 2)
+  budgetMax       Decimal?       @db.Decimal(14, 2)
+  showBudget      Boolean        @default(false)
+  currency        String         @default("INR")
+  quantity        Int?
+  unit            String?
+  preferredLocation String?
+  expiresAt       DateTime?
+  matchedCount    Int            @default(0)
+  quoteCount      Int            @default(0)
+  acceptedQuoteId String?        @unique
+  convertedAt     DateTime?
+  closedAt        DateTime?
+  closedBy        String?
+  reopenedAt      DateTime?
+  reopenCount     Int            @default(0)
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+  createdBy       String
+  updatedBy       String?
+
+  company         Company          @relation("BuyerRfqs", fields: [companyId], references: [id], onDelete: Restrict)
+  user            User?            @relation("RfqCreators", fields: [userId], references: [id], onDelete: SetNull)
+  category        Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  industry        Industry?        @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  locations       RfqLocation[]
+  attachments     RfqAttachment[]
+  productItems    RfqProductItem[]
+  vendorMatches   RfqVendorMatch[]
+  quotes          Quote[]          @relation("RfqQuotes")
+  analyticsEvents RfqAnalyticsEvent[]
+  orders          Order[]          @relation("RfqOrders")
+
+  @@index([companyId, createdAt])
+  @@index([status, createdAt])
+  @@index([categoryId, status, createdAt])
+  @@index([expiresAt])
+  @@index([deletedAt])
+  @@index([rfqNumber])
+  @@index([stateCode])
+}
+
+model RfqLocation {
+  id        String   @id @default(uuid())
+  rfqId     String
+  city      String
+  state     String?
+  country   String   @default("India")
+  pincode   String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  rfq       Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+}
+
+model RfqAttachment {
+  id           String            @id @default(uuid())
+  rfqId        String
+  type         RfqAttachmentType
+  url          String
+  originalName String?
+  mimeType     String?
+  fileSize     Int?
+  createdAt    DateTime          @default(now())
+
+  rfq          Rfq               @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId])
+  @@index([type])
+}
+
+model RfqProductItem {
+  id          String   @id @default(uuid())
+  rfqId       String
+  categoryId  String?
+  productName String
+  description String?
+  quantity    Int?
+  unit        String?
+  targetPrice Decimal? @db.Decimal(14, 2)
+  isService   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rfq         Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  quoteLineItems QuoteLineItem[]
+
+  @@index([rfqId])
+  @@index([categoryId])
+}
+
+model RfqVendorMatch {
+  id            String      @id @default(uuid())
+  rfqId         String
+  companyId     String
+  matchScore    Decimal     @db.Decimal(5, 4)
+  categoryScore Decimal?    @db.Decimal(5, 4)
+  geoScore      Decimal?    @db.Decimal(5, 4)
+  trustScore    Decimal?    @db.Decimal(5, 4)
+  responseScore Decimal?    @db.Decimal(5, 4)
+  tradgoScore   Decimal?    @db.Decimal(5, 4)
+  planScore     Decimal?    @db.Decimal(5, 4)
+  matchFactors  Json?
+  status        MatchStatus @default(PENDING)
+  sentAt        DateTime?
+  matchedAt     DateTime?
+  viewedAt      DateTime?
+  declinedAt    DateTime?
+  declineReason String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  rfq           Rfq         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  company       Company     @relation("MatchedSellers", fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([rfqId, companyId])
+  @@index([rfqId])
+  @@index([companyId, status])
+  @@index([matchScore])
+}
+
+model Quote {
+  id               String        @id @default(uuid())
+  rfqId            String
+  companyId        String
+  userId           String?
+  status           QuoteStatus   @default(DRAFT)
+  currency         String        @default("INR")
+  subtotal         Decimal?      @db.Decimal(14, 2)
+  taxAmount        Decimal?      @db.Decimal(14, 2)
+  totalAmount      Decimal?      @db.Decimal(14, 2)
+  discountAmount   Decimal?      @db.Decimal(14, 2)
+  discountPercent  Decimal?      @db.Decimal(5, 2)
+  deliveryTerms    DeliveryTerms?
+  paymentTerms     PaymentTerms?
+  leadTimeDays     Int?
+  leadTimeDisplay  String?
+  validityDate     DateTime?
+  notes            String?
+  quoteVersion     Int           @default(1)
+  revisionComment  String?
+  isSeen           Boolean       @default(false)
+  seenAt           DateTime?
+  submittedAt      DateTime?
+  rejectedAt       DateTime?
+  rejectionReason  String?
+  acceptedAt       DateTime?
+  withdrawnAt      DateTime?
+  withdrawReason   String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+  createdBy        String
+  updatedBy        String?
+
+  rfq              Rfq           @relation("RfqQuotes", fields: [rfqId], references: [id], onDelete: Restrict)
+  company          Company       @relation("SellerQuotes", fields: [companyId], references: [id], onDelete: Restrict)
+  user             User?         @relation("QuoteCreators", fields: [userId], references: [id], onDelete: SetNull)
+  lineItems        QuoteLineItem[]
+  attachments      QuoteAttachment[]
+
+  @@index([rfqId, companyId])
+  @@index([rfqId, status])
+  @@index([companyId, createdAt])
+  @@index([status, createdAt])
+  events           QuoteEvent[]
+  orders           Order[]          @relation("QuoteOrders")
+  @@index([deletedAt])
+}
+
+model QuoteLineItem {
+  id               String        @id @default(uuid())
+  quoteId          String
+  rfqProductItemId String?
+  productName      String
+  description      String?
+  quantity         Int?
+  unit             String?
+  unitPrice        Decimal       @db.Decimal(14, 2)
+  totalPrice       Decimal?      @db.Decimal(14, 2)
+  deliveryTerms    DeliveryTerms?
+  leadTimeDays     Int?
+  notes            String?
+  sortOrder        Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  quote            Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  rfqProductItem   RfqProductItem? @relation(fields: [rfqProductItemId], references: [id], onDelete: SetNull)
+
+  @@index([quoteId])
+}
+
+model QuoteAttachment {
+  id           String            @id @default(uuid())
+  quoteId      String
+  type         RfqAttachmentType
+  url          String
+  originalName String?
+  mimeType     String?
+  fileSize     Int?
+  createdAt    DateTime          @default(now())
+
+  quote        Quote             @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+}
+
+model QuoteEvent {
+  id        String         @id @default(uuid())
+  quoteId   String
+  companyId String
+  eventType QuoteEventType
+  metadata  Json?
+  createdAt DateTime       @default(now())
+
+  quote     Quote          @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@index([quoteId, eventType])
+}
+
+model RfqCreditLedger {
+  id            String              @id @default(uuid())
+  companyId     String
+  type          CreditTransactionType
+  amount        Int
+  balanceBefore Int                 @default(0)
+  balanceAfter  Int                 @default(0)
+  referenceId   String?
+  description   String?
+  packId        String?
+  createdAt     DateTime            @default(now())
+
+  company       Company             @relation(fields: [companyId], references: [id], onDelete: NoAction)
+  pack          RfqCreditPack?      @relation(fields: [packId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([type])
+  @@unique([companyId, type, referenceId])
+}
+
+model RfqCreditPack {
+  id           String   @id @default(uuid())
+  companyId    String
+  name         String
+  credits      Int
+  price        Decimal  @db.Decimal(12, 2)
+  currency     String   @default("INR")
+  validityDays Int?
+  isActive     Boolean  @default(true)
+  purchasedAt  DateTime @default(now())
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  ledgers      RfqCreditLedger[]
+  payments     Payment[]
+
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model RfqAnalytics {
+  id                       String   @id @default(uuid())
+  companyId                String   @unique
+  totalRfqsReceived        Int      @default(0)
+  totalQuotesSubmitted     Int      @default(0)
+  totalRfqWon              Int      @default(0)
+  totalRfqConverted        Int      @default(0)
+  totalRfqRevenue          Decimal  @default(0) @db.Decimal(16, 2)
+  averageResponseTimeHours Float    @default(0)
+  rfqWinRate               Float    @default(0)
+  quoteConversionRate      Float    @default(0)
+  lastRfqAt                DateTime?
+  lastQuoteAt              DateTime?
+  calculatedAt             DateTime @default(now())
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  company                  Company  @relation(fields: [companyId], references: [id], onDelete: NoAction)
+
+  @@index([companyId])
+}
+
+model RfqAnalyticsEvent {
+  id        String                @id @default(uuid())
+  companyId String
+  rfqId     String
+  eventType RfqAnalyticsEventType
+  metadata  Json?
+  createdAt DateTime              @default(now())
+
+  company   Company               @relation(fields: [companyId], references: [id], onDelete: NoAction)
+  rfq       Rfq                   @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([rfqId])
+  @@index([eventType, createdAt])
+}
+
+model RfqNumberCounter {
+  id        String @id
+  stateCode String
+  date      String
+  seq       Int    @default(0)
+
+  @@unique([stateCode, date])
+}
+
+enum OrderSource {
+  RFQ
+  QUOTE
+  DIRECT
+  CART
+  REPEAT
+  CUSTOM
+}
+
+enum OrderType {
+  PRODUCT
+  SERVICE
+  BULK
+  REPEAT
+  CUSTOM
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  DISPATCHED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  RETURNED
+}
+
+enum CancellationActor {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum CancellationReason {
+  STOCK_UNAVAILABLE
+  PRICE_ISSUE
+  BUYER_REQUEST
+  LOGISTICS_ISSUE
+  OTHER
+}
+
+enum DeliveryMethod {
+  PICKUP
+  SELLER_DELIVERY
+  THIRD_PARTY_LOGISTICS
+  BUYER_ARRANGED
+}
+
+enum ReturnReason {
+  QUALITY_ISSUE
+  QUANTITY_ISSUE
+  WRONG_PRODUCT
+  LATE_DELIVERY
+  PAYMENT_ISSUE
+  SERVICE_ISSUE
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+enum ConversationType {
+  DIRECT
+  RFQ_NEGOTIATION
+  ORDER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  VOICE
+  SYSTEM
+}
+
+enum ParticipantRole {
+  MEMBER
+  ADMIN
+}
+
+enum PaymentGateway {
+  RAZORPAY
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  CAPTURED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentType {
+  ORDER_PAYMENT
+  CREDIT_PACK_PURCHASE
+  SUBSCRIPTION
+  REFUND
+  PAYOUT
+}
+
+enum FileScanStatus {
+  PENDING
+  SCANNING
+  CLEAN
+  INFECTED
+  QUARANTINED
+  FAILED
+}
+
+model Conversation {
+  id              String                   @id @default(uuid())
+  type            ConversationType
+  title           String?
+  rfqId           String?
+  orderId         String?
+  createdBy       String
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  participants    ConversationParticipant[]
+  messages        Message[]
+  blockedUsers    BlockedUser[]
+
+  @@index([rfqId])
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+model ConversationParticipant {
+  id              String          @id @default(uuid())
+  conversationId  String
+  companyId       String
+  userId          String
+  role            ParticipantRole @default(MEMBER)
+  joinedAt        DateTime        @default(now())
+  leftAt          DateTime?
+  lastReadAt      DateTime?
+  isOnline        Boolean         @default(false)
+  lastSeenAt      DateTime?
+
+  conversation    Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id              String             @id @default(uuid())
+  conversationId  String
+  senderId        String
+  senderCompanyId String
+  type            MessageType        @default(TEXT)
+  content         String?
+  replyToId       String?
+  isDeleted       Boolean            @default(false)
+  deliveredAt     DateTime?
+  seenAt          DateTime?
+  createdAt       DateTime           @default(now())
+
+  conversation    Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyTo         Message?           @relation("ReplyChain", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies         Message[]          @relation("ReplyChain")
+  attachments     MessageAttachment[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model MessageAttachment {
+  id              String    @id @default(uuid())
+  messageId       String
+  type            String
+  url             String
+  originalName    String?
+  mimeType        String?
+  fileSize        Int?
+  width           Int?
+  height          Int?
+  duration        Int?
+  createdAt       DateTime  @default(now())
+
+  message         Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model BlockedUser {
+  id              String       @id @default(uuid())
+  conversationId  String
+  blockedById     String
+  blockedUserId   String
+  reason          String?
+  createdAt       DateTime     @default(now())
+
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, blockedUserId])
+}
+
+model ReportedMessage {
+  id              String    @id @default(uuid())
+  messageId       String
+  reportedById    String
+  reason          String
+  description     String?
+  status          String    @default("PENDING")
+  createdAt       DateTime  @default(now())
+  reviewedAt      DateTime?
+  reviewedById    String?
+}
+
+model ChatEvent {
+  id        String   @id @default(uuid())
+  companyId String
+  userId    String
+  type      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([type, createdAt])
+}
+
+model OrderNumberCounter {
+  id        String @id
+  stateCode String
+  date      String
+  seq       Int    @default(0)
+
+  @@unique([stateCode, date])
+}
+
+model Order {
+  id                  String             @id @default(uuid())
+  orderNumber         String             @unique
+  stateCode           String
+  idempotencyKey      String?            @unique
+  source              OrderSource
+  type                OrderType
+  status              OrderStatus        @default(PENDING)
+  statusChangedAt     DateTime           @default(now())
+  statusChangedBy     String
+  buyerCompanyId      String
+  sellerCompanyId     String
+  rfqId               String?
+  quoteId             String?
+  title               String?
+  description         String?
+  currency            String             @default("INR")
+  subtotal            Decimal
+  taxAmount           Decimal?
+  discountAmount      Decimal?
+  totalAmount         Decimal
+  quantity            Int
+  unit                String?
+  deliveryMethod      DeliveryMethod?
+  trackingNumber      String?
+  transporterName     String?
+  vehicleNumber       String?
+  lrNumber            String?
+  ewayBillNumber      String?
+  deliveryAddress     Json?
+  expectedDeliveryDate DateTime?
+  deliveredAt         DateTime?
+  buyerNotes          String?
+  sellerNotes         String?
+  createdBy           String
+  updatedBy           String
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  deletedAt           DateTime?
+
+  buyerCompany        Company            @relation("OrderBuyer", fields: [buyerCompanyId], references: [id], onDelete: Restrict)
+  sellerCompany       Company            @relation("OrderSeller", fields: [sellerCompanyId], references: [id], onDelete: Restrict)
+  rfq                 Rfq?               @relation("RfqOrders", fields: [rfqId], references: [id], onDelete: SetNull)
+  quote               Quote?             @relation("QuoteOrders", fields: [quoteId], references: [id], onDelete: SetNull)
+  items               OrderItem[]
+  locations           OrderLocation[]
+  timeline            OrderTimelineEvent[]
+  documents           OrderDocument[]
+  cancellations       OrderCancellation[]
+  returns             OrderReturn[]
+  payments            Payment[]
+  escrow              Escrow?
+  disputes            Dispute[]
+
+  @@index([buyerCompanyId])
+  @@index([sellerCompanyId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([buyerCompanyId, status])
+  @@index([sellerCompanyId, status])
+}
+
+model OrderItem {
+  id                String   @id @default(uuid())
+  orderId           String
+  productId         String?
+  productName       String
+  sku               String?
+  quantity          Int
+  reservedQuantity  Int      @default(0)
+  deliveredQuantity Int      @default(0)
+  unitPrice         Decimal
+  totalPrice        Decimal
+  taxPercent        Decimal?
+  taxAmount         Decimal?
+  createdAt         DateTime @default(now())
+
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderLocation {
+  id                  String       @id @default(uuid())
+  orderId             String
+  type                LocationType
+  address             String
+  city                String
+  state               String
+  country             String       @default("India")
+  pincode             String?
+  contactName         String?
+  contactPhone        String?
+  isDeliveryLocation  Boolean      @default(false)
+  deliveryStatus      String       @default("PENDING")
+  dispatchedAt        DateTime?
+  deliveredAt         DateTime?
+  createdAt           DateTime     @default(now())
+
+  order               Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderTimelineEvent {
+  id            String       @id @default(uuid())
+  orderId       String
+  fromStatus    OrderStatus?
+  toStatus      OrderStatus
+  changedBy     String
+  changedByRole String?
+  note          String?
+  createdAt     DateTime     @default(now())
+
+  order         Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([orderId, createdAt])
+}
+
+model OrderDocument {
+  id           String     @id @default(uuid())
+  orderId      String
+  docType      String
+  fileName     String
+  fileUrl      String
+  mimeType     String?
+  fileSize     Int?
+  version      Int        @default(1)
+  uploadedBy   String
+  createdAt    DateTime   @default(now())
+
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@unique([orderId, docType, version])
+}
+
+model OrderCancellation {
+  id                  String             @id @default(uuid())
+  orderId             String
+  reason              CancellationReason
+  reasonText          String?
+  cancelledBy         String
+  actor               CancellationActor
+  statusBeforeCancel  OrderStatus
+  approvedAt          DateTime?
+  approvedBy          String?
+  note                String?
+  createdAt           DateTime           @default(now())
+
+  order               Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderReturn {
+  id              String       @id @default(uuid())
+  orderId         String
+  itemId          String?
+  reason          ReturnReason
+  description     String?
+  status          ReturnStatus @default(PENDING)
+  quantity        Int?
+  refundAmount    Decimal?
+  requestedBy     String
+  requestedByRole String
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  adminNote       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refund          Refund?
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model OrderAnalyticsEvent {
+  id        String   @id @default(uuid())
+  companyId String
+  orderId   String?
+  eventType String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  companyId       String
+  type            PaymentType
+  gateway         PaymentGateway @default(RAZORPAY)
+  status          PaymentStatus  @default(PENDING)
+  gatewayOrderId  String?
+  gatewayPaymentId String?
+  gatewaySignature String?
+  amount          Int
+  currency        String         @default("INR")
+  fee             Int?
+  tax             Int?
+  description     String?
+  notes           Json?
+  orderId         String?
+  rfqCreditPackId String?
+  paidAt          DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  company         Company        @relation(fields: [companyId], references: [id])
+  order           Order?         @relation(fields: [orderId], references: [id])
+  rfqCreditPack   RfqCreditPack? @relation(fields: [rfqCreditPackId], references: [id])
+  refunds         Refund[]
+  invoice         Invoice?
+  manualPaymentProof ManualPaymentProof?
+
+  @@index([companyId])
+  @@index([orderId])
+  @@index([gatewayOrderId])
+  @@index([gatewayPaymentId])
+  @@index([status])
+}
+
+model Refund {
+  id              String       @id @default(uuid())
+  paymentId       String
+  gatewayRefundId String?
+  amount          Int
+  reason          String?
+  status          String       @default("PENDING")
+  orderReturnId   String?       @unique
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  payment         Payment      @relation(fields: [paymentId], references: [id])
+  orderReturn     OrderReturn? @relation(fields: [orderReturnId], references: [id])
+
+  @@index([paymentId])
+  @@index([orderReturnId])
+}
+
+model Payout {
+  id              String         @id @default(uuid())
+  companyId       String
+  gateway         PaymentGateway @default(RAZORPAY)
+  gatewayPayoutId String?
+  amount          Int
+  currency        String         @default("INR")
+  status          String         @default("PENDING")
+  type            String
+  orderIds        Json?
+  bankAccount     String?
+  ifscCode        String?
+  fundAccountId   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  company         Company        @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model Invoice {
+  id              String         @id @default(uuid())
+  invoiceNumber   String         @unique
+  companyId       String
+  paymentId       String         @unique
+  subtotal        Decimal        @db.Decimal(12, 2)
+  taxAmount       Decimal?       @db.Decimal(12, 2)
+  discountAmount  Decimal?       @db.Decimal(12, 2)
+  totalAmount     Decimal        @db.Decimal(12, 2)
+  currency        String         @default("INR")
+  billingName     String?
+  billingAddress  Json?
+  gstNumber       String?
+  status          String         @default("GENERATED")
+  issuedAt        DateTime       @default(now())
+  dueAt           DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  company         Company        @relation(fields: [companyId], references: [id])
+  payment         Payment        @relation(fields: [paymentId], references: [id])
+
+  @@index([companyId])
+  @@index([invoiceNumber])
+  @@index([companyId, status])
+}
+
+model ProcessedWebhookEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  gateway     String
+  payload     Json?
+  processedAt DateTime @default(now())
+
+  @@index([gateway])
+  @@index([processedAt])
+}
+
+model FileScan {
+  id              String        @id @default(uuid())
+  fileUrl         String
+  originalName    String?
+  mimeType        String?
+  fileSize        Int?
+  status          FileScanStatus @default(PENDING)
+  scanResult      Json?
+  scannedAt       DateTime?
+  companyId       String?
+  uploadedBy      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  company         Company?      @relation(fields: [companyId], references: [id])
+
+  @@index([status])
+  @@index([fileUrl])
+  @@index([companyId])
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP_FUTURE
+}
+
+enum NotificationType {
+  // RFQ
+  RFQ_CREATED
+  RFQ_MATCH
+  QUOTE_RECEIVED
+  QUOTE_ACCEPTED
+  QUOTE_REJECTED
+  QUOTE_WITHDRAWN
+  QUOTE_EXPIRED
+  RFQ_CLOSED
+  RFQ_REOPENED
+  RFQ_EXPIRED
+
+  // Order
+  ORDER_CONFIRMED
+  ORDER_PROCESSING
+  ORDER_DISPATCHED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  ORDER_COMPLETED
+  ORDER_RETURNED
+  ORDER_RETURN_APPROVED
+  ORDER_RETURN_REJECTED
+
+  // Payment
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  PAYMENT_REFUNDED
+  CREDIT_PACK_PURCHASED
+
+  // GoCash
+  GOCASH_EARNED
+  GOCASH_REDEEMED
+  GOCASH_EXPIRED
+  GOCASH_REWARD
+  TRADGO_MILESTONE
+
+  // Subscription
+  PLAN_EXPIRY_WARNING
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_EXPIRED
+  SUBSCRIPTION_GRACE
+  SUBSCRIPTION_UPGRADED
+  SUBSCRIPTION_DOWNGRADED
+
+  // Chat
+  NEW_MESSAGE
+  USER_MENTION
+
+  // Escrow
+  ESCROW_CREATED
+  ESCROW_FUNDED
+  ESCROW_RELEASED
+  ESCROW_REFUNDED
+  ESCROW_DISPUTED
+
+  // Settlement
+  SETTLEMENT_INITIATED
+  SETTLEMENT_COMPLETED
+  SETTLEMENT_FAILED
+
+  // Dispute
+  DISPUTE_OPENED
+  DISPUTE_UPDATED
+  DISPUTE_RESOLVED
+  DISPUTE_CLOSED
+
+  // KYC/Verification
+  KYC_APPROVED
+  KYC_REJECTED
+  KYC_PENDING
+  KYC_EXPIRED
+  DOCUMENT_VERIFIED
+  DOCUMENT_REJECTED
+  VERIFICATION_LEVEL_UPGRADED
+
+  // Trust
+  TRUST_SCORE_CHANGED
+  TRUST_BADGE_EARNED
+
+  // Company
+  COMPANY_VERIFIED
+  PROFILE_COMPLETION_REWARD
+
+  // Onboarding
+  ONBOARDING_STEP_COMPLETED
+  ONBOARDING_COMPLETED
+
+  // General
+  WELCOME
+  ACCOUNT_CREATED
+  PASSWORD_CHANGED
+  EMAIL_VERIFIED
+  ORGANIZATION_INVITE
+  ORGANIZATION_MEMBER_ADDED
+  ORGANIZATION_MEMBER_REMOVED
+
+  // Certifications
+  CERTIFICATION_APPROVED
+  CERTIFICATION_REJECTED
+  CERTIFICATION_EXPIRING
+  CERTIFICATION_EXPIRED
+
+  // System
+  SYSTEM_ANNOUNCEMENT
+  SYSTEM_MAINTENANCE
+
+  // Escrow
+  ESCROW_HELD
+  ESCROW_FROZEN
+  ESCROW_REOPENED
+
+  // Settlement
+  SETTLEMENT_PROCESSED
+  SETTLEMENT_PROCESSING
+  SETTLEMENT_RETRYING
+  SETTLEMENT_MANUAL_REVIEW
+  SETTLEMENT_REOPENED
+
+  // Dispute
+  DISPUTE_CREATED
+  DISPUTE_EVIDENCE_REQUIRED
+  DISPUTE_ESCALATED
+  DISPUTE_REFUNDED
+  DISPUTE_REJECTED
+  DISPUTE_APPEALED
+  DISPUTE_HOLD
+  DISPUTE_ARBITRATION_OVERDUE
+  ARBITRATION_SLA_BREACHED
+
+  // Generic fallback
+  GENERIC
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  CANCELLED
+}
+
+model Notification {
+  id              String             @id @default(uuid())
+  companyId       String
+  userId          String?
+  type            NotificationType
+  channel         NotificationChannel?
+  priority        NotificationPriority @default(MEDIUM)
+  status          NotificationStatus   @default(PENDING)
+  title           String
+  body            String
+  metadata        Json?
+  link            String?
+  imageUrl        String?
+  sourceModule    String?
+  sourceId        String?
+  readAt          DateTime?
+  deliveredAt     DateTime?
+  sentAt          DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  deletedAt       DateTime?
+
+  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user            User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  deliveries      NotificationDelivery[]
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([companyId, userId, createdAt])
+}
+
+model NotificationPreference {
+  id        String             @id @default(uuid())
+  companyId String
+  userId    String
+  channel   NotificationChannel
+  type      NotificationType?
+  enabled   Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  company   Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId, channel, type])
+  @@index([companyId, userId])
+  @@index([userId])
+}
+
+model NotificationTemplate {
+  id        String             @id @default(uuid())
+  type      NotificationType
+  channel   NotificationChannel
+  subject   String?
+  title     String
+  body      String
+  metadata  Json?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  deletedAt DateTime?
+
+  @@unique([type, channel])
+  @@index([type])
+  @@index([channel])
+}
+
+model NotificationDelivery {
+  id              String             @id @default(uuid())
+  notificationId  String
+  channel         NotificationChannel
+  status          NotificationStatus  @default(PENDING)
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+  attemptCount    Int                @default(0)
+  maxAttempts     Int                @default(3)
+  nextRetryAt     DateTime?
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  notification    Notification       @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([status])
+  @@index([nextRetryAt])
+}
+
+enum EscrowStatus {
+  PENDING
+  HELD
+  PARTIALLY_RELEASED
+  RELEASED
+  REFUND_PENDING
+  REFUNDED
+  DISPUTED
+  CANCELLED
+  FAILED
+  FROZEN
+  MANUAL_REVIEW
+}
+
+enum EscrowEventType {
+  ESCROW_HELD
+  ESCROW_RELEASED
+  ESCROW_REFUNDED
+  ESCROW_FROZEN
+  ESCROW_REOPENED
+  ESCROW_FAILED
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  RETRYING
+  CANCELLED
+  MANUAL_REVIEW
+  REOPENED
+}
+
+enum SettlementEventType {
+  SETTLEMENT_CREATED
+  SETTLEMENT_PROCESSED
+  SETTLEMENT_FAILED
+  SETTLEMENT_RETRYING
+  SETTLEMENT_REOPENED
+  SETTLEMENT_MANUAL_REVIEW
+}
+
+enum ManualPaymentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ManualPaymentMethod {
+  UPI_QR
+  NEFT
+  RTGS
+  BANK_TRANSFER
+}
+
+model Escrow {
+  id              String        @id @default(uuid())
+  orderId         String        @unique
+  buyerCompanyId  String
+  sellerCompanyId String
+  amount          Int
+  goCashAmount    Int           @default(0)
+  netAmount       Int
+  status          EscrowStatus  @default(PENDING)
+  heldAt          DateTime?
+  releasedAt      DateTime?
+  refundedAt      DateTime?
+  disputedAt      DateTime?
+  frozenAt        DateTime?
+  disputedAmount  Int?
+  autoReleaseAt   DateTime?
+  manualReviewAt  DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order           Order         @relation(fields: [orderId], references: [id])
+  buyerCompany    Company       @relation("EscrowBuyer", fields: [buyerCompanyId], references: [id])
+  sellerCompany   Company       @relation("EscrowSeller", fields: [sellerCompanyId], references: [id])
+  events          EscrowEvent[]
+  settlements     Settlement[]
+  disputes        Dispute[]
+
+  @@index([orderId])
+  @@index([buyerCompanyId])
+  @@index([sellerCompanyId])
+  @@index([status])
+}
+
+model EscrowEvent {
+  id          String          @id @default(uuid())
+  escrowId    String
+  type        EscrowEventType
+  metadata    Json?
+  createdById String
+  createdAt   DateTime        @default(now())
+
+  escrow      Escrow          @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+
+  @@index([escrowId])
+  @@index([createdAt])
+}
+
+model Settlement {
+  id              String            @id @default(uuid())
+  escrowId        String
+  amount          Int
+  status          SettlementStatus  @default(PENDING)
+  processedAt     DateTime?
+  failedAt        DateTime?
+  failedReason    String?
+  retryCount      Int               @default(0)
+  lastRetryAt     DateTime?
+  settledAt       DateTime?
+  createdById     String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  escrow          Escrow            @relation(fields: [escrowId], references: [id])
+  events          SettlementEvent[]
+
+  @@index([escrowId])
+  @@index([status])
+}
+
+model SettlementEvent {
+  id            String              @id @default(uuid())
+  settlementId  String
+  type          SettlementEventType
+  metadata      Json?
+  createdById   String
+  createdAt     DateTime            @default(now())
+
+  settlement    Settlement          @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@index([createdAt])
+}
+
+model ManualPaymentProof {
+  id                  String                            @id @default(uuid())
+  paymentId           String                            @unique
+  utrNumber           String?
+  transactionScreenshot String?
+  transactionDate     DateTime?
+  bankName            String?
+  paymentMethod       ManualPaymentMethod
+  amount              Int
+  verifiedById        String?
+  verifiedAt          DateTime?
+  verificationStatus  ManualPaymentVerificationStatus    @default(PENDING)
+  remarks             String?
+  createdAt           DateTime                          @default(now())
+  updatedAt           DateTime                          @updatedAt
+
+  companyId           String
+  payment             Payment                           @relation(fields: [paymentId], references: [id])
+  company             Company                           @relation(fields: [companyId], references: [id])
+  verifiedBy          User?                             @relation(fields: [verifiedById], references: [id])
+
+  @@index([paymentId])
+  @@index([companyId])
+  @@index([verificationStatus])
+}
+
+enum DisputeType {
+  PRODUCT
+  SERVICE
+  PAYMENT
+  LOGISTICS
+  OTHER
+}
+
+enum DisputeReason {
+  QUALITY_ISSUE
+  QUANTITY_ISSUE
+  WRONG_PRODUCT
+  LATE_DELIVERY
+  PAYMENT_ISSUE
+  SERVICE_ISSUE
+  LOGISTICS_ISSUE
+  DAMAGED_PRODUCT
+  MISSING_ITEMS
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  EVIDENCE_PENDING
+  NEGOTIATION
+  ESCALATED
+  ADMIN_ARBITRATION
+  PARTIALLY_RESOLVED
+  RESOLVED
+  REFUNDED
+  REJECTED
+  CANCELLED
+  EXPIRED
+  APPEALED
+}
+
+enum ResolutionType {
+  FULL_REFUND
+  PARTIAL_REFUND
+  REPLACEMENT
+  PRICE_ADJUSTMENT
+  SERVICE_REWORK
+  NO_ACTION
+}
+
+model Dispute {
+  id                String        @id @default(uuid())
+  disputeNumber     String        @unique
+  orderId           String
+  escrowId          String?
+  raisedByCompanyId String
+  assignedAdminId String? // admin handling arbitration
+  assignedAt DateTime? // when admin assigned
+  arbitrationDueAt DateTime? // SLA deadline
+  assignmentReason String? // e.g., round robin
+  againstCompanyId  String
+  type              DisputeType
+  reason            DisputeReason
+  status            DisputeStatus @default(OPEN)
+  description       String
+  amount            Int?
+  currency          String        @default("INR")
+  timeLimit         DateTime?
+  filedAt           DateTime      @default(now())
+  underReviewAt     DateTime?
+  escalatedAt       DateTime?
+  resolvedAt        DateTime?
+  rejectedAt        DateTime?
+  refundedAt        DateTime?
+  cancelledAt       DateTime?
+  expiredAt         DateTime?
+  appealedAt        DateTime?
+  createdBy         String
+  updatedBy         String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+
+  order           Order             @relation(fields: [orderId], references: [id])
+  escrow          Escrow?           @relation(fields: [escrowId], references: [id])
+  raisedByCompany Company           @relation("DisputeRaisedBy", fields: [raisedByCompanyId], references: [id])
+  againstCompany  Company           @relation("DisputeAgainst", fields: [againstCompanyId], references: [id])
+  messages        DisputeMessage[]
+  evidence        DisputeEvidence[]
+  timeline        DisputeTimelineEvent[]
+  resolution      DisputeResolution?
+  appeal          DisputeAppeal?
+  disputeProcessorExecutions DisputeProcessorExecution[]
+
+  @@index([orderId])
+  @@index([escrowId])
+  @@index([raisedByCompanyId])
+  @@index([againstCompanyId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([assignedAdminId])
+  @@index([assignedAt])
+  @@index([arbitrationDueAt])
+}
+
+model DisputeMessage {
+  id          String   @id @default(uuid())
+  disputeId   String
+  senderId    String
+  content     String
+  createdAt   DateTime @default(now())
+
+  dispute     Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  sender      User     @relation(fields: [senderId], references: [id])
+
+  @@index([disputeId])
+  @@index([createdAt])
+}
+
+model DisputeEvidence {
+  id          String   @id @default(uuid())
+  disputeId   String
+  fileName    String
+  fileUrl     String
+  mimeType    String?
+  fileSize    Int?
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+
+  dispute     Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([disputeId])
+}
+
+model DisputeTimelineEvent {
+  id          String   @id @default(uuid())
+  disputeId   String
+  type        String
+  description String?
+  metadata    Json?
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  dispute     Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([disputeId])
+  @@index([createdAt])
+}
+
+model DisputeResolution {
+  id              String         @id @default(uuid())
+  disputeId       String         @unique
+  resolutionType  ResolutionType
+  description     String?
+  refundAmount    Int?
+  replacementInfo String?
+  priceAdjustment Int?
+  approvedBy      String
+  approvedAt      DateTime       @default(now())
+  executedAt      DateTime?
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  dispute         Dispute        @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([disputeId])
+}
+
+model DisputeProcessorExecution {
+  id          String   @id @default(uuid())
+  jobId       String   @unique
+  disputeId   String
+  type        String
+  processedAt DateTime @default(now())
+  dispute     Dispute @relation(fields: [disputeId], references: [id])
+
+  @@index([disputeId])
+  @@index([processedAt])
+  @@unique([disputeId, type])
+}
+
+model DisputeAppeal {
+  id              String        @id @default(uuid())
+  disputeId       String        @unique
+  reason          String
+  supportingInfo  String?
+  filedBy         String
+  filedAt         DateTime      @default(now())
+  status          String        @default("PENDING")
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  decision        String?
+  decisionNotes   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  dispute         Dispute       @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([disputeId])
+}
+
+// ─────────────────────────────────────────────────────
+// CATALOG IMPORT — Phase 7A
+// ─────────────────────────────────────────────────────
+
+enum ImportJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+  ROLLING_BACK
+  ROLLED_BACK
+}
+
+enum ImportJobType {
+  CATEGORY
+  SUBCATEGORY
+  PRODUCT_MASTER
+  SERVICE_MASTER
+}
+
+enum ImportRowStatus {
+  PENDING
+  VALID
+  INVALID
+  IMPORTED
+  SKIPPED
+  DUPLICATE
+  ERROR
+  ROLLED_BACK
+}
+
+model ProductMaster {
+  id              String   @id @default(uuid())
+  categoryId      String?
+  subcategoryId   String?
+  name            String
+  slug            String   @unique
+  shortDescription String?
+  description     String?
+  unit            String?
+  moq             Int?
+  priceRangeMin   Decimal? @db.Decimal(12, 2)
+  priceRangeMax   Decimal? @db.Decimal(12, 2)
+  currency        String   @default("INR")
+  hsCode          String?
+  isActive        Boolean  @default(true)
+  searchKeywords  String[]
+  synonyms        String[]
+  tags            String[]
+  metaTitle       String?
+  metaDescription String?
+  sourceData      Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  category        Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  aliases         ProductAlias[]
+  claims          ProductClaim[]
+  products        Product[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([isActive])
+  @@index([searchKeywords])
+}
+
+model ProductClaim {
+  id              String      @id @default(uuid())
+  productMasterId String?
+  companyId       String
+  status          ClaimStatus @default(DRAFT)
+  name            String
+  shortDescription String?
+  description     String?
+  unit            String?
+  price           Decimal?    @db.Decimal(12, 2)
+  currency        String      @default("INR")
+  moq             Int?
+  notes           String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  productId       String?   @unique
+  createdBy       String
+  updatedBy       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  deletedAt       DateTime?
+
+  productMaster   ProductMaster? @relation(fields: [productMasterId], references: [id], onDelete: SetNull)
+  company         Company        @relation(fields: [companyId], references: [id])
+  product         Product?       @relation("ProductClaimProduct", fields: [productId], references: [id], onDelete: SetNull)
+  attachments     ProductAttachment[]
+
+  @@index([companyId])
+  @@index([productMasterId])
+  @@index([status])
+  @@index([companyId, status])
+}
+
+model ServiceMaster {
+  id              String   @id @default(uuid())
+  categoryId      String?
+  subcategoryId   String?
+  name            String
+  slug            String   @unique
+  description     String?
+  unit            String?
+  priceRangeMin   Decimal? @db.Decimal(12, 2)
+  priceRangeMax   Decimal? @db.Decimal(12, 2)
+  currency        String   @default("INR")
+  isActive        Boolean  @default(true)
+  searchKeywords  String[]
+  synonyms        String[]
+  tags            String[]
+  metaTitle       String?
+  metaDescription String?
+  sourceData      Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([isActive])
+}
+
+model ProductAlias {
+  id              String        @id @default(uuid())
+  productMasterId String
+  alias           String
+  locale          String        @default("en")
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  productMaster   ProductMaster @relation(fields: [productMasterId], references: [id], onDelete: Cascade)
+
+  @@unique([productMasterId, alias])
+  @@index([alias])
+}
+
+model ImportJob {
+  id              String         @id @default(uuid())
+  type            ImportJobType
+  status          ImportJobStatus @default(PENDING)
+  fileName        String?
+  totalRows       Int            @default(0)
+  validRows       Int            @default(0)
+  invalidRows     Int            @default(0)
+  importedRows    Int            @default(0)
+  skippedRows     Int            @default(0)
+  duplicateRows   Int            @default(0)
+  errorRows       Int            @default(0)
+  summary         Json?
+  errorLog        String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  rolledBackAt    DateTime?
+  createdBy       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  rows            ImportJobRow[]
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ImportJobRow {
+  id              String         @id @default(uuid())
+  importJobId     String
+  rowNumber       Int
+  status          ImportRowStatus @default(PENDING)
+  entityType      String?
+  entityId        String?
+  rawData         Json?
+  validatedData   Json?
+  errors          String[]
+  warnings        String[]
+  checksum        String?
+  duplicateOf     String?
+  importedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  importJob       ImportJob      @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  @@index([importJobId])
+  @@index([status])
+  @@index([checksum])
+}
+
+enum DraftStatus {
+  INCOMPLETE
+  COMPLETE
+  SUBMITTED
+  ARCHIVED
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  SELECT
+  MULTI_SELECT
+  BOOLEAN
+  DATE
+  URL
+  EMAIL
+  IMAGE
+  VIDEO
+  PDF
+  RICH_TEXT
+}
+
+enum TemplateStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum TemplateFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  PRICE
+  SELECT
+  MULTI_SELECT
+  CHECKBOX
+  RADIO
+  DATE
+  URL
+  PHONE
+  FILE
+  IMAGE
+  VIDEO
+  PDF
+  LOCATION
+  RICH_TEXT
+  TAGS
+  JSON
+}
+
+model ProductDraft {
+  id                String           @id @default(uuid())
+  companyId         String
+  categoryId        String?
+  subcategoryId     String?
+  name              String?
+  slug              String?          @unique
+  shortDescription  String?
+  description       String?
+  productType       ProductType?
+  brand             String?
+  model             String?
+  sku               String?
+  gtin              String?
+  hsCode            String?
+  moq               Int?
+  unit              String?
+  visibilityRadius  GeographicReach?
+  latitude          Float?
+  longitude         Float?
+  isSampleOrder     Boolean          @default(false)
+  samplePrice       Decimal?         @db.Decimal(12, 2)
+  exportSupported   Boolean          @default(false)
+  exportCountries   String[]
+  step              Int              @default(1)
+  totalSteps        Int              @default(7)
+  status            DraftStatus      @default(INCOMPLETE)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  lastAutoSavedAt   DateTime?
+  submittedAt       DateTime?
+  createdBy         String
+  updatedBy         String
+
+  company          Company                       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category         Category?                     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  draftSpecs       ProductDraftSpec[]
+  draftVariants    ProductDraftVariant[]
+  draftMedia       ProductDraftMedia[]
+  draftAttachments ProductDraftAttachment[]
+  certifications   ProductDraftCertification[]
+  multiLangDesc    ProductDraftMultiLangDesc[]
+  priceSlabs       ProductDraftPriceSlab[]
+  completeness     ProductCompletenessScore?
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([slug])
+}
+
+model ProductDraftSpec {
+  id        String @id @default(uuid())
+  draftId   String
+  key       String
+  value     String
+  sortOrder Int    @default(0)
+
+  draft ProductDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+  @@index([key])
+}
+
+model ProductDraftVariant {
+  id             String       @id @default(uuid())
+  draftId        String
+  variantType    VariantType
+  customName     String?
+  value          String
+  sku            String?
+  price          Decimal?     @db.Decimal(12, 2)
+  compareAtPrice Decimal?     @db.Decimal(12, 2)
+  currency       String       @default("INR")
+  quantity       Int          @default(0)
+  isActive       Boolean      @default(true)
+  sortOrder      Int          @default(0)
+
+  draft ProductDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+}
+
+model ProductDraftMedia {
+  id        String    @id @default(uuid())
+  draftId   String
+  type      MediaType
+  url       String
+  title     String?
+  altText   String?
+  fileSize  Int?
+  mimeType  String?
+  isPrimary Boolean   @default(false)
+  sortOrder Int       @default(0)
+
+  draft ProductDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+}
+
+model ProductDraftAttachment {
+  id        String @id @default(uuid())
+  draftId   String
+  type      String
+  url       String
+  title     String?
+  fileSize  Int?
+  mimeType  String?
+  sortOrder Int    @default(0)
+
+  draft ProductDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+}
+
+model ProductDraftCertification {
+  id        String   @id @default(uuid())
+  draftId   String
+  type      String
+  number    String?
+  issuedBy  String?
+  issuedAt  DateTime?
+  expiresAt DateTime?
+  fileUrl   String?
+  verified  Boolean  @default(false)
+
+  draft ProductDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+}
+
+model ProductDraftMultiLangDesc {
+  id               String @id @default(uuid())
+  draftId          String
+  locale           String
+  name             String?
+  shortDescription String?
+  description      String?
+  isPrimary        Boolean @default(false)
+
+  draft ProductDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, locale])
+  @@index([draftId])
+}
+
+model ProductDraftPriceSlab {
+  id       String  @id @default(uuid())
+  draftId  String
+  minQty   Int
+  maxQty   Int?
+  price    Decimal @db.Decimal(12, 2)
+  currency String  @default("INR")
+
+  draft ProductDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+}
+
+model ProductCompletenessScore {
+  id               String   @id @default(uuid())
+  draftId          String   @unique
+  total            Int      @default(0)
+  basicInfo        Int      @default(0)
+  specifications   Int      @default(0)
+  media            Int      @default(0)
+  pricing          Int      @default(0)
+  variants         Int      @default(0)
+  certifications   Int      @default(0)
+  localization     Int      @default(0)
+  logistics        Int      @default(0)
+  lastCalculatedAt DateTime @default(now())
+
+  draft ProductDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+}
+
+model AttributeTemplate {
+  id          String   @id @default(uuid())
+  categoryId  String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category Category                    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  fields   AttributeTemplateField[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@index([isActive])
+}
+
+model AttributeTemplateField {
+  id             String    @id @default(uuid())
+  templateId     String
+  key            String
+  label          String
+  type           FieldType
+  placeholder    String?
+  helpText       String?
+  defaultValue   String?
+  options        String[]
+  unit           String?
+  minValue       Float?
+  maxValue       Float?
+  minLength      Int?
+  maxLength      Int?
+  required       Boolean   @default(false)
+  conditionKey   String?
+  conditionValue String?
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  section        String?
+
+  template AttributeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([key, templateId])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProductReview {
+  id            String       @id @default(uuid())
+  productId     String
+  companyId     String?
+  userId        String?
+  rating        Int          // 1-5
+  title         String?
+  review        String?
+  isVerifiedPurchase Boolean  @default(false)
+  status        ReviewStatus @default(PENDING)
+  helpfulCount  Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  product       Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  company       Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([status])
+  @@index([rating])
+}
+
+model SavedProduct {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+model ProductQa {
+  id        String   @id @default(uuid())
+  productId String
+  companyId String?  // seller company that answers
+  askedBy   String   // user ID
+  question  String
+  answer    String?
+  answeredAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+}
+
+// ──────────────────────────────────────────────
+// Phase 7D — Beta Company Onboarding Program
+// ──────────────────────────────────────────────
+
+enum BetaInviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum FeedbackType {
+  BUG
+  FEATURE
+  NPS
+  GENERAL
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum BetaOnboardingStep {
+  INVITE_ACCEPTED
+  PROFILE_SETUP
+  COMPANY_VERIFICATION
+  PRODUCT_SETUP
+  RFQ_CONFIGURATION
+  TEAM_INVITES
+  INTEGRATION_SETUP
+  GO_LIVE
+  ONBOARDING_COMPLETE
+}
+
+model BetaProgram {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  maxCompanies  Int      @default(50)
+  startDate     DateTime
+  endDate       DateTime?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model BetaInvite {
+  id          String           @id @default(uuid())
+  email       String
+  companyName String?
+  token       String           @unique
+  status      BetaInviteStatus @default(PENDING)
+  invitedById String?
+  companyId   String?
+  programId   String?
+  message     String?
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([companyId])
+}
+
+model Feedback {
+  id             String         @id @default(uuid())
+  type           FeedbackType   @default(GENERAL)
+  title          String?
+  description    String?
+  category       String?
+  priority       String?
+  score          Int?
+  comment        String?
+  businessImpact String?
+  browserInfo    Json?
+  status         FeedbackStatus @default(NEW)
+  companyId      String?
+  userId         String?
+  page           String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([type])
+  @@index([status])
+  @@index([companyId])
+  @@index([createdAt])
+}
+
+model UsageEvent {
+  id         String   @id @default(uuid())
+  companyId  String
+  userId     String?
+  eventName  String
+  category   String?
+  properties Json?
+  ip         String?
+  userAgent  String?
+  sessionId  String?
+  timestamp  DateTime @default(now())
+
+  @@index([companyId])
+  @@index([eventName])
+  @@index([category])
+  @@index([timestamp])
+  @@index([companyId, timestamp])
+}
+
+model ErrorEvent {
+  id          String   @id @default(uuid())
+  companyId   String?
+  userId      String?
+  errorType   String
+  errorMessage String
+  stackTrace  String?
+  page        String?
+  action      String?
+  metadata    Json?
+  ip          String?
+  userAgent   String?
+  resolved    Boolean  @default(false)
+  timestamp   DateTime @default(now())
+
+  @@index([companyId])
+  @@index([errorType])
+  @@index([timestamp])
+  @@index([resolved])
+}
+
+model SupportTicket {
+  id          String         @id @default(uuid())
+  companyId   String
+  userId      String
+  subject     String
+  description String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  category    String?
+  assignedTo  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedTo])
+}
+
+model SupportTicketMessage {
+  id          String   @id @default(uuid())
+  ticketId    String
+  userId      String
+  message     String
+  attachments Json?
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model BetaMetrics {
+  id          String   @id @default(uuid())
+  companyId   String
+  programId   String?
+  metricName  String
+  metricValue Float
+  metadata    Json?
+  recordedAt  DateTime @default(now())
+
+  @@index([companyId])
+  @@index([metricName])
+  @@index([recordedAt])
+  @@index([companyId, metricName])
+}
+
+model BetaCompanyProfile {
+  id                    String             @id @default(uuid())
+  companyId             String             @unique
+  onboardingStep        BetaOnboardingStep @default(INVITE_ACCEPTED)
+  onboardingCompletedAt DateTime?
+  goLiveAt              DateTime?
+  welcomeEmailSent      Boolean            @default(false)
+  setupProgress         Int                @default(0)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([companyId])
+  @@index([onboardingStep])
+}
+
+// ──────────────────────────────────────────────
+// Phase 7E — Public Launch Preparation
+// ──────────────────────────────────────────────
+
+enum ChecklistStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  VERIFIED
+}
+
+enum IncidentSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IncidentStatus {
+  DETECTED
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+model LaunchChecklistItem {
+  id          String   @id @default(uuid())
+  category    String
+  label       String
+  description String?
+  isRequired  Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  statuses    LaunchChecklistStatus[]
+
+  @@index([category])
+  @@index([sortOrder])
+}
+
+model LaunchChecklistStatus {
+  id          String         @id @default(uuid())
+  itemId      String
+  companyId   String?
+  status      ChecklistStatus @default(NOT_STARTED)
+  completedBy String?
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  item        LaunchChecklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, companyId])
+  @@index([itemId])
+  @@index([status])
+}
+
+model Incident {
+  id               String           @id @default(uuid())
+  title            String
+  description      String
+  status           IncidentStatus   @default(DETECTED)
+  severity         IncidentSeverity @default(MEDIUM)
+  impactedServices String[]
+  reportedBy       String?
+  resolvedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  updates          IncidentUpdate[]
+
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model IncidentUpdate {
+  id          String         @id @default(uuid())
+  incidentId  String
+  message     String
+  status      IncidentStatus
+  createdAt   DateTime       @default(now())
+
+  incident    Incident       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model ProductBestsellerSnapshot {
+  id        String   @id @default(uuid())
+  productId String
+  companyId String
+  weekStart DateTime
+  weekEnd   DateTime
+  rank      Int
+  score     Float
+  salesCount Int     @default(0)
+  revenue   Float    @default(0)
+  views     Int      @default(0)
+  rfqs      Int      @default(0)
+  quotes    Int      @default(0)
+  conversionRate Float @default(0)
+  trustScore      Int      @default(0)
+  growthRate      Float    @default(0)
+  city      String?
+  state     String?
+  country   String   @default("IN")
+  createdAt DateTime @default(now())
+
+  @@unique([productId, weekStart])
+  @@index([weekStart])
+  @@index([rank])
+  @@index([productId])
+  @@index([companyId])
+  @@index([score])
+}
+
+model CategoryBestsellerSnapshot {
+  id         String   @id @default(uuid())
+  categoryId String
+  weekStart  DateTime
+  weekEnd    DateTime
+  rank       Int
+  score      Float
+  productCount Int    @default(0)
+  totalSales Int      @default(0)
+  totalRevenue Float  @default(0)
+  growthRate Float    @default(0)
+  city       String?
+  state      String?
+  country    String   @default("IN")
+  createdAt  DateTime @default(now())
+
+  @@unique([categoryId, weekStart])
+  @@index([weekStart])
+  @@index([rank])
+  @@index([categoryId])
+  @@index([score])
+}
+
+model SellerBestsellerSnapshot {
+  id        String   @id @default(uuid())
+  companyId String
+  weekStart DateTime
+  weekEnd   DateTime
+  rank      Int
+  score     Float
+  totalSales Int     @default(0)
+  totalRevenue Float @default(0)
+  totalProducts Int  @default(0)
+  avgTrustScore Int  @default(0)
+  responseRate Float @default(0)
+  growthRate Float   @default(0)
+  city      String?
+  state     String?
+  country   String   @default("IN")
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, weekStart])
+  @@index([weekStart])
+  @@index([rank])
+  @@index([companyId])
+  @@index([score])
+}
+
+model CategoryTemplate {
+  id         String           @id @default(uuid())
+  categoryId String
+  name       String
+  version    Int              @default(1)
+  status     TemplateStatus   @default(DRAFT)
+  createdBy  String
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  category Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  sections TemplateSection[]
+
+  @@unique([categoryId, version])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model TemplateSection {
+  id          String   @id @default(uuid())
+  templateId  String
+  key         String
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  icon        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  template CategoryTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  fields   TemplateField[]
+
+  @@unique([templateId, key])
+  @@index([templateId])
+}
+
+model TemplateField {
+  id           String            @id @default(uuid())
+  sectionId    String
+  key          String
+  label        String
+  type         TemplateFieldType
+  placeholder  String?
+  helpText     String?
+  defaultValue Json?
+  options      Json?
+  unit         String?
+  validation   Json?
+  visibility   Json?
+  metadata     Json?
+  sortOrder    Int               @default(0)
+  isRequired   Boolean           @default(false)
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  section           TemplateSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  productAttributes ProductAttribute[]
+
+  @@unique([sectionId, key])
+  @@index([sectionId])
+  @@index([key])
+}
+
+model ProductAttribute {
+  id        String   @id @default(uuid())
+  productId String
+  fieldId   String
+  fieldKey  String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  field   TemplateField @relation(fields: [fieldId], references: [id])
+
+  @@unique([productId, fieldId])
+  @@unique([productId, fieldKey])
+  @@index([productId])
+  @@index([fieldId])
+}
+
+model ProductLocationIndex {
+  id              String         @id @default(uuid())
+  productId       String         @unique
+  companyId       String
+  categoryId      String?
+  latitude        Float
+  longitude       Float
+  visibilityRadius GeographicReach
+  trustScore      Int            @default(0)
+  price           Decimal?       @db.Decimal(12, 2)
+  isVerified      Boolean        @default(false)
+  isTradgo        Boolean        @default(false)
+  moq             Int            @default(1)
+  deliveryEta     String?
+  status          ProductStatus
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([latitude, longitude])
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([visibilityRadius])
+  @@index([status])
+  @@index([trustScore])
+  @@index([isVerified])
+  @@index([isTradgo])
+  @@index([price])
 }

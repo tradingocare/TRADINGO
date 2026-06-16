@@ -1,0 +1,141 @@
+sentry:
+  dsn: ${SENTRY_DSN:https://public_key@o123456.ingest.sentry.io/1234567}
+
+  environment: ${NODE_ENV:production}
+  release: ${GIT_SHA:unknown}
+
+  traces_sample_rate: 0.2
+  profiles_sample_rate: 0.1
+
+  error_sample_rate:
+    production: 1.0
+    staging: 0.5
+    development: 0.1
+
+  debug: false
+  attach_stacktrace: true
+  send_default_pii: false
+  normalize_depth: 8
+  max_breadcrumbs: 50
+  cahe_dir: /tmp/sentry-cache
+  request_bodies: medium
+  auto_session_tracking: true
+  send_client_reports: true
+  sample_rate_by_endpoint:
+    /api/health: 0.01
+    /api/metrics: 0.01
+    /api/trades: 1.0
+    /api/orders: 1.0
+    /api/rfq: 1.0
+    /api/auth: 1.0
+    /api/users: 1.0
+
+  performance_monitoring:
+    enabled: true
+    auto_instrument:
+      express: true
+      mysql: true
+      redis: true
+      http: true
+      graphql: true
+
+  integrations:
+    - express:
+        transaction_name: methodAndPath
+    - postgres:
+        include_raw_sql: true
+    - redis:
+        cache_prefix: tradingo
+    - http:
+        breadcrumbs: true
+        tracing: true
+    - graphql:
+        include_raw_queries: false
+
+  release_tracking:
+    enabled: true
+    source: git_sha
+    injection:
+      method: environment
+      variable: GIT_SHA
+
+  cleanup:
+    enabled: true
+    exclude_urls:
+      - /api/health
+      - /api/ready
+      - /favicon.ico
+      - /robots.txt
+    exclude_exceptions:
+      - HttpError
+      - NotFoundError
+      - ValidationError
+      - UnauthorizedError
+
+  alert_rules:
+    error_spike:
+      name: "Error Spike Detected"
+      description: "Triggers when error count spikes significantly above baseline"
+      threshold: 50
+      time_window_minutes: 5
+      sensitivity: medium
+      actions:
+        - type: slack
+          channel: "#alerts-tradingo"
+          message: "Sentry: Error spike detected - {{ incidents }} incidents in {{ time_window }}"
+        - type: pagerduty
+          severity: critical
+          routing_key: ${SENTRY_PAGERDUTY_KEY}
+
+    new_error:
+      name: "New Error Discovered"
+      description: "Triggers when a previously unseen error type appears"
+      actions:
+        - type: slack
+          channel: "#alerts-tradingo"
+          message: "Sentry: New error type discovered - {{ error_type }}: {{ error_message }}"
+
+    high_latency:
+      name: "High Transaction Latency"
+      description: "Triggers when transaction duration exceeds threshold"
+      threshold_ms: 5000
+      sample_rate: 0.25
+      actions:
+        - type: slack
+          channel: "#alerts-tradingo"
+          message: "Sentry: High latency on {{ transaction }} - {{ duration }}ms"
+
+    user_report:
+      name: "User Reported Error"
+      description: "Triggers when a user submits a feedback report"
+      actions:
+        - type: slack
+          channel: "#alerts-tradingo"
+          message: "User Feedback: {{ comments }} ({{ url }})"
+
+  issue_management:
+    auto_assign: true
+    assign_team_by_category:
+      authentication: team-auth
+      trading: team-trading
+      compliance: team-compliance
+      infrastructure: team-platform
+
+    auto_resolve:
+      enabled: true
+      ignore_count: 100
+      ignore_window_minutes: 60
+
+  source_maps:
+    enabled: true
+    upload_on_deploy: true
+    paths:
+      - .next/static/chunks
+      - build/static/js
+
+  monitoring:
+    enabled: true
+    quota_warning_threshold_percent: 80
+    health_check:
+      enabled: true
+      interval_seconds: 300

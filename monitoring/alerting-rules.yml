@@ -1,0 +1,212 @@
+groups:
+  - name: tradingo-api-alerts
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(api_http_requests_total{status=~"5.."}[5m]))
+          /
+          sum(rate(api_http_requests_total[5m]))
+          * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+          service: api
+        annotations:
+          summary: 'API error rate exceeded 5%'
+          description: >
+            API error rate is {{ $value | humanizePercentage }} over the last 5 minutes.
+            This exceeds the threshold of 5%. Immediate investigation required.
+          runbook_url: 'https://wiki.tradingo.io/runbooks/high-error-rate'
+          grafana_url: 'https://grafana.tradingo.io/d/tradingo-overview'
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(api_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 3
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: api
+        annotations:
+          summary: 'API p99 latency exceeded 3 seconds'
+          description: >
+            API p99 latency is {{ $value | humanizeDuration }} over the last 5 minutes.
+            Threshold is 3 seconds. Consider scaling horizontally or investigating bottlenecks.
+          runbook_url: 'https://wiki.tradingo.io/runbooks/high-latency'
+
+      - alert: ServiceDown
+        expr: up{job=~"tradingo-api|tradingo-web"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          service: '{{ $labels.job }}'
+        annotations:
+          summary: 'Service {{ $labels.job }} is down'
+          description: >
+            {{ $labels.job }} has been unreachable for more than 1 minute.
+            Instance: {{ $labels.instance }}
+          runbook_url: 'https://wiki.tradingo.io/runbooks/service-down'
+
+      - alert: DatabaseConnectionsExhausted
+        expr: |
+          pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: postgres
+        annotations:
+          summary: 'Database connection pool nearly exhausted'
+          description: >
+            PostgreSQL connection usage is at {{ $value | humanizePercentage }}.
+            Threshold is 80%. Consider increasing max_connections or optimizing connection pooling.
+          runbook_url: 'https://wiki.tradingo.io/runbooks/db-connections'
+
+      - alert: RedisMemoryHigh
+        expr: |
+          (redis_memory_used_bytes / redis_memory_max_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: redis
+        annotations:
+          summary: 'Redis memory usage exceeds 80%'
+          description: >
+            Redis memory usage is at {{ $value | humanizePercentage }}.
+            Threshold is 80%. Consider increasing maxmemory or adding Redis nodes.
+          runbook_url: 'https://wiki.tradingo.io/runbooks/redis-memory'
+
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          service: infrastructure
+        annotations:
+          summary: 'Disk space below 10%'
+          description: >
+            Disk space is {{ $value | humanizePercentage }} free on {{ $labels.mountpoint }}.
+            Threshold is 10%. Immediate cleanup or volume expansion required.
+          runbook_url: 'https://wiki.tradingo.io/runbooks/disk-space'
+
+      - alert: CertificateExpiringSoon
+        expr: |
+          (avg(prometheus_ssl_certificate_expiry_seconds{job=~"tradingo-api|tradingo-web"}) by (job)) < 2592000
+        for: 1h
+        labels:
+          severity: warning
+          team: platform
+          service: certificates
+        annotations:
+          summary: 'TLS certificate expiring soon'
+          description: >
+            Certificate for {{ $labels.job }} expires in {{ $value | humanizeDuration }}.
+            Threshold is 30 days. Trigger renewal process.
+          runbook_url: 'https://wiki.tradingo.io/runbooks/certificate-renewal'
+
+      - alert: RateLimitBreach
+        expr: |
+          sum(rate(api_rate_limit_exceeded_total[5m])) > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: api
+        annotations:
+          summary: 'Rate limit breached more than 100 times in 5 minutes'
+          description: >
+            Rate limit exceeded {{ $value | humanizeNumber }} times in the last 5 minutes.
+            Threshold is 100. Possible DDoS attack or misconfigured clients.
+          runbook_url: 'https://wiki.tradingo.io/runbooks/rate-limit'
+
+      - alert: HighCPUUsage
+        expr: |
+          sum(rate(container_cpu_usage_seconds_total[5m])) by (container_label_com_amazonaws_ecs_container_name)
+          / 1024 > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: containers
+        annotations:
+          summary: 'Container CPU usage above 80%'
+          description: >
+            Container {{ $labels.container_label_com_amazonaws_ecs_container_name }}
+            CPU usage is at {{ $value | humanizePercentage }}. Consider increasing CPU allocation.
+
+      - alert: HighMemoryUsage
+        expr: |
+          sum(container_memory_working_set_bytes) by (container_label_com_amazonaws_ecs_container_name)
+          / sum(container_spec_memory_limit_bytes) by (container_label_com_amazonaws_ecs_container_name)
+          * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: containers
+        annotations:
+          summary: 'Container memory usage above 90%'
+          description: >
+            Container {{ $labels.container_label_com_amazonaws_ecs_container_name }}
+            memory usage is at {{ $value | humanizePercentage }}. Consider increasing memory allocation.
+
+      - alert: PostgresReplicaLag
+        expr: pg_replication_lag > 300
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+          service: postgres
+        annotations:
+          summary: 'PostgreSQL replication lag exceeds 5 minutes'
+          description: >
+            Replication lag is {{ $value | humanizeDuration }}.
+            Threshold is 5 minutes. Verify replica health and network connectivity.
+
+      - alert: OpenSearchClusterStatus
+        expr: es_cluster_status > 1
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+          service: opensearch
+        annotations:
+          summary: 'OpenSearch cluster status is not green'
+          description: >
+            OpenSearch cluster status is {{ $value }}. Status 0=green, 1=yellow, 2=red.
+            Investigate cluster health.
+
+      - alert: HighConnectionRate
+        expr: |
+          rate(redis_connected_clients[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: redis
+        annotations:
+          summary: 'High Redis connection rate'
+          description: >
+            Redis connection rate is {{ $value | humanizeNumber }}/s.
+            Consider connection pooling or increasing max clients.
+
+    ###############################################################################
+    # Dead Man's Switch — fires when Prometheus itself stops evaluating rules
+    ###############################################################################
+    - alert: Watchdog
+      expr: vector(1)
+      labels:
+        severity: none
+      annotations:
+        summary: 'Prometheus Watchdog — heartbeat signal'
+        description: >
+          This alert always fires. It is used as a heartbeat to ensure the alerting pipeline is working.
+          If this alert stops firing, Prometheus rule evaluation is broken.

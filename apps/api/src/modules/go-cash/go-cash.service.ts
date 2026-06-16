@@ -1,7 +1,8 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { GoCashRedemptionType } from '@prisma/client';
+import { GoCashRedemptionType, NotificationType } from '@prisma/client';
 
 const GC_TO_INR_RATE = 10;
 const MAX_REDEMPTION_PERCENT = 50;
@@ -10,7 +11,10 @@ const MAX_REDEMPTION_PERCENT = 50;
 export class GoCashService {
   private readonly logger = new Logger(GoCashService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async getBalance(companyId: string) {
     const company = await this.prisma.company.findFirst({
@@ -37,7 +41,7 @@ export class GoCashService {
   }
 
   async addTransaction(companyId: string, userId: string | undefined, dto: CreateTransactionDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const transaction = await this.prisma.$transaction(async (tx) => {
       const company = await tx.company.findFirst({
         where: { id: companyId, deletedAt: null },
         select: { id: true, goCashBalance: true },
@@ -74,8 +78,55 @@ export class GoCashService {
       });
 
       this.logger.log(`GoCash transaction: ${dto.type} ${dto.amount} for company ${companyId}`);
+
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'GOCASH_TRANSACTION',
+          resource: `company:${companyId}`,
+          metadata: { transactionId: transaction.id, type: dto.type, amount: dto.amount, reason: dto.reason, sourceModule: dto.sourceModule, balanceAfter },
+        },
+      });
+
       return transaction;
     });
+
+    const isEarning = dto.type !== 'REDEEMED' && dto.type !== 'ADMIN_DEBIT' && dto.type !== 'EXPIRED';
+    if (isEarning) {
+      try {
+        await this.notificationService.createWithTemplate(
+          companyId, userId, NotificationType.GOCASH_EARNED,
+          { amount: dto.amount, balance: transaction.balanceAfter },
+          { sourceModule: 'GO_CASH' },
+        );
+      } catch (err) {
+        this.logger.warn(`Failed to send GOCASH_EARNED notification: ${(err as Error).message}`);
+      }
+
+      if (dto.type === 'BONUS') {
+        try {
+          await this.notificationService.createWithTemplate(
+            companyId, userId, NotificationType.GOCASH_REWARD,
+            { amount: dto.amount },
+            { sourceModule: 'GO_CASH' },
+          );
+        } catch (err) {
+          this.logger.warn(`Failed to send GOCASH_REWARD notification: ${(err as Error).message}`);
+        }
+      }
+    } else if (dto.type === 'EXPIRED') {
+      try {
+        await this.notificationService.createWithTemplate(
+          companyId, userId, NotificationType.GOCASH_EXPIRED,
+          { amount: dto.amount },
+          { sourceModule: 'GO_CASH' },
+        );
+      } catch (err) {
+        this.logger.warn(`Failed to send GOCASH_EXPIRED notification: ${(err as Error).message}`);
+      }
+    }
+
+    return transaction;
   }
 
   async redeem(companyId: string, userId: string, amount: number, redemptionType: GoCashRedemptionType, referenceId?: string) {
@@ -88,7 +139,7 @@ export class GoCashService {
       throw new BadRequestException('Insufficient GOCASH balance');
     }
 
-    return this.addTransaction(companyId, userId, {
+    const transaction = await this.addTransaction(companyId, userId, {
       type: 'REDEEMED',
       amount,
       redemptionType,
@@ -96,6 +147,18 @@ export class GoCashService {
       reason: `Redeemed ${amount} GC for ${redemptionType}`,
       sourceModule: 'GO_CASH_REDEMPTION',
     });
+
+    try {
+      await this.notificationService.createWithTemplate(
+        companyId, userId, NotificationType.GOCASH_REDEEMED,
+        { amount, redemptionType },
+        { sourceModule: 'GO_CASH_REDEMPTION' },
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to send GOCASH_REDEEMED notification: ${(err as Error).message}`);
+    }
+
+    return transaction;
   }
 
   async adminCredit(companyId: string, amount: number, reason: string, adminUserId: string) {

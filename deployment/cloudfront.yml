@@ -1,0 +1,361 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFront distribution for TRADINGO platform'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues:
+      - production
+      - staging
+  DomainName:
+    Type: String
+    Default: tradingo.io
+  AcmCertificateArn:
+    Type: String
+    Description: ARN of ACM certificate in us-east-1
+  WafAclArn:
+    Type: String
+    Description: ARN of WAF web ACL
+  AlbOriginDns:
+    Type: String
+    Description: DNS name of the ALB
+
+Resources:
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: OAI for TRADINGO S3 origins
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+        IPV6Enabled: true
+        Comment: !Sub 'TRADINGO ${Environment} CloudFront Distribution'
+        DefaultRootObject: ''
+        Aliases:
+          - !Ref DomainName
+          - !Sub '*.${DomainName}'
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AcmCertificateArn
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+        Logging:
+          Bucket: !Sub 'tradingo-logs-${Environment}.s3.amazonaws.com'
+          Prefix: 'cloudfront/'
+          IncludeCookies: false
+        WebACLId: !Ref WafAclArn
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 60
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 60
+          - ErrorCode: 500
+            ResponseCode: 503
+            ResponsePagePath: /503.html
+            ErrorCachingMinTTL: 10
+          - ErrorCode: 502
+            ResponseCode: 503
+            ResponsePagePath: /503.html
+            ErrorCachingMinTTL: 10
+          - ErrorCode: 503
+            ResponseCode: 503
+            ResponsePagePath: /503.html
+            ErrorCachingMinTTL: 10
+          - ErrorCode: 504
+            ResponseCode: 503
+            ResponsePagePath: /503.html
+            ErrorCachingMinTTL: 10
+        Origins:
+          - Id: ALBOrigin
+            DomainName: !Ref AlbOriginDns
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+              OriginReadTimeout: 60
+              OriginKeepaliveTimeout: 5
+              OriginSslProtocols:
+                - TLSv1.2
+            OriginShield:
+              Enabled: true
+              OriginShieldRegion: ap-south-1
+            ConnectionAttempts: 3
+            ConnectionTimeout: 10
+          - Id: S3StaticAssets
+            DomainName: !Sub 'tradingo-assets-${Environment}.s3.ap-south-1.amazonaws.com'
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+          - Id: S3Logos
+            DomainName: !Sub 'tradingo-logos-${Environment}.s3.ap-south-1.amazonaws.com'
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        DefaultCacheBehavior:
+          TargetOriginId: ALBOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - DELETE
+            - GET
+            - HEAD
+            - OPTIONS
+            - PATCH
+            - POST
+            - PUT
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          Compress: true
+          SmoothStreaming: false
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: whitelist
+              WhitelistedNames:
+                - session
+                - _csrf
+                - token
+            Headers:
+              - Authorization
+              - Origin
+              - Referer
+              - Host
+              - Accept
+              - Accept-Language
+              - Content-Type
+              - X-CSRF-Token
+              - X-Requested-With
+              - CloudFront-Forwarded-Proto
+            QueryStringCacheKeys:
+              - page
+              - limit
+              - sort
+              - filter
+              - search
+          LambdaFunctionAssociations:
+            - EventType: viewer-request
+              LambdaFunctionARN: !Sub 'arn:aws:lambda:us-east-1:${AWS::AccountId}:function:tradingo-geo-restriction:${Environment}'
+              IncludeBody: false
+        CacheBehaviors:
+          - PathPattern: '/api/*'
+            TargetOriginId: ALBOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - DELETE
+              - GET
+              - HEAD
+              - OPTIONS
+              - PATCH
+              - POST
+              - PUT
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            DefaultTTL: 0
+            MaxTTL: 0
+            MinTTL: 0
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: whitelist
+                WhitelistedNames:
+                  - session
+                  - _csrf
+                  - token
+              Headers:
+                - Authorization
+                - Origin
+                - Referer
+                - Host
+                - Accept
+                - Accept-Language
+                - Content-Type
+                - X-CSRF-Token
+                - X-Requested-With
+                - CloudFront-Forwarded-Proto
+              QueryStringCacheKeys:
+                - page
+                - limit
+                - sort
+                - filter
+                - search
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN: !Sub 'arn:aws:lambda:us-east-1:${AWS::AccountId}:function:tradingo-geo-restriction:${Environment}'
+                IncludeBody: false
+          - PathPattern: '/_next/static/*'
+            TargetOriginId: S3StaticAssets
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            SmoothStreaming: false
+            DefaultTTL: 31536000
+            MaxTTL: 31536000
+            MinTTL: 86400
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+              Headers: []
+            TrustedKeyGroups: []
+          - PathPattern: '/logo/*'
+            TargetOriginId: S3Logos
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            SmoothStreaming: false
+            DefaultTTL: 86400
+            MaxTTL: 604800
+            MinTTL: 3600
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+              Headers: []
+            TrustedKeyGroups: []
+          - PathPattern: '/static/*'
+            TargetOriginId: S3StaticAssets
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            SmoothStreaming: false
+            DefaultTTL: 31536000
+            MaxTTL: 31536000
+            MinTTL: 86400
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+              Headers: []
+            TrustedKeyGroups: []
+          - PathPattern: '/favicon.ico'
+            TargetOriginId: S3StaticAssets
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            SmoothStreaming: false
+            DefaultTTL: 86400
+            MaxTTL: 604800
+            MinTTL: 86400
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+              Headers: []
+            TrustedKeyGroups: []
+          - PathPattern: '/robots.txt'
+            TargetOriginId: ALBOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            DefaultTTL: 86400
+            MaxTTL: 86400
+            MinTTL: 3600
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+              Headers: []
+          - PathPattern: '/sitemap.xml'
+            TargetOriginId: ALBOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            DefaultTTL: 3600
+            MaxTTL: 3600
+            MinTTL: 600
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+              Headers: []
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: whitelist
+            Locations:
+              - IN
+              - AE
+              - SA
+              - QA
+              - KW
+              - BH
+              - OM
+              - LB
+              - JO
+              - EG
+              - IQ
+              - YE
+              - PS
+
+  CloudFrontDistributionWafAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !GetAtt CloudFrontDistribution.Arn
+      WebACLArn: !Ref WafAclArn
+
+Outputs:
+  CloudFrontDistributionId:
+    Description: CloudFront distribution ID
+    Value: !Ref CloudFrontDistribution
+  CloudFrontDomainName:
+    Description: CloudFront domain name
+    Value: !GetAtt CloudFrontDistribution.DomainName
+  CloudFrontDistributionArn:
+    Description: CloudFront distribution ARN
+    Value: !GetAtt CloudFrontDistribution.Arn

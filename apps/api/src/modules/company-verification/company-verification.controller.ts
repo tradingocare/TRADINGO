@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { CompanyVerificationService } from './company-verification.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SubmitVerificationDto } from './dto/submit-verification.dto';
 import { ReviewVerificationDto } from './dto/review-verification.dto';
@@ -22,11 +23,13 @@ export class CompanyVerificationController {
   }
 
   @Get('company/:companyId')
+  @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
   async findByCompany(@Param('companyId') companyId: string) {
     return this.companyVerificationService.findByCompany(companyId);
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string) {
     return this.companyVerificationService.findById(id);
   }

@@ -51,45 +51,49 @@ export class CompaniesService {
     const existing = await this.prisma.company.findUnique({ where: { slug }, select: { id: true } });
     if (existing) throw new ConflictException('Company slug already exists');
 
-    const company = await this.prisma.company.create({
-      data: {
-        name: dto.name,
-        slug,
-        logo: dto.logo,
-        banner: dto.banner,
-        description: dto.description,
-        businessType: dto.businessType,
-        establishedYear: dto.establishedYear,
-        employeeCount: dto.employeeCount,
-        gstNumber: dto.gstNumber,
-        panNumber: dto.panNumber,
-        website: dto.website,
-        email: dto.email,
-        mobile: dto.mobile,
-        geographicReach: dto.geographicReach,
-        status: dto.status,
-        organizationId: dto.organizationId,
-        createdBy: userId,
-        updatedBy: userId,
-        owners: { create: { userId, isPrimary: true } },
-        categories: dto.categoryIds?.length
-          ? { create: dto.categoryIds.map((catId) => ({ categoryId: catId })) }
-          : undefined,
-      },
-      include: {
-        owners: { include: { user: { select: { id: true, email: true, name: true } } } },
-        locations: true,
-        categories: { include: { category: true } },
-      },
-    });
+    const company = await this.prisma.$transaction(async (tx) => {
+      const c = await tx.company.create({
+        data: {
+          name: dto.name,
+          slug,
+          logo: dto.logo,
+          banner: dto.banner,
+          description: dto.description,
+          businessType: dto.businessType,
+          establishedYear: dto.establishedYear,
+          employeeCount: dto.employeeCount,
+          gstNumber: dto.gstNumber,
+          panNumber: dto.panNumber,
+          website: dto.website,
+          email: dto.email,
+          mobile: dto.mobile,
+          geographicReach: dto.geographicReach,
+          status: dto.status,
+          organizationId: dto.organizationId,
+          createdBy: userId,
+          updatedBy: userId,
+          owners: { create: { userId, isPrimary: true } },
+          categories: dto.categoryIds?.length
+            ? { create: dto.categoryIds.map((catId) => ({ categoryId: catId })) }
+            : undefined,
+        },
+        include: {
+          owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+          locations: true,
+          categories: { include: { category: true } },
+        },
+      });
 
-    await this.prisma.auditLog.create({
-      data: {
-        userId,
-        action: 'CREATE_COMPANY',
-        resource: `company:${company.id}`,
-        metadata: { name: dto.name, slug },
-      },
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'CREATE_COMPANY',
+          resource: `company:${c.id}`,
+          metadata: { name: dto.name, slug },
+        },
+      });
+
+      return c;
     });
 
     try {
@@ -200,27 +204,31 @@ export class CompaniesService {
 
     const { categoryIds, ...updateData } = dto;
 
-    const updated = await this.prisma.company.update({
-      where: { id },
-      data: {
-        ...updateData,
-        updatedBy: userId,
-        categories: categoryIds !== undefined
-          ? {
-              deleteMany: {},
-              create: categoryIds.map((catId) => ({ categoryId: catId })),
-            }
-          : undefined,
-      },
-      include: {
-        owners: { include: { user: { select: { id: true, email: true, name: true } } } },
-        locations: { where: { deletedAt: null } },
-        categories: { include: { category: true } },
-      },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.company.update({
+        where: { id },
+        data: {
+          ...updateData,
+          updatedBy: userId,
+          categories: categoryIds !== undefined
+            ? {
+                deleteMany: {},
+                create: categoryIds.map((catId) => ({ categoryId: catId })),
+              }
+            : undefined,
+        },
+        include: {
+          owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+          locations: { where: { deletedAt: null } },
+          categories: { include: { category: true } },
+        },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'UPDATE_COMPANY', resource: `company:${id}`, metadata: { changes: { ...dto } } },
+      await tx.auditLog.create({
+        data: { userId, action: 'UPDATE_COMPANY', resource: `company:${id}`, metadata: { changes: { ...dto } } },
+      });
+
+      return u;
     });
 
     try {
@@ -245,13 +253,15 @@ export class CompaniesService {
     if (!company) throw new NotFoundException('Company not found');
     await this.requireOwnerOrAdmin(id, userId);
 
-    await this.prisma.company.update({
-      where: { id },
-      data: { deletedAt: new Date(), updatedBy: userId, status: 'INACTIVE' },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.company.update({
+        where: { id },
+        data: { deletedAt: new Date(), updatedBy: userId, status: 'INACTIVE' },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'DELETE_COMPANY', resource: `company:${id}` },
+      await tx.auditLog.create({
+        data: { userId, action: 'DELETE_COMPANY', resource: `company:${id}` },
+      });
     });
 
     try {
@@ -274,12 +284,16 @@ export class CompaniesService {
     });
     if (existing) throw new ConflictException('User is already an owner');
 
-    const newOwner = await this.prisma.companyOwner.create({
-      data: { companyId, userId: newOwnerUserId },
-    });
+    const newOwner = await this.prisma.$transaction(async (tx) => {
+      const owner = await tx.companyOwner.create({
+        data: { companyId, userId: newOwnerUserId },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'ADD_COMPANY_OWNER', resource: `company:${companyId}`, metadata: { newOwnerUserId } },
+      await tx.auditLog.create({
+        data: { userId, action: 'ADD_COMPANY_OWNER', resource: `company:${companyId}`, metadata: { newOwnerUserId } },
+      });
+
+      return owner;
     });
 
     return newOwner;
@@ -300,10 +314,12 @@ export class CompaniesService {
       if (ownerCount <= 1) throw new ForbiddenException('Cannot remove the last primary owner');
     }
 
-    await this.prisma.companyOwner.delete({ where: { id: owner.id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.companyOwner.delete({ where: { id: owner.id } });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'REMOVE_COMPANY_OWNER', resource: `company:${companyId}`, metadata: { removedUserId: ownerUserId } },
+      await tx.auditLog.create({
+        data: { userId, action: 'REMOVE_COMPANY_OWNER', resource: `company:${companyId}`, metadata: { removedUserId: ownerUserId } },
+      });
     });
   }
 
@@ -425,15 +441,19 @@ export class CompaniesService {
       data.subscriptionGraceStart = new Date();
     }
 
-    const updated = await this.prisma.company.update({ where: { id }, data });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.company.update({ where: { id }, data });
 
-    await this.prisma.subscriptionEvent.create({
-      data: {
-        companyId: id,
-        status: status as SubscriptionStatus,
-        planType: plan as PlanType,
-        metadata: { previousStatus: company.subscriptionStatus },
-      },
+      await tx.subscriptionEvent.create({
+        data: {
+          companyId: id,
+          status: status as SubscriptionStatus,
+          planType: plan as PlanType,
+          metadata: { previousStatus: company.subscriptionStatus },
+        },
+      });
+
+      return u;
     });
 
     if (plan === 'TRADE_ELITE') {
@@ -451,17 +471,19 @@ export class CompaniesService {
     const company = await this.prisma.company.findFirst({ where: { id: companyId, deletedAt: null } });
     if (!company) throw new NotFoundException('Company not found');
 
-    await this.prisma.company.update({
-      where: { id: companyId },
-      data: { assignedRmId: null, assignedAt: null, updatedBy: userId },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.company.update({
+        where: { id: companyId },
+        data: { assignedRmId: null, assignedAt: null, updatedBy: userId },
+      });
 
-    await this.prisma.auditLog.create({
-      data: {
-        userId,
-        action: 'REMOVE_RM',
-        resource: `company:${companyId}`,
-      },
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'REMOVE_RM',
+          resource: `company:${companyId}`,
+        },
+      });
     });
   }
 
@@ -477,18 +499,22 @@ export class CompaniesService {
       throw new ForbiddenException(`RM can manage maximum ${MAX_ELITE_SELLERS_PER_RM} sellers`);
     }
 
-    const updated = await this.prisma.company.update({
-      where: { id: companyId },
-      data: { assignedRmId: rmUserId, assignedAt: new Date(), updatedBy: userId },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.company.update({
+        where: { id: companyId },
+        data: { assignedRmId: rmUserId, assignedAt: new Date(), updatedBy: userId },
+      });
 
-    await this.prisma.auditLog.create({
-      data: {
-        userId,
-        action: 'ASSIGN_RM',
-        resource: `company:${companyId}`,
-        metadata: { rmUserId },
-      },
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'ASSIGN_RM',
+          resource: `company:${companyId}`,
+          metadata: { rmUserId },
+        },
+      });
+
+      return u;
     });
 
     return updated;

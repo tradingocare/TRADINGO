@@ -141,6 +141,26 @@ export class CompanyVerificationService {
     return updated;
   }
 
+  private maskSensitiveFields(data: any) {
+    if (!data) return data;
+    if (Array.isArray(data)) return data.map((item) => this.maskDocumentUrls(item));
+    return this.maskDocumentUrls(data);
+  }
+
+  private maskDocumentUrls(record: any) {
+    if (!record || !record.documents) return record;
+    const SENSITIVE_TYPES = ['PAN', 'AADHAAR', 'BANK_STATEMENT', 'GST_CERTIFICATE'];
+    return {
+      ...record,
+      documents: record.documents.map((doc: any) => {
+        if (SENSITIVE_TYPES.includes(doc.documentType?.toUpperCase())) {
+          return { ...doc, documentUrl: '[MASKED]' };
+        }
+        return doc;
+      }),
+    };
+  }
+
   async findByCompany(companyId: string) {
     const company = await this.prisma.company.findFirst({
       where: { id: companyId, deletedAt: null },
@@ -148,7 +168,7 @@ export class CompanyVerificationService {
     });
     if (!company) throw new NotFoundException('Company not found');
 
-    return this.prisma.companyVerification.findMany({
+    const records = await this.prisma.companyVerification.findMany({
       where: { companyId },
       include: {
         documents: true,
@@ -157,6 +177,7 @@ export class CompanyVerificationService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return this.maskSensitiveFields(records);
   }
 
   async findById(id: string) {
@@ -170,7 +191,7 @@ export class CompanyVerificationService {
       },
     });
     if (!verification) throw new NotFoundException('Verification not found');
-    return verification;
+    return this.maskSensitiveFields(verification);
   }
 
   async findAll(query: { status?: string; cursor?: string; limit?: number }) {

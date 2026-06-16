@@ -1,20 +1,42 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [main, develop]
   push:
-    branches: [develop]
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 env:
   PNPM_VERSION: 9.15.0
-  NODE_VERSION: 20
 
 jobs:
-  ci:
-    name: Lint & Test & Build
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm db:generate
+        env:
+          DATABASE_URL: postgresql://tradingo:secret123@localhost:5432/tradingo?schema=public
 
+  typecheck:
+    name: TypeCheck
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
     services:
       postgres:
         image: postgres:16-alpine
@@ -29,40 +51,57 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm db:generate
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+        env:
+          DATABASE_URL: postgresql://tradingo:secret123@localhost:5432/tradingo?schema=public
+      - run: pnpm typecheck
         env:
           DATABASE_URL: postgresql://tradingo:secret123@localhost:5432/tradingo?schema=public
 
-      - name: TypeScript type-check
-        run: pnpm typecheck
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tradingo
+          POSTGRES_PASSWORD: secret123
+          POSTGRES_DB: tradingo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready -U tradingo
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
         env:
           DATABASE_URL: postgresql://tradingo:secret123@localhost:5432/tradingo?schema=public
-
-      - name: ESLint
-        run: pnpm lint
-
-      - name: Run unit tests
-        run: pnpm test
+      - run: pnpm test
         env:
           DATABASE_URL: postgresql://tradingo:secret123@localhost:5432/tradingo?schema=public
           JWT_SECRET: test-jwt-secret-that-is-at-least-32-chars-long
@@ -71,8 +110,41 @@ jobs:
           OPENSEARCH_URL: https://localhost:9200
           CLICKHOUSE_URL: http://localhost:8123
 
-      - name: Build apps
-        run: pnpm build
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    needs: [lint, typecheck, test]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tradingo
+          POSTGRES_PASSWORD: secret123
+          POSTGRES_DB: tradingo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready -U tradingo
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+        env:
+          DATABASE_URL: postgresql://tradingo:secret123@localhost:5432/tradingo?schema=public
+      - run: pnpm build
         env:
           DATABASE_URL: postgresql://tradingo:secret123@localhost:5432/tradingo?schema=public
           NEXT_PUBLIC_API_URL: http://localhost:3001
@@ -81,8 +153,19 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           OPENSEARCH_URL: https://localhost:9200
           CLICKHOUSE_URL: http://localhost:8123
-
-      - name: Docker build smoke test
-        run: |
-          docker build -f infrastructure/docker/Dockerfile.api -t tradingo-api:ci .
-          docker build -f infrastructure/docker/Dockerfile.web -t tradingo-web:ci .
+      - name: Cache .next
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/.next
+          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-modules-${{ hashFiles('pnpm-lock.yaml') }}

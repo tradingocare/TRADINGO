@@ -1,0 +1,16 @@
+{
+  "name": "TRADINGO",
+  "short_name": "TRADINGO",
+  "description": "India's First TEM™ E-Marketplace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/logo/trdn.png",
+      "sizes": "792x547",
+      "type": "image/png"
+    }
+  ]
+}

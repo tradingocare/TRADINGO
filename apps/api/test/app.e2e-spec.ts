@@ -17,6 +17,20 @@ jest.mock('bullmq', () => {
   return { ...original, Worker: MockWorker };
 });
 
+const mockQueue = () => ({
+  add: jest.fn().mockResolvedValue(undefined),
+  opts: {},
+  upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
+  close: jest.fn().mockResolvedValue(undefined),
+  getJob: jest.fn().mockResolvedValue(null),
+  getJobs: jest.fn().mockResolvedValue([]),
+  getRepeatableJobs: jest.fn().mockResolvedValue([]),
+  getJobCounts: jest.fn().mockResolvedValue({}),
+  obliterate: jest.fn().mockResolvedValue(undefined),
+  drain: jest.fn().mockResolvedValue(undefined),
+  clean: jest.fn().mockResolvedValue([]),
+});
+
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
@@ -29,9 +43,25 @@ describe('AppController (e2e)', () => {
       .overrideProvider(RedisService)
       .useValue({} as any)
       .overrideProvider(getQueueToken('email'))
-      .useValue({ add: jest.fn(), opts: { connection: {} } })
+      .useValue(mockQueue())
       .overrideProvider(getQueueToken('export'))
-      .useValue({ add: jest.fn(), opts: { connection: {} } })
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('notification'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('certification'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('subscription'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('rfq'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('escrow'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('settlement'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('dispute'))
+      .useValue(mockQueue())
+      .overrideProvider(getQueueToken('analytics'))
+      .useValue(mockQueue())
       .compile();
 
     app = moduleFixture.createNestApplication();

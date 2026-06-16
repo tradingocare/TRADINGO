@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '@prisma/client';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
 
@@ -7,7 +9,10 @@ import { UpdateCertificationDto } from './dto/update-certification.dto';
 export class CertificationsService {
   private readonly logger = new Logger(CertificationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async create(companyId: string, dto: CreateCertificationDto, userId: string) {
     const cert = await this.prisma.companyCertification.create({
@@ -99,21 +104,40 @@ export class CertificationsService {
 
   async expireOutdated(): Promise<number> {
     const now = new Date();
-    const expired = await this.prisma.companyCertification.updateMany({
+    const expiring = await this.prisma.companyCertification.findMany({
       where: { expiresAt: { lte: now }, status: { not: 'EXPIRED' } },
+    });
+
+    if (expiring.length === 0) return 0;
+
+    await this.prisma.companyCertification.updateMany({
+      where: { id: { in: expiring.map((c) => c.id) } },
       data: { status: 'EXPIRED' },
     });
-    if (expired.count > 0) {
-      this.logger.log(`Expired ${expired.count} certifications`);
+
+    this.logger.log(`Expired ${expiring.length} certifications`);
+
+    for (const cert of expiring) {
+      try {
+        await this.notificationService.createWithTemplate(
+          cert.companyId,
+          undefined,
+          NotificationType.CERTIFICATION_EXPIRED,
+          { certName: cert.type },
+        );
+      } catch (err) {
+        this.logger.warn(`Failed to send CERTIFICATION_EXPIRED notification: ${(err as Error).message}`);
+      }
     }
-    return expired.count;
+
+    return expiring.length;
   }
 
   async review(id: string, status: 'APPROVED' | 'REJECTED', notes: string | undefined, userId: string) {
     const cert = await this.prisma.companyCertification.findUnique({ where: { id } });
     if (!cert) throw new NotFoundException('Certification not found');
 
-    return this.prisma.companyCertification.update({
+    const updated = await this.prisma.companyCertification.update({
       where: { id },
       data: {
         status,
@@ -122,5 +146,19 @@ export class CertificationsService {
         notes: notes,
       },
     });
+
+    const notifType = status === 'APPROVED' ? NotificationType.CERTIFICATION_APPROVED : NotificationType.CERTIFICATION_REJECTED;
+    try {
+      await this.notificationService.createWithTemplate(
+        cert.companyId,
+        undefined,
+        notifType,
+        { certName: cert.type },
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to send ${notifType} notification: ${(err as Error).message}`);
+    }
+
+    return updated;
   }
 }

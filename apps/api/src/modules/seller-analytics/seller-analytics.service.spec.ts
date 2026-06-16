@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SellerAnalyticsService } from './seller-analytics.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventIngestionService } from '../analytics/event-ingestion.service';
 import { AnalyticsTimeRange } from './dto/analytics-query.dto';
 
 describe('SellerAnalyticsService', () => {
   let service: SellerAnalyticsService;
   let prisma: Record<string, Record<string, jest.Mock>>;
+  let eventIngestion: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     prisma = {
@@ -13,11 +15,13 @@ describe('SellerAnalyticsService', () => {
       sellerAnalyticsEvent: { findMany: jest.fn(), create: jest.fn() },
       goCashTransaction: { findMany: jest.fn() },
     };
+    eventIngestion = { track: jest.fn(), trackBatch: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SellerAnalyticsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: EventIngestionService, useValue: eventIngestion },
       ],
     }).compile();
 
@@ -85,10 +89,14 @@ describe('SellerAnalyticsService', () => {
   });
 
   describe('trackEvent', () => {
-    it('should create analytics event', async () => {
-      prisma.sellerAnalyticsEvent.create.mockResolvedValue({ id: 'event1', eventType: 'PROFILE_VIEW' } as any);
-      const event = await service.trackEvent('c1', 'PROFILE_VIEW', { source: 'search' });
-      expect(event.eventType).toBe('PROFILE_VIEW');
+    it('should send analytics event to ClickHouse', async () => {
+      await service.trackEvent('c1', 'PROFILE_VIEW', { source: 'search' });
+      expect(eventIngestion.track).toHaveBeenCalledWith('seller_analytics_events', {
+        companyId: 'c1',
+        eventType: 'PROFILE_VIEW',
+        metadata: { source: 'search' },
+        userId: undefined,
+      });
     });
   });
 });
