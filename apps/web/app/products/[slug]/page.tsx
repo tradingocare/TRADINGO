@@ -19,8 +19,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { CTABlock } from '@/components/shared/cta-block';
+import { SpecificationTabs } from '@/components/product-attributes/specification-tabs';
 import { IndianRupee, MapPin, Shield, Truck, Gauge } from 'lucide-react';
 import type { ProductCardData } from '@/components/product/product-card';
+import type { ProductAttributesDisplay } from '@/types/product-detail';
 
 function toProductCard(p: Record<string, any>): ProductCardData {
   const images = p.media?.filter((m: any) => m.type === 'IMAGE').map((m: any) => m.url) || [];
@@ -134,7 +136,19 @@ async function ProductDetail({ slug }: { slug: string }) {
   const inStock = stockStatus === 'IN_STOCK' || stockStatus === 'LOW_STOCK';
   const lowestPrice = product.priceSlabs?.length ? Math.min(...product.priceSlabs.map(s => s.price)) : undefined;
 
-  const jsonLd = {
+  const productAttributes = product.productAttributes as ProductAttributesDisplay | undefined;
+  const attrSections = productAttributes?.sections || [];
+
+  const specProps: Record<string, string> = {};
+  for (const section of attrSections) {
+    for (const field of section.fields) {
+      if (field.displayValue !== null && field.displayValue !== undefined && field.displayValue !== '') {
+        specProps[field.label] = String(field.displayValue);
+      }
+    }
+  }
+
+  const jsonLd: Record<string, any> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
@@ -150,6 +164,14 @@ async function ProductDetail({ slug }: { slug: string }) {
       availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
     },
   };
+
+  if (Object.keys(specProps).length > 0) {
+    jsonLd.additionalProperty = Object.entries(specProps).map(([name, value]) => ({
+      '@type': 'PropertyValue',
+      name,
+      value,
+    }));
+  }
 
   return (
     <>
@@ -316,6 +338,17 @@ async function ProductDetail({ slug }: { slug: string }) {
             <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">Specifications</h2>
             <div className="max-w-2xl">
               <Specifications specifications={product.specifications} />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {attrSections.length > 0 && (
+        <section className="border-t border-border py-12 dark:border-dark-border">
+          <div className="container-main">
+            <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">Detailed Specifications</h2>
+            <div className="max-w-3xl">
+              <SpecificationTabs sections={attrSections} />
             </div>
           </div>
         </section>

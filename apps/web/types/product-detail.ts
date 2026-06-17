@@ -51,6 +51,36 @@ export interface ProductDetailQa {
   createdAt: string;
 }
 
+export interface ProductAttributeField {
+  fieldId: string;
+  key: string;
+  label: string;
+  type: string;
+  placeholder?: string;
+  helpText?: string;
+  unit?: string;
+  isRequired?: boolean;
+  options?: any;
+  displayValue: any;
+  rawValue?: any;
+}
+
+export interface ProductAttributeSection {
+  sectionId: string;
+  sectionKey: string;
+  sectionTitle: string;
+  sectionDescription?: string;
+  sectionIcon?: string;
+  sortOrder: number;
+  fields: ProductAttributeField[];
+}
+
+export interface ProductAttributesDisplay {
+  template?: { id: string; name: string; version: number };
+  sections: ProductAttributeSection[];
+  flattened: Record<string, any>;
+}
+
 export interface ProductDetailSeller {
   id: string;
   name: string;
@@ -124,5 +154,6 @@ export interface ProductDetail {
   inventory?: { availableQuantity: number; stockStatus: string };
   company: ProductDetailSeller;
   category?: { id: string; name: string; slug: string };
+  productAttributes?: ProductAttributesDisplay;
   createdAt: string;
 }

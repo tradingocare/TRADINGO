@@ -6,6 +6,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Role } from '../../common/enums/role.enum';
 import { v4 as uuid } from 'uuid';
+import { ProductAttributeDisplayService } from './services/product-attribute-display.service';
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `prod-${uuid().slice(0, 8)}`;
@@ -26,6 +27,7 @@ export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly searchService: SearchService,
+    private readonly attributeDisplayService: ProductAttributeDisplayService,
   ) {}
 
   private async generateUniqueSlug(name: string, companySlug: string): Promise<string> {
@@ -350,7 +352,12 @@ export class ProductsService {
       data: { viewCount: { increment: 1 } },
     }).catch(() => {});
 
-    return product;
+    const productAttributes = await this.attributeDisplayService.getDisplayAttributes(
+      product.id,
+      product.categoryId || undefined,
+    );
+
+    return Object.assign(product, { productAttributes }) as any;
   }
 
   async update(id: string, dto: UpdateProductDto, userId: string) {
