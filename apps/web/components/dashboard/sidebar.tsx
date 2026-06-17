@@ -25,6 +25,7 @@ import {
   ClipboardList,
   AlertTriangle,
   MapPin,
+  Globe,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -110,6 +111,7 @@ export const sellerNavItems: SidebarItem[] = [
   { label: 'Dashboard', href: '/seller/dashboard', icon: LayoutDashboard },
   { label: 'Profile', href: '/seller/profile', icon: User },
   { label: 'Products', href: '/seller/products', icon: Package, badge: 12 },
+  { label: 'Locations', href: '/seller/products/locations', icon: Globe },
   { label: 'RFQs', href: '/seller/rfqs', icon: FileText, badge: 5 },
   { label: 'Quotes', href: '/seller/quotes', icon: Quote },
   { label: 'Orders', href: '/seller/orders', icon: ShoppingCart, badge: 3 },
