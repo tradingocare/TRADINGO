@@ -160,3 +160,104 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Leaflet container must have explicit height */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  border-radius: 0.75rem;
+}
+
+/* Custom product markers */
+.custom-product-marker,
+.custom-product-marker-verified {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Marker cluster overrides */
+.custom-marker-cluster {
+  background: transparent !important;
+}
+
+.cluster-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 12px;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.cluster-small {
+  width: 36px;
+  height: 36px;
+  background: #3b82f6;
+  font-size: 11px;
+}
+
+.cluster-medium {
+  width: 42px;
+  height: 42px;
+  background: #2563eb;
+  font-size: 12px;
+}
+
+.cluster-large {
+  width: 48px;
+  height: 48px;
+  background: #1d4ed8;
+  font-size: 13px;
+}
+
+/* Marker popup overrides */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.75rem !important;
+  padding: 0 !important;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  min-width: 220px;
+}
+
+.leaflet-popup-close-button {
+  z-index: 10 !important;
+  top: 8px !important;
+  right: 8px !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 6px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background: #1e1e2e !important;
+  color: #e1e1e6 !important;
+}
+
+.dark .leaflet-popup-close-button {
+  background: rgba(30, 30, 46, 0.9) !important;
+  color: #e1e1e6 !important;
+}
+
+.dark .leaflet-popup-tip {
+  background: #1e1e2e !important;
+}
+
+/* Map toolbar buttons */
+.map-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, MapPin, Crosshair, AlertCircle } from 'lucide-react';
+import { Search, MapPin, Crosshair, AlertCircle, Map, List, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardPageHeader } from '@/components/dashboard';
@@ -12,6 +12,7 @@ import type { FilterState } from '@/components/near-me/filter-drawer';
 import { SortDropdown } from '@/components/near-me/sort-dropdown';
 import { NearMeProductCard } from '@/components/near-me/near-me-product-card';
 import { NearMeSkeleton } from '@/components/near-me/near-me-skeleton';
+import { NearMeMap } from '@/components/near-me/near-me-map';
 import { searchProducts, getRadiusBreakdown } from '@/lib/api/near-me';
 import type { NearMeProduct, NearMeMeta } from '@/lib/api/near-me';
 
@@ -35,6 +36,9 @@ function NearMeContent() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [showMap, setShowMap] = useState(true);
+  const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [mobileView, setMobileView] = useState<'map' | 'list'>('list');
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const [filters, setFilters] = useState<FilterState>({
@@ -176,14 +180,22 @@ function NearMeContent() {
     });
   };
 
+  const handleToggleFullscreen = () => {
+    setMapFullscreen((prev) => !prev);
+  };
+
+  const handleCenterChange = useCallback((c: { lat: number; lng: number }) => {
+    setCenter(c);
+  }, []);
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <DashboardPageHeader
         title="Near Me"
         description="Discover products from suppliers around you"
       />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
           <Input
@@ -193,7 +205,7 @@ function NearMeContent() {
             className="h-10 pl-9"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant={geoStatus === 'done' ? 'accent' : 'outline'}
             size="sm"
@@ -201,14 +213,43 @@ function NearMeContent() {
             disabled={geoStatus === 'loading'}
           >
             <Crosshair className={`mr-1.5 h-4 w-4 ${geoStatus === 'loading' ? 'animate-spin' : ''}`} />
-            {geoStatus === 'loading' ? 'Detecting...' : 'Use My Location'}
+            {geoStatus === 'loading' ? 'Detecting...' : 'My Location'}
           </Button>
           <FilterDrawer filters={filters} onChange={setFilters} onReset={resetFilters} />
           <SortDropdown value={sort} onChange={setSort} />
+          <div className="sm:hidden flex gap-1">
+            <Button
+              variant={mobileView === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMobileView('list')}
+              aria-label="Show list view"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={mobileView === 'map' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMobileView('map')}
+              aria-label="Show map view"
+            >
+              <Map className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="hidden sm:flex">
+            <Button
+              variant={showMap ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowMap((prev) => !prev)}
+              aria-label={showMap ? 'Hide map' : 'Show map'}
+            >
+              <Map className={`mr-1.5 h-4 w-4`} />
+              {showMap ? 'Hide Map' : 'Show Map'}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="sticky top-16 z-20 bg-surface-secondary py-2 dark:bg-dark-surface">
+      <div className="sticky top-16 z-20 bg-surface-secondary dark:bg-dark-surface py-2">
         <RadiusSelector
           selected={radius}
           onChange={(r) => setRadius(r)}
@@ -223,44 +264,127 @@ function NearMeContent() {
         </div>
       )}
 
-      {loading ? (
-        <NearMeSkeleton />
-      ) : products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface p-12 dark:border-dark-border dark:bg-dark-surface">
-          <MapPin className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No products found</h3>
-          <p className="mt-1 text-sm text-text-tertiary dark:text-dark-text-tertiary text-center max-w-sm">
-            {geoStatus === 'error'
-              ? 'Enable location access or enter a location manually.'
-              : 'Try increasing the radius or adjusting filters.'}
-          </p>
+      {/* Mobile: toggle between map and list */}
+      <div className="sm:hidden">
+        {mobileView === 'map' ? (
+          <div className="h-[60vh] rounded-xl overflow-hidden">
+            <NearMeMap
+              center={center}
+              radiusKm={radius}
+              products={products}
+              onLocateMe={detectLocation}
+              geoStatus={geoStatus}
+              geoLoading={geoStatus === 'loading'}
+              isFullscreen={false}
+              onToggleFullscreen={() => {}}
+              onCenterChange={handleCenterChange}
+            />
+          </div>
+        ) : (
+          renderProductList({
+            loading, products, meta, geoStatus, radius,
+            loadingMore, loaderRef, page,
+          })
+        )}
+      </div>
+
+      {/* Desktop: split-screen layout */}
+      <div className="hidden sm:flex gap-4">
+        <div className={`${mapFullscreen ? 'w-0 hidden' : showMap ? 'w-1/2' : 'w-full'} transition-all duration-300`}>
+          {renderProductList({
+            loading, products, meta, geoStatus, radius,
+            loadingMore, loaderRef, page,
+          })}
         </div>
-      ) : (
-        <>
-          <div className="text-sm text-text-tertiary dark:text-dark-text-tertiary">
-            {meta && (
-              <span>{meta.total} product{meta.total !== 1 ? 's' : ''} found within {radius} km</span>
-            )}
-          </div>
-          <div className="space-y-3">
-            {products.map((product) => (
-              <NearMeProductCard key={product.id} product={product} />
-            ))}
-          </div>
-          <div ref={loaderRef} className="py-4">
-            {loadingMore && (
-              <div className="flex items-center justify-center gap-2 text-sm text-text-tertiary">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
-                Loading more...
+        {(showMap || mapFullscreen) && (
+          <div className={`${mapFullscreen ? 'fixed inset-0 z-50 p-4 bg-surface-secondary dark:bg-dark-surface' : 'w-1/2'} transition-all duration-300`}>
+            {mapFullscreen && (
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Map View</h2>
+                <button
+                  type="button"
+                  onClick={() => setMapFullscreen(false)}
+                  className="rounded-lg p-2 hover:bg-surface dark:hover:bg-dark-surface transition-colors"
+                  aria-label="Close fullscreen map"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             )}
-            {meta && page >= meta.totalPages && products.length > 0 && (
-              <p className="text-center text-xs text-text-tertiary">All products loaded</p>
-            )}
+            <div className={`rounded-xl overflow-hidden ${mapFullscreen ? 'h-[calc(100vh-8rem)]' : 'h-[calc(100vh-14rem)] sticky top-20'}`}>
+              <NearMeMap
+                center={center}
+                radiusKm={radius}
+                products={products}
+                onLocateMe={detectLocation}
+                geoStatus={geoStatus}
+                geoLoading={geoStatus === 'loading'}
+                isFullscreen={mapFullscreen}
+                onToggleFullscreen={handleToggleFullscreen}
+                onCenterChange={handleCenterChange}
+              />
+            </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
+  );
+}
+
+function renderProductList(opts: {
+  loading: boolean;
+  products: NearMeProduct[];
+  meta: NearMeMeta | null;
+  geoStatus: string;
+  radius: number;
+  loadingMore: boolean;
+  loaderRef: React.RefObject<HTMLDivElement | null>;
+  page: number;
+}) {
+  const { loading, products, meta, geoStatus, radius, loadingMore, loaderRef, page } = opts;
+
+  if (loading) {
+    return <NearMeSkeleton />;
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface p-12 dark:border-dark-border dark:bg-dark-surface">
+        <MapPin className="h-12 w-12 text-text-tertiary" />
+        <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No products found</h3>
+        <p className="mt-1 text-sm text-text-tertiary dark:text-dark-text-tertiary text-center max-w-sm">
+          {geoStatus === 'error'
+            ? 'Enable location access or enter a location manually.'
+            : 'Try increasing the radius or adjusting filters.'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="text-sm text-text-tertiary dark:text-dark-text-tertiary mb-3">
+        {meta && (
+          <span>{meta.total} product{meta.total !== 1 ? 's' : ''} found within {radius} km</span>
+        )}
+      </div>
+      <div className="space-y-3">
+        {products.map((product) => (
+          <NearMeProductCard key={product.productId} product={product} />
+        ))}
+      </div>
+      <div ref={loaderRef} className="py-4">
+        {loadingMore && (
+          <div className="flex items-center justify-center gap-2 text-sm text-text-tertiary">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+            Loading more...
+          </div>
+        )}
+        {meta && page >= meta.totalPages && products.length > 0 && (
+          <p className="text-center text-xs text-text-tertiary">All products loaded</p>
+        )}
+      </div>
+    </>
   );
 }
 
