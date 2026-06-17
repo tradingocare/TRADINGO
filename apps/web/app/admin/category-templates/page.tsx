@@ -25,7 +25,7 @@ export default function AdminCategoryTemplatesPage() {
     try {
       const data = await getTemplates();
       setTemplates(data);
-    } catch (e) {
+    } catch {
       toast({ title: 'Failed to load templates', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -38,7 +38,7 @@ export default function AdminCategoryTemplatesPage() {
       await deleteTemplate(id);
       toast({ title: 'Template deleted' });
       loadTemplates();
-    } catch (e) {
+    } catch {
       toast({ title: 'Failed to delete', variant: 'destructive' });
     }
   }
@@ -48,7 +48,7 @@ export default function AdminCategoryTemplatesPage() {
       await duplicateTemplate(id);
       toast({ title: 'Template duplicated' });
       loadTemplates();
-    } catch (e) {
+    } catch {
       toast({ title: 'Failed to duplicate', variant: 'destructive' });
     }
   }
@@ -58,7 +58,7 @@ export default function AdminCategoryTemplatesPage() {
       await activateTemplate(id);
       toast({ title: 'Template activated' });
       loadTemplates();
-    } catch (e) {
+    } catch {
       toast({ title: 'Failed to activate', variant: 'destructive' });
     }
   }
@@ -93,7 +93,7 @@ export default function AdminCategoryTemplatesPage() {
           />
           <Button size="sm" onClick={async () => {
             try {
-              const data = JSON.parse(importJson);
+              JSON.parse(importJson);
               toast({ title: 'Use the import API with a valid category ID' });
             } catch {
               toast({ title: 'Invalid JSON', variant: 'destructive' });

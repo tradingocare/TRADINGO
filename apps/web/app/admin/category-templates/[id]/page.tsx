@@ -9,12 +9,12 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import {
   getTemplate, updateTemplate, deleteSection, addField, updateField, deleteField,
-  addSection, updateSection, exportTemplateJson,
+  addSection, exportTemplateJson,
 } from '@/lib/api/category-templates';
-import type { CategoryTemplate, TemplateSection, TemplateField } from '@/lib/product-onboarding/types';
+import type { CategoryTemplate, TemplateField } from '@/lib/product-onboarding/types';
 import {
   Plus, Save, Trash2, GripVertical, ChevronDown, ChevronRight,
-  FileJson, Download, ArrowLeft, Settings,
+  FileJson, Download, Settings,
 } from 'lucide-react';
 
 const FIELD_TYPE_OPTIONS = [
@@ -78,7 +78,7 @@ export default function TemplateBuilderPage() {
   async function handleAddSection() {
     if (!newSectionKey || !newSectionTitle) return;
     try {
-      const section = await addSection(template!.id, {
+      await addSection(template!.id, {
         key: newSectionKey,
         title: newSectionTitle,
         sortOrder: template!.sections.length,

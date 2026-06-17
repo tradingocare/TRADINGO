@@ -6,7 +6,7 @@ import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/da
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
 import { useCompanies } from '@/hooks';
-import { Eye, Edit2, Trash2, Send, FileText, Package, Loader2 } from 'lucide-react';
+import { Eye, Edit2, Trash2, FileText, Package } from 'lucide-react';
 
 interface ProductMasterRef {
   id: string;

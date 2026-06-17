@@ -24,6 +24,7 @@ import {
   Radio,
   ClipboardList,
   AlertTriangle,
+  MapPin,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -126,6 +127,7 @@ export const sellerNavItems: SidebarItem[] = [
 
 export const buyerNavItems: SidebarItem[] = [
   { label: 'Dashboard', href: '/buyer/dashboard', icon: LayoutDashboard },
+  { label: 'Near Me', href: '/buyer/near-me', icon: MapPin },
   { label: 'My RFQs', href: '/buyer/rfqs', icon: FileText },
   { label: 'Quotes', href: '/buyer/quotes', icon: Quote, badge: 4 },
   { label: 'Orders', href: '/buyer/orders', icon: ShoppingCart, badge: 2 },

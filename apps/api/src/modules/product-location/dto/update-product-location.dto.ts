@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsNumber, IsOptional, IsEnum } from 'class-validator';
 import { GeographicReach } from '@prisma/client';
 
 export class UpdateProductLocationDto {

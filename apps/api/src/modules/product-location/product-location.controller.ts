@@ -16,7 +16,7 @@ export class ProductLocationController {
   async update(
     @Param('productId') productId: string,
     @Body() dto: UpdateProductLocationDto,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') _userId: string,
   ) {
     return this.service.update(productId, dto);
   }

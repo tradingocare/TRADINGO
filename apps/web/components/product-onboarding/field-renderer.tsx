@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useId, useRef } from 'react';
+import { useId, useRef } from 'react';
 import { Info, X, Camera, Upload, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
