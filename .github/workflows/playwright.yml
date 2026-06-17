@@ -1,0 +1,130 @@
+name: Playwright E2E Tests
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL for tests'
+        required: false
+        default: 'http://localhost:3000'
+      api_url:
+        description: 'API URL for tests'
+        required: false
+        default: 'http://localhost:3001/api/v1'
+
+env:
+  PLAYWRIGHT_BASE_URL: ${{ github.event.inputs.base_url || 'http://localhost:3000' }}
+  NEXT_PUBLIC_API_URL: ${{ github.event.inputs.api_url || 'http://localhost:3001/api/v1' }}
+  E2E_BUYER_EMAIL: ${{ secrets.E2E_BUYER_EMAIL || 'e2e-buyer@tradingo.com' }}
+  E2E_BUYER_PASSWORD: ${{ secrets.E2E_BUYER_PASSWORD || 'TestBuyer@123' }}
+  E2E_SELLER_EMAIL: ${{ secrets.E2E_SELLER_EMAIL || 'e2e-seller@tradingo.com' }}
+  E2E_SELLER_PASSWORD: ${{ secrets.E2E_SELLER_PASSWORD || 'TestSeller@123' }}
+  E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL || 'e2e-admin@tradingo.com' }}
+  E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD || 'TestAdmin@123' }}
+
+jobs:
+  test:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tradingo
+          POSTGRES_PASSWORD: tradingo
+          POSTGRES_DB: tradingo_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Run database migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
+
+      - name: Seed database
+        run: pnpm db:seed
+        env:
+          DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @tradingo/web exec playwright install chromium --with-deps
+
+      - name: Start application
+        run: |
+          pnpm --filter @tradingo/api start &
+          pnpm --filter @tradingo/web start &
+          sleep 10
+          curl --retry 5 --retry-delay 5 --retry-connrefused http://localhost:3000
+
+      - name: Run Playwright tests
+        run: pnpm test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 30
