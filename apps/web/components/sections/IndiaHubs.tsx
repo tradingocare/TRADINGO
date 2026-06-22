@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   MapPin, Building2, Users, Store, Package, FileText, DollarSign, Shield,
-  TrendingUp, Flame, Star, Target, Rocket, X, ChevronRight, ArrowUpRight,
-  Factory, LayoutDashboard, Globe, Network, Warehouse, CheckCircle, BarChart3, Map
+  TrendingUp, Flame, Star, Target, Rocket, X, ArrowUpRight,
+  Factory, LayoutDashboard, Globe, Network, CheckCircle, BarChart3, Map,
+  Wrench
 } from 'lucide-react';
 import { dashboardStats, statesData, indiaIntelligence, formatIndian, type StateData } from '@/lib/data/india-hubs';
+import Link from 'next/link';
 
 function useCountUp(target: number, duration = 2500, startOnView = true) {
   const [value, setValue] = useState(0);
@@ -48,66 +50,47 @@ function useCountUp(target: number, duration = 2500, startOnView = true) {
   return { value, ref };
 }
 
-const statCards = [
-  { icon: Globe, label: 'States & UTs', display: '36', value: 36, color: '#D4AF37' },
-  { icon: Building2, label: 'Cities Covered', display: '2.9K+', value: 2900, color: '#60A5FA' },
-  { icon: Users, label: 'Active Buyers', display: '5.2L+', value: 520000, color: '#34D399' },
-  { icon: Store, label: 'Active Sellers', display: '1.3L+', value: 130000, color: '#F472B6' },
-  { icon: Package, label: 'Products Listed', display: '1.0Cr+', value: 10000000, color: '#A78BFA' },
-  { icon: FileText, label: 'RFQs Posted', display: '3.4L+', value: 340000, color: '#FBBF24' },
-  { icon: DollarSign, label: 'Trade Volume', display: '\u20B92840Cr+', value: 28400000000, color: '#34D399' },
-  { icon: Shield, label: 'Verified Businesses', display: '98.5K+', value: 98500, color: '#60A5FA' },
+const formatCompact = (n: number): string => {
+  if (n >= 1e5) return `${(n / 1e5).toFixed(1)}L`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return n.toString();
+};
+
+const topStatCards = [
+  { icon: Globe, label: 'States & UTs', display: '36', color: '#D4AF37' },
+  { icon: Building2, label: 'Cities Covered', display: '2.9K+', color: '#60A5FA' },
+  { icon: Store, label: 'Sellers', display: '1.8L+', color: '#F472B6' },
+  { icon: Package, label: 'Products', display: '1.0Cr+', color: '#A78BFA' },
+  { icon: Wrench, label: 'Services', display: '38.2L+', color: '#FBBF24' },
+  { icon: Users, label: 'Buyers', display: '5.2L+', color: '#34D399' },
+  { icon: DollarSign, label: 'Trade Volume', display: '\u20B92840Cr+', color: '#34D399' },
+  { icon: Shield, label: 'Verified', display: '98.5K+', color: '#60A5FA' },
 ];
 
-function StatCard({ icon: Icon, label, display, value, color }: typeof statCards[number]) {
-  const { value: count, ref } = useCountUp(value, 2500);
-  const iconRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = iconRef.current;
-    if (!el) return;
-    let start = 0;
-    const animate = () => {
-      start += 0.3;
-      el.style.transform = `translateY(${Math.sin(start) * 2}px)`;
-      requestAnimationFrame(animate);
-    };
-    const id = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(id);
-  }, []);
-
+function TopStatCard({ icon: Icon, label, display, color }: typeof topStatCards[number]) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      whileHover={{ y: -4, scale: 1.01 }}
-      className="group relative h-full w-full overflow-hidden rounded-[20px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.015)] transition-all duration-500 hover:border-[rgba(212,175,55,0.3)] hover:bg-[rgba(212,175,55,0.04)]"
+      whileHover={{ y: -2, scale: 1.01 }}
+      className="group relative overflow-hidden rounded-[16px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.015)] transition-all duration-500 hover:border-[rgba(212,175,55,0.3)]"
       style={{
-        backdropFilter: 'blur(28px)',
-        boxShadow: '0 15px 50px rgba(0,0,0,0.45)',
+        backdropFilter: 'blur(20px)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
       }}
     >
-      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-        style={{ boxShadow: '0 25px 60px rgba(212,175,55,0.18)' }} />
-
-      <div className="relative flex h-full flex-col justify-between p-3 sm:p-4">
-        <div className="flex items-start justify-between">
-          <div ref={iconRef} className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(212,175,55,0.2)] to-[rgba(212,175,55,0.05)] sm:h-10 sm:w-10"
-            style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
-            <Icon size={14} className="sm:hidden" style={{ color }} />
-            <Icon size={16} className="hidden sm:block" style={{ color }} />
-          </div>
-          <span className="mt-0.5 flex items-center gap-1 rounded-full bg-[rgba(34,197,94,0.1)] px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider text-emerald-400 sm:px-2 sm:text-[8px]">
-            <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-400 sm:h-1.5 sm:w-1.5" />
-            LIVE
-          </span>
+      <div className="relative flex items-center gap-2.5 p-2.5 sm:p-3">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(212,175,55,0.2)] to-[rgba(212,175,55,0.05)] sm:h-8 sm:w-8"
+          style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
+          <Icon size={12} className="sm:hidden" style={{ color }} />
+          <Icon size={14} className="hidden sm:block" style={{ color }} />
         </div>
-        <div>
-          <span ref={ref} className="block text-lg font-black leading-none tracking-tight text-white sm:text-2xl lg:text-[28px] tabular-nums">
+        <div className="min-w-0">
+          <span className="block text-sm font-black leading-none tracking-tight text-white sm:text-base tabular-nums">
             {display}
           </span>
-          <span className="mt-0.5 block text-[9px] font-medium text-white/50 sm:text-[10px] lg:text-[11px]">{label}</span>
+          <span className="mt-0.5 block text-[8px] font-medium text-white/50 sm:text-[9px]">{label}</span>
         </div>
       </div>
     </motion.div>
@@ -115,129 +98,80 @@ function StatCard({ icon: Icon, label, display, value, color }: typeof statCards
 }
 
 function StateCard({ state }: { state: StateData }) {
-  const [showTooltip, setShowTooltip] = useState(false);
-
   return (
-    <motion.button
-      onClick={() => { const e = new CustomEvent('open-state-modal', { detail: state.id }); window.dispatchEvent(e); }}
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      whileHover={{ y: -6, scale: 1.03 }}
-      className="group relative flex flex-col items-center gap-2 rounded-[20px] border border-[rgba(212,175,55,0.08)] bg-white/[0.02] p-5 transition-all duration-300 hover:border-[rgba(212,175,55,0.25)] hover:bg-[rgba(212,175,55,0.03)] hover:shadow-[0_0_30px_rgba(212,175,55,0.1)]"
-    >
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(212,175,55,0.2)] to-[rgba(212,175,55,0.06)] text-lg font-black text-[#D4AF37] transition-transform duration-300 group-hover:scale-110">
-        {state.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
-      </div>
-      <span className="text-center text-xs font-bold text-white/80 group-hover:text-white">{state.name}</span>
-      <span className="text-[10px] text-white/35">{state.citiesCovered} Cities</span>
+    <Link href={`/browse?state=${encodeURIComponent(state.name)}`}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        whileHover={{ y: -6, scale: 1.02 }}
+        className="group relative cursor-pointer overflow-hidden rounded-[20px] border border-[rgba(255,196,0,0.15)] bg-[rgba(255,255,255,0.015)] transition-all duration-500 hover:border-[rgba(212,175,55,0.4)] hover:shadow-[0_0_40px_rgba(212,175,55,0.12)]"
+        style={{
+          backdropFilter: 'blur(24px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+          minHeight: '200px',
+        }}
+      >
+        <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          style={{ boxShadow: 'inset 0 0 60px rgba(212,175,55,0.06)' }} />
 
-      <AnimatePresence>
-        {showTooltip && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute -top-2 left-1/2 z-50 w-52 -translate-x-1/2 -translate-y-full rounded-xl border border-[rgba(212,175,55,0.15)] bg-[rgba(11,18,32,0.9)] p-3 shadow-2xl backdrop-blur-xl"
-          >
-            <div className="space-y-1.5">
-              <p className="text-xs font-bold text-[#D4AF37]">{state.name}</p>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
-                <span className="text-white/40">Cities</span><span className="text-right text-white/80">{state.citiesCovered}</span>
-                <span className="text-white/40">Products</span><span className="text-right text-white/80">{state.productsListed >= 1000 ? `${(state.productsListed / 1000).toFixed(1)}K` : state.productsListed}</span>
-                <span className="text-white/40">Sellers</span><span className="text-right text-white/80">{state.activeSellers >= 1000 ? `${(state.activeSellers / 1000).toFixed(1)}K` : state.activeSellers}</span>
-                <span className="text-white/40">Buyers</span><span className="text-right text-white/80">{state.activeBuyers >= 1000 ? `${(state.activeBuyers / 1000).toFixed(1)}K` : state.activeBuyers}</span>
-                <span className="text-white/40">RFQs</span><span className="text-right text-white/80">{state.rfqsPosted >= 1000 ? `${(state.rfqsPosted / 1000).toFixed(1)}K` : state.rfqsPosted}</span>
+        <div className="relative z-10 flex h-full flex-col p-4">
+          <div className="flex items-center gap-3">
+            {state.heroImage ? (
+              <div className="h-[60px] w-[60px] flex-shrink-0 overflow-hidden rounded-full border-2 border-[rgba(212,175,55,0.2)]">
+                <img
+                  src={state.heroImage}
+                  alt={state.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
               </div>
-              <p className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-white/30">Top Industries</p>
-              <div className="flex flex-wrap gap-1">
-                {state.topIndustries.slice(0, 3).map(ind => (
-                  <span key={ind} className="rounded-full bg-[rgba(212,175,55,0.1)] px-2 py-0.5 text-[8px] text-[#D4AF37]">{ind}</span>
-                ))}
+            ) : (
+              <div className="flex h-[60px] w-[60px] flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(212,175,55,0.25)] to-[rgba(212,175,55,0.08)] text-base font-black text-[#D4AF37]"
+                style={{ border: '2px solid rgba(212,175,55,0.15)' }}>
+                {state.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
               </div>
-            </div>
-            <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-r border-b border-[rgba(212,175,55,0.15)] bg-[rgba(11,18,32,0.9)]" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.button>
-  );
-}
-
-function StateModal({ state, onClose }: { state: StateData; onClose: () => void }) {
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm"
-      style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onClose}>
-      <motion.div initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, y: 20 }} transition={{ type: 'spring', duration: 0.5 }}
-        onClick={e => e.stopPropagation()}
-        className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-[rgba(212,175,55,0.2)] bg-[rgba(11,18,32,0.85)] p-8 shadow-2xl backdrop-blur-2xl">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-[rgba(212,175,55,0.06)] blur-[60px]" />
-          <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-[rgba(212,175,55,0.04)] blur-[60px]" />
-        </div>
-        <button onClick={onClose} className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-white/50 transition-colors hover:bg-white/[0.1] hover:text-white"><X size={14} /></button>
-        <div className="relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[rgba(212,175,55,0.2)] to-[rgba(212,175,55,0.08)] text-2xl font-black text-[#D4AF37]">
-              {state.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-white">{state.name}</h3>
-              <p className="text-sm text-[#D4AF37]/70">{state.citiesCovered} Cities Covered</p>
+            )}
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-sm font-black text-white group-hover:text-[#D4AF37] transition-colors duration-300">
+                {state.name}
+              </h3>
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <MapPin size={10} className="text-[#D4AF37]/60 flex-shrink-0" />
+                <span className="truncate text-[10px] text-white/40">{state.citiesCovered} Cities</span>
+              </div>
             </div>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-3">
+
+          <div className="mt-3 grid grid-cols-2 gap-1.5">
             {[
-              { label: 'Products Listed', value: formatIndian(state.productsListed), icon: Package },
-              { label: 'Active Sellers', value: formatIndian(state.activeSellers), icon: Store },
-              { label: 'Active Buyers', value: formatIndian(state.activeBuyers), icon: Users },
-              { label: 'RFQs Posted', value: formatIndian(state.rfqsPosted), icon: FileText },
-              { label: 'Orders Completed', value: formatIndian(state.ordersCompleted), icon: TrendingUp },
-              { label: 'Trade Volume', value: `\u20B9${(state.tradeVolume / 1e7).toFixed(1)}Cr`, icon: DollarSign },
-              { label: 'Verified Companies', value: formatIndian(state.verifiedCompanies), icon: Shield },
-              { label: 'Categories', value: formatIndian(state.categories.length * 100), icon: LayoutDashboard },
-            ].map(s => (
-              <div key={s.label} className="flex items-center gap-2 rounded-xl border border-white/[0.04] bg-white/[0.02] p-3">
-                <s.icon size={14} className="text-[#D4AF37]/60" />
-                <div>
-                  <p className="text-[10px] text-white/40">{s.label}</p>
-                  <p className="text-sm font-bold text-white">{s.value}</p>
+              { icon: '\uD83C\uDFED', label: 'Sellers', value: formatCompact(state.activeSellers) },
+              { icon: '\uD83D\uDCE6', label: 'Products', value: formatCompact(state.productsListed) },
+              { icon: '\uD83D\uDD27', label: 'Services', value: formatCompact(state.servicesCount) },
+              { icon: '\uD83D\uDC65', label: 'Buyers', value: formatCompact(state.activeBuyers) },
+            ].map((stat) => (
+              <div key={stat.label}
+                className="flex items-center gap-1.5 rounded-lg border border-white/[0.04] bg-white/[0.02] px-2 py-1.5 transition-colors group-hover:bg-white/[0.04]"
+              >
+                <span className="text-xs leading-none">{stat.icon}</span>
+                <div className="min-w-0">
+                  <span className="block text-[11px] font-bold leading-none text-white tabular-nums">{stat.value}</span>
+                  <span className="block text-[7px] text-white/35 leading-none mt-0.5">{stat.label}</span>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-white/30">Top Industries</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {state.topIndustries.map(ind => (
-                <span key={ind} className="rounded-full border border-[rgba(212,175,55,0.15)] bg-[rgba(212,175,55,0.06)] px-3 py-1 text-[10px] font-medium text-[#D4AF37]">{ind}</span>
-              ))}
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-white/30">Major Cities</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {state.majorCities.map(city => ( <span key={city} className="rounded-full bg-white/[0.04] px-3 py-1 text-[10px] text-white/60">{city}</span> ))}
-            </div>
-          </div>
-          <div className="mt-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#D4AF37]/60">Trending Categories</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {state.trendingCategories.map(cat => (
-                <span key={cat} className="inline-flex items-center gap-1 rounded-full bg-[rgba(212,175,55,0.1)] px-3 py-1 text-[10px] font-medium text-[#D4AF37]">
-                  <Flame size={10} /> {cat}
-                </span>
-              ))}
-            </div>
+
+          <div className="mt-2 flex items-center justify-between">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(34,197,94,0.08)] px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider text-emerald-400">
+              <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-400" />
+              LIVE MARKET DATA
+            </span>
+            <ArrowUpRight size={11} className="text-white/20 transition-all duration-300 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </Link>
   );
 }
 
@@ -251,7 +185,20 @@ const intelligencePills = [
 ];
 
 export default function IndiaHubs() {
+  const [lastUpdated, setLastUpdated] = useState('');
   const [modalState, setModalState] = useState<StateData | null>(null);
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const h = now.getHours().toString().padStart(2, '0');
+      const m = now.getMinutes().toString().padStart(2, '0');
+      setLastUpdated(`Updated ${h}:${m} IST`);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handler = (e: CustomEvent) => {
@@ -327,17 +274,41 @@ export default function IndiaHubs() {
           </div>
         </motion.div>
 
-        <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8" style={{ gap: '12px' }}>
-          {statCards.map((card, i) => (
+        <div className="mt-8 grid grid-cols-4 gap-2 sm:grid-cols-8" style={{ gap: '8px' }}>
+          {topStatCards.map((card, i) => (
             <motion.div
               key={card.label}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.06 }}
+              transition={{ duration: 0.4, delay: i * 0.04 }}
             >
-              <StatCard {...card} />
+              <TopStatCard {...card} />
             </motion.div>
+          ))}
+        </div>
+
+        <div className="mt-8 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-black text-white sm:text-xl">All States & Union Territories</h3>
+            <p className="mt-1 text-xs text-white/40">
+              Click any state to explore its marketplace &mdash; sellers, products, services &amp; buyers
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-1.5 rounded-full bg-[rgba(34,197,94,0.06)] px-3 py-1 text-[9px] font-semibold text-emerald-400 sm:flex">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+              {lastUpdated || 'Updating...'}
+            </div>
+            <span className="rounded-full bg-[rgba(212,175,55,0.1)] px-3 py-1 text-[10px] font-semibold text-[#D4AF37]">
+              {statesData.length} Regions
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {statesData.map(state => (
+            <StateCard key={state.id} state={state} />
           ))}
         </div>
 
@@ -368,29 +339,6 @@ export default function IndiaHubs() {
                 <pill.icon size={12} className="text-[#D4AF37]/60" />
                 {pill.label}
               </motion.span>
-            ))}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-12"
-        >
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-black text-white sm:text-xl">All States & Union Territories</h3>
-              <p className="text-xs text-white/40">Click a state for detailed insights</p>
-            </div>
-            <span className="rounded-full bg-[rgba(212,175,55,0.1)] px-3 py-1 text-[10px] font-semibold text-[#D4AF37]">
-              {statesData.length} Regions
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9">
-            {statesData.map(state => (
-              <StateCard key={state.id} state={state} />
             ))}
           </div>
         </motion.div>
@@ -443,10 +391,6 @@ export default function IndiaHubs() {
           </div>
         </motion.div>
       </div>
-
-      <AnimatePresence>
-        {modalState && <StateModal state={modalState} onClose={() => setModalState(null)} />}
-      </AnimatePresence>
     </section>
   );
 }
