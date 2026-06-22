@@ -1,14 +1,5 @@
 import type { Metadata } from 'next';
-import {
-  Globe,
-  Zap,
-  Shield,
-  BarChart3,
-  Award,
-  Headphones,
-  Package,
-  Trophy,
-} from 'lucide-react';
+import { Globe, Zap, Shield } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -26,50 +17,50 @@ export const metadata: Metadata = {
 
 const sellerFeatures = [
   {
-    icon: Globe,
+    icon: '🌐',
     title: 'Pan-India Reach',
     description: 'List your products to millions of buyers across 500+ cities with zero upfront investment.',
     href: '/products',
   },
   {
-    icon: Zap,
+    icon: '⚡',
     title: 'AI Lead Matching',
     description: 'Get matched with serious buyers through our AI-powered RFQ engine that understands your products.',
     href: '/rfq',
     badge: 'AI',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Escrow Payments',
     description: 'Get paid securely through our escrow system. Funds are released only on successful delivery confirmation.',
     href: '/why-tradingo',
   },
   {
-    icon: BarChart3,
+    icon: '📊',
     title: 'Seller Analytics',
     description: 'Real-time dashboard with insights on views, inquiries, conversions, and revenue metrics.',
     href: '/for-sellers',
   },
   {
-    icon: Award,
+    icon: '🏅',
     title: 'GOCASH Rewards',
     description: 'Earn GOCASH on every sale. Redeem for listing boosts, premium analytics, and platform discounts.',
     href: '/gocash',
   },
   {
-    icon: Headphones,
+    icon: '🎧',
     title: 'Dedicated Support',
     description: 'Priority support with dedicated relationship managers to help you grow your business.',
     href: '/contact',
   },
   {
-    icon: Package,
+    icon: '📦',
     title: 'Easy Listing',
     description: 'Bulk upload products with AI-assisted categorization. List in minutes, not hours.',
     href: '/products',
   },
   {
-    icon: Trophy,
+    icon: '🏆',
     title: 'TRADGO Races',
     description: 'Compete in trading races, earn badges, climb leaderboards, and unlock exclusive seller perks.',
     href: '/tradgo',

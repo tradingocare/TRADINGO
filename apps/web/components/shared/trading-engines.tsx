@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import {
   ArrowRight,
   ShoppingCart,
@@ -96,7 +96,7 @@ export function TradingEngines() {
                     <CardTitle className="text-lg">
                       {engine.name}
                       <span className="ml-1 text-sm font-normal text-text-tertiary dark:text-dark-text-tertiary">
-                        ™
+                        
                       </span>
                     </CardTitle>
                     <Badge variant="secondary" className="text-[10px]">

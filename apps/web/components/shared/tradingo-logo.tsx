@@ -6,6 +6,7 @@ interface TradingoLogoProps {
   height?: number;
   showText?: boolean;
   priority?: boolean;
+  light?: boolean;
 }
 
 const LOGO_SRC = '/logo/trdn.png';
@@ -24,12 +25,17 @@ function LogoImage({ height, priority, className }: { height: number; priority?:
   );
 }
 
-export function TradingoLogo({ className, height = 40, showText = true, priority = false }: TradingoLogoProps) {
+export function TradingoLogo({ className, height = 40, showText = true, priority = false, light = false }: TradingoLogoProps) {
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
       <LogoImage height={height} priority={priority} />
       {showText && (
-        <span className="text-xl font-bold tracking-tight text-text-primary dark:text-dark-text-primary">
+        <span className={cn(
+          'text-xl font-bold tracking-tight',
+          light
+            ? 'text-white'
+            : 'text-text-primary dark:text-dark-text-primary'
+        )}>
           TRADINGO
         </span>
       )}

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Zap, Shield, TrendingDown, Clock, MessageSquare, Users } from 'lucide-react';
+
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -17,38 +17,38 @@ export const metadata: Metadata = {
 
 const rfqFeatures = [
   {
-    icon: Zap,
+    icon: '⚡',
     title: 'Real-Time Quotes',
     description: 'Receive competitive quotes from multiple verified sellers within hours of posting your requirement.',
     href: '/for-buyers',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Verified Sellers',
     description: 'All participating sellers are KYC verified with proven track records and ratings.',
     href: '/why-tradingo',
   },
   {
-    icon: TrendingDown,
+    icon: '📉',
     title: 'Best Price Discovery',
     description: 'Let sellers compete for your business. Get the best market price through competitive bidding.',
     href: '/for-buyers',
     badge: 'Save',
   },
   {
-    icon: Clock,
+    icon: '⏰',
     title: 'Quick Turnaround',
     description: 'Streamlined process from requirement posting to deal closure in record time.',
     href: '/for-buyers',
   },
   {
-    icon: MessageSquare,
+    icon: '💬',
     title: 'Direct Negotiation',
     description: 'Chat directly with sellers to negotiate terms, samples, and delivery schedules.',
     href: '/for-buyers',
   },
   {
-    icon: Users,
+    icon: '👥',
     title: 'Pan-India Sellers',
     description: 'Access sellers from 500+ cities. Find local suppliers to optimize your logistics.',
     href: '/trading',

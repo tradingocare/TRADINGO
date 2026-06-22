@@ -1,5 +1,5 @@
-import type { Metadata } from 'next';
-import { ShoppingCart, Zap, CreditCard, Package, Shield, RefreshCw, ArrowRight, Search, CheckCircle, Star } from 'lucide-react';
+﻿import type { Metadata } from 'next';
+import { ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -16,34 +16,34 @@ export const metadata: Metadata = {
 
 const features = [
   {
-    icon: ShoppingCart,
+    icon: '🛒',
     title: 'Instant Purchase',
     description: 'Buy products immediately at the listed price. No waiting, no negotiation — just click and buy.',
     badge: 'Instant',
   },
   {
-    icon: Zap,
+    icon: '⚡',
     title: 'Fixed Pricing',
     description: 'Transparent, non-negotiable prices set by sellers. Know exactly what you pay upfront.',
   },
   {
-    icon: CreditCard,
+    icon: '💳',
     title: 'Quick Checkout',
     description: 'Streamlined checkout process with saved payment methods. Complete purchases in seconds.',
   },
   {
-    icon: Package,
+    icon: '📦',
     title: 'Order Tracking',
     description: 'Real-time order tracking from purchase to delivery. Know where your order is at every step.',
     badge: 'Live',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Secure Payment',
     description: 'Every payment is processed through our escrow system. Funds released only on your confirmation.',
   },
   {
-    icon: RefreshCw,
+    icon: '🔄',
     title: 'Auto-Matching',
     description: 'Orders are automatically matched to the right seller. No manual assignment needed.',
   },
@@ -79,22 +79,22 @@ const steps = [
 
 const benefits = [
   {
-    icon: Zap,
+    icon: '⚡',
     title: 'Lightning Fast',
     description: 'Complete a purchase in under 2 minutes. No back-and-forth negotiation required.',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Zero Risk',
     description: 'Escrow-protected payments mean you only pay when you are satisfied with the product.',
   },
   {
-    icon: Search,
+    icon: '🔍',
     title: 'Full Transparency',
     description: 'Seller ratings, product reviews, and detailed specifications available before purchase.',
   },
   {
-    icon: Star,
+    icon: '⭐',
     title: 'GOCASH Rewards',
     description: 'Earn GOCASH on every TRADBUY purchase. Redeem for platform benefits and discounts.',
   },
@@ -104,7 +104,7 @@ export default function TradbuyPage() {
   return (
     <>
       <PageHeader
-        title="TRADBUY™"
+        title="TRADBUY"
         description="Buy products instantly at listed prices with secure payment processing and automated order matching."
       />
 
@@ -121,7 +121,7 @@ export default function TradbuyPage() {
               </h2>
               <p className="mt-4 text-lg text-text-secondary dark:text-dark-text-secondary">
                 TRADBUY is TRADINGO&apos;s instant purchase engine — the fastest way to buy products on the
-                TEM™ marketplace. Skip the negotiation, avoid the delays, and purchase directly at listed
+                TEM marketplace. Skip the negotiation, avoid the delays, and purchase directly at listed
                 prices. Every transaction is processed through our secure escrow system, so your funds are
                 always protected until you confirm satisfaction. Whether you need industrial machinery,
                 electronics, textiles, or raw materials, TRADBUY makes purchasing as simple as a click.

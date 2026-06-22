@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Zap, Award, TrendingUp, Users, Handshake, Star, Trophy, Medal, Flame, Crown } from 'lucide-react';
+import { Zap, Award, TrendingUp, Users, Handshake, Star, Trophy, Medal, Flame } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -81,25 +81,25 @@ const leaderboardPrizes = [
     rank: '4th-10th',
     prize: '₹5,000 GOCASH + Bronze Badge + Profile Badge',
     icon: Star,
-    color: 'text-primary-500',
-    bg: 'bg-primary-50 dark:bg-primary-900/10',
-    border: 'border-primary-200 dark:border-primary-800',
+    color: 'text-accent-500',
+    bg: 'bg-accent-50 dark:bg-accent-900/10',
+    border: 'border-accent-200 dark:border-accent-800',
   },
 ];
 
 const raceFeatures = [
   {
-    icon: Award,
+    icon: '🏆',
     title: 'Earn Badges',
     description: 'Collect unique achievement badges for trading milestones and special accomplishments.',
   },
   {
-    icon: TrendingUp,
+    icon: '📈',
     title: 'Climb Leaderboards',
     description: 'Compete against traders across India. Rankings update in real-time.',
   },
   {
-    icon: Crown,
+    icon: '👑',
     title: 'Win Rewards',
     description: 'Top performers win GOCASH prizes, plan upgrades, and exclusive platform perks.',
   },
@@ -230,7 +230,7 @@ export default function TradgoPage() {
                   { step: '4', title: 'Win', desc: 'Leaderboard updates in real-time. Top ranks win prizes' },
                 ].map((item) => (
                   <div key={item.step} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-accent-100 text-sm font-bold text-accent-700 dark:bg-accent-900/30 dark:text-accent-400">
                       {item.step}
                     </div>
                     <h3 className="mt-3 font-semibold text-text-primary dark:text-dark-text-primary">{item.title}</h3>

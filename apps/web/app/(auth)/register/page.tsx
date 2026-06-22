@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -170,11 +170,11 @@ export default function RegisterPage() {
                   onClick={() => setValue('role', 'seller')}
                   className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
                     role === 'seller'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-300'
+                      ? 'border-accent-500 bg-accent-50 text-accent-700 dark:border-accent-400 dark:bg-accent-900/20 dark:text-accent-300'
                       : 'border-border bg-surface text-text-secondary hover:border-border dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary'
                   }`}
                 >
-                  <span className="block text-base">🏪</span>
+                  <span className="block text-base">ðŸª</span>
                   Seller
                 </button>
                 <button
@@ -182,11 +182,11 @@ export default function RegisterPage() {
                   onClick={() => setValue('role', 'buyer')}
                   className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
                     role === 'buyer'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-300'
+                      ? 'border-accent-500 bg-accent-50 text-accent-700 dark:border-accent-400 dark:bg-accent-900/20 dark:text-accent-300'
                       : 'border-border bg-surface text-text-secondary hover:border-border dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary'
                   }`}
                 >
-                  <span className="block text-base">🛒</span>
+                  <span className="block text-base">ðŸ›’</span>
                   Buyer
                 </button>
               </div>
@@ -236,7 +236,7 @@ export default function RegisterPage() {
 
           <p className="mt-6 text-center text-sm text-text-secondary dark:text-dark-text-secondary">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+            <Link href="/login" className="font-medium text-accent-500 hover:text-accent-600 dark:text-accent-400">
               Sign in
             </Link>
           </p>

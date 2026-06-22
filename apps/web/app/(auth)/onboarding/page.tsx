@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -101,7 +101,7 @@ export default function OnboardingPage() {
                         isCompleted &&
                           'border-accent-500 bg-accent-500 text-white',
                         isActive &&
-                          'border-primary-500 bg-primary-500 text-white',
+                          'border-accent-500 bg-accent-500 text-white',
                         !isActive &&
                           !isCompleted &&
                           'border-border bg-surface text-text-tertiary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-tertiary',
@@ -112,7 +112,7 @@ export default function OnboardingPage() {
                     <span
                       className={cn(
                         'text-xs',
-                        isActive && 'font-medium text-primary-600 dark:text-primary-400',
+                        isActive && 'font-medium text-accent-500 dark:text-accent-400',
                         isCompleted && 'text-accent-600 dark:text-accent-400',
                         !isActive && !isCompleted && 'text-text-tertiary dark:text-dark-text-tertiary',
                       )}
@@ -281,7 +281,7 @@ export default function OnboardingPage() {
                     className="peer sr-only"
                     {...step3.register('notifications')}
                   />
-                  <div className="h-6 w-11 rounded-full border border-border bg-surface after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-surface after:transition-all peer-checked:bg-primary-500 peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-dark-border dark:bg-dark-surface dark:after:border-dark-border dark:peer-checked:bg-primary-500" />
+                  <div className="h-6 w-11 rounded-full border border-border bg-surface after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-surface after:transition-all peer-checked:bg-accent-500 peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-dark-border dark:bg-dark-surface dark:after:border-dark-border dark:peer-checked:bg-accent-500" />
                 </label>
               </div>
 

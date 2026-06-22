@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+﻿import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -313,7 +313,7 @@ async function ProductDetail({ slug }: { slug: string }) {
               {product.latitude && product.longitude && (
                 <div className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
                   <MapPin className="h-4 w-4 text-primary-500" />
-                  <span>Near Me — Far™: <span className="font-medium text-text-primary dark:text-dark-text-primary">Available in your region</span></span>
+                  <span>Near Me — Far: <span className="font-medium text-text-primary dark:text-dark-text-primary">Available in your region</span></span>
                 </div>
               )}
             </div>

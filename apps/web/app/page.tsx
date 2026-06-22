@@ -1,5 +1,9 @@
-import type { Metadata } from 'next';
-import { Hero } from '@/components/shared/hero';
+﻿import type { Metadata } from 'next';
+import HeroSection from '@/components/sections/HeroSection';
+import TradingAcrossBorders from '@/components/sections/TradingAcrossBorders';
+import IndiaHubs from '@/components/sections/IndiaHubs';
+import TradhexaEngines from '@/components/sections/TradhexaEngines';
+import AboutTradingo from '@/components/sections/AboutTradingo';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
 import { FeatureCards } from '@/components/shared/feature-cards';
@@ -15,55 +19,48 @@ import {
   TrendingUp,
   Users,
   Zap,
-  BarChart3,
-  Globe,
-  Handshake,
   Award,
   Sparkles,
-  DollarSign,
-  Package,
-  Truck,
-  Headphones,
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'TRADINGO - India\'s First TEM™ E-Marketplace',
+  title: 'TRADINGO | The Global Smart Trade System',
 };
 
 const sellerBenefits = [
   {
-    icon: TrendingUp,
+    icon: '\uD83D\uDCC8',
     title: 'Pan-India Reach',
     description: 'List your products to millions of buyers across India with zero upfront investment.',
     href: '/for-sellers',
   },
   {
-    icon: Zap,
+    icon: '\uD83E\uDD16',
     title: 'Smart RFQ Matching',
     description: 'Get matched with serious buyers through our AI-powered RFQ engine.',
     href: '/rfq',
     badge: 'AI',
   },
   {
-    icon: DollarSign,
+    icon: '\uD83D\uDCB0',
     title: 'GOCASH Rewards',
     description: 'Earn GOCASH on every sale. Redeem for listing boosts, analytics, and more.',
     href: '/gocash',
   },
   {
-    icon: BarChart3,
+    icon: '\uD83D\uDCCA',
     title: 'Seller Dashboard',
     description: 'Real-time analytics, inventory management, and performance insights.',
     href: '/for-sellers',
   },
   {
-    icon: Shield,
+    icon: '\uD83D\uDEE1\uFE0F',
     title: 'Secure Escrow',
     description: 'Get paid securely through our escrow system. Funds released on delivery confirmation.',
     href: '/why-tradingo',
   },
   {
-    icon: Globe,
+    icon: '\uD83C\uDF10',
     title: 'Multi-City Presence',
     description: 'Expand your business across cities with localized market access.',
     href: '/trading',
@@ -72,38 +69,38 @@ const sellerBenefits = [
 
 const buyerBenefits = [
   {
-    icon: Package,
+    icon: '\u2705',
     title: 'Verified Products',
     description: 'Authenticated listings with detailed specifications and seller ratings.',
     href: '/products',
   },
   {
-    icon: Handshake,
+    icon: '\uD83E\uDD1D',
     title: 'Competitive RFQ',
     description: 'Post requirements and receive competitive quotes from multiple sellers.',
     href: '/rfq',
     badge: 'Popular',
   },
   {
-    icon: Shield,
+    icon: '\uD83D\uDEE1\uFE0F',
     title: 'Zero-Risk Trading',
     description: 'Escrow-protected payments. Pay only when you confirm satisfaction.',
     href: '/why-tradingo',
   },
   {
-    icon: Truck,
+    icon: '\uD83D\uDE9A',
     title: 'Pan-India Delivery',
     description: 'Connected logistics network for seamless delivery across India.',
     href: '/trading',
   },
   {
-    icon: Award,
+    icon: '\uD83C\uDFC6',
     title: 'TRADGO Rewards',
     description: 'Earn badges and climb the trading leaderboard. Exclusive buyer perks.',
     href: '/tradgo',
   },
   {
-    icon: Headphones,
+    icon: '\uD83C\uDFA7',
     title: 'Dedicated Support',
     description: '24/7 customer support with dedicated relationship managers for businesses.',
     href: '/contact',
@@ -126,7 +123,7 @@ const membershipPlans = [
   },
   {
     name: 'Business',
-    price: '₹999',
+    price: 'Ôé╣999',
     period: 'month',
     description: 'For growing businesses ready to scale.',
     features: [
@@ -142,7 +139,7 @@ const membershipPlans = [
   },
   {
     name: 'Enterprise',
-    price: '₹2,499',
+    price: 'Ôé╣2,499',
     period: 'month',
     description: 'For large enterprises with high-volume trading.',
     features: [
@@ -204,76 +201,22 @@ const liveCounters = [
   { value: 156, label: 'Live RFQs' },
 ];
 
-const whyTradingoFeatures = [
-  {
-    icon: Shield,
-    title: 'Trust & Transparency',
-    description: 'Every transaction is secured with our escrow system. Verified sellers, authentic products, and complete transparency.',
-  },
-  {
-    icon: Zap,
-    title: 'AI-Powered Matching',
-    description: 'Our smart algorithms connect you with the right trading partners based on product, price, location, and reputation.',
-  },
-  {
-    icon: Award,
-    title: 'Rewards Ecosystem',
-    description: 'Earn GOCASH on every trade. Participate in TRADGO races. Unlock badges, discounts, and exclusive platform benefits.',
-  },
-  {
-    icon: Users,
-    title: 'Community-Driven',
-    description: 'Join India\'s fastest-growing trading community. Network, learn, and grow with fellow traders and businesses.',
-  },
-];
 
 export default function HomePage() {
   return (
     <>
-      <Hero
-        title="India's First TEM™ E-Marketplace"
-        subtitle="Trade smarter with TRADINGO. Connect with verified buyers and sellers across India. Powered by AI, secured by escrow, rewarded with GOCASH."
-        badges={['TEM™ Powered', '10,000+ Traders', 'Pan-India']}
-        ctaPrimary={{ label: 'Start Trading', href: '/register' }}
-        ctaSecondary={{ label: 'Explore Marketplace', href: '/trading' }}
-      />
+      <HeroSection />
 
-      <Separator />
+      <TradingAcrossBorders />
 
-      {/* 2. About TRADINGO */}
-      <section className="py-20">
-        <div className="container-main">
-          <AnimatedSection>
-            <div className="mx-auto max-w-3xl text-center">
-              <SectionHeader
-                title="What is TRADINGO?"
-                subtitle="TRADINGO is India's first TEM™ (Trusted Electronic Marketplace) — a comprehensive B2B trading platform that connects manufacturers, suppliers, distributors, and buyers across India."
-                viewMoreHref="/about-tradingo"
-                viewMoreLabel="Learn More About TRADINGO"
-              />
-              <div className="mt-8 grid gap-6 sm:grid-cols-3">
-                {whyTradingoFeatures.map((f) => {
-                  const Icon = f.icon;
-                  return (
-                    <div key={f.title} className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">{f.title}</h3>
-                      <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{f.description}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
+      <IndiaHubs />
+
+      <AboutTradingo />
 
       <Separator />
 
       {/* 3. Seller Benefits */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-white/[0.02]">
         <div className="container-main">
           <SectionHeader
             title="Why Sell on TRADINGO?"
@@ -303,7 +246,7 @@ export default function HomePage() {
       <Separator />
 
       {/* 5. Why TRADINGO */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-white/[0.02]">
         <div className="container-main">
           <SectionHeader
             title="Why TRADINGO?"
@@ -311,51 +254,50 @@ export default function HomePage() {
             viewMoreHref="/why-tradingo"
             viewMoreLabel="Discover More"
           />
-          <div className="mx-auto grid max-w-5xl gap-8 sm:grid-cols-2">
+          <div className="mx-auto grid max-w-5xl gap-5 sm:grid-cols-2">
             {[
-              { icon: Shield, title: 'Zero-Risk Trading', desc: 'Escrow-protected payments ensure every transaction is secure. Pay only when satisfied.' },
-              { icon: Zap, title: 'AI Smart Matching', desc: 'Our AI matches your requirements with the perfect trading partners automatically.' },
-              { icon: Award, title: 'Earn While You Trade', desc: 'GOCASH rewards program gives you cashback on every successful transaction.' },
-              { icon: Globe, title: 'Pan-India Network', desc: 'Connect with traders across 500+ cities. Expand your business nationwide.' },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <AnimatedSection key={item.title}>
-                  <div className="flex gap-4 rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">{item.title}</h3>
-                      <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{item.desc}</p>
+              { icon: '\uD83D\uDEE1\uFE0F', title: 'Zero-Risk Trading', desc: 'Escrow-protected payments ensure every transaction is secure. Pay only when satisfied.' },
+              { icon: '\uD83E\uDD16', title: 'AI Smart Matching', desc: 'Our AI matches your requirements with the perfect trading partners automatically.' },
+              { icon: '\uD83D\uDCB0', title: 'Earn While You Trade', desc: 'GOCASH rewards program gives you cashback on every successful transaction.' },
+              { icon: '\uD83C\uDF10', title: 'Pan-India Network', desc: 'Connect with traders across 500+ cities. Expand your business nationwide.' },
+            ].map((item) => (
+              <AnimatedSection key={item.title}>
+                <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.015] p-6 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
+                  style={{
+                    backdropFilter: 'blur(20px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                    style={{
+                      background: 'radial-gradient(600px circle at 50% 50%, rgba(212,175,55,0.06), transparent 40%)',
+                    }}
+                  />
+                  <div className="relative z-10 flex gap-4">
+                    <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[rgba(212,175,55,0.15)] to-[rgba(212,175,55,0.05)] text-xl"
+                      style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
+                      {item.icon}
+                    </span>
+                    <div className="flex-1">
+                      <h3 className="text-base font-black text-white">{item.title}</h3>
+                      <p className="mt-1 text-sm leading-relaxed text-white/45">{item.desc}</p>
                     </div>
                   </div>
-                </AnimatedSection>
-              );
-            })}
+                </div>
+              </AnimatedSection>
+            ))}
           </div>
         </div>
       </section>
 
       <Separator />
 
-      {/* 6. TRADHEXA™ - 6 Engines */}
-      <section className="py-20">
-        <div className="container-main">
-          <SectionHeader
-            title="TRADHEXA™ — 6 Powerful Trading Engines"
-            subtitle="Six integrated engines powering the TRADINGO ecosystem. From instant purchase to gamified trading, everything you need in one platform."
-            viewMoreHref="/tradhexa"
-            viewMoreLabel="Explore All Engines"
-          />
-          <TradingEngines />
-        </div>
-      </section>
+      <TradhexaEngines />
 
       <Separator />
 
       {/* 7. GOCASH Rewards */}
-      <section className="py-20 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/10 dark:to-yellow-900/10">
+      <section className="py-20 bg-white/[0.02]">
         <div className="container-main">
           <AnimatedSection>
             <div className="mx-auto max-w-4xl text-center">
@@ -373,12 +315,12 @@ export default function HomePage() {
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.title} className="rounded-xl border border-amber-200 bg-white/80 p-6 shadow-sm dark:border-amber-800 dark:bg-amber-900/20">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+                    <div key={item.title} className="glass-card p-6">
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent-500/10 text-accent-500">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">{item.title}</h3>
-                      <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{item.desc}</p>
+                      <h3 className="font-semibold text-white">{item.title}</h3>
+                      <p className="mt-1 text-sm text-white/50">{item.desc}</p>
                     </div>
                   );
                 })}
@@ -396,15 +338,15 @@ export default function HomePage() {
           <AnimatedSection>
             <div className="mx-auto max-w-4xl text-center">
               <SectionHeader
-                title="TRADGO — Gamified Trading Races"
+                title="TRADGO ÔÇö Gamified Trading Races"
                 subtitle="Turn trading into a sport. Compete in trading races, earn badges, climb leaderboards, and unlock exclusive rewards."
                 viewMoreHref="/tradgo"
                 viewMoreLabel="Join TRADGO Races"
               />
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 {['Speed Trader', 'Volume Master', 'Consistency King', 'Deal Maker'].map((badge) => (
-                  <div key={badge} className="rounded-full border border-border bg-surface px-6 py-3 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{badge}</span>
+                  <div key={badge} className="glass-card px-6 py-3">
+                    <span className="font-medium text-white">{badge}</span>
                   </div>
                 ))}
               </div>
@@ -416,11 +358,11 @@ export default function HomePage() {
       <Separator />
 
       {/* 9. Membership Plans */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-white/[0.02]">
         <div className="container-main">
           <SectionHeader
             title="Choose Your Plan"
-            subtitle="Start free and upgrade as you grow. Every plan includes access to the TEM marketplace."
+            subtitle="Start free and upgrade as you grow. Every plan includes access to the TeM tradingo-eMarketplace."
             viewMoreHref="/seller-plans"
             viewMoreLabel="Compare All Plans"
           />
@@ -447,10 +389,10 @@ export default function HomePage() {
                   { tier: 'Silver', min: '1,000 GOCASH', perk: 'Priority support, 2x rewards' },
                   { tier: 'Gold', min: '10,000 GOCASH', perk: 'Dedicated manager, 3x rewards, API access' },
                 ].map((tier) => (
-                  <div key={tier.tier} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">{tier.min}</p>
-                    <h3 className="mt-1 text-xl font-bold text-text-primary dark:text-dark-text-primary">{tier.tier}</h3>
-                    <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">{tier.perk}</p>
+                  <div key={tier.tier} className="glass-card p-6">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-accent-500">{tier.min}</p>
+                    <h3 className="mt-1 text-xl font-bold text-white">{tier.tier}</h3>
+                    <p className="mt-2 text-sm text-white/50">{tier.perk}</p>
                   </div>
                 ))}
               </div>
@@ -462,7 +404,7 @@ export default function HomePage() {
       <Separator />
 
       {/* 11. Success Stories */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-white/[0.02]">
         <div className="container-main">
           <SectionHeader
             title="Success Stories"
@@ -493,7 +435,7 @@ export default function HomePage() {
       {/* 13. CTA Footer */}
       <CTABlock
         title="Ready to Start Trading?"
-        subtitle="Join India's fastest-growing TEM E-Marketplace. Create your free account today and start trading with confidence."
+        subtitle="Join India's fastest-growing TeM tradingo-eMarketplace. Create your free account today and start trading with confidence."
         primaryLabel="Create Free Account"
         primaryHref="/register"
         secondaryLabel="Explore Marketplace"
@@ -503,3 +445,4 @@ export default function HomePage() {
     </>
   );
 }
+

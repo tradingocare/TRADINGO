@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Sparkles, TrendingUp, Award, Gift, Star, Shield, DollarSign } from 'lucide-react';
+import { Sparkles, Award } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -17,19 +17,19 @@ export const metadata: Metadata = {
 
 const earnFeatures = [
   {
-    icon: Sparkles,
+    icon: '✨',
     title: 'Earn',
     description: 'Receive 2-5% GOCASH back on every successful trade completed on the platform.',
     badge: '2-5%',
   },
   {
-    icon: TrendingUp,
+    icon: '📈',
     title: 'Accumulate',
     description: 'Watch your GOCASH balance grow as you trade more. No expiry on earned rewards.',
     badge: 'Unlimited',
   },
   {
-    icon: Gift,
+    icon: '🎁',
     title: 'Redeem',
     description: 'Spend GOCASH on listing boosts, analytics, support upgrades, and fee discounts.',
     badge: 'Instant',
@@ -38,22 +38,22 @@ const earnFeatures = [
 
 const redemptionOptions = [
   {
-    icon: TrendingUp,
+    icon: '📈',
     title: 'Listing Boosts',
     description: 'Promote your products to top positions in search results and category pages.',
   },
   {
-    icon: Star,
+    icon: '⭐',
     title: 'Premium Analytics',
     description: 'Unlock advanced market insights, competitor analysis, and detailed performance reports.',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Priority Support',
     description: 'Get faster responses with priority customer support and dedicated relationship managers.',
   },
   {
-    icon: DollarSign,
+    icon: '💰',
     title: 'Fee Discounts',
     description: 'Reduce platform fees on transactions. Higher tiers get larger discounts.',
   },
@@ -162,7 +162,7 @@ export default function GocashPage() {
           <div className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-border shadow-sm dark:border-dark-border">
             <table className="w-full">
               <thead>
-                <tr className="bg-primary-50 dark:bg-primary-900/20">
+                <tr className="bg-accent-50 dark:bg-accent-900/20">
                   <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary dark:text-dark-text-primary">Transaction Type</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary dark:text-dark-text-primary">GOCASH Rate</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary dark:text-dark-text-primary">Earning Example</th>
@@ -229,7 +229,7 @@ export default function GocashPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="mb-4 inline-block rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
+                  <div className="mb-4 inline-block rounded-full bg-accent-100 px-3 py-1 text-xs font-semibold text-accent-700 dark:bg-accent-900/30 dark:text-accent-400">
                     {tier.earnRate} earning rate
                   </div>
                   <ul className="space-y-2">

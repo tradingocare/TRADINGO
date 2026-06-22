@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 export const metadata: Metadata = {
   title: 'Browse Products | TRADINGO',
   description:
-    'Explore thousands of products across multiple categories on TRADINGO TEM™ E-Marketplace.',
+    'Explore thousands of products across multiple categories on TRADINGO TEM E-Marketplace.',
 };
 
 const categories = [
@@ -31,7 +31,7 @@ export default function ProductsPage() {
     <>
       <PageHeader
         title="Browse Products"
-        description="Explore thousands of products across multiple categories on TRADINGO TEM™ E-Marketplace."
+        description="Explore thousands of products across multiple categories on TRADINGO TEM E-Marketplace."
       />
 
       <section className="py-20">

@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+﻿import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const categoryName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   return {
     title: `${categoryName} - Browse Products`,
-    description: `Explore ${categoryName} products on TRADINGO TEM™ E-Marketplace. Find quality suppliers and competitive prices.`,
+    description: `Explore ${categoryName} products on TRADINGO TEM E-Marketplace. Find quality suppliers and competitive prices.`,
     openGraph: {
       title: `${categoryName} | TRADINGO`,
       description: `Browse ${categoryName} products from verified sellers.`,

@@ -1,13 +1,5 @@
 import type { Metadata } from 'next';
-import {
-  Zap,
-  Shield,
-  Award,
-  Package,
-  Search,
-  MessageSquare,
-  ArrowRight,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
 import { FeatureCards } from '@/components/shared/feature-cards';
@@ -27,37 +19,37 @@ export const metadata: Metadata = {
 
 const launchFeatures = [
   {
-    icon: Package,
+    icon: '📦',
     title: 'TRADBUY',
     description: 'AI-powered product listings with dynamic pricing, bulk upload, and smart categorization for maximum visibility.',
     badge: 'Live',
   },
   {
-    icon: MessageSquare,
+    icon: '💬',
     title: 'RFQ Engine',
     description: 'Intelligent quote request system that matches buyers with the right sellers using proprietary algorithms.',
     badge: 'Live',
   },
   {
-    icon: Award,
+    icon: '🏆',
     title: 'GOCASH Rewards',
     description: 'Earn rewards on every transaction. Redeem for listing boosts, premium features, and platform discounts.',
     badge: 'Live',
   },
   {
-    icon: Zap,
+    icon: '⚡',
     title: 'TRADGO Races',
     description: 'Gamified trading competitions with leaderboards, badges, and exclusive prizes for top performers.',
     badge: 'Beta',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Escrow Protection',
     description: 'Every transaction secured by escrow. Funds released only when both parties confirm successful delivery.',
     badge: 'Live',
   },
   {
-    icon: Search,
+    icon: '🔍',
     title: 'Trade Matching',
     description: 'Proprietary matching engine connecting buyer requirements with seller catalogs in real time.',
     badge: 'AI',

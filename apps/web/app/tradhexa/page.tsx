@@ -1,238 +1,165 @@
-import type { Metadata } from 'next';
+﻿'use client';
+
 import Link from 'next/link';
-import { ShoppingCart, FileText, Scale, Shield, Award, Zap, ArrowRight } from 'lucide-react';
-import { PageHeader } from '@/components/shared/page-header';
-import { SectionHeader } from '@/components/shared/section-header';
-import { AnimatedSection } from '@/components/shared/animated-section';
-import { TradingEngines } from '@/components/shared/trading-engines';
-import { CTABlock } from '@/components/shared/cta-block';
-import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-
-export const metadata: Metadata = {
-  title: 'TRADHEXA™ — 6 Trading Engines | TRADINGO',
-  description:
-    'Six powerful trading engines powering the TRADINGO TEM™ ecosystem — TRADBUY, RFQ, Trade Matching, Secure Escrow, GOCASH, and TRADGO.',
-};
-
-const engines = [
-  {
-    icon: ShoppingCart,
-    name: 'TRADBUY',
-    tagline: 'Instant Purchase',
-    description:
-      'Buy products instantly at listed prices with secure payment processing and automated order matching. Skip the negotiation and checkout in seconds.',
-    details:
-      'TRADBUY is designed for buyers who know what they want and want it fast. Browse listings, add to cart, and pay securely. The system automatically matches your order with the seller, processes payment through our escrow system, and notifies both parties. No back-and-forth, no delays — just instant purchasing.',
-    href: '/tradbuy',
-    color: 'from-blue-500 to-cyan-500',
-  },
-  {
-    icon: FileText,
-    name: 'RFQ',
-    tagline: 'Smart Negotiation',
-    description:
-      'Submit requests for quotes and receive competitive bids from verified sellers in real-time.',
-    details:
-      'Can\'t find what you need at the right price? Post an RFQ (Request for Quote) with your requirements — product specs, quantity, budget, and location. Our AI system intelligently routes your RFQ to the most relevant verified sellers. Compare bids side-by-side, negotiate terms, and close the deal on your terms.',
-    href: '/rfq',
-    color: 'from-purple-500 to-pink-500',
-  },
-  {
-    icon: Scale,
-    name: 'Trade Matching',
-    tagline: 'AI-Powered Match',
-    description:
-      'Our intelligent algorithm matches buyers with the right sellers based on product, price, and location.',
-    details:
-      'The AI Trade Matching engine analyzes thousands of data points — product categories, pricing trends, seller ratings, location proximity, and past trading history — to recommend the perfect trading partners. Whether you\'re a buyer sourcing raw materials or a seller looking for new buyers, our engine finds the best matches for you.',
-    href: '/trading',
-    color: 'from-emerald-500 to-teal-500',
-  },
-  {
-    icon: Shield,
-    name: 'Secure Escrow',
-    tagline: 'Protected Payments',
-    description:
-      'Funds are held in escrow until both parties confirm satisfaction, ensuring zero-risk transactions.',
-    details:
-      'Every transaction on TRADINGO is protected by our multi-layer escrow system. When a buyer makes a payment, the funds are held securely in escrow. The seller ships the goods, and once the buyer confirms receipt and satisfaction, the funds are released to the seller. If there\'s a dispute, our resolution team steps in to ensure fair outcomes.',
-    href: '/why-tradingo',
-    color: 'from-orange-500 to-red-500',
-  },
-  {
-    icon: Award,
-    name: 'GOCASH',
-    tagline: 'Rewards Engine',
-    description:
-      'Earn GOCASH rewards on every successful trade and redeem them for platform benefits and discounts.',
-    details:
-      'GOCASH is our rewards currency that puts money back in your pocket. Earn 2-5% GOCASH on every completed trade. Accumulate rewards in your wallet and redeem them for powerful platform benefits — listing boosts, premium analytics, priority support, and fee discounts. The more you trade, the more you earn.',
-    href: '/gocash',
-    color: 'from-amber-500 to-yellow-500',
-  },
-  {
-    icon: Zap,
-    name: 'TRADGO',
-    tagline: 'Gamified Trading',
-    description:
-      'Participate in trading races, earn badges, climb leaderboards, and unlock exclusive seller perks.',
-    details:
-      'TRADGO turns trading into a sport. Compete in time-bound trading races, earn achievement badges for milestones, and climb the global leaderboard. Top performers win exclusive rewards — GOCASH multipliers, premium plan upgrades, and recognition across the TRADINGO community. Trading has never been this exciting.',
-    href: '/tradgo',
-    color: 'from-rose-500 to-pink-500',
-  },
-];
+import { motion } from 'framer-motion';
+import { ArrowRight, Zap, Layers, Shield, TrendingUp, Globe, Target, CheckCircle } from 'lucide-react';
+import { engines } from '@/lib/data/tradhexa-engines';
 
 export default function TradhexaPage() {
   return (
-    <>
-      <PageHeader
-        title="TRADHEXA™"
-        description="Six powerful trading engines powering the TRADINGO TEM™ ecosystem."
-      />
+    <div className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-60 top-0 h-[600px] w-[600px] rounded-full bg-[rgba(212,175,55,0.03)] blur-[150px]" />
+        <div className="absolute -right-60 bottom-0 h-[500px] w-[500px] rounded-full bg-[rgba(212,175,55,0.02)] blur-[120px]" />
+        <div className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #D4AF37 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }} />
+      </div>
 
-      {/* Overview */}
-      <section className="py-20">
-        <div className="container-main">
-          <AnimatedSection>
-            <div className="mx-auto max-w-3xl text-center">
-              <h2 className="text-3xl font-bold sm:text-4xl dark:text-dark-text-primary">
-                The Six Engines of TRADINGO
-              </h2>
-              <p className="mt-4 text-lg text-text-secondary dark:text-dark-text-secondary">
-                TRADHEXA™ is the collective force behind TRADINGO&apos;s TEM™ marketplace. Each engine is
-                purpose-built to handle a specific aspect of trading — from instant purchases to gamified
-                competition. Together, they create a seamless, secure, and rewarding trading experience.
-              </p>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-4xl text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
+            <Zap className="h-3 w-3" />
+            TRADHEXA
+          </span>
+          <h1 className="mt-5 text-4xl font-black leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
+            TRADHEXA
+          </h1>
+          <p className="mt-2 text-lg font-semibold text-[#D4AF37]/60">The 6-Engine Business Framework</p>
+          <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-white/50">
+            India&apos;s Smart Trade System powered by six integrated business engines that enable
+            discovery, matching, negotiation, communication, trust and zero-risk transactions.
+          </p>
+        </motion.div>
 
-      <Separator />
-
-      {/* All Engines Overview */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
-        <div className="container-main">
-          <SectionHeader
-            title="Explore All Engines"
-            subtitle="Click on any engine to learn more about how it powers your trading experience."
-          />
-          <TradingEngines />
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Detailed Engine Breakdown */}
-      <section className="py-20">
-        <div className="container-main">
-          <SectionHeader
-            title="Deep Dive into Each Engine"
-            subtitle="Understand how each TRADHEXA™ engine works and how it benefits your business."
-          />
-          <div className="space-y-16">
-            {engines.map((engine, index) => {
-              const Icon = engine.icon;
-              return (
-                <AnimatedSection key={engine.name} delay={index * 100}>
-                  <div className="grid gap-8 lg:grid-cols-2 items-center">
-                    <div className={index % 2 === 1 ? 'lg:order-2' : ''}>
-                      <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg ${engine.color}`}>
-                        <Icon className="h-8 w-8" />
-                      </div>
-                      <h3 className="mt-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">
-                        {engine.name}
-                        <span className="ml-1 text-sm font-normal text-text-tertiary dark:text-dark-text-tertiary">™</span>
-                      </h3>
-                      <Badge variant="secondary" className="mt-2">
-                        {engine.tagline}
-                      </Badge>
-                      <p className="mt-4 text-lg text-text-secondary dark:text-dark-text-secondary">
-                        {engine.details}
-                      </p>
-                      <Link href={engine.href} className="mt-6 inline-block">
-                        <Button variant="default" size="lg">
-                          Explore {engine.name} <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {engines.map((engine, i) => {
+            const Icon = engine.icon;
+            return (
+              <Link key={engine.id} href={engine.href}>
+                <motion.div whileHover={{ y: -6, scale: 1.02 }}
+                  className="group h-full rounded-2xl border border-white/[0.06] bg-white/[0.015] p-6 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
+                  style={{ backdropFilter: 'blur(20px)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                    style={{ background: `radial-gradient(600px circle, rgba(212,175,55,0.06), transparent 40%)` }} />
+                  <div className="relative z-10">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[rgba(212,175,55,0.15)] to-[rgba(212,175,55,0.05)]"
+                      style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
+                      <Icon size={20} style={{ color: engine.color }} />
                     </div>
-                    <div className={index % 2 === 1 ? 'lg:order-1' : ''}>
-                      <Card className="border-border/50 bg-surface-secondary/30 dark:bg-dark-surface-secondary/30">
-                        <CardHeader>
-                          <CardTitle className="text-lg">Key Benefits</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <ul className="space-y-3">
-                            {[
-                              { label: 'Speed', desc: 'Faster transactions and reduced turnaround time' },
-                              { label: 'Security', desc: 'Protected by TRADINGO escrow and verification' },
-                              { label: 'Efficiency', desc: 'Automated processes reduce manual effort' },
-                              { label: 'Rewards', desc: 'Earn GOCASH on every transaction' },
-                            ].map((benefit) => (
-                              <li key={benefit.label} className="flex items-start gap-3">
-                                <div className="mt-1.5 h-2 w-2 rounded-full bg-primary-500" />
-                                <div>
-                                  <span className="font-medium text-text-primary dark:text-dark-text-primary">{benefit.label}</span>
-                                  <p className="text-sm text-text-secondary dark:text-dark-text-secondary">{benefit.desc}</p>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
+                    <h3 className="mt-4 text-base font-black text-white">{engine.name}</h3>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#D4AF37]/50">{engine.tagline}</p>
+                    <p className="mt-2 text-xs leading-relaxed text-white/45">{engine.description}</p>
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {engine.features.slice(0, 3).map(f => (
+                        <span key={f} className="rounded-full bg-white/[0.04] px-2 py-0.5 text-[8px] text-white/35">{f}</span>
+                      ))}
                     </div>
                   </div>
-                </AnimatedSection>
-              );
-            })}
+                </motion.div>
+              </Link>
+            );
+          })}
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="mt-16">
+          <div className="mb-8 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
+              <Layers className="h-3 w-3" />
+              What is TRADHEXA?
+            </span>
+            <h2 className="mt-4 text-2xl font-black text-white sm:text-3xl">What is TRADHEXA?</h2>
           </div>
-        </div>
-      </section>
+          <div className="mx-auto max-w-4xl space-y-4 text-center text-sm leading-relaxed text-white/50">
+            <p>
+              TRADHEXA is a six-engine business framework purpose-built for the TRADINGO ecosystem.
+              It was created to solve the fundamental challenges of B2B trading — discovery, trust,
+              communication, negotiation, and risk — through a single integrated platform.
+            </p>
+            <p>
+              Unlike traditional marketplaces like IndiaMART or TradeIndia that simply list products,
+              TRADHEXA actively facilitates every stage of the trading lifecycle. From finding the
+              right product (TRADFIND) to completing a secure transaction (TRADZERO), each engine
+              handles a critical function. Together, they form a complete Smart Trade System.
+            </p>
+            <p>
+              TRADINGO&apos;s advantage is integration. On other platforms, buyers search, call, negotiate
+              via phone, pay via bank transfer, and hope for the best. On TRADINGO, every step is
+              powered by an intelligent engine — making trading faster, safer, and more transparent.
+            </p>
+          </div>
+        </motion.div>
 
-      <Separator />
-
-      {/* How TRADHEXA Works Together */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
-        <div className="container-main">
-          <AnimatedSection>
-            <div className="mx-auto max-w-4xl text-center">
-              <SectionHeader
-                title="How the Engines Work Together"
-                subtitle="TRADHEXA™ isn\'t just six separate tools — it\'s an integrated ecosystem where each engine amplifies the others."
-              />
-              <div className="grid gap-6 sm:grid-cols-3">
-                {[
-                  { step: '1', title: 'Discover & Match', desc: 'Use Trade Matching and RFQ to find the right products and partners.' },
-                  { step: '2', title: 'Transact & Protect', desc: 'Buy instantly with TRADBUY or negotiate via RFQ. Escrow secures every payment.' },
-                  { step: '3', title: 'Earn & Compete', desc: 'Collect GOCASH rewards and join TRADGO races to maximize your benefits.' },
-                ].map((item) => (
-                  <div key={item.step} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 text-lg font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
-                      {item.step}
-                    </div>
-                    <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">{item.title}</h3>
-                    <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">{item.desc}</p>
-                  </div>
-                ))}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="mt-16">
+          <div className="mb-8 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
+              <Shield className="h-3 w-3" />
+              How the Engines Work Together
+            </span>
+            <h2 className="mt-4 text-2xl font-black text-white sm:text-3xl">How the Engines Work Together</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { step: '01', title: 'Discover & Match', desc: 'TRADFIND helps buyers discover products. TRADMATCH connects them with the right sellers automatically.', color: '#D4AF37' },
+              { step: '02', title: 'Negotiate & Communicate', desc: 'TRADRFQ enables competitive quoting and negotiation. TRADCONNECT powers seamless business communication.', color: '#60A5FA' },
+              { step: '03', title: 'Trust & Transact', desc: 'TRADTRUST verifies every business. TRADZERO ensures zero-risk transactions with escrow protection.', color: '#34D399' },
+            ].map((item) => (
+              <div key={item.step} className="rounded-2xl border border-white/[0.04] bg-white/[0.01] p-6 text-center backdrop-blur-sm">
+                <span className="text-2xl font-black" style={{ color: item.color }}>{item.step}</span>
+                <h3 className="mt-2 text-sm font-bold text-white">{item.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-white/45">{item.desc}</p>
               </div>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
+            ))}
+          </div>
+        </motion.div>
 
-      <CTABlock
-        title="Explore Our Platform"
-        subtitle="Experience all six TRADHEXA™ engines firsthand. Create your free account and start trading today."
-        primaryLabel="Get Started Free"
-        primaryHref="/register"
-        secondaryLabel="Browse Products"
-        secondaryHref="/products"
-        variant="accent"
-      />
-    </>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          className="mt-16">
+          <div className="mb-8 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
+              <TrendingUp className="h-3 w-3" />
+              Why TRADINGO is Different
+            </span>
+            <h2 className="mt-4 text-2xl font-black text-white sm:text-3xl">Why TRADINGO is Different</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              { label: 'Integrated Ecosystem', value: 'Six engines working together, not six separate tools' },
+              { label: 'AI-Powered', value: 'Smart matching, recommendations, and price intelligence' },
+              { label: 'Zero-Risk Trading', value: 'Escrow protection on every single transaction' },
+              { label: 'Verified Trust', value: '5-layer KYC, GST/PAN verification, Trust Scores' },
+            ].map((item) => (
+              <div key={item.label} className="flex items-start gap-3 rounded-xl border border-white/[0.04] bg-white/[0.01] p-4 backdrop-blur-sm">
+                <CheckCircle size={16} className="mt-0.5 text-[#D4AF37]" />
+                <div>
+                  <p className="text-xs font-bold text-white">{item.label}</p>
+                  <p className="text-[11px] text-white/45">{item.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+          className="mt-16 text-center">
+          <Link href="/browse">
+            <motion.span whileHover={{ y: -2, scale: 1.03 }}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#C9A84C] px-6 py-3 text-sm font-bold text-[#0B1220] shadow-lg">
+              Explore Marketplace <ArrowRight size={16} />
+            </motion.span>
+          </Link>
+          <div className="mt-3 flex justify-center gap-4 text-xs">
+            <Link href="/auth/register" className="text-white/40 underline underline-offset-2 hover:text-white/60">Become a Seller</Link>
+            <span className="text-white/10">|</span>
+            <Link href="/auth/register" className="text-white/40 underline underline-offset-2 hover:text-white/60">Start Trading</Link>
+          </div>
+        </motion.div>
+      </div>
+    </div>
   );
 }

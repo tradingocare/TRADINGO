@@ -1,5 +1,5 @@
-import type { Metadata } from 'next';
-import { Shield, Users, Globe, Target, Eye, Heart } from 'lucide-react';
+﻿import type { Metadata } from 'next';
+import { Target, Eye, Heart } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -9,46 +9,46 @@ import { Separator } from '@/components/ui/separator';
 import { Testimonials } from '@/components/shared/testimonials';
 
 export const metadata: Metadata = {
-  title: 'About TRADINGO | India\'s First TEM™ E-Marketplace',
+  title: 'About TRADINGO | India\'s First TEM E-Marketplace',
 };
 
 const milestones = [
   { year: '2020', title: 'The Idea Is Born', description: 'TRADINGO was conceived as a solution to the trust deficit in India\'s B2B trading ecosystem.' },
-  { year: '2021', title: 'Platform Development', description: 'Months of research and development went into building the TEM™ framework and core marketplace.' },
+  { year: '2021', title: 'Platform Development', description: 'Months of research and development went into building the TEM framework and core marketplace.' },
   { year: '2022', title: 'Soft Launch', description: 'TRADINGO went live in select cities with 500+ sellers and 1,000+ product listings.' },
   { year: '2023', title: 'Pan-India Expansion', description: 'Expanded to 500+ cities. Launched GOCASH rewards and TRADGO trading races.' },
   { year: '2024', title: 'AI & Automation', description: 'Introduced AI-powered RFQ matching, price intelligence, and automated verification systems.' },
-  { year: '2025', title: '50,000+ Traders', description: 'Crossed 50,000 registered traders. Launched TRADHEXA™ — six integrated trading engines.' },
+  { year: '2025', title: '50,000+ Traders', description: 'Crossed 50,000 registered traders. Launched TRADHEXA — six integrated trading engines.' },
 ];
 
 const values = [
   {
-    icon: Shield,
+    icon: '\uD83D\uDEE1\uFE0F',
     title: 'Trust First',
     description: 'Every feature is built on the foundation of trust. Verified identities, escrow protection, and transparent transactions.',
   },
   {
-    icon: Target,
+    icon: '\uD83D\uDE80',
     title: 'Innovation',
     description: 'We continuously evolve our platform with AI, gamification, and cutting-edge technology to serve our community better.',
   },
   {
-    icon: Users,
+    icon: '\uD83E\uDD1D',
     title: 'Community',
     description: 'We believe in the power of community. Every trader, buyer, and seller contributes to the TRADINGO ecosystem.',
   },
   {
-    icon: Eye,
+    icon: '\uD83D\uDD0D',
     title: 'Transparency',
     description: 'No hidden fees, no biased algorithms, no surprises. Complete transparency in every aspect of the platform.',
   },
   {
-    icon: Heart,
+    icon: '\u2764\uFE0F',
     title: 'Customer Success',
     description: 'Your success is our success. We provide dedicated support and tools to help every trader grow.',
   },
   {
-    icon: Globe,
+    icon: '\uD83C\uDF10',
     title: 'Pan-India Vision',
     description: 'Connecting every corner of India through trade. Breaking down geographical barriers to create a unified marketplace.',
   },
@@ -90,7 +90,7 @@ export default function AboutTradingoPage() {
     <>
       <PageHeader
         title="About TRADINGO"
-        description="India's first TEM™ (Trusted Electronic Marketplace) connecting buyers and sellers through trust, technology, and transparent trading."
+        description="India's first TEM (Trusted Electronic Marketplace) connecting buyers and sellers through trust, technology, and transparent trading."
       />
 
       {/* Mission & Vision */}
@@ -135,7 +135,7 @@ export default function AboutTradingoPage() {
             <div className="mx-auto max-w-3xl text-center">
               <SectionHeader
                 title="Our Story"
-                subtitle="How TRADINGO went from an idea to India's first TEM™ E-Marketplace."
+                subtitle="How TRADINGO went from an idea to India's first TEM E-Marketplace."
               />
               <div className="space-y-6 text-left text-text-secondary dark:text-dark-text-secondary leading-relaxed">
                 <p>
@@ -149,8 +149,8 @@ export default function AboutTradingoPage() {
                   connecting buyers and sellers, but by creating a system where trust was built into every transaction.
                 </p>
                 <p>
-                  That vision became TEM™ — the Trusted Electronic Marketplace framework. Unlike traditional e-commerce
-                  marketplaces, TEM™ combines verified identities, escrow-protected payments, AI-powered matching, and a
+                  That vision became TEM — the Trusted Electronic Marketplace framework. Unlike traditional e-commerce
+                  marketplaces, TEM combines verified identities, escrow-protected payments, AI-powered matching, and a
                   rewards ecosystem into a single, unified trading experience.
                 </p>
                 <p>

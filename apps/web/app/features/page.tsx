@@ -1,25 +1,5 @@
 import type { Metadata } from 'next';
-import {
-  Globe,
-  Zap,
-  Shield,
-  BarChart3,
-  Award,
-  MessageSquare,
-  Package,
-  Truck,
-  Search,
-  CreditCard,
-  Building2,
-  Bell,
-  Bot,
-  FileText,
-  Headphones,
-  BadgeCheck,
-  Lock,
-  Activity,
-  Eye,
-} from 'lucide-react';
+
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -35,38 +15,38 @@ export const metadata: Metadata = {
 
 const sellerFeatures = [
   {
-    icon: Globe,
+    icon: '🌐',
     title: 'Pan-India Reach',
     description: 'List products to millions of buyers across 500+ cities with tools for multi-currency and multi-language support.',
     href: '/products',
   },
   {
-    icon: Package,
+    icon: '📦',
     title: 'TRADBUY Listings',
     description: 'Create rich product listings with AI-powered categorization, bulk upload, and dynamic pricing controls.',
     href: '/tradbuy',
     badge: 'AI',
   },
   {
-    icon: Zap,
+    icon: '⚡',
     title: 'RFQ Matching',
     description: 'Receive AI-matched RFQs from qualified buyers. Respond with competitive quotes and close deals faster.',
     href: '/rfq',
   },
   {
-    icon: BarChart3,
+    icon: '📊',
     title: 'Seller Analytics',
     description: 'Real-time insights on product views, inquiries, conversion rates, revenue trends, and competitor benchmarking.',
     href: '/for-sellers',
   },
   {
-    icon: Award,
+    icon: '🏆',
     title: 'GOCASH Rewards',
     description: 'Earn GOCASH on every completed sale. Redeem for listing boosts, premium features, and platform discounts.',
     href: '/gocash',
   },
   {
-    icon: Truck,
+    icon: '🚚',
     title: 'Logistics Integration',
     description: 'Integrated shipping partners for pan-India fulfillment. Track orders, generate labels, and manage returns.',
     href: '/tradgo',
@@ -75,37 +55,37 @@ const sellerFeatures = [
 
 const buyerFeatures = [
   {
-    icon: Search,
+    icon: '🔍',
     title: 'Smart Product Search',
     description: 'AI-powered search with filters for category, price, location, minimum order, and seller verification level.',
     href: '/products',
   },
   {
-    icon: MessageSquare,
+    icon: '💬',
     title: 'RFQ & Negotiation',
     description: 'Post RFQs and receive competitive quotes from multiple sellers. Negotiate pricing and terms in real time.',
     href: '/rfq',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Escrow Protection',
     description: 'Payments held securely in escrow until goods are delivered and confirmed. Risk-free transactions guaranteed.',
     href: '/why-tradingo',
   },
   {
-    icon: Eye,
+    icon: '👁️',
     title: 'Transparent Pricing',
     description: 'Compare prices across sellers, view historical price trends, and make informed purchasing decisions.',
     href: '/for-buyers',
   },
   {
-    icon: Building2,
+    icon: '🏢',
     title: 'Verified Suppliers',
     description: 'Source from KYC-verified suppliers with trust scores, transaction history, and real user reviews.',
     href: '/companies',
   },
   {
-    icon: CreditCard,
+    icon: '💳',
     title: 'Flexible Payments',
     description: 'Pay via UPI, net banking, credit cards, or trade credit. Multiple payment options with instant confirmation.',
     href: '/order',
@@ -114,44 +94,44 @@ const buyerFeatures = [
 
 const platformFeatures = [
   {
-    icon: Bot,
+    icon: '🤖',
     title: 'AI Trade Assistant',
     description: 'Intelligent assistant for product recommendations, pricing suggestions, and market insights.',
     badge: 'AI',
   },
   {
-    icon: FileText,
+    icon: '📄',
     title: 'Automated Documentation',
     description: 'Auto-generated invoices, purchase orders, and GST-compliant tax documents for every transaction.',
   },
   {
-    icon: Bell,
+    icon: '🔔',
     title: 'Smart Notifications',
     description: 'Real-time alerts for RFQs, quotes, orders, payments, and platform updates via email, SMS, and in-app.',
   },
   {
-    icon: Headphones,
+    icon: '🎧',
     title: '24/7 Support',
     description: 'Multi-channel support with live chat, email, phone, and dedicated relationship managers for enterprise clients.',
   },
   {
-    icon: Activity,
+    icon: '📈',
     title: 'Trade Matching Engine',
     description: 'Proprietary algorithm matching buyer requirements with seller catalogs for optimal trade pairings.',
     badge: 'New',
   },
   {
-    icon: Globe,
+    icon: '🌐',
     title: 'Multi-Currency Support',
     description: 'Trade in INR, USD, EUR, and more. Real-time currency conversion with competitive exchange rates.',
   },
   {
-    icon: Package,
+    icon: '📦',
     title: 'Bulk Operations',
     description: 'API access for bulk product upload, order processing, inventory syncing, and catalog management.',
   },
   {
-    icon: BarChart3,
+    icon: '📊',
     title: 'Market Intelligence',
     description: 'Industry trends, pricing benchmarks, demand forecasts, and competitive analysis powered by AI.',
   },
@@ -159,17 +139,17 @@ const platformFeatures = [
 
 const trustFeatures = [
   {
-    icon: Lock,
+    icon: '🔒',
     title: 'Enterprise-Grade Security',
     description: '256-bit SSL encryption, SOC 2 compliance, and regular third-party security audits. Your data stays protected.',
   },
   {
-    icon: BadgeCheck,
+    icon: '✅',
     title: 'KYC-Verified Ecosystem',
     description: 'Every company undergoes thorough KYC verification. Trust scores and transaction history visible to all partners.',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Dispute Resolution',
     description: 'Structured dispute resolution process with neutral mediators. Escrow ensures fair outcomes for both parties.',
   },

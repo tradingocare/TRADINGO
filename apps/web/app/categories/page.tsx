@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Package } from 'lucide-react';
+
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -15,77 +15,77 @@ export const metadata: Metadata = {
 
 const categories = [
   {
-    icon: Package,
+    icon: '🏭',
     title: 'Raw Materials',
     description: 'Metals, plastics, chemicals, and other raw industrial materials for manufacturing.',
   },
   {
-    icon: Package,
+    icon: '🔧',
     title: 'Industrial Supplies',
     description: 'Tools, equipment, safety gear, and maintenance supplies for industrial operations.',
   },
   {
-    icon: Package,
+    icon: '💻',
     title: 'Electronics',
     description: 'Electronic components, devices, semiconductors, and consumer electronics.',
   },
   {
-    icon: Package,
+    icon: '👕',
     title: 'Textiles',
     description: 'Fabrics, yarns, garments, and textile raw materials for the fashion industry.',
   },
   {
-    icon: Package,
+    icon: '🧪',
     title: 'Chemicals',
     description: 'Industrial chemicals, solvents, adhesives, and specialty chemical products.',
   },
   {
-    icon: Package,
+    icon: '📦',
     title: 'Packaging',
     description: 'Packaging materials, containers, labels, and printing solutions.',
   },
   {
-    icon: Package,
+    icon: '🚗',
     title: 'Automotive',
     description: 'Vehicle parts, accessories, lubricants, and automotive service equipment.',
   },
   {
-    icon: Package,
+    icon: '🍔',
     title: 'Food & Beverages',
     description: 'Processed foods, beverages, ingredients, and food processing equipment.',
   },
   {
-    icon: Package,
+    icon: '🏗️',
     title: 'Construction',
     description: 'Building materials, hardware, fixtures, and construction equipment.',
   },
   {
-    icon: Package,
+    icon: '🏥',
     title: 'Healthcare',
     description: 'Medical equipment, pharmaceuticals, healthcare supplies, and laboratory products.',
   },
   {
-    icon: Package,
+    icon: '🌾',
     title: 'Agriculture',
     description: 'Farm equipment, seeds, fertilizers, and agricultural supplies.',
   },
   {
-    icon: Package,
+    icon: '🪑',
     title: 'Furniture',
     description: 'Office furniture, home furnishings, and commercial interior solutions.',
   },
   {
-    icon: Package,
+    icon: '✏️',
     title: 'Stationery',
     description: 'Office supplies, paper products, writing instruments, and school supplies.',
   },
   {
-    icon: Package,
+    icon: '🦺',
     title: 'Safety Equipment',
     description: 'Personal protective equipment, fire safety gear, and industrial safety solutions.',
   },
   {
-    icon: Package,
+    icon: '🚚',
     title: 'Logistics',
     description: 'Warehousing, transportation, shipping supplies, and logistics services.',
   },

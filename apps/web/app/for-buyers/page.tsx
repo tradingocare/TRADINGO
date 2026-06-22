@@ -1,14 +1,5 @@
 import type { Metadata } from 'next';
-import {
-  Shield,
-  FileText,
-  CheckCircle,
-  TrendingDown,
-  Globe,
-  Package,
-  Truck,
-  Headphones,
-} from 'lucide-react';
+import { Shield, FileText, CheckCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -25,50 +16,50 @@ export const metadata: Metadata = {
 
 const buyerFeatures = [
   {
-    icon: CheckCircle,
+    icon: '✅',
     title: 'Verified Products',
     description: 'Authenticated listings with detailed specifications, certifications, and seller ratings.',
     href: '/products',
   },
   {
-    icon: FileText,
+    icon: '📄',
     title: 'RFQ Marketplace',
     description: 'Post your requirements and receive competitive quotes from multiple verified sellers instantly.',
     href: '/rfq',
     badge: 'Popular',
   },
   {
-    icon: Shield,
+    icon: '🛡️',
     title: 'Escrow Protection',
     description: 'Your payments are held in escrow. Pay only when you confirm satisfaction with the delivery.',
     href: '/why-tradingo',
   },
   {
-    icon: TrendingDown,
+    icon: '📉',
     title: 'Price Comparison',
     description: 'Compare quotes side-by-side to find the best price, delivery terms, and seller ratings.',
     href: '/categories',
   },
   {
-    icon: Globe,
+    icon: '🌐',
     title: 'Pan-India Network',
     description: 'Source from sellers across 500+ cities. Find local suppliers to reduce logistics costs.',
     href: '/trading',
   },
   {
-    icon: Package,
+    icon: '📦',
     title: 'Bulk Ordering',
     description: 'Place bulk orders with ease. Get volume discounts and negotiate directly with suppliers.',
     href: '/products',
   },
   {
-    icon: Truck,
+    icon: '🚚',
     title: 'Track Deliveries',
     description: 'Real-time tracking of your shipments with integrated logistics partners across India.',
     href: '/trading',
   },
   {
-    icon: Headphones,
+    icon: '🎧',
     title: 'Buyer Support',
     description: '24/7 dedicated buyer support team to help with inquiries, disputes, and order management.',
     href: '/contact',

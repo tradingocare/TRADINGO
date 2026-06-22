@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Download, Mail, Image, Users, Newspaper } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 const keyFacts = [
   { label: 'Founded', value: '2024' },
   { label: 'Headquarters', value: 'Mumbai, India' },
-  { label: 'Platform', value: 'B2B E-Marketplace (TEM™)' },
+  { label: 'Platform', value: 'B2B E-Marketplace (TEM)' },
   { label: 'Sectors', value: 'Multi-industry' },
   { label: 'Users', value: '10,000+ Beta Companies' },
   { label: 'Products Listed', value: '50,000+' },
@@ -70,12 +70,12 @@ export default function PressKitPage() {
           <AnimatedSection>
             <SectionHeader
               title="About TRADINGO"
-              subtitle="India's first TEM™ (Trust, E-Marketplace, Multiplier) platform transforming B2B trade."
+              subtitle="India's first TEM (Trust, E-Marketplace, Multiplier) platform transforming B2B trade."
               align="left"
             />
             <div className="mx-auto max-w-4xl space-y-6">
               <p className="text-lg leading-relaxed text-text-secondary dark:text-dark-text-secondary">
-                TRADINGO is India&apos;s first TEM™ E-Marketplace, connecting buyers and sellers through
+                TRADINGO is India&apos;s first TEM E-Marketplace, connecting buyers and sellers through
                 trust, technology, and transparent trading. Founded in 2024 and headquartered in Mumbai,
                 TRADINGO provides a comprehensive B2B trading platform featuring AI-powered product matching,
                 secure escrow payments, real-time negotiation, and gamified rewards through GOCASH and TRADGO.

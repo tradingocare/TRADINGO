@@ -27,9 +27,9 @@ export function Hero({
     <section className="relative overflow-hidden px-4 pb-20 pt-24 sm:pb-28 sm:pt-32">
       {gradient && (
         <div className="absolute inset-0 -z-10">
-          <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-primary-500/10 blur-3xl" />
+          <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-accent-500/10 blur-3xl" />
           <div className="absolute -right-40 -top-20 h-80 w-80 rounded-full bg-accent-500/10 blur-3xl" />
-          <div className="absolute bottom-0 left-1/2 h-60 w-full -translate-x-1/2 bg-gradient-to-t from-primary-50/50 to-transparent dark:from-primary-900/10" />
+          <div className="absolute bottom-0 left-1/2 h-60 w-full -translate-x-1/2 bg-gradient-to-t from-accent-50/30 to-transparent dark:from-accent-900/10" />
         </div>
       )}
 
@@ -72,10 +72,10 @@ export function Hero({
               <Shield className="h-4 w-4 text-accent-500" /> Secure Trading
             </span>
             <span className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary-500" /> Instant Matching
+              <Zap className="h-4 w-4 text-accent-500" /> Instant Matching
             </span>
             <span className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-500" /> GOCASH Rewards
+              <Sparkles className="h-4 w-4 text-accent-500" /> GOCASH Rewards
             </span>
           </div>
         </div>

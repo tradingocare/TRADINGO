@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
             </div>
           </CardHeader>
           <CardContent className="text-center">
-            <Link href="/login" className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400">
+            <Link href="/login" className="text-sm text-accent-500 hover:text-accent-600 dark:text-accent-400">
               &larr; Back to sign in
             </Link>
           </CardContent>
@@ -109,7 +109,7 @@ export default function ForgotPasswordPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-text-secondary dark:text-dark-text-secondary">
-            <Link href="/login" className="inline-flex items-center gap-1 font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+            <Link href="/login" className="inline-flex items-center gap-1 font-medium text-accent-500 hover:text-accent-600 dark:text-accent-400">
               <ArrowLeft className="h-4 w-4" />
               Back to sign in
             </Link>

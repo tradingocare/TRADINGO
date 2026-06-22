@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+﻿import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, Truck, ShieldCheck, PackageSearch, Globe, MapPin } from 'lucide-react';
 
@@ -50,7 +50,7 @@ export function BadgesBar({ product, className }: BadgesBarProps) {
       variant: 'secondary',
     },
     {
-      label: 'Near Me → Far™',
+      label: 'Near Me → Far',
       icon: <MapPin className="mr-1 h-3.5 w-3.5" />,
       show: !!(product.latitude != null && product.longitude != null),
       variant: 'secondary',

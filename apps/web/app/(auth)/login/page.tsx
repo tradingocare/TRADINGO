@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -105,7 +105,7 @@ export default function LoginPage() {
                 </label>
                 <Link
                   href="/forgot-password"
-                  className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  className="text-xs text-accent-500 hover:text-accent-600 dark:text-accent-400"
                 >
                   Forgot password?
                 </Link>
@@ -168,7 +168,7 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-sm text-text-secondary dark:text-dark-text-secondary">
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+            <Link href="/register" className="font-medium text-accent-500 hover:text-accent-600 dark:text-accent-400">
               Sign up
             </Link>
           </p>

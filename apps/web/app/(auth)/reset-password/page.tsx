@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -148,7 +148,7 @@ export default function ResetPasswordPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-text-secondary dark:text-dark-text-secondary">
-            <Link href="/login" className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+            <Link href="/login" className="font-medium text-accent-500 hover:text-accent-600 dark:text-accent-400">
               &larr; Back to sign in
             </Link>
           </p>

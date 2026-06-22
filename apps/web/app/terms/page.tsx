@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { PageHeader } from '@/components/shared/page-header';
 import { CTABlock } from '@/components/shared/cta-block';
 
@@ -81,7 +81,7 @@ const termsSections = [
   {
     title: '5. Intellectual Property',
     content:
-      'The TRADINGO platform, including its design, logo, TEM™ framework, TRADHEXA™ engines, and all related content, is the intellectual property of TRADINGO Technologies Pvt. Ltd. Users retain ownership of content they post but grant TRADINGO a license to use it for platform operations.',
+      'The TRADINGO platform, including its design, logo, TEM framework, TRADHEXA engines, and all related content, is the intellectual property of TRADINGO Technologies Pvt. Ltd. Users retain ownership of content they post but grant TRADINGO a license to use it for platform operations.',
     subsections: [
       {
         heading: 'Platform IP',

@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+﻿import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description: `View ${company.name}'s profile, products, and contact information on TRADINGO.`,
       openGraph: {
         title: `${company.name} | TRADINGO`,
-        description: `Browse products from ${company.name} on TRADINGO TEM™ E-Marketplace.`,
+        description: `Browse products from ${company.name} on TRADINGO TEM E-Marketplace.`,
       },
     };
   } catch {

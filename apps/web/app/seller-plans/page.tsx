@@ -137,10 +137,10 @@ export default function SellerPlansPage() {
           <div className="mx-auto max-w-4xl overflow-hidden rounded-xl border border-border shadow-sm dark:border-dark-border">
             <table className="w-full">
               <thead>
-                <tr className="bg-primary-50 dark:bg-primary-900/20">
+                <tr className="bg-accent-50 dark:bg-accent-900/20">
                   <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary dark:text-dark-text-primary">Feature</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-text-primary dark:text-dark-text-primary">Starter</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-primary-600 dark:text-primary-400">Business</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-accent-500 dark:text-accent-400">Business</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-text-primary dark:text-dark-text-primary">Enterprise</th>
                 </tr>
               </thead>
@@ -155,7 +155,7 @@ export default function SellerPlansPage() {
                         feature.starter
                       )}
                     </td>
-                    <td className="px-6 py-4 text-center text-sm font-medium text-primary-600 dark:text-primary-400">
+                    <td className="px-6 py-4 text-center text-sm font-medium text-accent-500 dark:text-accent-400">
                       {typeof feature.business === 'boolean' ? (
                         feature.business ? <CheckIcon /> : <CrossIcon />
                       ) : (
@@ -191,7 +191,7 @@ export default function SellerPlansPage() {
               <AnimatedSection key={faq.q} delay={i * 50}>
                 <div className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
                   <div className="flex items-start gap-3">
-                    <HelpCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary-500" />
+                    <HelpCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-accent-500" />
                     <div>
                       <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">{faq.q}</h3>
                       <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">{faq.a}</p>

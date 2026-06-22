@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Shield, Zap, Award, Globe, Headphones, CheckCircle2, XCircle, BarChart3, DollarSign, Clock } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -7,7 +7,7 @@ import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
 
 export const metadata: Metadata = {
-  title: 'Why TRADINGO | India\'s First TEM™ E-Marketplace',
+  title: 'Why TRADINGO | India\'s First TEM E-Marketplace',
 };
 
 const differentiators = [
