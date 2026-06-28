@@ -27,11 +27,11 @@ export function SectionHeader({
         className,
       )}
     >
-      <h2 className="text-3xl font-bold tracking-tight text-text-primary sm:text-4xl lg:text-5xl dark:text-dark-text-primary">
+      <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
         {title}
       </h2>
       {subtitle && (
-        <p className="mx-auto max-w-2xl text-lg text-text-secondary dark:text-dark-text-secondary">
+        <p className="mx-auto max-w-2xl text-lg text-white/60">
           {subtitle}
         </p>
       )}
@@ -39,7 +39,7 @@ export function SectionHeader({
         <div className={cn('pt-2', align === 'center' && 'text-center')}>
           <Link
             href={viewMoreHref}
-            className="group inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            className="group inline-flex items-center gap-2 text-sm font-medium text-[#FF4D00] transition-colors hover:text-orange-400"
           >
             {viewMoreLabel}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

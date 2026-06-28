@@ -18,7 +18,7 @@ export function RouteGuard({ children, allowedRoles }: RouteGuardProps) {
   useEffect(() => {
     const token = getAccessToken();
     if (!token) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      router.push(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
 

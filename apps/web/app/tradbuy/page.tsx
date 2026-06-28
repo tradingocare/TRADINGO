@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -7,6 +7,7 @@ import { FeatureCards } from '@/components/shared/feature-cards';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TRADING_FEATURES, TRADING_RFQ_STEPS, FEATURES_BUYER } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'TRADBUY — Instant Purchase | TRADINGO',
@@ -14,91 +15,11 @@ export const metadata: Metadata = {
     'Buy products instantly at listed prices with secure payment processing and automated order matching on TRADINGO.',
 };
 
-const features = [
-  {
-    icon: '🛒',
-    title: 'Instant Purchase',
-    description: 'Buy products immediately at the listed price. No waiting, no negotiation — just click and buy.',
-    badge: 'Instant',
-  },
-  {
-    icon: '⚡',
-    title: 'Fixed Pricing',
-    description: 'Transparent, non-negotiable prices set by sellers. Know exactly what you pay upfront.',
-  },
-  {
-    icon: '💳',
-    title: 'Quick Checkout',
-    description: 'Streamlined checkout process with saved payment methods. Complete purchases in seconds.',
-  },
-  {
-    icon: '📦',
-    title: 'Order Tracking',
-    description: 'Real-time order tracking from purchase to delivery. Know where your order is at every step.',
-    badge: 'Live',
-  },
-  {
-    icon: '🛡️',
-    title: 'Secure Payment',
-    description: 'Every payment is processed through our escrow system. Funds released only on your confirmation.',
-  },
-  {
-    icon: '🔄',
-    title: 'Auto-Matching',
-    description: 'Orders are automatically matched to the right seller. No manual assignment needed.',
-  },
-];
+const features = TRADING_FEATURES;
 
-const steps = [
-  {
-    number: '01',
-    title: 'Browse Products',
-    description: 'Browse thousands of products across categories. Use filters to narrow down by price, location, seller rating, and more.',
-  },
-  {
-    number: '02',
-    title: 'Select & Add to Cart',
-    description: 'Found what you need? Add it to your cart. Review product specifications, seller details, and pricing before checkout.',
-  },
-  {
-    number: '03',
-    title: 'Checkout & Pay',
-    description: 'Enter delivery details, choose your payment method, and confirm your order. Funds are held securely in escrow.',
-  },
-  {
-    number: '04',
-    title: 'Auto-Match & Process',
-    description: 'Our system automatically matches your order with the seller, notifies them, and initiates the fulfillment process.',
-  },
-  {
-    number: '05',
-    title: 'Receive & Confirm',
-    description: 'Receive your order, inspect the products, and confirm satisfaction. Funds are released to the seller.',
-  },
-];
+const steps = TRADING_RFQ_STEPS;
 
-const benefits = [
-  {
-    icon: '⚡',
-    title: 'Lightning Fast',
-    description: 'Complete a purchase in under 2 minutes. No back-and-forth negotiation required.',
-  },
-  {
-    icon: '🛡️',
-    title: 'Zero Risk',
-    description: 'Escrow-protected payments mean you only pay when you are satisfied with the product.',
-  },
-  {
-    icon: '🔍',
-    title: 'Full Transparency',
-    description: 'Seller ratings, product reviews, and detailed specifications available before purchase.',
-  },
-  {
-    icon: '⭐',
-    title: 'GOCASH Rewards',
-    description: 'Earn GOCASH on every TRADBUY purchase. Redeem for platform benefits and discounts.',
-  },
-];
+const benefits = FEATURES_BUYER;
 
 export default function TradbuyPage() {
   return (
@@ -155,11 +76,11 @@ export default function TradbuyPage() {
           />
           <div className="mx-auto max-w-3xl space-y-8">
             {steps.map((step, index) => (
-              <AnimatedSection key={step.number} delay={index * 100}>
+              <AnimatedSection key={step.step} delay={index * 100}>
                 <div className="flex gap-6">
                   <div className="flex flex-shrink-0 flex-col items-center">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 text-lg font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
-                      {step.number}
+                      {step.step}
                     </div>
                     {index < steps.length - 1 && (
                       <div className="mt-2 h-full w-0.5 bg-border dark:bg-dark-border" />

@@ -3,6 +3,7 @@ import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validato
 export enum PaymentOrderType {
   ORDER = 'ORDER_PAYMENT',
   CREDIT_PACK = 'CREDIT_PACK_PURCHASE',
+  SUBSCRIPTION = 'SUBSCRIPTION',
 }
 
 export class CreatePaymentOrderDto {

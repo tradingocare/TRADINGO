@@ -1,5 +1,25 @@
 import { apiClient } from './client';
 
+export interface NearMeSeller {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  isVerified: boolean;
+  isElite: boolean;
+  trustScore: number;
+  gstVerified: boolean;
+  yearsActive?: number;
+  avgResponseTime?: string;
+  totalOrders?: number;
+  totalProducts?: number;
+  totalReviews?: number;
+  rating: number;
+}
+
 export interface NearMeProduct {
   id: string;
   productId: string;
@@ -23,6 +43,7 @@ export interface NearMeProduct {
   companySlug: string;
   categoryName: string | null;
   imageUrl: string | null;
+  seller: NearMeSeller;
 }
 
 export interface NearMeMeta {

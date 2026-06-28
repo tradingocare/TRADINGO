@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle, HelpCircle } from 'lucide-react';
-import { engines, type EngineData } from '@/lib/data/tradhexa-engines';
+import { engines } from '@/lib/data/tradhexa-engines';
 
 const allEngines = engines;
 
@@ -132,7 +132,7 @@ export default function EngineDetailPage({ engineId: _engineId }: { engineId: st
             </motion.span>
           </Link>
           <div className="mt-3 flex items-center justify-center gap-3 text-xs">
-            <Link href="/auth/register" className="text-white/40 underline underline-offset-2 hover:text-white/60">Become a Seller</Link>
+            <Link href="/register" className="text-white/40 underline underline-offset-2 hover:text-white/60">Become a Seller</Link>
             <span className="text-white/10">|</span>
             <Link href="/tradhexa" className="text-[#D4AF37]/60 underline underline-offset-2 hover:text-[#D4AF37]">Learn About TRADHEXA</Link>
           </div>

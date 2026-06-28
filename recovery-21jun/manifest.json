@@ -1,0 +1,102 @@
+{
+  "session": "TRADINGO Design System Redesign — 21 June 2026",
+  "branch": "backup-right-now",
+  "head_commit": "2053d85 feat: complete Phase 7D.7 Playwright E2E Test Suite",
+  "recovery_date": "2026-06-22",
+  "files": [
+    {
+      "path": "apps/web/app/globals.css",
+      "source": "reconstruction",
+      "confidence": "High",
+      "assumptions": [
+        "Exact content reconstructed from session output — 512-line full design system rewrite"
+      ]
+    },
+    {
+      "path": "apps/web/tailwind.config.ts",
+      "source": "reconstruction",
+      "confidence": "High",
+      "assumptions": [
+        "Exact content reconstructed from session output — base/accent/glow tokens"
+      ]
+    },
+    {
+      "path": "apps/web/app/layout.tsx",
+      "source": "reconstruction",
+      "confidence": "High",
+      "assumptions": [
+        "Exact content reconstructed from session output — viewport, Playfair, pt-16"
+      ]
+    },
+    {
+      "path": "apps/web/hooks/use-cursor-glow.ts",
+      "source": "reconstruction",
+      "confidence": "High",
+      "assumptions": [
+        "Exact content reconstructed from session output — 6-color cursor glow hook"
+      ]
+    },
+    {
+      "path": "apps/web/hooks/index.ts",
+      "source": "diff",
+      "confidence": "High",
+      "assumptions": [
+        "Single line added: export * from './use-cursor-glow'"
+      ]
+    },
+    {
+      "path": "apps/web/components/shared/navbar.tsx",
+      "source": "partial-reconstruction",
+      "confidence": "Medium",
+      "assumptions": [
+        "Working tree has an intermediate glass-pill version with OLD brand colors (#DBF1FD, #0a2540)",
+        "Reconstructed by fixing old colors to #1F0318/#FF4D00 per the design system prompt",
+        "Original session agents were interrupted before completing the full rebuild"
+      ]
+    },
+    {
+      "path": "apps/web/components/shared/footer.tsx",
+      "source": "reconstruction",
+      "confidence": "Medium",
+      "assumptions": [
+        "Reconstructed from design system prompt — 6 separate glass cards + newsletter",
+        "Uses .glass-card and .glow-surface CSS classes from globals.css",
+        "Similar to the working session version but reconstructed, not exact"
+      ]
+    },
+    {
+      "path": "apps/web/app/page.tsx",
+      "source": "color-sweep",
+      "confidence": "Medium",
+      "assumptions": [
+        "Based on HEAD version (505 lines) with gold/green colors replaced by orange (#FF4D00)",
+        "Original session agents were interrupted before completing",
+        "All bg-surface/bg-surface-secondary patterns changed to glass styles"
+      ]
+    },
+    {
+      "path": "apps/web/components/shared/tradingo-logo.tsx",
+      "source": "working-tree-copy",
+      "confidence": "High",
+      "assumptions": [
+        "Working tree version with light prop is correct and should be preserved"
+      ]
+    },
+    {
+      "path": "apps/web/package.json",
+      "source": "working-tree-copy",
+      "confidence": "High",
+      "assumptions": [
+        "framer-motion@^12.0.0 added as dependency (used by navbar glass animations)"
+      ]
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "source": "working-tree-copy",
+      "confidence": "High",
+      "assumptions": [
+        "Updated to reflect framer-motion addition; no other changes"
+      ]
+    }
+  ]
+}

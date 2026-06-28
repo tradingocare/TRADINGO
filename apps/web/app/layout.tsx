@@ -9,6 +9,7 @@ import { Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/shared/navbar';
 import { Footer } from '@/components/shared/footer';
+import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 import { Providers } from '@/components/providers/providers';
 import { ServiceWorkerRegister } from '@/components/shared/service-worker-register';
 import { PwaInstallPrompt } from '@/components/shared/pwa-install-prompt';
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <Navbar />
           <main className="pt-16">{children}</main>
+          <ClaimYourGrowth />
           <Footer />
         </Providers>
         <CompareBar />

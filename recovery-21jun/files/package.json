@@ -1,0 +1,24 @@
+/* ═══════════════════════════════════════════════════════════════
+   RECOVERY: apps/web/package.json
+   Source: Copy from working tree
+   Confidence: HIGH — single dep added
+   Action: Keep as-is (framer-motion is needed for navbar animations)
+   ═══════════════════════════════════════════════════════════════
+
+   Change from HEAD commit 2053d85:
+   Added: "framer-motion": "^12.0.0" to dependencies
+
+   This is required by the glass-pill navbar for:
+   - layoutId animations (active nav indicator underline)
+   - AnimatePresence (mobile menu enter/exit transitions)
+   - motion.div (smooth animations)
+
+   Full dependencies section (changes only the one line):
+   "dependencies": {
+     ...
+     "clsx": "^2.1.0",
+     "framer-motion": "^12.0.0",     // ← ADDED
+     "jose": "^6.2.3",
+     ...
+   }
+*/

@@ -21,6 +21,26 @@ export interface NearMeQuery {
   limit?: number;
 }
 
+export interface NearMeSeller {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  isVerified: boolean;
+  isElite: boolean;
+  trustScore: number;
+  gstVerified: boolean;
+  yearsActive?: number;
+  avgResponseTime?: string;
+  totalOrders?: number;
+  totalProducts?: number;
+  totalReviews?: number;
+  rating: number;
+}
+
 export interface NearMeProduct {
   id: string;
   productId: string;
@@ -44,6 +64,7 @@ export interface NearMeProduct {
   categoryId: string | null;
   categoryName: string | null;
   imageUrl: string | null;
+  seller: NearMeSeller;
 }
 
 const RADIUS_STEPS = [
@@ -174,8 +195,18 @@ export class NearMeService {
         ROUND(f.distance::numeric, 2)::float8 AS "distanceKm",
         p.name, p.slug, p."shortDescription", p.unit,
         c.name AS "companyName", c.slug AS "companySlug",
+        c.logo AS "companyLogo",
+        c."trustScore" AS "companyTrustScore",
+        c."verificationLevel" AS "companyVerificationLevel",
+        c."isTradgoElite" AS "companyIsTradgoElite",
+        c."gstNumber" AS "companyGstNumber",
+        c."responseRate" AS "companyResponseRate",
+        c."establishedYear" AS "companyEstablishedYear",
+        c."totalProducts" AS "companyTotalProducts",
         cat.name AS "categoryName",
-        (SELECT pm.url FROM "ProductMedia" pm WHERE pm."productId" = f."productId" ORDER BY pm."sortOrder" ASC LIMIT 1) AS "imageUrl"
+        (SELECT pm.url FROM "ProductMedia" pm WHERE pm."productId" = f."productId" ORDER BY pm."sortOrder" ASC LIMIT 1) AS "imageUrl",
+        (SELECT loc.city FROM "CompanyLocation" loc WHERE loc."companyId" = c.id AND loc."isPrimary" = true LIMIT 1) AS "sellerCity",
+        (SELECT loc.state FROM "CompanyLocation" loc WHERE loc."companyId" = c.id AND loc."isPrimary" = true LIMIT 1) AS "sellerState"
       FROM filtered f
       JOIN "Product" p ON p.id = f."productId"
       JOIN "Company" c ON c.id = f."companyId"
@@ -205,6 +236,25 @@ export class NearMeService {
         ...p,
         distanceLabel: this.getDistanceLabel(Number(p.distanceKm)),
         price: p.price ? Number(p.price) : null,
+        seller: {
+          id: p.companyId,
+          name: p.companyName || 'Verified Supplier',
+          slug: p.companySlug,
+          logo: p.companyLogo || undefined,
+          city: p.sellerCity || undefined,
+          state: p.sellerState || undefined,
+          country: undefined,
+          isVerified: p.companyVerificationLevel !== 'LEVEL_0' && p.companyVerificationLevel != null,
+          isElite: !!p.companyIsTradgoElite,
+          trustScore: p.companyTrustScore || 0,
+          gstVerified: !!p.companyGstNumber,
+          yearsActive: p.companyEstablishedYear ? new Date().getFullYear() - p.companyEstablishedYear : undefined,
+          avgResponseTime: p.companyResponseRate ? `< ${p.companyResponseRate}` : undefined,
+          totalOrders: p.monthlyOrders || undefined,
+          totalProducts: p.companyTotalProducts || undefined,
+          totalReviews: undefined,
+          rating: 0,
+        },
       }));
 
       return {

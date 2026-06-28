@@ -8,6 +8,7 @@ import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { GOCASH_EARN_FEATURES, GOCASH_REDEMPTIONS, GOCASH_TIERS, GOCASH_EARNING_RATES } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'GOCASH Rewards | TRADINGO',
@@ -15,96 +16,13 @@ export const metadata: Metadata = {
     'Earn GOCASH on every trade. Redeem for platform benefits, discounts, and premium features on TRADINGO.',
 };
 
-const earnFeatures = [
-  {
-    icon: '✨',
-    title: 'Earn',
-    description: 'Receive 2-5% GOCASH back on every successful trade completed on the platform.',
-    badge: '2-5%',
-  },
-  {
-    icon: '📈',
-    title: 'Accumulate',
-    description: 'Watch your GOCASH balance grow as you trade more. No expiry on earned rewards.',
-    badge: 'Unlimited',
-  },
-  {
-    icon: '🎁',
-    title: 'Redeem',
-    description: 'Spend GOCASH on listing boosts, analytics, support upgrades, and fee discounts.',
-    badge: 'Instant',
-  },
-];
+const earnFeatures = GOCASH_EARN_FEATURES;
 
-const redemptionOptions = [
-  {
-    icon: '📈',
-    title: 'Listing Boosts',
-    description: 'Promote your products to top positions in search results and category pages.',
-  },
-  {
-    icon: '⭐',
-    title: 'Premium Analytics',
-    description: 'Unlock advanced market insights, competitor analysis, and detailed performance reports.',
-  },
-  {
-    icon: '🛡️',
-    title: 'Priority Support',
-    description: 'Get faster responses with priority customer support and dedicated relationship managers.',
-  },
-  {
-    icon: '💰',
-    title: 'Fee Discounts',
-    description: 'Reduce platform fees on transactions. Higher tiers get larger discounts.',
-  },
-];
+const redemptionOptions = GOCASH_REDEMPTIONS;
 
-const loyaltyTiers = [
-  {
-    tier: 'Bronze',
-    min: '0 GOCASH',
-    earnRate: '1x',
-    color: 'from-amber-700 to-amber-500',
-    bg: 'bg-amber-50 dark:bg-amber-900/10',
-    border: 'border-amber-200 dark:border-amber-800',
-    features: ['Basic analytics', 'Standard support', '1x earning rate'],
-  },
-  {
-    tier: 'Silver',
-    min: '1,000 GOCASH',
-    earnRate: '2x',
-    color: 'from-gray-400 to-gray-300',
-    bg: 'bg-gray-50 dark:bg-gray-900/10',
-    border: 'border-gray-300 dark:border-gray-700',
-    popular: true,
-    features: ['Priority support', '2x earning rate', 'Listing boost access', 'Analytics upgrade'],
-  },
-  {
-    tier: 'Gold',
-    min: '10,000 GOCASH',
-    earnRate: '3x',
-    color: 'from-yellow-500 to-amber-400',
-    bg: 'bg-yellow-50 dark:bg-yellow-900/10',
-    border: 'border-yellow-300 dark:border-yellow-700',
-    features: ['Dedicated manager', '3x earning rate', 'API access', 'Fee discounts', 'Priority support'],
-  },
-  {
-    tier: 'Platinum',
-    min: '50,000 GOCASH',
-    earnRate: '5x',
-    color: 'from-sky-500 to-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-900/10',
-    border: 'border-blue-300 dark:border-blue-700',
-    features: ['Everything in Gold', '5x earning rate', 'White-label options', 'Zero platform fees', 'VIP events'],
-  },
-];
+const loyaltyTiers = GOCASH_TIERS;
 
-const earningRates = [
-  { type: 'Direct Purchase (TRADBUY)', rate: '2%', minGocash: '20 per ₹1,000' },
-  { type: 'RFQ Deal', rate: '3%', minGocash: '30 per ₹1,000' },
-  { type: 'Trade Matching', rate: '4%', minGocash: '40 per ₹1,000' },
-  { type: 'Bulk Transaction (₹1L+)', rate: '5%', minGocash: '500 per ₹10,000' },
-];
+const earningRates = GOCASH_EARNING_RATES;
 
 export default function GocashPage() {
   return (

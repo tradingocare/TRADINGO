@@ -1,14 +1,7 @@
 'use client';
 
 import type { GeographicReach } from '@prisma/client';
-
-const RADIUS_OPTIONS: { label: string; value: GeographicReach; description: string }[] = [
-  { label: 'Local (5 km)', value: 'LOCAL', description: 'Nearby area' },
-  { label: 'District (10 km)', value: 'DISTRICT', description: 'District-wide' },
-  { label: 'State (300 km)', value: 'STATE', description: 'Same state' },
-  { label: 'Pan India (2000 km)', value: 'PAN_INDIA', description: 'All India' },
-  { label: 'Global (20000 km)', value: 'GLOBAL', description: 'Worldwide' },
-];
+import { RADIUS_OPTIONS } from '@/data/master-data';
 
 interface RadiusSelectorProps {
   value?: GeographicReach | null;
@@ -30,7 +23,7 @@ export function RadiusSelector({ value, onChange, disabled }: RadiusSelectorProp
               key={option.value}
               type="button"
               disabled={disabled}
-              onClick={() => onChange(option.value)}
+              onClick={() => onChange(option.value as GeographicReach)}
               className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                 isSelected
                   ? 'border-primary bg-primary/10 text-primary dark:border-primary-dark dark:bg-primary-dark/10 dark:text-primary-dark'

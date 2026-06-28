@@ -47,8 +47,11 @@ describe('AuthService', () => {
   const mockUser = {
     id: 'user-1',
     email: 'test@example.com',
+    mobile: null,
+    panNumber: null,
     name: 'Test',
     role: 'VIEWER',
+    status: 'active',
     permissions: [],
     passwordHash: 'hashed',
     isActive: true,
@@ -58,6 +61,7 @@ describe('AuthService', () => {
     prisma = {
       user: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
       },
@@ -145,12 +149,12 @@ describe('AuthService', () => {
   describe('login', () => {
     it('succeeds with valid credentials', async () => {
       redisService.exists.mockResolvedValue(false);
-      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.user.findFirst.mockResolvedValue(mockUser);
       prisma.user.update.mockResolvedValue({});
       prisma.session.deleteMany.mockResolvedValue({ count: 0 });
       prisma.session.create.mockResolvedValue({ id: 'session-1' });
 
-      const result = await service.login({ email: 'test@example.com', password: 'Pass@1234' });
+      const result = await service.login({ identifier: 'test@example.com', password: 'Pass@1234' });
 
       expect(result.accessToken).toBe('mock-token');
       expect(prisma.user.update).toHaveBeenCalledWith(
@@ -162,9 +166,9 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
       redisService.exists.mockResolvedValue(false);
       redisService.incr.mockResolvedValue(1);
-      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.user.findFirst.mockResolvedValue(mockUser);
 
-      await expect(service.login({ email: 'test@example.com', password: 'wrong' }))
+      await expect(service.login({ identifier: 'test@example.com', password: 'wrong' }))
         .rejects.toThrow(UnauthorizedException);
     });
 
@@ -172,10 +176,10 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
       redisService.exists.mockResolvedValue(false);
       redisService.incr.mockResolvedValue(3);
-      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.user.findFirst.mockResolvedValue(mockUser);
       prisma.user.update.mockResolvedValue({});
 
-      await expect(service.login({ email: 'test@example.com', password: 'wrong' }))
+      await expect(service.login({ identifier: 'test@example.com', password: 'wrong' }))
         .rejects.toThrow(UnauthorizedException);
       expect(prisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ loginAttempts: 3 }) }),
@@ -184,16 +188,16 @@ describe('AuthService', () => {
 
     it('rejects locked account with generic message', async () => {
       redisService.exists.mockResolvedValue(true);
-      await expect(service.login({ email: 'test@example.com', password: 'Pass@1234' }))
+      await expect(service.login({ identifier: 'test@example.com', password: 'Pass@1234' }))
         .rejects.toThrow(UnauthorizedException);
     });
 
     it('calls handleFailedLogin for non-existent user', async () => {
       redisService.exists.mockResolvedValue(false);
       redisService.incr.mockResolvedValue(1);
-      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue(null);
 
-      await expect(service.login({ email: 'nonexistent@example.com', password: 'any' }))
+      await expect(service.login({ identifier: 'nonexistent@example.com', password: 'any' }))
         .rejects.toThrow(UnauthorizedException);
       expect(redisService.incr).toHaveBeenCalledWith('lock:user:nonexistent@example.com');
     });

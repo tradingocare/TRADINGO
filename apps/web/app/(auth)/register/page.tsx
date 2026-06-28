@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -174,7 +174,7 @@ export default function RegisterPage() {
                       : 'border-border bg-surface text-text-secondary hover:border-border dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary'
                   }`}
                 >
-                  <span className="block text-base">ðŸª</span>
+                  <span className="block text-base">🏪</span>
                   Seller
                 </button>
                 <button
@@ -186,7 +186,7 @@ export default function RegisterPage() {
                       : 'border-border bg-surface text-text-secondary hover:border-border dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary'
                   }`}
                 >
-                  <span className="block text-base">ðŸ›’</span>
+                  <span className="block text-base">🛒</span>
                   Buyer
                 </button>
               </div>

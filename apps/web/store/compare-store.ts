@@ -14,6 +14,7 @@ export interface CompareProduct {
   inStock: boolean;
   seller: {
     businessName: string;
+    slug?: string;
     isVerified: boolean;
     trustScore: number;
     city: string;

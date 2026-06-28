@@ -50,7 +50,7 @@ function Counter({ value, suffix, prefix, decimals = 0 }: Stat) {
   }, [started, value]);
 
   return (
-    <span ref={ref} className="text-4xl font-bold tracking-tight sm:text-5xl">
+    <span ref={ref} className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
       {prefix}{display.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}
     </span>
   );
@@ -62,12 +62,10 @@ export function StatisticsCards({ stats, className }: StatisticsCardsProps) {
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="flex flex-col items-center rounded-2xl border border-border bg-surface p-8 text-center shadow-sm dark:bg-dark-surface dark:border-dark-border"
+          className="flex flex-col items-center rounded-2xl border border-white/[0.06] bg-white/[0.04] p-8 text-center backdrop-blur-xl transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(255,77,0,0.15)]"
         >
           <Counter {...stat} />
-          <p className="mt-2 text-sm font-medium text-text-secondary dark:text-dark-text-secondary">
-            {stat.label}
-          </p>
+          <p className="mt-2 text-sm font-medium text-white/60">{stat.label}</p>
         </div>
       ))}
     </div>

@@ -1,54 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  MapPin, Building2, Users, Store, Package, FileText, DollarSign, Shield,
-  TrendingUp, Flame, Star, Target, Rocket, X, ArrowUpRight,
-  Factory, LayoutDashboard, Globe, Network, CheckCircle, BarChart3, Map,
+  MapPin, Building2, Users, Store, Package, DollarSign, Shield,
+  TrendingUp, Flame, Star, Target, Rocket, ArrowUpRight,
+  Factory, Globe, CheckCircle, BarChart3,
   Wrench
 } from 'lucide-react';
-import { dashboardStats, statesData, indiaIntelligence, formatIndian, type StateData } from '@/lib/data/india-hubs';
+import { statesData, indiaIntelligence, type StateData } from '@/lib/data/india-hubs';
+import { MASTER_PLATFORM_STATS } from '@/data/master-data';
 import Link from 'next/link';
 
-function useCountUp(target: number, duration = 2500, startOnView = true) {
-  const [value, setValue] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const hasStarted = useRef(false);
 
-  useEffect(() => {
-    if (!startOnView) {
-      hasStarted.current = true;
-      let start = 0;
-      const step = Math.ceil(target / (duration / 16));
-      const t = setInterval(() => {
-        start += step;
-        if (start >= target) { setValue(target); clearInterval(t); }
-        else setValue(start);
-      }, 16);
-      return () => clearInterval(t);
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasStarted.current) {
-          hasStarted.current = true;
-          let start = 0;
-          const step = Math.ceil(target / (duration / 16));
-          const t = setInterval(() => {
-            start += step;
-            if (start >= target) { setValue(target); clearInterval(t); }
-            else setValue(start);
-          }, 16);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target, duration, startOnView]);
-  return { value, ref };
-}
 
 const formatCompact = (n: number): string => {
   if (n >= 1e5) return `${(n / 1e5).toFixed(1)}L`;
@@ -56,16 +20,8 @@ const formatCompact = (n: number): string => {
   return n.toString();
 };
 
-const topStatCards = [
-  { icon: Globe, label: 'States & UTs', display: '36', color: '#D4AF37' },
-  { icon: Building2, label: 'Cities Covered', display: '2.9K+', color: '#60A5FA' },
-  { icon: Store, label: 'Sellers', display: '1.8L+', color: '#F472B6' },
-  { icon: Package, label: 'Products', display: '1.0Cr+', color: '#A78BFA' },
-  { icon: Wrench, label: 'Services', display: '38.2L+', color: '#FBBF24' },
-  { icon: Users, label: 'Buyers', display: '5.2L+', color: '#34D399' },
-  { icon: DollarSign, label: 'Trade Volume', display: '\u20B92840Cr+', color: '#34D399' },
-  { icon: Shield, label: 'Verified', display: '98.5K+', color: '#60A5FA' },
-];
+const ICON_MAP: Record<string, any> = { Globe, Building2, Store, Package, Wrench, Users, DollarSign, Shield };
+const topStatCards = MASTER_PLATFORM_STATS.indiaStats.map(s => ({ ...s, icon: ICON_MAP[s.icon] }));
 
 function TopStatCard({ icon: Icon, label, display, color }: typeof topStatCards[number]) {
   return (
@@ -186,7 +142,6 @@ const intelligencePills = [
 
 export default function IndiaHubs() {
   const [lastUpdated, setLastUpdated] = useState('');
-  const [modalState, setModalState] = useState<StateData | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -198,15 +153,6 @@ export default function IndiaHubs() {
     updateTime();
     const interval = setInterval(updateTime, 60000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: CustomEvent) => {
-      const state = statesData.find(s => s.id === e.detail);
-      if (state) setModalState(state);
-    };
-    window.addEventListener('open-state-modal' as any, handler);
-    return () => window.removeEventListener('open-state-modal' as any, handler);
   }, []);
 
   return (
@@ -350,39 +296,60 @@ export default function IndiaHubs() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-16"
         >
-          <div className="mb-8 text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
+          <div className="mx-auto max-w-4xl text-center">
+            <img
+              src="/logo/trdn.png"
+              alt="TRADINGO"
+              className="mx-auto h-10 w-auto opacity-50 sm:h-12"
+            />
+            <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
               <Target className="h-3 w-3" />
               TRADINGO India Intelligence
             </span>
             <h3 className="mt-4 text-2xl font-black text-white sm:text-3xl">TRADINGO India Intelligence</h3>
+            <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-white/50">
+              Real-time market intelligence across India&apos;s manufacturing hotspots, trending industries, and emerging business opportunities powered by TRADHEXA&trade;.
+            </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: Factory, title: 'Manufacturing Hotspots', data: indiaIntelligence.manufacturingHotspots.map(h => ({ left: h.name, right: h.value, sub: h.trend })) },
-              { icon: TrendingUp, title: 'Fastest Growing States', data: indiaIntelligence.fastestGrowingStates.map(s => ({ left: `${s.rank}. ${s.name}`, right: s.growth })) },
-              { icon: Flame, title: 'Trending Industries', data: indiaIntelligence.trendingIndustries.map(ind => ({ left: ind.name, right: ind.momentum })) },
-              { icon: Star, title: 'Top Categories', data: indiaIntelligence.topCategories.map(c => ({ left: c.name, right: `${(c.count / 1000).toFixed(1)}K` })) },
-              { icon: Users, title: 'Most Active Regions', data: indiaIntelligence.mostActiveRegions.map(r => ({ left: r.name, right: r.activity })) },
-              { icon: Rocket, title: 'Emerging Opportunities', data: indiaIntelligence.emergingOpportunities.map(o => ({ left: o.name, right: o.potential })) },
+              { icon: Factory, emoji: '\uD83C\uDFED', title: 'Manufacturing Hotspots', data: indiaIntelligence.manufacturingHotspots.map(h => ({ left: h.name, right: h.value, sub: h.trend })) },
+              { icon: TrendingUp, emoji: '\uD83D\uDCC8', title: 'Fastest Growing States', data: indiaIntelligence.fastestGrowingStates.map(s => ({ left: `${s.rank}. ${s.name}`, right: s.growth })) },
+              { icon: Flame, emoji: '\uD83D\uDD25', title: 'Trending Industries', data: indiaIntelligence.trendingIndustries.map(ind => ({ left: ind.name, right: ind.momentum })) },
+              { icon: Star, emoji: '\u2B50', title: 'Top Categories', data: indiaIntelligence.topCategories.map(c => ({ left: c.name, right: `${(c.count / 1000).toFixed(1)}K` })) },
+              { icon: Users, emoji: '\uD83D\uDC65', title: 'Most Active Regions', data: indiaIntelligence.mostActiveRegions.map(r => ({ left: r.name, right: r.activity })) },
+              { icon: Rocket, emoji: '\uD83D\uDE80', title: 'Emerging Opportunities', data: indiaIntelligence.emergingOpportunities.map(o => ({ left: o.name, right: o.potential })) },
             ].map((section, idx) => (
               <motion.div key={section.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.05 }}
-                className="rounded-2xl border border-white/[0.04] bg-white/[0.01] p-5 backdrop-blur-sm"
+                className="group rounded-2xl border border-white/[0.06] bg-white/[0.015] p-5 transition-all duration-500 hover:-translate-y-1 hover:border-[rgba(212,175,55,0.2)]"
+                style={{
+                  backdropFilter: 'blur(20px)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                }}
               >
                 <div className="flex items-center gap-2">
-                  <section.icon size={16} className="text-[#D4AF37]" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl text-base"
+                    style={{
+                      background: `linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))`,
+                      border: '1px solid rgba(212,175,55,0.1)',
+                    }}>
+                    {section.emoji}
+                  </div>
                   <h4 className="text-sm font-bold text-white">{section.title}</h4>
                 </div>
-                <div className="mt-4 space-y-3">
-                  {section.data.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-white/80">{d.left}</span>
-                      <span className="text-[10px] text-white/40">{d.right}</span>
+                <div className="mt-4 space-y-2.5">
+                  {section.data.map((d: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between border-b border-white/[0.04] pb-2 last:border-0 last:pb-0">
+                      <span className="flex items-center gap-1.5 text-xs font-medium text-white/70">
+                        {['\u2B50','\uD83D\uDD25','\uD83D\uDCC8','\uD83C\uDFED','\uD83C\uDF1F','\uD83D\uDE80','\uD83D\uDCA1','\uD83D\uDD0D','\uD83C\uDFC6','\uD83D\uDCBC'][i % 10]}
+                        {d.left}
+                      </span>
+                      <span className="text-[10px] font-semibold text-[#D4AF37]/70">{d.right}</span>
                     </div>
                   ))}
                 </div>

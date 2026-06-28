@@ -1,20 +1,8 @@
-import { IsOptional, IsInt, Min, IsEnum, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsEnum, IsString } from 'class-validator';
 import { IncidentSeverity, IncidentStatus } from '@prisma/client';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
-export class PaginationQueryDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 20;
-
+export class PaginationQueryDto extends PaginationDto {
   @IsOptional()
   @IsEnum(IncidentStatus)
   status?: IncidentStatus;

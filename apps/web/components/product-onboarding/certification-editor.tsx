@@ -8,21 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ProductDraftCertification } from '@/lib/product-onboarding/types';
+import { CERTIFICATION_TYPES } from '@/data/master-data';
 
 interface CertificationEditorProps {
   certifications: ProductDraftCertification[];
   onChange: (certifications: ProductDraftCertification[]) => void;
 }
 
-const CERT_TYPES = [
-  { value: 'MSME', label: 'MSME Registration' },
-  { value: 'IEC', label: 'IEC (Import Export Code)' },
-  { value: 'FSSAI', label: 'FSSAI License' },
-  { value: 'ISO', label: 'ISO Certification' },
-  { value: 'BIS', label: 'BIS Certification' },
-  { value: 'CE', label: 'CE Marking' },
-  { value: 'OTHER', label: 'Other' },
-];
+const CERT_TYPES = CERTIFICATION_TYPES;
 
 export function CertificationEditor({ certifications, onChange }: CertificationEditorProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);

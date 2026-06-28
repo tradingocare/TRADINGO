@@ -37,7 +37,7 @@ export function Topbar({ title }: TopbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-surface/95 px-4 backdrop-blur sm:px-6 dark:bg-dark-surface/95 dark:border-dark-border">
+    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-white/[0.06] px-4 backdrop-blur sm:px-6" style={{ backgroundColor: 'rgba(0,29,0,0.95)' }}>
       <div className="flex items-center gap-3 lg:hidden">
         <TradingoLogo height={32} showText={false} />
       </div>

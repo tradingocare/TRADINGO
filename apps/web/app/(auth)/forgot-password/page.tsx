@@ -1,121 +1,425 @@
-﻿'use client';
+'use client'
+import { useState }       from 'react'
+import { useRouter }      from 'next/navigation'
+import Link               from 'next/link'
+import Image              from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Mail, ArrowLeft, CheckCircle2,
+  Loader2, Lock, Eye, EyeOff,
+  RefreshCw, ShieldCheck,
+} from 'lucide-react'
+import apiClient from '@/lib/api/client'
+import toast from 'react-hot-toast'
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import Link from 'next/link';
-import { Loader2, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
-import { TradingoLogo } from '@/components/shared/tradingo-logo';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-
-const forgotSchema = z.object({
-  email: z.string().email('Invalid email address'),
-});
-
-type ForgotForm = z.infer<typeof forgotSchema>;
+type ForgotStep =
+  | 'enter_email'
+  | 'otp_sent'
+  | 'otp_verified'
+  | 'success'
 
 export default function ForgotPasswordPage() {
-  const [sent, setSent] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const router = useRouter()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<ForgotForm>({
-    resolver: zodResolver(forgotSchema),
-  });
+  const [step, setStep]             = useState<ForgotStep>('enter_email')
+  const [email, setEmail]           = useState('')
+  const [otp, setOtp]               = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const [newPwd, setNewPwd]         = useState('')
+  const [confirmPwd, setConfirmPwd] = useState('')
+  const [showPwd, setShowPwd]       = useState(false)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState('')
+  const [countdown, setCountdown]   = useState(0)
 
-  const onSubmit = async (_data: ForgotForm) => {
-    setServerError(null);
+  const sendOtp = async () => {
+    if (!email.trim()) { setError('Enter your registered email or mobile'); return }
+    setLoading(true); setError('')
     try {
-      // TODO: Send reset link
-      setSent(true);
-    } catch (err: any) {
-      setServerError(err.message || 'Something went wrong');
-    }
-  };
+      await apiClient.post('/auth/forgot-password', { identifier: email.trim() })
+      setStep('otp_sent')
+      setCountdown(60)
+      toast.success('Reset OTP sent!')
+      const iv = setInterval(() => {
+        setCountdown(c => { if (c <= 1) { clearInterval(iv); return 0 } return c-1 })
+      }, 1000)
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Account not found')
+    } finally { setLoading(false) }
+  }
 
-  if (sent) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="items-center space-y-4 text-center">
-            <Link href="/">
-              <TradingoLogo height={36} showText />
-            </Link>
-            <div className="flex flex-col items-center gap-2">
-              <CheckCircle className="h-12 w-12 text-accent-500" />
-              <CardTitle>Check your email</CardTitle>
-              <CardDescription>
-                We&apos;ve sent a password reset link to your email address. Please check your inbox.
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Link href="/login" className="text-sm text-accent-500 hover:text-accent-600 dark:text-accent-400">
-              &larr; Back to sign in
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  const verifyOtp = async () => {
+    if (otp.length !== 6) { setError('Enter 6-digit OTP'); return }
+    setLoading(true); setError('')
+    try {
+      const res: any = await apiClient.post('/auth/verify-reset-otp', {
+        identifier: email, otp,
+      })
+      setResetToken((res.data || res).resetToken)
+      setStep('otp_verified')
+    } catch { setError('Invalid or expired OTP') }
+    finally { setLoading(false) }
+  }
+
+  const resetPassword = async () => {
+    if (newPwd.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (newPwd !== confirmPwd) { setError('Passwords do not match'); return }
+    setLoading(true); setError('')
+    try {
+      await apiClient.post('/auth/reset-password', {
+        resetToken, newPassword: newPwd,
+      })
+      setStep('success')
+      toast.success('Password reset successfully!')
+    } catch { setError('Reset failed. Try again.') }
+    finally { setLoading(false) }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="items-center space-y-4 text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center
+                    px-4 py-12" style={{ background:'#1D0001' }}>
+
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px]
+                        h-[600px] rounded-full opacity-12"
+          style={{ background:'radial-gradient(circle,#FF4D0018,transparent 70%)',
+                   filter:'blur(80px)' }} />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
+
+        <div className="text-center mb-8">
           <Link href="/">
-            <TradingoLogo height={36} showText />
+            <Image src="/logo/trdn.png" alt="TRADINGO"
+              width={44} height={44} className="object-contain mx-auto mb-3" />
           </Link>
-          <div>
-            <CardTitle>Forgot password?</CardTitle>
-            <CardDescription>No worries, we&apos;ll send you reset instructions</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {serverError && (
-            <div className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
-              {serverError}
-            </div>
-          )}
+        </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1">
-              <label htmlFor="email" className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-                <Input id="email" type="email" placeholder="you@example.com" className="pl-10" {...register('email')} />
-              </div>
-              {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
-            </div>
+        <div className="rounded-3xl p-7 sm:p-8"
+          style={{
+            background:'rgba(255,255,255,0.045)',
+            backdropFilter:'blur(28px)',
+            border:'1px solid rgba(255,255,255,0.09)',
+            boxShadow:'0 24px 72px rgba(0,0,0,0.45)',
+          }}>
 
-            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                'Send reset link'
-              )}
-            </Button>
-          </form>
+          <AnimatePresence mode="wait">
 
-          <p className="mt-6 text-center text-sm text-text-secondary dark:text-dark-text-secondary">
-            <Link href="/login" className="inline-flex items-center gap-1 font-medium text-accent-500 hover:text-accent-600 dark:text-accent-400">
-              <ArrowLeft className="h-4 w-4" />
-              Back to sign in
+            {step === 'enter_email' && (
+              <motion.div key="s1"
+                initial={{ opacity:0 }} animate={{ opacity:1 }}
+                exit={{ opacity:0 }} className="space-y-5">
+                <div>
+                  <h2 className="text-white font-black text-2xl">
+                    Forgot Password?
+                  </h2>
+                  <p className="text-white/45 text-sm mt-1">
+                    No worries. We'll send a reset OTP to your
+                    registered email or mobile.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-white/60 text-xs
+                                    font-semibold mb-1.5">
+                    Email or Mobile Number
+                  </label>
+                  <div className="relative">
+                    <Mail size={15} className="absolute left-3.5 top-1/2
+                      -translate-y-1/2 text-white/30" />
+                    <input
+                      value={email}
+                      onChange={e => { setEmail(e.target.value); setError('') }}
+                      placeholder="your@email.com or 9876543210"
+                      className="w-full pl-10 pr-4 py-3.5 rounded-xl text-white
+                                 text-sm placeholder-white/25 focus:outline-none"
+                      style={{
+                        background:'rgba(255,255,255,0.07)',
+                        border: error
+                          ? '1px solid rgba(239,68,68,0.4)'
+                          : '1px solid rgba(255,255,255,0.12)',
+                      }}
+                    />
+                  </div>
+                  {error && (
+                    <p className="text-red-400 text-[10px] mt-1.5">? {error}</p>
+                  )}
+                </div>
+                <motion.button
+                  onClick={sendOtp}
+                  disabled={loading}
+                  whileHover={{ scale:1.02 }}
+                  whileTap={{ scale:0.97 }}
+                  className="w-full py-3.5 rounded-xl font-bold text-sm
+                             flex items-center justify-center gap-2
+                             disabled:opacity-50"
+                  style={{
+                    background:'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+                    color:'#fff',
+                    boxShadow:'0 6px 20px rgba(255,77,0,0.3)',
+                  }}>
+                  {loading
+                    ? <><Loader2 size={15} className="animate-spin" />
+                        Sending OTP...</>
+                    : <>Send Reset OTP ?</>
+                  }
+                </motion.button>
+                <Link href="/login"
+                  className="flex items-center justify-center gap-1.5
+                             text-xs text-white/35 hover:text-white/60">
+                  <ArrowLeft size={12} /> Back to Sign In
+                </Link>
+              </motion.div>
+            )}
+
+            {step === 'otp_sent' && (
+              <motion.div key="s2"
+                initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }}
+                exit={{ opacity:0, x:-20 }} className="space-y-5">
+                <div>
+                  <h2 className="text-white font-black text-2xl">
+                    Enter OTP
+                  </h2>
+                  <p className="text-white/45 text-sm mt-1">
+                    We sent a 6-digit OTP to{' '}
+                    <strong className="text-white">{email}</strong>
+                  </p>
+                </div>
+                <div>
+                  <input
+                    value={otp}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/,'').slice(0,6)
+                      setOtp(v); setError('')
+                    }}
+                    placeholder="Enter 6-digit OTP"
+                    maxLength={6}
+                    inputMode="numeric"
+                    className="w-full text-center py-4 rounded-xl text-white
+                               font-black text-2xl tracking-[0.5em]
+                               placeholder-white/20 placeholder:text-base
+                               placeholder:font-normal placeholder:tracking-normal
+                               focus:outline-none"
+                    style={{
+                      background:'rgba(255,255,255,0.07)',
+                      border: error
+                        ? '1px solid rgba(239,68,68,0.4)'
+                        : '1px solid rgba(255,255,255,0.12)',
+                    }}
+                  />
+                  {error && (
+                    <p className="text-red-400 text-[10px] mt-1.5">? {error}</p>
+                  )}
+                </div>
+                <div className="flex justify-center gap-2">
+                  {Array.from({ length:6 }).map((_,i) => (
+                    <div key={i} className="w-2 h-2 rounded-full transition-all"
+                      style={{
+                        background: i < otp.length
+                          ? '#FF4D00' : 'rgba(255,255,255,0.1)',
+                      }} />
+                  ))}
+                </div>
+                <motion.button
+                  onClick={verifyOtp}
+                  disabled={loading || otp.length !== 6}
+                  whileHover={{ scale:1.02 }}
+                  whileTap={{ scale:0.97 }}
+                  className="w-full py-3.5 rounded-xl font-bold text-sm
+                             flex items-center justify-center gap-2
+                             disabled:opacity-40"
+                  style={{
+                    background:'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+                    color:'#fff',
+                  }}>
+                  {loading
+                    ? <><Loader2 size={15} className="animate-spin" />
+                        Verifying...</>
+                    : <>Verify OTP ?</>
+                  }
+                </motion.button>
+                <div className="flex items-center justify-between text-xs">
+                  <button onClick={() => setStep('enter_email')}
+                    className="text-white/30 hover:text-white/60
+                               flex items-center gap-1">
+                    <ArrowLeft size={11} /> Change email
+                  </button>
+                  {countdown > 0
+                    ? <span className="text-white/25">
+                        Resend in {countdown}s
+                      </span>
+                    : <button onClick={sendOtp}
+                        className="font-semibold flex items-center gap-1"
+                        style={{ color:'#FF4D00' }}>
+                        <RefreshCw size={11} /> Resend OTP
+                      </button>
+                  }
+                </div>
+              </motion.div>
+            )}
+
+            {step === 'otp_verified' && (
+              <motion.div key="s3"
+                initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }}
+                exit={{ opacity:0, x:-20 }} className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center
+                                  justify-center"
+                    style={{ background:'rgba(74,222,128,0.12)',
+                             border:'1px solid rgba(74,222,128,0.3)' }}>
+                    <ShieldCheck size={18} className="text-green-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-white font-black text-xl">
+                      Set New Password
+                    </h2>
+                    <p className="text-green-400 text-[10px] font-semibold">
+                      ? OTP Verified Successfully
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-white/60 text-xs
+                                      font-semibold mb-1.5">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <Lock size={14} className="absolute left-3.5 top-1/2
+                        -translate-y-1/2 text-white/30" />
+                      <input
+                        type={showPwd ? 'text' : 'password'}
+                        value={newPwd}
+                        onChange={e => { setNewPwd(e.target.value); setError('') }}
+                        placeholder="Min 8 chars with number + symbol"
+                        className="w-full pl-10 pr-11 py-3.5 rounded-xl text-white
+                                   text-sm placeholder-white/25 focus:outline-none"
+                        style={{ background:'rgba(255,255,255,0.07)',
+                                 border:'1px solid rgba(255,255,255,0.12)' }}
+                      />
+                      <button type="button"
+                        onClick={() => setShowPwd(p => !p)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2
+                                   text-white/30 hover:text-white/70">
+                        {showPwd ? <EyeOff size={15}/> : <Eye size={15}/>}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-white/60 text-xs
+                                      font-semibold mb-1.5">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <Lock size={14} className="absolute left-3.5 top-1/2
+                        -translate-y-1/2 text-white/30" />
+                      <input
+                        type="password"
+                        value={confirmPwd}
+                        onChange={e => {
+                          setConfirmPwd(e.target.value); setError('')
+                        }}
+                        placeholder="Re-enter new password"
+                        className="w-full pl-10 pr-4 py-3.5 rounded-xl text-white
+                                   text-sm placeholder-white/25 focus:outline-none"
+                        style={{
+                          background:'rgba(255,255,255,0.07)',
+                          border: confirmPwd && confirmPwd === newPwd
+                            ? '1px solid rgba(74,222,128,0.4)'
+                            : '1px solid rgba(255,255,255,0.12)',
+                        }}
+                      />
+                      {confirmPwd && confirmPwd === newPwd && (
+                        <CheckCircle2 size={14} className="absolute right-3.5
+                          top-1/2 -translate-y-1/2 text-green-400" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {error && (
+                  <p className="text-red-400 text-[10px]">? {error}</p>
+                )}
+                <motion.button
+                  onClick={resetPassword}
+                  disabled={loading}
+                  whileHover={{ scale:1.02 }}
+                  whileTap={{ scale:0.97 }}
+                  className="w-full py-3.5 rounded-xl font-bold text-sm
+                             flex items-center justify-center gap-2
+                             disabled:opacity-50"
+                  style={{
+                    background:'linear-gradient(135deg,#4ade80,#22c55e)',
+                    color:'#fff',
+                    boxShadow:'0 6px 20px rgba(74,222,128,0.25)',
+                  }}>
+                  {loading
+                    ? <><Loader2 size={15} className="animate-spin" />
+                        Resetting...</>
+                    : <><ShieldCheck size={15} />
+                        Reset Password</>
+                  }
+                </motion.button>
+              </motion.div>
+            )}
+
+            {step === 'success' && (
+              <motion.div key="s4"
+                initial={{ opacity:0, scale:0.9 }}
+                animate={{ opacity:1, scale:1 }}
+                className="text-center py-4 space-y-4">
+                <motion.div
+                  animate={{ scale:[0,1.2,1] }}
+                  transition={{ duration:0.5 }}
+                  className="w-16 h-16 rounded-2xl flex items-center
+                              justify-center mx-auto"
+                  style={{ background:'rgba(74,222,128,0.12)',
+                           border:'1px solid rgba(74,222,128,0.3)' }}>
+                  <CheckCircle2 size={32} className="text-green-400" />
+                </motion.div>
+                <div>
+                  <h2 className="text-white font-black text-2xl mb-1">
+                    Password Reset!
+                  </h2>
+                  <p className="text-white/45 text-sm">
+                    Your password has been reset successfully.
+                    You can now sign in with your new password.
+                  </p>
+                </div>
+                <motion.button
+                  onClick={() => router.push('/login')}
+                  whileHover={{ scale:1.02 }}
+                  whileTap={{ scale:0.97 }}
+                  className="w-full py-3.5 rounded-xl font-bold text-sm"
+                  style={{
+                    background:'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+                    color:'#fff',
+                  }}>
+                  Go to Sign In ?
+                </motion.button>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
+
+        {step !== 'success' && (
+          <div className="flex items-center justify-center gap-3 mt-5
+                          text-[10px] text-white/25 flex-wrap">
+            <Link href="/login" className="hover:text-white/50">
+              ? Back to Sign In
             </Link>
-          </p>
-        </CardContent>
-      </Card>
+            <span>�</span>
+            <a href="mailto:support@tradingo.in"
+              className="hover:text-white/50">
+              Support: support@tradingo.in
+            </a>
+            <span>�</span>
+            <a href="tel:+911800000000"
+              className="hover:text-white/50">
+              1800-XXX-XXXX
+            </a>
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )
 }

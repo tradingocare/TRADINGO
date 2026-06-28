@@ -1,11 +1,17 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RazorpayService } from './razorpay.service';
+import { RazorpayService } from './gateways/razorpay.service';
+import { StripeService } from './gateways/stripe.service';
+import { getGateway } from './gateways/index';
+import { MembershipService } from '../membership/membership.service';
 import { CreatePaymentOrderDto, PaymentOrderType } from './dto/create-payment-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
+import { CreateSubscriptionOrderDto, VerifySubscriptionPaymentDto } from './dto/subscription-order.dto';
 import { CreateRefundDto } from './dto/create-refund.dto';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '@prisma/client';
+import { v4 as uuid } from 'uuid';
+import { generateInvoiceNumber } from './utils/invoice';
 
 @Injectable()
 export class PaymentService {
@@ -14,6 +20,8 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly razorpayService: RazorpayService,
+    private readonly stripeService: StripeService,
+    private readonly membershipService: MembershipService,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -78,11 +86,11 @@ export class PaymentService {
     });
     if (!payment) throw new NotFoundException('Payment record not found');
 
-    const isValid = this.razorpayService.verifyPayment(
-      dto.razorpayOrderId,
-      dto.razorpayPaymentId,
-      dto.razorpaySignature,
-    );
+    const isValid = this.razorpayService.verifyPayment({
+      gatewayOrderId: dto.razorpayOrderId,
+      gatewayPaymentId: dto.razorpayPaymentId,
+      gatewaySignature: dto.razorpaySignature,
+    });
     if (!isValid) throw new BadRequestException('Payment verification failed — signature mismatch');
 
     const updated = await this.prisma.payment.update({
@@ -115,6 +123,19 @@ export class PaymentService {
   private async handlePaymentSuccess(payment: any) {
     if (payment.type === 'ORDER_PAYMENT' && payment.orderId) {
       this.logger.log(`Payment ${payment.id} completed for order ${payment.orderId}`);
+    }
+
+    if (payment.type === 'SUBSCRIPTION') {
+      const notes = (payment.notes as any) || {};
+      await this.membershipService.activateSubscription({
+        companyId: payment.companyId,
+        planId: notes.planId || 'trade_start',
+        planTier: notes.planTier || 'A',
+        amount: payment.amount,
+        paymentId: payment.id,
+        duration: notes.duration || 1,
+      });
+      return;
     }
 
     if (payment.type === 'CREDIT_PACK_PURCHASE' && payment.rfqCreditPackId) {
@@ -211,11 +232,11 @@ export class PaymentService {
       throw new BadRequestException('Refund amount exceeds the remaining capturable amount');
     }
 
-    const razorpayRefund = await this.razorpayService.createRefund(
-      payment.gatewayPaymentId!,
-      dto.amount,
-      { reason: dto.reason || 'Customer requested' },
-    );
+    const razorpayRefund = await this.razorpayService.createRefund({
+      gatewayPaymentId: payment.gatewayPaymentId!,
+      amount: dto.amount,
+      notes: { reason: dto.reason || 'Customer requested' },
+    });
 
     const refund = await this.prisma.$transaction(async (tx) => {
       const r = await tx.refund.create({
@@ -266,6 +287,106 @@ export class PaymentService {
     }
 
     return refund;
+  }
+
+  async createSubscriptionGatewayOrder(companyId: string, userId: string, dto: CreateSubscriptionOrderDto, gatewayName: string) {
+    const plan = await this.prisma.membershipPlan.findUnique({ where: { planId: dto.planId } });
+    if (!plan) throw new NotFoundException('Plan not found');
+
+    const price = dto.planTier === 'B' ? plan.pricePlanB : dto.planTier === 'C' ? plan.pricePlanC : plan.pricePlanA;
+    const totalAmount = price * dto.duration;
+    const amountInPaise = totalAmount;
+    const receipt = `sub_${companyId.slice(0, 8)}_${Date.now()}`;
+
+    const gateway = getGateway(gatewayName, this.razorpayService, this.stripeService);
+    const gatewayOrder = await gateway.createOrder(amountInPaise, 'INR', receipt, {
+      companyId,
+      planId: dto.planId,
+      planTier: dto.planTier,
+      duration: String(dto.duration),
+      description: `Subscription: ${plan.name} (${dto.planTier})`,
+    });
+
+    const orderId = `ORD-${uuid().slice(0, 8).toUpperCase()}`;
+    const payment = await this.prisma.payment.create({
+      data: {
+        companyId,
+        type: 'SUBSCRIPTION',
+        gateway: gatewayName as any,
+        status: 'PENDING',
+        gatewayOrderId: gatewayOrder.gatewayOrderId,
+        amount: totalAmount,
+        currency: 'INR',
+        description: `Subscription: ${plan.name} (${dto.planTier})`,
+        notes: {
+          orderId,
+          planId: dto.planId,
+          planTier: dto.planTier,
+          duration: dto.duration,
+          userId,
+        },
+      },
+    });
+
+    return {
+      id: payment.id,
+      orderId,
+      gatewayOrderId: gatewayOrder.gatewayOrderId,
+      amount: totalAmount,
+      currency: 'INR',
+      keyId: gateway.getKeyId(),
+      planName: plan.name,
+    };
+  }
+
+  async verifySubscriptionPayment(companyId: string, dto: VerifySubscriptionPaymentDto, gatewayName: string) {
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: dto.paymentId, companyId, status: 'PENDING' },
+    });
+    if (!payment) throw new NotFoundException('Payment record not found');
+
+    const gateway = getGateway(gatewayName, this.razorpayService, this.stripeService);
+    const isValid = gateway.verifyPayment({
+      gatewayOrderId: payment.gatewayOrderId!,
+      gatewayPaymentId: dto.gatewayPaymentId,
+      gatewaySignature: dto.gatewaySignature,
+    });
+    if (!isValid) throw new BadRequestException('Payment verification failed — signature mismatch');
+
+    const updated = await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: 'CAPTURED',
+        gatewayPaymentId: dto.gatewayPaymentId,
+        gatewaySignature: dto.gatewaySignature,
+        paidAt: new Date(),
+      },
+    });
+
+    const notes = (payment.notes as any) || {};
+    const planId = notes.planId || 'trade_start';
+    const planTier = notes.planTier || 'A';
+    const duration = notes.duration || 1;
+
+    await this.membershipService.activateSubscription({
+      companyId,
+      planId,
+      planTier,
+      amount: payment.amount,
+      paymentId: payment.id,
+      duration,
+    });
+
+    try {
+      await this.notificationService.createWithTemplate(
+        companyId, undefined, NotificationType.PAYMENT_RECEIVED as any,
+        { amount: (payment.amount / 100).toFixed(2), plan: planId },
+      );
+    } catch (err) {
+      this.logger.error(`Failed to send payment notification: ${(err as Error).message}`);
+    }
+
+    return { success: true, paymentId: payment.id, planId, planTier, amount: payment.amount };
   }
 
   async handleWebhookEvent(event: string, payload: any) {

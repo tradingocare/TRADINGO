@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { Zap, Award, TrendingUp, Users, Handshake, Star, Trophy, Medal, Flame } from 'lucide-react';
+import type { ComponentType } from 'react';
+import { Zap, Star, Trophy, Medal, Crown, Shield, Globe } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -7,103 +8,57 @@ import { FeatureCards } from '@/components/shared/feature-cards';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { TRADGO_BADGES, TRADGO_PRIZES, TRADGO_RACE_FEATURES } from '@/data/master-data';
 export const metadata: Metadata = {
   title: 'TRADGO — Trading Races | TRADINGO',
   description:
     'Turn trading into a sport. Compete, earn badges, and climb the leaderboard on TRADINGO TRADGO.',
 };
 
-const badges = [
-  {
-    icon: Zap,
-    title: 'Speed Trader',
-    description: 'Complete trades within 24 hours of order placement. Speed demons earn this badge.',
-    color: 'from-blue-500 to-cyan-500',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Volume Master',
-    description: 'Accumulate high trading volume in a single month. The more you trade, the higher you rank.',
-    color: 'from-emerald-500 to-teal-500',
-  },
-  {
-    icon: Flame,
-    title: 'Consistency King',
-    description: 'Trade every single day for a consecutive streak. Maintain momentum to unlock higher tiers.',
-    color: 'from-orange-500 to-red-500',
-  },
-  {
-    icon: Handshake,
-    title: 'Deal Maker',
-    description: 'Close the most deals in a race period. Quality and quantity both count toward this badge.',
-    color: 'from-purple-500 to-pink-500',
-  },
-  {
-    icon: Users,
-    title: 'Networker',
-    description: 'Connect with the most trading partners. Build your network and earn recognition.',
-    color: 'from-amber-500 to-yellow-500',
-  },
-  {
-    icon: Star,
-    title: 'Pioneer',
-    description: 'Early adopters and long-standing members. Grandfathered benefits for our earliest traders.',
-    color: 'from-rose-500 to-fuchsia-500',
-  },
+const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
+  Star, Crown, Trophy, Shield, Globe, Zap,
+};
+
+const BADGE_GRADIENTS = [
+  'from-amber-400 to-yellow-500',
+  'from-yellow-600 to-amber-700',
+  'from-rose-500 to-pink-500',
+  'from-blue-500 to-cyan-500',
+  'from-teal-400 to-cyan-500',
+  'from-amber-500 to-orange-500',
 ];
 
-const leaderboardPrizes = [
-  {
-    rank: '1st Place',
-    prize: '₹25,000 GOCASH + 6 Months Business Plan Free + Platinum Badge',
-    icon: Trophy,
-    color: 'text-yellow-500',
-    bg: 'bg-yellow-50 dark:bg-yellow-900/10',
-    border: 'border-yellow-300 dark:border-yellow-700',
-  },
-  {
-    rank: '2nd Place',
-    prize: '₹15,000 GOCASH + 3 Months Business Plan Free + Gold Badge',
-    icon: Medal,
-    color: 'text-gray-400',
-    bg: 'bg-gray-50 dark:bg-gray-900/10',
-    border: 'border-gray-300 dark:border-gray-700',
-  },
-  {
-    rank: '3rd Place',
-    prize: '₹10,000 GOCASH + 1 Month Business Plan Free + Silver Badge',
-    icon: Medal,
-    color: 'text-amber-600',
-    bg: 'bg-amber-50 dark:bg-amber-900/10',
-    border: 'border-amber-200 dark:border-amber-800',
-  },
-  {
-    rank: '4th-10th',
-    prize: '₹5,000 GOCASH + Bronze Badge + Profile Badge',
-    icon: Star,
-    color: 'text-accent-500',
-    bg: 'bg-accent-50 dark:bg-accent-900/10',
-    border: 'border-accent-200 dark:border-accent-800',
-  },
+const badges = TRADGO_BADGES.map((b, i) => ({
+  icon: ICON_MAP[b.icon] || Zap,
+  title: b.name,
+  description: b.description,
+  color: BADGE_GRADIENTS[i] || 'from-blue-500 to-cyan-500',
+}));
+
+const PRIZE_ICONS = [Trophy, Medal, Medal];
+const PRIZE_RANK_LABELS = ['1st Place', '2nd Place', '3rd Place'];
+const PRIZE_TEXT_COLORS = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
+const PRIZE_BG_COLORS = [
+  'bg-yellow-50 dark:bg-yellow-900/10',
+  'bg-gray-50 dark:bg-gray-900/10',
+  'bg-amber-50 dark:bg-amber-900/10',
+];
+const PRIZE_BORDER_COLORS = [
+  'border-yellow-300 dark:border-yellow-700',
+  'border-gray-300 dark:border-gray-700',
+  'border-amber-200 dark:border-amber-800',
 ];
 
-const raceFeatures = [
-  {
-    icon: '🏆',
-    title: 'Earn Badges',
-    description: 'Collect unique achievement badges for trading milestones and special accomplishments.',
-  },
-  {
-    icon: '📈',
-    title: 'Climb Leaderboards',
-    description: 'Compete against traders across India. Rankings update in real-time.',
-  },
-  {
-    icon: '👑',
-    title: 'Win Rewards',
-    description: 'Top performers win GOCASH prizes, plan upgrades, and exclusive platform perks.',
-  },
-];
+const leaderboardPrizes = TRADGO_PRIZES.map((p, i) => ({
+  rank: PRIZE_RANK_LABELS[i] || `${p.rank}th Place`,
+  prize: p.prize,
+  icon: PRIZE_ICONS[i] || Trophy,
+  color: PRIZE_TEXT_COLORS[i] || 'text-accent-500',
+  bg: PRIZE_BG_COLORS[i] || 'bg-accent-50 dark:bg-accent-900/10',
+  border: PRIZE_BORDER_COLORS[i] || 'border-accent-200 dark:border-accent-800',
+}));
+
+const raceFeatures = TRADGO_RACE_FEATURES;
 
 export default function TradgoPage() {
   return (

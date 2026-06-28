@@ -9,8 +9,10 @@ export async function proxy(req: NextRequest) {
   const { redirect } = getRouteDecision(pathname, payload);
 
   if (redirect) {
+    const [path, search] = redirect.split('?');
     const url = req.nextUrl.clone();
-    url.pathname = redirect;
+    url.pathname = path;
+    url.search = search ? `?${search}` : '';
     return NextResponse.redirect(url);
   }
 

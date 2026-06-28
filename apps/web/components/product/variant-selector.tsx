@@ -5,6 +5,11 @@ import { cn } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
 import { type ProductDetailVariant } from '@/types/product-detail';
 
+const GLASS = 'rgba(255,255,255,0.04)';
+const BORDER = '1px solid rgba(255,255,255,0.09)';
+const ACTIVE_BG = 'rgba(255,77,0,0.15)';
+const ACTIVE_BORDER = '1px solid rgba(255,77,0,0.4)';
+
 interface VariantSelectorProps {
   variants: ProductDetailVariant[];
   onSelect: (variant: ProductDetailVariant) => void;
@@ -33,27 +38,21 @@ export function VariantSelector({
     <div className="space-y-4">
       {Array.from(grouped.entries()).map(([type, items]) => (
         <div key={type}>
-          <p className="mb-2 text-sm font-medium text-text-primary dark:text-dark-text-primary">
-            {type}
-          </p>
+          <p className="mb-2 text-sm font-semibold text-white/70">{type}</p>
           <div className="flex flex-wrap gap-2">
             {items.map((v) => {
               const isSelected = selectedVariant?.id === v.id;
               return (
-                <button
-                  key={v.id}
-                  onClick={() => onSelect(v)}
-                  className={cn(
-                    'relative rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
-                    isSelected
-                      ? 'border-primary-500 bg-primary-500/10 text-primary-700 shadow-sm dark:border-primary-400 dark:text-primary-300'
-                      : 'border-border bg-surface text-text-secondary hover:border-primary-300 hover:text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:border-primary-600',
-                  )}
+                <button key={v.id} onClick={() => onSelect(v)}
+                  className="relative rounded-xl px-3 py-1.5 text-sm font-semibold transition-all"
+                  style={{
+                    background: isSelected ? ACTIVE_BG : GLASS,
+                    border: isSelected ? ACTIVE_BORDER : BORDER,
+                    color: isSelected ? '#FF4D00' : 'rgba(255,255,255,0.6)',
+                  }}
                 >
                   {v.value}
-                  {isSelected && (
-                    <CheckCircle className="ml-1.5 inline-block h-3.5 w-3.5 text-primary-500 dark:text-primary-400" />
-                  )}
+                  {isSelected && <CheckCircle size={13} className="ml-1 inline" style={{ color: '#FF4D00' }} />}
                 </button>
               );
             })}
@@ -62,38 +61,23 @@ export function VariantSelector({
       ))}
 
       {selectedVariant && (
-        <div className="rounded-lg bg-surface-secondary/50 p-3 dark:bg-dark-surface-secondary/50">
-          {selectedVariant.sku && (
-            <p className="text-xs text-text-tertiary dark:text-dark-text-tertiary">
-              SKU: {selectedVariant.sku}
-            </p>
-          )}
+        <div className="rounded-2xl p-4" style={{ background: GLASS, border: BORDER }}>
+          {selectedVariant.sku && <p className="text-[11px] text-white/40">SKU: {selectedVariant.sku}</p>}
           {selectedVariant.price != null && (
-            <p className="text-lg font-bold text-text-primary dark:text-dark-text-primary">
+            <p className="text-lg font-black text-white">
               ₹{selectedVariant.price.toLocaleString()}
               {selectedVariant.compareAtPrice && (
-                <span className="ml-2 text-sm text-text-tertiary line-through dark:text-dark-text-tertiary">
-                  ₹{selectedVariant.compareAtPrice.toLocaleString()}
-                </span>
+                <span className="ml-2 text-sm text-white/30 line-through">₹{selectedVariant.compareAtPrice.toLocaleString()}</span>
               )}
             </p>
           )}
           {selectedVariant.stockStatus && (
-            <p
-              className={cn(
-                'mt-1 text-xs font-medium',
-                selectedVariant.stockStatus === 'IN_STOCK'
-                  ? 'text-accent-600 dark:text-accent-400'
-                  : selectedVariant.stockStatus === 'LOW_STOCK'
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-red-600 dark:text-red-400',
-              )}
-            >
-              {selectedVariant.stockStatus === 'IN_STOCK'
-                ? 'In Stock'
-                : selectedVariant.stockStatus === 'LOW_STOCK'
-                  ? 'Low Stock'
-                  : 'Out of Stock'}
+            <p className="mt-1 text-xs font-semibold" style={{
+              color: selectedVariant.stockStatus === 'IN_STOCK' ? '#4ade80'
+                : selectedVariant.stockStatus === 'LOW_STOCK' ? '#F2C94C' : '#f87171',
+            }}>
+              {selectedVariant.stockStatus === 'IN_STOCK' ? 'In Stock'
+                : selectedVariant.stockStatus === 'LOW_STOCK' ? 'Low Stock' : 'Out of Stock'}
             </p>
           )}
         </div>

@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Maximize2, X, Play } from 'lucide-react';
 import { type ProductDetailMedia } from '@/types/product-detail';
 
+const GLASS = 'rgba(255,255,255,0.04)';
+const BORDER = '1px solid rgba(255,255,255,0.09)';
+
 interface ImageGalleryProps {
   media: ProductDetailMedia[];
   productName: string;
@@ -90,8 +93,8 @@ export function ImageGallery({ media, productName }: ImageGalleryProps) {
 
   if (images.length === 0 && videos.length === 0) {
     return (
-      <div className="flex aspect-square items-center justify-center rounded-xl border border-border bg-surface-secondary dark:bg-dark-surface-secondary dark:border-dark-border">
-        <span className="text-text-tertiary dark:text-dark-text-tertiary">No media available</span>
+      <div className="flex aspect-square items-center justify-center rounded-3xl" style={{ background: GLASS, border: BORDER }}>
+        <span className="text-white/40 text-sm">No media available</span>
       </div>
     );
   }
@@ -99,13 +102,14 @@ export function ImageGallery({ media, productName }: ImageGalleryProps) {
   const mainContent = () => {
     if (images.length > 0) {
       return (
-        <div
-          ref={mainRef}
-          className={cn(
-            'relative flex aspect-square cursor-crosshair items-center justify-center overflow-hidden rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border',
-            isFullscreen && 'rounded-none border-0',
-          )}
-          onMouseMove={handleMouseMove}
+          <div
+            ref={mainRef}
+            className={cn(
+              'relative flex aspect-square cursor-crosshair items-center justify-center overflow-hidden rounded-3xl',
+              isFullscreen && 'rounded-none border-0',
+            )}
+            style={{ background: GLASS, border: BORDER }}
+            onMouseMove={handleMouseMove}
           onMouseEnter={() => !isFullscreen && setZoom(true)}
           onMouseLeave={() => { setZoom(false); setIsDragging(false); }}
           onMouseDown={(e) => handleDragStart(e, selectedIndex)}
@@ -134,25 +138,22 @@ export function ImageGallery({ media, productName }: ImageGalleryProps) {
           />
           {images.length > 1 && (
             <>
-              <button
-                onClick={handlePrev}
-                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-surface/80 p-1.5 text-text-primary shadow-sm backdrop-blur-sm transition-opacity hover:bg-surface opacity-0 group-hover:opacity-100 dark:bg-dark-surface/80 dark:text-dark-text-primary"
-                aria-label="Previous image"
-              >
+              <button onClick={handlePrev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 shadow-sm backdrop-blur-sm transition-opacity hover:bg-white/10 opacity-0 group-hover:opacity-100"
+                style={{ background: 'rgba(0,0,0,0.5)', color: 'rgba(255,255,255,0.8)' }} aria-label="Previous image">
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <button
-                onClick={handleNext}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-surface/80 p-1.5 text-text-primary shadow-sm backdrop-blur-sm transition-opacity hover:bg-surface opacity-0 group-hover:opacity-100 dark:bg-dark-surface/80 dark:text-dark-text-primary"
-                aria-label="Next image"
-              >
+              <button onClick={handleNext}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 shadow-sm backdrop-blur-sm transition-opacity hover:bg-white/10 opacity-0 group-hover:opacity-100"
+                style={{ background: 'rgba(0,0,0,0.5)', color: 'rgba(255,255,255,0.8)' }} aria-label="Next image">
                 <ChevronRight className="h-5 w-5" />
               </button>
             </>
           )}
           <button
             onClick={() => setIsFullscreen(true)}
-            className="absolute right-3 top-3 rounded-full bg-surface/80 p-1.5 text-text-primary shadow-sm backdrop-blur-sm transition-colors hover:bg-surface dark:bg-dark-surface/80 dark:text-dark-text-primary dark:hover:bg-dark-surface"
+            className="absolute right-3 top-3 rounded-full p-1.5 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/10"
+            style={{ background: 'rgba(0,0,0,0.5)', color: 'rgba(255,255,255,0.8)' }}
             aria-label="View fullscreen"
           >
             <Maximize2 className="h-4 w-4" />
@@ -163,7 +164,7 @@ export function ImageGallery({ media, productName }: ImageGalleryProps) {
 
     if (currentVideo) {
       return (
-        <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-border bg-black dark:border-dark-border">
+        <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-3xl bg-black" style={{ border: BORDER }}>
           <video
             src={currentVideo.url}
             controls
@@ -195,11 +196,12 @@ export function ImageGallery({ media, productName }: ImageGalleryProps) {
                 key={img.id}
                 onClick={() => setSelectedIndex(idx)}
                 className={cn(
-                  'relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all',
-                  idx === selectedIndex
-                    ? 'border-primary-500 ring-1 ring-primary-500 dark:border-primary-400'
-                    : 'border-border opacity-70 hover:opacity-100 dark:border-dark-border',
+                  'relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all',
                 )}
+                style={{
+                  borderColor: idx === selectedIndex ? '#FF4D00' : 'rgba(255,255,255,0.15)',
+                  opacity: idx === selectedIndex ? 1 : 0.6,
+                }}
               >
                 <Image
                   src={img.url || '/placeholder.svg'}

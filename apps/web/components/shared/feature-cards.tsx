@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Feature {

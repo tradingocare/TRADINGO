@@ -8,6 +8,7 @@ import { PricingCards } from '@/components/shared/pricing-cards';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Timeline } from '@/components/shared/timeline';
 import { Separator } from '@/components/ui/separator';
+import { FEATURES_SELLER, SELLER_PRICING_PLANS, SELLER_ONBOARDING_STEPS } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'For Sellers | TRADINGO',
@@ -15,116 +16,20 @@ export const metadata: Metadata = {
     'Reach millions of buyers across India. List your products, get AI-matched leads, and grow your business.',
 };
 
-const sellerFeatures = [
-  {
-    icon: '🌐',
-    title: 'Pan-India Reach',
-    description: 'List your products to millions of buyers across 500+ cities with zero upfront investment.',
-    href: '/products',
-  },
-  {
-    icon: '⚡',
-    title: 'AI Lead Matching',
-    description: 'Get matched with serious buyers through our AI-powered RFQ engine that understands your products.',
-    href: '/rfq',
-    badge: 'AI',
-  },
-  {
-    icon: '🛡️',
-    title: 'Escrow Payments',
-    description: 'Get paid securely through our escrow system. Funds are released only on successful delivery confirmation.',
-    href: '/why-tradingo',
-  },
-  {
-    icon: '📊',
-    title: 'Seller Analytics',
-    description: 'Real-time dashboard with insights on views, inquiries, conversions, and revenue metrics.',
-    href: '/for-sellers',
-  },
-  {
-    icon: '🏅',
-    title: 'GOCASH Rewards',
-    description: 'Earn GOCASH on every sale. Redeem for listing boosts, premium analytics, and platform discounts.',
-    href: '/gocash',
-  },
-  {
-    icon: '🎧',
-    title: 'Dedicated Support',
-    description: 'Priority support with dedicated relationship managers to help you grow your business.',
-    href: '/contact',
-  },
-  {
-    icon: '📦',
-    title: 'Easy Listing',
-    description: 'Bulk upload products with AI-assisted categorization. List in minutes, not hours.',
-    href: '/products',
-  },
-  {
-    icon: '🏆',
-    title: 'TRADGO Races',
-    description: 'Compete in trading races, earn badges, climb leaderboards, and unlock exclusive seller perks.',
-    href: '/tradgo',
-  },
-];
+const sellerFeatures = FEATURES_SELLER;
 
-const sellerPlans = [
-  {
-    name: 'Free Starter',
-    price: 'Free',
-    period: 'month',
-    description: 'Perfect for new sellers exploring the marketplace.',
-    features: [
-      'List up to 10 products',
-      'Standard analytics',
-      'Email support',
-      'Basic RFQ access',
-      'Community forum access',
-    ],
-    href: '/register',
-  },
-  {
-    name: 'Business',
-    price: '₹999',
-    period: 'month',
-    description: 'For growing businesses ready to scale across India.',
-    features: [
-      'Unlimited product listings',
-      'Advanced analytics dashboard',
-      'Priority chat & phone support',
-      'AI-powered RFQ matching',
-      'GOCASH multiplier (2x)',
-      'TRADGO race access',
-      'Bulk listing tools',
-    ],
-    href: '/seller-plans',
-    popular: true,
-  },
-  {
-    name: 'Enterprise',
-    price: '₹2,499',
-    period: 'month',
-    description: 'For large enterprises with high-volume trading needs.',
-    features: [
-      'Everything in Business',
-      'Dedicated account manager',
-      'API access for bulk operations',
-      'Custom integrations',
-      'GOCASH multiplier (3x)',
-      'Exclusive TRADGO events',
-      'White-label catalog options',
-      'Priority dispute resolution',
-    ],
-    href: '/seller-plans',
-    highlight: 'Best Value',
-  },
-];
+const sellerPlans = SELLER_PRICING_PLANS.map(p => ({
+  name: p.name,
+  price: p.price === '₹0' ? 'Free' : p.price,
+  period: p.period === 'forever' ? 'month' : p.period.replace('/', ''),
+  description: p.description,
+  features: p.features,
+  popular: p.popular,
+  href: '/register',
+  ...(p.name === 'Enterprise' ? { highlight: 'Best Value' } : {}),
+}));
 
-const onboardingSteps = [
-  { number: 1, title: 'Create Your Account', description: 'Sign up for free and complete your seller profile with business details and KYC verification.' },
-  { number: 2, title: 'List Your Products', description: 'Upload product catalogs with descriptions, prices, and images. Use bulk upload for large inventories.' },
-  { number: 3, title: 'Get Verified', description: 'Complete the verification process to build trust with buyers and unlock all platform features.' },
-  { number: 4, title: 'Start Selling', description: 'Receive inquiries, respond to RFQs, and close deals. Get paid securely through our escrow system.' },
-];
+const onboardingSteps = SELLER_ONBOARDING_STEPS.map(s => ({ number: s.step, title: s.title, description: s.description }));
 
 export default function ForSellersPage() {
   return (

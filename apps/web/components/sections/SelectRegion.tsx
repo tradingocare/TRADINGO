@@ -3,23 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, X, ChevronRight, Bell, Mail, Store } from 'lucide-react';
+import { Globe, X, Bell, Mail, Store } from 'lucide-react';
+import { MASTER_COUNTRIES } from '@/data/master-data';
 
-const countries = [
-  { flag: '\uD83C\uDDEE\uD83C\uDDF3', name: 'India', selected: true },
-  { flag: '\uD83C\uDDE7\uD83C\uDDE9', name: 'Bangladesh' },
-  { flag: '\uD83C\uDDF1\uD83C\uDDF0', name: 'Sri Lanka' },
-  { flag: '\uD83C\uDDF3\uD83C\uDDF5', name: 'Nepal' },
-  { flag: '\uD83C\uDDE7\uD83C\uDDF9', name: 'Bhutan' },
-  { flag: '\uD83C\uDDE6\uD83C\uDDEB', name: 'Afghanistan' },
-  { flag: '\uD83C\uDDEE\uD83C\uDDE9', name: 'Indonesia' },
-  { flag: '\uD83C\uDDF2\uD83C\uDDFE', name: 'Malaysia' },
-  { flag: '\uD83C\uDDF8\uD83C\uDDEC', name: 'Singapore' },
-  { flag: '\uD83C\uDDEF\uD83C\uDDF5', name: 'Japan' },
-  { flag: '\uD83C\uDDE8\uD83C\uDDF3', name: 'China' },
-  { flag: '\uD83C\uDDF7\uD83C\uDDFA', name: 'Russia' },
-  { flag: '\uD83C\uDDE6\uD83C\uDDEA', name: 'UAE' },
-];
+const countries = MASTER_COUNTRIES.map(c => ({ flag: c.flag, name: c.name, selected: c.code === 'IN' }));
 
 export default function SelectRegion() {
   const [selected, setSelected] = useState('India');

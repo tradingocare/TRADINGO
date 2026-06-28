@@ -1,95 +1,34 @@
-﻿import type { Metadata } from 'next';
-import { Shield, Zap, Award, Globe, Headphones, CheckCircle2, XCircle, BarChart3, DollarSign, Clock } from 'lucide-react';
+import type { Metadata } from 'next';
+import type { ComponentType } from 'react';
+import { Shield, Zap, Award, Globe, Headphones, Cpu, Brain, MapPin, CheckCircle2, XCircle, BarChart3, DollarSign, Clock } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
+import { WHY_DIFFERENTIATORS, WHY_COMPARISON } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'Why TRADINGO | India\'s First TEM E-Marketplace',
+  description: 'Discover why thousands of Indian businesses choose TRADINGO for B2B trade — verified suppliers, escrow protection, AI-powered matching, and pan-India logistics.',
 };
 
-const differentiators = [
-  {
-    icon: Shield,
-    title: 'Trust & Security',
-    description: 'Every transaction is protected by our escrow system. All sellers and buyers undergo mandatory KYC verification. Dispute resolution handled by our dedicated team. Your data is encrypted and secure.',
-    details: [
-      'Escrow-protected payments — funds released only on delivery confirmation',
-      'Mandatory KYC and business verification for all traders',
-      'End-to-end encryption for all communications and transactions',
-      'Dedicated dispute resolution team for fair conflict handling',
-    ],
-  },
-  {
-    icon: Zap,
-    title: 'AI-Powered Matching',
-    description: 'Our intelligent algorithms connect you with the right trading partners automatically. Save time and discover opportunities you would otherwise miss.',
-    details: [
-      'Smart RFQ matching based on product, price, location, and reputation',
-      'AI-driven price intelligence and market trend analysis',
-      'Automated product categorization and tagging for better discovery',
-      'Personalized recommendations tailored to your trading history',
-    ],
-  },
-  {
-    icon: Award,
-    title: 'Rewards Ecosystem',
-    description: 'Earn GOCASH on every successful trade. Participate in TRADGO races, climb leaderboards, and unlock exclusive platform benefits.',
-    details: [
-      'Earn 2-5% GOCASH back on every completed transaction',
-      'TRADGO trading races with badges, trophies, and prizes',
-      'Tiered loyalty program — Bronze, Silver, Gold with increasing perks',
-      'Redeem GOCASH for listing boosts, analytics, and premium features',
-    ],
-  },
-  {
-    icon: Globe,
-    title: 'Pan-India Network',
-    description: 'Connect with buyers and sellers across 500+ cities. Break geographical barriers and expand your business nationwide.',
-    details: [
-      'Active presence in 500+ cities across India',
-      'Localized market access with city-wise browsing',
-      'Connected logistics network for seamless pan-India delivery',
-      'Multi-language support for regional traders',
-    ],
-  },
-  {
-    icon: Headphones,
-    title: 'Dedicated Support',
-    description: 'Our support team is available 24/7 to help you with every aspect of your trading journey.',
-    details: [
-      '24/7 customer support via phone, email, and live chat',
-      'Dedicated relationship managers for business plan subscribers',
-      'Comprehensive help center with guides and FAQs',
-      'Average response time under 2 hours for all queries',
-    ],
-  },
-  {
-    icon: Shield,
-    title: 'Zero-Risk Trading',
-    description: 'Trade with complete confidence. Our multi-layer protection ensures you never lose money on a transaction.',
-    details: [
-      'Full escrow protection — pay only when you confirm satisfaction',
-      'Seller performance tracking and rating system',
-      'Product quality verification and authenticity checks',
-      'Money-back guarantee on eligible transactions',
-    ],
-  },
-];
+const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
+  Shield, Zap, Award, Globe, Headphones, Cpu, Brain, MapPin,
+};
 
-const comparisonData = [
-  { aspect: 'Trust Verification', traditional: 'No verification, high fraud risk', tradingo: 'Mandatory KYC & business verification' },
-  { aspect: 'Payment Security', traditional: 'Direct payments, no protection', tradingo: 'Escrow-protected transactions' },
-  { aspect: 'Partner Discovery', traditional: 'Manual networking, limited reach', tradingo: 'AI-powered smart matching, pan-India reach' },
-  { aspect: 'Rewards', traditional: 'None', tradingo: 'GOCASH cashback + gamified rewards' },
-  { aspect: 'Dispute Resolution', traditional: 'No formal process', tradingo: 'Dedicated team with structured resolution' },
-  { aspect: 'Market Insights', traditional: 'Limited to personal network', tradingo: 'AI-driven price intelligence & trends' },
-  { aspect: 'Geographic Reach', traditional: 'Local/regional', tradingo: '500+ cities across India' },
-  { aspect: 'Support', traditional: 'None or limited', tradingo: '24/7 support + dedicated managers' },
-  { aspect: 'Platform Fees', traditional: 'Varies, often hidden', tradingo: 'Transparent pricing, free tier available' },
-];
+const differentiators = WHY_DIFFERENTIATORS.map(d => ({
+  icon: ICON_MAP[d.icon] || Shield,
+  title: d.title,
+  description: d.tagline,
+  details: d.details,
+}));
+
+const comparisonData = WHY_COMPARISON.map(c => ({
+  aspect: c.feature,
+  traditional: c.others,
+  tradingo: c.tradindo,
+}));
 
 export default function WhyTradingoPage() {
   return (

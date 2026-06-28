@@ -5,40 +5,17 @@ import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
+import { CONTACT_METHODS, BUSINESS_HOURS } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'Contact Us | TRADINGO',
+  description: 'Get in touch with the TRADINGO team. Reach our support, sales, and partnership teams via email, phone, or our contact form.',
 };
 
-const contactMethods = [
-  {
-    icon: Mail,
-    label: 'Email',
-    value: 'support@tradingo.com',
-    href: 'mailto:support@tradingo.com',
-    description: 'Send us an email anytime. We typically respond within 24 hours.',
-  },
-  {
-    icon: Phone,
-    label: 'Phone',
-    value: '+91 1800-TRADINGO',
-    href: 'tel:+91180087234646',
-    description: 'Call our support team. Available Monday to Saturday, 9 AM to 9 PM.',
-  },
-  {
-    icon: MapPin,
-    label: 'Office Address',
-    value: 'Mumbai, Maharashtra, India',
-    href: null,
-    description: 'TRADINGO Technologies Pvt. Ltd., BKC, Mumbai 400051.',
-  },
-];
+const iconMap: Record<string, React.ElementType> = { Mail, Phone, MapPin };
+const contactMethods = CONTACT_METHODS.map((m) => ({ ...m, icon: iconMap[m.icon] }));
 
-const businessHours = [
-  { day: 'Monday - Saturday', hours: '9:00 AM - 9:00 PM IST' },
-  { day: 'Sunday', hours: '10:00 AM - 6:00 PM IST' },
-  { day: 'Public Holidays', hours: 'Limited support (10 AM - 4 PM IST)' },
-];
+const businessHours = BUSINESS_HOURS;
 
 export default function ContactPage() {
   return (

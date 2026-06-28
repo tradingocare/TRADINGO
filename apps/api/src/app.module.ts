@@ -61,6 +61,18 @@ import { CategoryTemplatesModule } from './modules/category-templates/category-t
 import { ProductAttributesModule } from './modules/product-attributes/product-attributes.module';
 import { NearMeModule } from './modules/near-me/near-me.module';
 import { ProductLocationModule } from './modules/product-location/product-location.module';
+import { SellerModule } from './modules/seller/seller.module';
+import { MembershipModule } from './modules/membership/membership.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { SellerProductModule } from './modules/seller-product/seller-product.module';
+import { BuyerModule } from './modules/buyer/buyer.module';
+import { CommunicationModule } from './modules/communication/communication.module';
+import { SmartRfqModule } from './modules/smart-rfq/smart-rfq.module';
+import { SmartNegotiationModule } from './modules/smart-negotiation/smart-negotiation.module';
+import { SmartPoModule } from './modules/smart-po/smart-po.module';
+import { SmartOrderModule } from './modules/smart-order/smart-order.module';
+import { SmartShipmentModule } from './modules/smart-shipment/smart-shipment.module';
+import { SmartDeliveryModule } from './modules/smart-delivery/smart-delivery.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -139,6 +151,18 @@ import { AppService } from './app.service';
     ProductAttributesModule,
     NearMeModule,
     ProductLocationModule,
+    SellerModule,
+    MembershipModule,
+    BillingModule,
+    SellerProductModule,
+    BuyerModule,
+    CommunicationModule,
+    SmartRfqModule,
+    SmartNegotiationModule,
+    SmartPoModule,
+    SmartOrderModule,
+    SmartShipmentModule,
+    SmartDeliveryModule,
   ],
   controllers: [AppController],
   providers: [

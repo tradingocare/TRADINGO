@@ -145,7 +145,7 @@ export default function RFQPage() {
         title="Ready to Get the Best Quotes?"
         subtitle="Post your first RFQ and receive competitive offers from verified sellers."
         primaryLabel="Post Your RFQ"
-        primaryHref="/register"
+        primaryHref="/rfq/new"
         secondaryLabel="Learn More"
         secondaryHref="/for-buyers"
         variant="accent"

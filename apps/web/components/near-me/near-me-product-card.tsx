@@ -6,6 +6,7 @@ import { Star, ShieldCheck, Zap, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DistanceBadge } from './distance-badge';
 import type { NearMeProduct } from '@/lib/api/near-me';
+import SellerBadge, { resolveSellerInfo } from '@/components/shared/SellerBadge';
 
 interface NearMeProductCardProps {
   product: NearMeProduct;
@@ -82,7 +83,13 @@ export function NearMeProductCard({ product, className }: NearMeProductCardProps
           </div>
 
           <div className="mt-1.5 flex items-center gap-2 text-xs text-text-tertiary dark:text-dark-text-tertiary">
-            <span>{product.companyName}</span>
+            <SellerBadge
+              seller={resolveSellerInfo(product)}
+              size="xs"
+              showLocation={false}
+              showLogo={false}
+              linkToProfile={true}
+            />
             {product.deliveryEta && (
               <>
                 <span className="text-border dark:text-dark-border">|</span>

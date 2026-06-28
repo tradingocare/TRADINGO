@@ -5,13 +5,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  User,
   Package,
   FileText,
-  Quote,
   ShoppingCart,
   CreditCard,
-  MessageSquare,
   Award,
   Zap,
   BarChart3,
@@ -20,15 +17,22 @@ import {
   ChevronRight,
   Rocket,
   LifeBuoy,
-  Upload,
-  Radio,
   ClipboardList,
   AlertTriangle,
-  MapPin,
   Globe,
+  Users,
+  PlusCircle,
+  Bell,
+  Download,
+  MessageSquare,
+  Handshake,
+  FileCheck,
+  Truck,
+  PackageCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DASHBOARD_SELLER_NAV, DASHBOARD_BUYER_NAV, DASHBOARD_ADMIN_NAV } from '@/data/master-data';
 
 export interface SidebarItem {
   label: string;
@@ -107,51 +111,15 @@ export function Sidebar({ items, title, className }: SidebarProps) {
   );
 }
 
-export const sellerNavItems: SidebarItem[] = [
-  { label: 'Dashboard', href: '/seller/dashboard', icon: LayoutDashboard },
-  { label: 'Profile', href: '/seller/profile', icon: User },
-  { label: 'Products', href: '/seller/products', icon: Package, badge: 12 },
-  { label: 'Locations', href: '/seller/products/locations', icon: Globe },
-  { label: 'RFQs', href: '/seller/rfqs', icon: FileText, badge: 5 },
-  { label: 'Quotes', href: '/seller/quotes', icon: Quote },
-  { label: 'Orders', href: '/seller/orders', icon: ShoppingCart, badge: 3 },
-  { label: 'Payments', href: '/seller/payments', icon: CreditCard },
-  { label: 'Chat', href: '/seller/chat', icon: MessageSquare, badge: 2 },
-  { label: 'GOCASH', href: '/seller/gocash', icon: Award },
-  { label: 'TRADGO', href: '/seller/tradgo', icon: Zap },
-  { label: 'Analytics', href: '/seller/analytics', icon: BarChart3 },
-  { label: 'Settings', href: '/seller/settings', icon: Settings },
-  { label: 'Beta Program', href: '/seller/beta', icon: Rocket },
-  { label: 'Product Import', href: '/seller/beta/product-import', icon: Upload },
-  { label: 'RFQ Setup', href: '/seller/beta/rfq-onboarding', icon: Radio },
-  { label: 'Support', href: '/seller/beta/support', icon: LifeBuoy },
-];
+const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard, Package, FileText, ShoppingCart, BarChart3, Trophy: Award, Wallet: CreditCard,
+  Star: Award, Headphones: LifeBuoy, Settings, Heart: Award, Store: Package, Scale: ClipboardList,
+  Users, Grid3X3: ClipboardList, Shield: Award, AlertTriangle, ScrollText: FileText, Activity: Zap,
+  Flask: Rocket, PlusCircle: Rocket, Globe, Bell, Download, MessageSquare, Handshake, FileCheck, Truck, PackageCheck,
+};
 
-export const buyerNavItems: SidebarItem[] = [
-  { label: 'Dashboard', href: '/buyer/dashboard', icon: LayoutDashboard },
-  { label: 'Near Me', href: '/buyer/near-me', icon: MapPin },
-  { label: 'My RFQs', href: '/buyer/rfqs', icon: FileText },
-  { label: 'Quotes', href: '/buyer/quotes', icon: Quote, badge: 4 },
-  { label: 'Orders', href: '/buyer/orders', icon: ShoppingCart, badge: 2 },
-  { label: 'Payments', href: '/buyer/payments', icon: CreditCard },
-  { label: 'Chat', href: '/buyer/chat', icon: MessageSquare },
-  { label: 'GOCASH', href: '/buyer/gocash', icon: Award },
-  { label: 'Settings', href: '/buyer/settings', icon: Settings },
-];
+export const sellerNavItems: SidebarItem[] = DASHBOARD_SELLER_NAV.map(i => ({ label: i.label, href: i.href, icon: ICON_MAP[i.icon] || LayoutDashboard, badge: i.badge ? Number(i.badge) : undefined }));
 
-export const adminNavItems: SidebarItem[] = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Users', href: '/admin/users', icon: User },
-  { label: 'Companies', href: '/admin/companies', icon: Package },
-  { label: 'KYC Reviews', href: '/admin/kyc', icon: FileText, badge: 8 },
-  { label: 'RFQs', href: '/admin/rfqs', icon: Quote, badge: 5 },
-  { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
-  { label: 'Payments', href: '/admin/payments', icon: CreditCard },
-  { label: 'Disputes', href: '/admin/disputes', icon: MessageSquare, badge: 3 },
-  { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-  { label: 'Beta Program', href: '/admin/beta', icon: Rocket },
-  { label: 'Invites', href: '/admin/beta/invites', icon: User },
-  { label: 'Launch Dashboard', href: '/admin/launch', icon: Rocket },
-  { label: 'Go-Live Checklist', href: '/admin/launch/checklist', icon: ClipboardList },
-  { label: 'Incidents', href: '/admin/launch/incidents', icon: AlertTriangle },
-];
+export const buyerNavItems: SidebarItem[] = DASHBOARD_BUYER_NAV.map(i => ({ label: i.label, href: i.href, icon: ICON_MAP[i.icon] || LayoutDashboard }));
+
+export const adminNavItems: SidebarItem[] = DASHBOARD_ADMIN_NAV.map(i => ({ label: i.label, href: i.href, icon: ICON_MAP[i.icon] || LayoutDashboard, badge: i.badge ? Number(i.badge) : undefined }));

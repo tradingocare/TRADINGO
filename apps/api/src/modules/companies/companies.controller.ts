@@ -22,9 +22,38 @@ export class CompaniesController {
     return this.companiesService.create(dto, userId);
   }
 
+  // ── Public Directory (page-based, before :slug) ──
+  @Get('directory')
+  @Public()
+  @ApiOperation({ summary: 'Company directory (paginated, filterable)' })
+  async findDirectory(
+    @Query('q')           q:          string,
+    @Query('category')    category:   string,
+    @Query('city')        city:       string,
+    @Query('state')       state:      string,
+    @Query('verified')    verified:   string,
+    @Query('elite')       elite:      string,
+    @Query('sellerType')  sellerType: string,
+    @Query('minTrust')    minTrust:   string,
+    @Query('sortBy')      sortBy = 'trustScore',
+    @Query('page')        page = '1',
+    @Query('limit')       limit = '24',
+  ) {
+    return this.companiesService.findDirectory({
+      q, category, city, state,
+      verified: verified === 'true',
+      elite: elite === 'true',
+      sellerType,
+      minTrust: minTrust ? parseInt(minTrust) : undefined,
+      sortBy: sortBy as any,
+      page: parseInt(page),
+      limit: Math.min(parseInt(limit), 48),
+    });
+  }
+
   @Get()
   @Public()
-  @ApiOperation({ summary: 'List companies' })
+  @ApiOperation({ summary: 'List companies (cursor-based)' })
   async findAll(@Query() query: {
     cursor?: string;
     limit?: number;
@@ -50,6 +79,27 @@ export class CompaniesController {
   @ApiOperation({ summary: 'Get company by slug' })
   async findBySlug(@Param('slug') slug: string) {
     return this.companiesService.findBySlug(slug);
+  }
+
+  @Get(':slug/products')
+  @Public()
+  @ApiOperation({ summary: "Get company's products" })
+  async getProducts(@Param('slug') slug: string, @Query('page') page = '1', @Query('limit') limit = '12') {
+    return this.companiesService.getProducts(slug, parseInt(page), parseInt(limit));
+  }
+
+  @Get(':slug/reviews')
+  @Public()
+  @ApiOperation({ summary: "Get company's reviews" })
+  async getReviews(@Param('slug') slug: string, @Query('page') page = '1', @Query('limit') limit = '6') {
+    return this.companiesService.getReviews(slug, parseInt(page), parseInt(limit));
+  }
+
+  @Get(':slug/similar')
+  @Public()
+  @ApiOperation({ summary: 'Get similar companies' })
+  async getSimilar(@Param('slug') slug: string) {
+    return this.companiesService.getSimilar(slug, 6);
   }
 
   @Patch(':id')

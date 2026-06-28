@@ -2,15 +2,13 @@
 
 import { DashboardPageHeader, StatCard, DashboardSkeleton } from '@/components/dashboard';
 import { useUsers, useCompanies, useRfqs, useKycSubmissions } from '@/hooks';
-import { Users, Building2, FileText, ShieldCheck, BarChart3 } from 'lucide-react';
+import { Users, Building2, FileText, ShieldCheck, Shield, AlertTriangle, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { ADMIN_QUICK_LINKS } from '@/data/master-data';
 
-const quickLinks = [
-  { label: 'User Management', href: '/admin/users', icon: Users, description: 'Manage all platform users' },
-  { label: 'Company Verification', href: '/admin/companies', icon: Building2, description: 'Verify registered companies' },
-  { label: 'KYC Reviews', href: '/admin/kyc', icon: ShieldCheck, description: 'Review pending verifications' },
-  { label: 'Platform Analytics', href: '/admin/analytics', icon: BarChart3, description: 'View platform metrics' },
-];
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Users, Shield, AlertTriangle, Activity,
+};
 
 export default function AdminDashboardPage() {
   const { data: usersData, isLoading: usersLoad } = useUsers({ limit: 1 });
@@ -46,8 +44,8 @@ export default function AdminDashboardPage() {
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Quick Links</h2>
           <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Frequently used admin sections</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {quickLinks.map((link) => {
-              const Icon = link.icon;
+            {ADMIN_QUICK_LINKS.map((link) => {
+              const Icon = ICON_MAP[link.icon];
               return (
                 <Link
                   key={link.label}
@@ -59,7 +57,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{link.label}</p>
-                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">{link.description}</p>
+                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">{link.count}</p>
                   </div>
                 </Link>
               );

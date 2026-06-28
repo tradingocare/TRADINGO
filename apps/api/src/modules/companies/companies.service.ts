@@ -169,6 +169,199 @@ export class CompaniesService {
     };
   }
 
+  // ── Public Directory (page-based, filterable) ──
+  async findDirectory(params: {
+    q?:          string
+    category?:   string
+    city?:       string
+    state?:      string
+    verified?:   boolean
+    elite?:      boolean
+    sellerType?: string
+    minTrust?:   number
+    sortBy?:     string
+    page:        number
+    limit:       number
+  }) {
+    const { q, category, city, state, verified, sellerType, minTrust, sortBy, page, limit } = params
+    const skip = (page - 1) * limit
+
+    const where: Prisma.CompanyWhereInput = { deletedAt: null, status: { not: 'INACTIVE' as any } }
+
+    if (q?.trim()) {
+      where.OR = [
+        { name:        { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+      ]
+    }
+    if (sellerType) where.businessType = sellerType as any
+    if (minTrust)  where.trustScore = { gte: minTrust }
+
+    const orderBy: any = {
+      trustScore: { trustScore: 'desc' },
+      newest:     { createdAt: 'desc' },
+      name:       { name: 'asc' },
+    }[sortBy || 'trustScore'] ?? { trustScore: 'desc' }
+
+    const [companies, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          locations: { where: { deletedAt: null }, take: 1 },
+          _count: { select: { products: true } },
+        },
+      }),
+      this.prisma.company.count({ where }),
+    ])
+
+    const mapped = companies.map(c => {
+      const loc = c.locations?.[0] || {}
+      return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        logo: c.logo,
+        banner: c.banner,
+        bannerUrl: c.banner,
+        description: c.description,
+        tagline: null,
+        city: loc.city || '',
+        state: loc.state || '',
+        categories: [],
+        sellerType: c.businessType,
+        isVerified: c.verificationLevel !== 'LEVEL_0',
+        isTradgoElite: false,
+        trustScore: c.trustScore,
+        rating: 0,
+        reviewCount: 0,
+        orderCount: 0,
+        responseTime: c.responseRate ? `< ${c.responseRate}h` : undefined,
+        productCount: c._count?.products || 0,
+        yearsActive: c.establishedYear
+          ? new Date().getFullYear() - c.establishedYear
+          : undefined,
+      }
+    })
+
+    return {
+      companies: mapped,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+      },
+    }
+  }
+
+  // ── Company Products ──
+  async getProducts(slug: string, page: number, limit: number) {
+    const company = await this.prisma.company.findFirst({
+      where: { slug, deletedAt: null },
+      select: { id: true },
+    })
+    if (!company) throw new NotFoundException('Company not found')
+
+    const skip = (page - 1) * limit
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { companyId: company.id, status: 'ACTIVE' as any },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.product.count({ where: { companyId: company.id, status: 'ACTIVE' as any } }),
+    ])
+
+    return {
+      products,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit), hasNext: page * limit < total },
+    }
+  }
+
+  // ── Company Reviews ──
+  async getReviews(slug: string, page: number, limit: number) {
+    const company = await this.prisma.company.findFirst({
+      where: { slug, deletedAt: null },
+      select: { id: true },
+    })
+    if (!company) throw new NotFoundException('Company not found')
+
+    const skip = (page - 1) * limit
+    const [reviews, total] = await Promise.all([
+      this.prisma.productReview.findMany({
+        where: { companyId: company.id, status: 'APPROVED' as any },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.productReview.count({ where: { companyId: company.id } }),
+    ])
+
+    const stars: Record<number, number> = { 1:0, 2:0, 3:0, 4:0, 5:0 }
+    reviews.forEach(r => { if (r.rating >= 1 && r.rating <= 5) stars[r.rating]++ })
+    const avgRating = total > 0
+      ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / total
+      : 0
+
+    return {
+      reviews: reviews.map(r => ({
+        ...r,
+        comment: r.review,
+      })),
+      summary: {
+        average: parseFloat(avgRating.toFixed(1)),
+        total,
+        stars,
+      },
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+    }
+  }
+
+  // ── Similar Companies ──
+  async getSimilar(slug: string, take: number) {
+    const company = await this.prisma.company.findFirst({
+      where: { slug, deletedAt: null },
+      select: { businessType: true, id: true },
+    })
+    if (!company) return []
+
+    const similar = await this.prisma.company.findMany({
+      where: {
+        NOT: { slug },
+        deletedAt: null,
+        status: { not: 'INACTIVE' as any },
+        businessType: company.businessType as any,
+      },
+      orderBy: { trustScore: 'desc' },
+      take,
+      include: {
+        locations: { where: { deletedAt: null }, take: 1 },
+        _count: { select: { products: true } },
+      },
+    })
+
+    return similar.map(c => {
+      const loc = c.locations?.[0] || {}
+      return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        logo: c.logo,
+        city: loc.city || '',
+        state: loc.state || '',
+        trustScore: c.trustScore,
+        isVerified: c.verificationLevel !== 'LEVEL_0',
+        categories: [],
+        productCount: c._count?.products || 0,
+      }
+    })
+  }
+
   async findById(id: string) {
     const company = await this.prisma.company.findFirst({
       where: { id, deletedAt: null },
@@ -190,7 +383,8 @@ export class CompaniesService {
         owners: { include: { user: { select: { id: true, email: true, name: true } } } },
         locations: { where: { deletedAt: null } },
         categories: { include: { category: true } },
-        _count: { select: { locations: true, verifications: true } },
+        certificationDocs: true,
+        _count: { select: { locations: true, verifications: true, products: true } },
       },
     });
     if (!company) throw new NotFoundException('Company not found');

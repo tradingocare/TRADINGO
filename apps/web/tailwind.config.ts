@@ -15,7 +15,7 @@ const config: Config = {
     extend: {
       colors: {
         base: {
-          DEFAULT: '#1F0318',
+          DEFAULT: '#1D0001',
           elevated: '#2A0822',
           elevated2: '#350D2C',
         },

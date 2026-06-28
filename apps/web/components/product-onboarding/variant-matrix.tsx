@@ -6,25 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { ProductDraftVariant, VariantType } from '@/lib/product-onboarding/types';
-
-const VARIANT_TYPE_OPTIONS: { value: VariantType; label: string }[] = [
-  { value: 'COLOR', label: 'Color' },
-  { value: 'SIZE', label: 'Size' },
-  { value: 'WEIGHT', label: 'Weight' },
-  { value: 'MATERIAL', label: 'Material' },
-  { value: 'GRADE', label: 'Grade' },
-  { value: 'THICKNESS', label: 'Thickness' },
-  { value: 'LENGTH', label: 'Length' },
-  { value: 'WIDTH', label: 'Width' },
-  { value: 'HEIGHT', label: 'Height' },
-  { value: 'CAPACITY', label: 'Capacity' },
-  { value: 'VOLTAGE', label: 'Voltage' },
-  { value: 'POWER_RATING', label: 'Power Rating' },
-  { value: 'FINISH', label: 'Finish' },
-  { value: 'MODEL_NUMBER', label: 'Model Number' },
-  { value: 'PACKAGING_TYPE', label: 'Packaging Type' },
-  { value: 'CUSTOM', label: 'Custom' },
-];
+import { VARIANT_TYPE_OPTIONS } from '@/data/master-data';
 
 interface VariantMatrixProps {
   variants: ProductDraftVariant[];
@@ -226,7 +208,7 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => addGroup(opt.value)}
+                  onClick={() => addGroup(opt.value as VariantType)}
                   className="w-full rounded-md px-3 py-1.5 text-left text-sm text-text-primary hover:bg-surface-secondary dark:text-dark-text-primary dark:hover:bg-dark-surface-secondary"
                 >
                   {opt.label}

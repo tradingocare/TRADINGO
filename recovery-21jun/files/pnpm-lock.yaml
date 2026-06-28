@@ -1,0 +1,14 @@
+/* ═══════════════════════════════════════════════════════════════
+   RECOVERY: pnpm-lock.yaml
+   Source: Working tree copy (auto-generated)
+   Confidence: HIGH — only reflects framer-motion addition
+   Action: Regenerate with `pnpm install` after merge
+   ═══════════════════════════════════════════════════════════════
+
+   The working tree has an updated pnpm-lock.yaml that includes
+   framer-motion@^12.0.0 and its dependencies (@motionone/dom,
+   @motionone/utils, hey-listen, etc.)
+
+   RECOMMENDATION: Do NOT copy this file. Run `pnpm install`
+   after merging the package.json change to regenerate it.
+*/

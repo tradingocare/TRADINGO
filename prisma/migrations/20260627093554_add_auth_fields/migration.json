@@ -1,0 +1,9 @@
+{
+  "version": "5.4",
+  "checksums": {
+    "299b2e8a20163a99423b17be7246f1d78e20be6f650cebed1a3c1e1093f6437f": "migration"
+  },
+  "started_at": "2026-06-27T09:35:54.000000Z",
+  "finished_at": "2026-06-27T09:35:55.000000Z",
+  "applied_steps_count": 0
+}

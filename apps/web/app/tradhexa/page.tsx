@@ -1,8 +1,8 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Zap, Layers, Shield, TrendingUp, Globe, Target, CheckCircle } from 'lucide-react';
+import { ArrowRight, Zap, Layers, Shield, TrendingUp, CheckCircle } from 'lucide-react';
 import { engines } from '@/lib/data/tradhexa-engines';
 
 export default function TradhexaPage() {
@@ -36,7 +36,7 @@ export default function TradhexaPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {engines.map((engine, i) => {
+          {engines.map((engine, _i) => {
             const Icon = engine.icon;
             return (
               <Link key={engine.id} href={engine.href}>
@@ -154,9 +154,9 @@ export default function TradhexaPage() {
             </motion.span>
           </Link>
           <div className="mt-3 flex justify-center gap-4 text-xs">
-            <Link href="/auth/register" className="text-white/40 underline underline-offset-2 hover:text-white/60">Become a Seller</Link>
+            <Link href="/register" className="text-white/40 underline underline-offset-2 hover:text-white/60">Become a Seller</Link>
             <span className="text-white/10">|</span>
-            <Link href="/auth/register" className="text-white/40 underline underline-offset-2 hover:text-white/60">Start Trading</Link>
+            <Link href="/register" className="text-white/40 underline underline-offset-2 hover:text-white/60">Start Trading</Link>
           </div>
         </motion.div>
       </div>

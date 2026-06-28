@@ -6,106 +6,32 @@ import { AnimatedSection } from '@/components/shared/animated-section';
 import { PricingCards } from '@/components/shared/pricing-cards';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
+import { SELLER_PRICING_PLANS, WHY_COMPARISON, SELLER_PLANS_FAQ } from '@/data/master-data';
 export const metadata: Metadata = {
   title: 'Seller Plans | TRADINGO',
   description:
     'Choose the right plan for your business. Start free and upgrade as you grow on TRADINGO.',
 };
 
-const plans = [
-  {
-    name: 'Starter',
-    price: 'Free',
-    period: 'month',
-    description: 'Perfect for new sellers exploring the marketplace.',
-    features: [
-      'List up to 10 products',
-      'Basic analytics dashboard',
-      'Standard email support',
-      'Basic RFQ access',
-      '1x GOCASH earning rate',
-      'Standard product visibility',
-    ],
-    href: '/register',
-  },
-  {
-    name: 'Business',
-    price: '₹999',
-    period: 'month',
-    description: 'For growing businesses ready to scale their operations.',
-    features: [
-      'Unlimited product listings',
-      'Advanced analytics with trends',
-      'Priority support (24/7 chat)',
-      'AI-powered RFQ matching',
-      '2x GOCASH earning rate',
-      'TRADGO race access',
-      'Listing boost credits (monthly)',
-      'Bulk product upload',
-    ],
-    href: '/register?plan=business',
-    popular: true,
-  },
-  {
-    name: 'Enterprise',
-    price: '₹2,499',
-    period: 'month',
-    description: 'For large enterprises with high-volume trading needs.',
-    features: [
-      'Everything in Business',
-      'Dedicated account manager',
-      'API access for bulk operations',
-      '3x GOCASH earning rate',
-      'Custom integrations',
-      'White-label storefront',
-      'Zero platform fees',
-      'Exclusive TRADGO events',
-      'SLA guarantee',
-    ],
-    href: '/register?plan=enterprise',
-    highlight: 'Best Value',
-  },
-];
+const plans = SELLER_PRICING_PLANS.map(p => ({
+  name: p.name,
+  price: p.price === '₹0' ? 'Free' : p.price,
+  period: p.period === 'forever' ? 'month' : p.period.replace('/', ''),
+  description: p.description,
+  features: p.features,
+  popular: p.popular,
+  href: '/register',
+  ...(p.name === 'Enterprise' ? { highlight: 'Best Value' } : {}),
+}));
 
-const compareFeatures = [
-  { name: 'Product Listings', starter: '10', business: 'Unlimited', enterprise: 'Unlimited' },
-  { name: 'Analytics', starter: 'Basic', business: 'Advanced', enterprise: 'Advanced + Custom' },
-  { name: 'Support', starter: 'Email', business: '24/7 Priority', enterprise: 'Dedicated Manager' },
-  { name: 'RFQ Access', starter: 'Basic', business: 'AI-Powered', enterprise: 'AI-Powered + Priority' },
-  { name: 'GOCASH Rate', starter: '1x', business: '2x', enterprise: '3x' },
-  { name: 'TRADGO Access', starter: false, business: true, enterprise: true },
-  { name: 'API Access', starter: false, business: false, enterprise: true },
-  { name: 'White-Label', starter: false, business: false, enterprise: true },
-  { name: 'Listing Boosts', starter: false, business: 'Monthly Credits', enterprise: 'Unlimited' },
-  { name: 'SLA Guarantee', starter: false, business: false, enterprise: true },
-];
+const compareFeatures = WHY_COMPARISON.map(c => ({
+  name: c.feature,
+  starter: c.others,
+  business: c.tradindo,
+  enterprise: c.tradindo,
+}));
 
-const faqs = [
-  {
-    q: 'Can I switch plans at any time?',
-    a: 'Yes, you can upgrade or downgrade your plan at any time. Upgrades take effect immediately. Downgrades apply at the start of the next billing cycle.',
-  },
-  {
-    q: 'Is there a free trial for paid plans?',
-    a: 'All paid plans come with a 14-day free trial. No credit card required. Cancel anytime during the trial period with no charges.',
-  },
-  {
-    q: 'What payment methods do you accept?',
-    a: 'We accept all major credit cards, debit cards, UPI, net banking, and wallet payments. Enterprise plans can opt for quarterly or annual invoicing.',
-  },
-  {
-    q: 'Can I have multiple users on one account?',
-    a: 'Business plans include up to 3 team members. Enterprise plans include up to 10 team members with role-based access control.',
-  },
-  {
-    q: 'What happens to my products if I downgrade?',
-    a: 'If you downgrade from Business to Starter, your listings exceeding the 10-product limit will be hidden until you upgrade again. No data is lost.',
-  },
-  {
-    q: 'Is there a discount for annual billing?',
-    a: 'Yes, annual billing saves you 20% on both Business and Enterprise plans. Pay for 10 months and get 2 months free.',
-  },
-];
+const faqs = SELLER_PLANS_FAQ.map(f => ({ q: f.question, a: f.answer }));
 
 const CheckIcon = () => <Check className="h-5 w-5 text-accent-500" />;
 const CrossIcon = () => <X className="h-5 w-5 text-red-400" />;

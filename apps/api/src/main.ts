@@ -1,6 +1,6 @@
 import helmet from '@fastify/helmet';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -46,6 +46,19 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+      exceptionFactory: (errors) => {
+        const messages = errors.flatMap((err) => {
+          if (err.constraints) return Object.values(err.constraints);
+          if (err.children?.length) {
+            return err.children.flatMap((child) =>
+              child.constraints ? Object.values(child.constraints) : [],
+            );
+          }
+          return [`Invalid value for ${err.property}`];
+        });
+        return new BadRequestException({ statusCode: 400, message: messages, error: 'Validation Error', timestamp: new Date().toISOString() });
+      },
     }),
   );
 

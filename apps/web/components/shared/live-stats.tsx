@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { TrendingUp, Users, ShoppingBag, DollarSign } from 'lucide-react';
+import { MASTER_PLATFORM_STATS } from '@/data/master-data';
 import { cn } from '@/lib/utils';
 
 interface LiveStat {
@@ -13,44 +14,43 @@ interface LiveStat {
 }
 
 const defaultStats: LiveStat[] = [
-  { icon: <ShoppingBag className="h-5 w-5" />, value: '12,847', label: 'Products Listed', change: '+12%', positive: true },
-  { icon: <Users className="h-5 w-5" />, value: '8,432', label: 'Active Traders', change: '+8%', positive: true },
-  { icon: <DollarSign className="h-5 w-5" />, value: '₹2.4Cr', label: 'Trading Volume (24h)', change: '+15%', positive: true },
-  { icon: <TrendingUp className="h-5 w-5" />, value: '156', label: 'Live RFQs', change: '+23%', positive: true },
+  { icon: <ShoppingBag className="h-5 w-5" />, ...MASTER_PLATFORM_STATS.liveStats[0] },
+  { icon: <Users className="h-5 w-5" />, ...MASTER_PLATFORM_STATS.liveStats[1] },
+  { icon: <DollarSign className="h-5 w-5" />, ...MASTER_PLATFORM_STATS.liveStats[2] },
+  { icon: <TrendingUp className="h-5 w-5" />, ...MASTER_PLATFORM_STATS.liveStats[3] },
 ];
 
 export function LiveStats({ className }: { className?: string }) {
   const [stats] = useState(defaultStats);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      // In production, this would poll the API
-    }, 30000);
+    const interval = setInterval(() => {}, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-4', className)}>
-      {stats.map((stat) => (
+      {stats.map((stat, i) => (
         <div
-          key={stat.label}
-          className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm dark:bg-dark-surface dark:border-dark-border"
+          key={i}
+          className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(255,77,0,0.15)]"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-            {stat.icon}
+          <div className="flex items-start justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10" style={{ color: '#FF4D00' }}>
+              {stat.icon}
+            </div>
+            <span
+              className={`inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-medium backdrop-blur-md ${
+                stat.positive
+                  ? 'border-green-500/30 bg-green-500/10 text-green-400'
+                  : 'border-red-500/30 bg-red-500/10 text-red-400'
+              }`}
+            >
+              {stat.change}
+            </span>
           </div>
-          <div className="flex-1">
-            <p className="text-lg font-bold text-text-primary dark:text-dark-text-primary">{stat.value}</p>
-            <p className="text-xs text-text-secondary dark:text-dark-text-secondary">{stat.label}</p>
-          </div>
-          <span
-            className={cn(
-              'text-xs font-medium',
-              stat.positive ? 'text-accent-600' : 'text-red-600',
-            )}
-          >
-            {stat.change}
-          </span>
+          <p className="mt-3 text-2xl font-bold text-white">{stat.value}</p>
+          <p className="mt-0.5 text-sm text-white/60">{stat.label}</p>
         </div>
       ))}
     </div>

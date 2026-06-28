@@ -30,6 +30,31 @@ export class ProductsService {
     private readonly attributeDisplayService: ProductAttributeDisplayService,
   ) {}
 
+  private normalizeProduct(product: any) {
+    const c = product?.company;
+    if (!c) return product;
+
+    const loc = c.locations?.[0] || {};
+    return {
+      ...product,
+      seller: {
+        id:             c.id,
+        name:           c.name || 'Verified Supplier',
+        slug:           c.slug,
+        logo:           c.logo || undefined,
+        city:           loc.city || (product as any).city || undefined,
+        state:          loc.state || (product as any).state || undefined,
+        isVerified:     c.verificationLevel !== 'LEVEL_0' && c.verificationLevel !== undefined && c.verificationLevel !== null,
+        isTradgoElite:  !!(c as any).isTradgoElite,
+        trustScore:     c.trustScore || 0,
+        yearsActive:    (c as any).yearsActive || undefined,
+        avgResponseTime: c.responseRate ? `< ${c.responseRate}` : undefined,
+        ordersFulfilled: (c as any).totalProducts || undefined,
+        gstVerified:    !!c.gstNumber,
+      },
+    };
+  }
+
   private async generateUniqueSlug(name: string, companySlug: string): Promise<string> {
     const base = slugify(name);
     let slug = `${companySlug}-${base}`;
@@ -265,13 +290,13 @@ export class ProductsService {
     if (categoryId) where.categoryId = categoryId;
     if (industryId) where.industryId = industryId;
     if (productType) where.productType = productType as Prisma.EnumProductTypeFilter['equals'];
-    if (status) where.status = status as Prisma.EnumProductStatusFilter['equals'];
+    if (status) where.status = status.toUpperCase() as Prisma.EnumProductStatusFilter['equals'];
     if (isFeatured !== undefined) where.isFeatured = isFeatured === 'true';
 
     const findArgs: Prisma.ProductFindManyArgs = {
       where, take: limit, orderBy: { createdAt: 'desc' },
       include: {
-        company: { select: { id: true, name: true, slug: true, trustScore: true } },
+        company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true, responseRate: true, gstNumber: true, locations: { where: { isPrimary: true }, select: { city: true, state: true }, take: 1 } } },
         category: { select: { id: true, name: true, slug: true } },
         industry: { select: { id: true, name: true, slug: true } },
         media: { take: 1, orderBy: { sortOrder: 'asc' } },
@@ -285,7 +310,7 @@ export class ProductsService {
       this.prisma.product.findMany(findArgs),
       this.prisma.product.count({ where }),
     ]);
-    return { data, meta: { total, limit, cursor: data.length > 0 ? data[data.length - 1].id : undefined } };
+    return { data: data.map((p) => this.normalizeProduct(p)), meta: { total, limit, cursor: data.length > 0 ? data[data.length - 1].id : undefined } };
   }
 
   async findByCompany(companyId: string, query: { status?: string; page?: number; limit?: number }, userId: string) {
@@ -327,7 +352,7 @@ export class ProductsService {
       },
     });
     if (!product) throw new NotFoundException('Product not found');
-    return product;
+    return this.normalizeProduct(product);
   }
 
   async findBySlug(slug: string) {
@@ -357,7 +382,7 @@ export class ProductsService {
       product.categoryId || undefined,
     );
 
-    return Object.assign(product, { productAttributes }) as any;
+    return this.normalizeProduct(Object.assign(product, { productAttributes })) as any;
   }
 
   async update(id: string, dto: UpdateProductDto, userId: string) {
@@ -668,38 +693,42 @@ export class ProductsService {
       },
     });
 
-    return related.map((p) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      moq: p.moq,
-      unit: p.unit,
-      trustScoreSnapshot: p.company.trustScore,
-      monthlyOrders: p.monthlyOrders,
-      isBestseller: p.isBestseller,
-      isFeatured: p.isFeatured,
-      viewCount: p.viewCount,
-      originalPrice: p.originalPrice ? Number(p.originalPrice) : undefined,
-      videoUrl: p.videoUrl,
-      gstInvoiceAvailable: p.gstInvoiceAvailable,
-      tradeCreditEligible: p.tradeCreditEligible,
-      returnPolicy: p.returnPolicy,
-      deliveryEta: p.deliveryEta,
-      freeDeliveryAbove: p.freeDeliveryAbove ? Number(p.freeDeliveryAbove) : undefined,
-      maxOrderQty: p.maxOrderQty,
-      savedCount: p.savedCount,
-      company: p.company,
-      companyName: p.company.name,
-      companySlug: p.company.slug,
-      media: p.media,
-      image: p.media[0]?.url || null,
-      inventory: p.inventory,
-      priceSlabs: p.priceSlabs,
-      specifications: p.specifications,
-      category: p.category,
-      minPrice: p.priceSlabs[0]?.price || null,
-      maxPrice: p.priceSlabs.length > 1 ? p.priceSlabs[p.priceSlabs.length - 1].price : null,
-    }));
+    return related.map((p) => {
+      const normalized = this.normalizeProduct(p);
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        moq: p.moq,
+        unit: p.unit,
+        trustScoreSnapshot: p.company.trustScore,
+        monthlyOrders: p.monthlyOrders,
+        isBestseller: p.isBestseller,
+        isFeatured: p.isFeatured,
+        viewCount: p.viewCount,
+        originalPrice: p.originalPrice ? Number(p.originalPrice) : undefined,
+        videoUrl: p.videoUrl,
+        gstInvoiceAvailable: p.gstInvoiceAvailable,
+        tradeCreditEligible: p.tradeCreditEligible,
+        returnPolicy: p.returnPolicy,
+        deliveryEta: p.deliveryEta,
+        freeDeliveryAbove: p.freeDeliveryAbove ? Number(p.freeDeliveryAbove) : undefined,
+        maxOrderQty: p.maxOrderQty,
+        savedCount: p.savedCount,
+        company: p.company,
+        companyName: p.company.name,
+        companySlug: p.company.slug,
+        seller: normalized.seller,
+        media: p.media,
+        image: p.media[0]?.url || null,
+        inventory: p.inventory,
+        priceSlabs: p.priceSlabs,
+        specifications: p.specifications,
+        category: p.category,
+        minPrice: p.priceSlabs[0]?.price || null,
+        maxPrice: p.priceSlabs.length > 1 ? p.priceSlabs[p.priceSlabs.length - 1].price : null,
+      };
+    });
   }
 
   async searchProducts(query: string, filters: {
@@ -743,7 +772,7 @@ export class ProductsService {
     products.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
 
     return {
-      data: products,
+      data: products.map((p) => this.normalizeProduct(p)),
       meta: { total: result.total, limit: 50, cursor: undefined },
     };
   }

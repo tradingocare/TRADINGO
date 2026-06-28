@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, ShieldCheck, Zap, Package } from 'lucide-react';
+import { Star, ShieldCheck, Zap, Package, Building2 } from 'lucide-react';
 import type { NearMeProduct } from '@/lib/api/near-me';
 
 interface MarkerPopupProps {
@@ -33,9 +33,11 @@ export function MarkerPopup({ product }: MarkerPopupProps) {
           {product.name}
         </h3>
 
-        <p className="text-xs text-text-secondary dark:text-dark-text-secondary truncate">
-          {product.companyName}
-        </p>
+        <Link href={`/companies/${product.companySlug}`}
+          className="text-xs text-text-secondary dark:text-dark-text-secondary truncate hover:text-[#FF5A1F] transition-colors inline-flex items-center gap-1"
+          aria-label={`View ${product.companyName} profile`}>
+          <Building2 size={11} /> {product.companyName}
+        </Link>
 
         <div className="flex items-center gap-2 text-xs">
           <span className="font-bold text-text-primary dark:text-dark-text-primary">

@@ -13,3 +13,5 @@ export * from './use-companies';
 export * from './use-kyc';
 export * from './use-disputes';
 export * from './use-cursor-glow';
+export * from './use-buyer';
+export * from './use-communication';

@@ -68,8 +68,54 @@ export function answerQuestion(slug: string, qaId: string, answer: string) {
 }
 
 // Wishlist
+export interface WishlistItem {
+  id: string;
+  userId: string;
+  productId: string;
+  notes?: string;
+  createdAt: string;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    shortDescription?: string;
+    description?: string;
+    sku?: string;
+    unit: string;
+    moq: number;
+    price: number;
+    originalPrice?: number;
+    images?: string[];
+    videoUrl?: string;
+    categoryName?: string;
+    isBestseller?: boolean;
+    inStock: boolean;
+    rating: number;
+    reviewCount: number;
+    monthlyOrders?: number;
+    deliveryEta?: string;
+    seller: {
+      id: string;
+      name: string;
+      slug: string;
+      logo?: string;
+      city?: string;
+      state?: string;
+      isVerified: boolean;
+      isTradgoElite: boolean;
+      trustScore: number;
+      yearsActive?: number;
+      avgResponseTime?: string;
+      ordersFulfilled?: number;
+      gstVerified: boolean;
+    };
+  };
+}
+
 export function getWishlist(page = 1, limit = 20) {
-  return apiClient.get<{ data: ProductDetail[]; total: number }>(`/products/wishlist?page=${page}&limit=${limit}`).then(r => r.data);
+  return apiClient.get<{ data: WishlistItem[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(
+    `/products/wishlist?page=${page}&limit=${limit}`
+  ).then(r => r.data);
 }
 
 export function addToWishlist(productId: string, notes?: string) {

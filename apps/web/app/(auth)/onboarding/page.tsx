@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Building2, Globe, Users, Briefcase, ListTree, FileText, Bell, Languages, DollarSign, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SELLER_ONBOARDING_STEPS } from '@/data/master-data';
 import { TradingoLogo } from '@/components/shared/tradingo-logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,11 +36,14 @@ type Step1 = z.infer<typeof step1Schema>;
 type Step2 = z.infer<typeof step2Schema>;
 type Step3 = z.infer<typeof step3Schema>;
 
-const steps = [
-  { id: 1, label: 'Company', icon: Building2 },
-  { id: 2, label: 'Business', icon: Briefcase },
-  { id: 3, label: 'Preferences', icon: Bell },
-];
+const STEP_ICONS: Record<number, React.ComponentType<{ className?: string }>> = {
+  1: Building2,
+  2: Globe,
+  3: FileText,
+  4: Check,
+};
+
+const steps = SELLER_ONBOARDING_STEPS;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -89,11 +93,11 @@ export default function OnboardingPage() {
 
           <div className="flex w-full items-center justify-center gap-0">
             {steps.map((s, i) => {
-              const Icon = s.icon;
-              const isActive = step === s.id;
-              const isCompleted = step > s.id;
+              const Icon = STEP_ICONS[s.step];
+              const isActive = step === s.step;
+              const isCompleted = step > s.step;
               return (
-                <div key={s.id} className="flex items-center">
+                <div key={s.step} className="flex items-center">
                   <div className="flex flex-col items-center gap-1.5">
                     <div
                       className={cn(
@@ -117,14 +121,14 @@ export default function OnboardingPage() {
                         !isActive && !isCompleted && 'text-text-tertiary dark:text-dark-text-tertiary',
                       )}
                     >
-                      {s.label}
+                      {s.title}
                     </span>
                   </div>
                   {i < steps.length - 1 && (
                     <div
                       className={cn(
                         'mx-2 h-0.5 w-12 sm:w-20',
-                        step > s.id ? 'bg-accent-500' : 'bg-border dark:bg-dark-border',
+                        step > s.step ? 'bg-accent-500' : 'bg-border dark:bg-dark-border',
                       )}
                     />
                   )}

@@ -4,22 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, X, Bell, Mail, Store, ChevronRight } from 'lucide-react';
+import { MASTER_COUNTRIES } from '@/data/master-data';
 
-const countries = [
-  { code: 'IN', name: 'India' },
-  { code: 'BD', name: 'Bangladesh' },
-  { code: 'LK', name: 'Sri Lanka' },
-  { code: 'NP', name: 'Nepal' },
-  { code: 'BT', name: 'Bhutan' },
-  { code: 'AF', name: 'Afghanistan' },
-  { code: 'ID', name: 'Indonesia' },
-  { code: 'MY', name: 'Malaysia' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'CN', name: 'China' },
-  { code: 'RU', name: 'Russia' },
-  { code: 'AE', name: 'UAE' },
-];
+const countries = MASTER_COUNTRIES.map(c => ({ code: c.code, name: c.name }));
 
 export default function TradingAcrossBorders() {
   const [selected, setSelected] = useState('India');

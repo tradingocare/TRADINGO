@@ -14,3 +14,5 @@ export * from './kyc';
 export * from './disputes';
 export * from './beta';
 export * from './launch';
+export * from './buyer';
+export * from './communication';

@@ -10,6 +10,7 @@ import { StatisticsCards } from '@/components/shared/statistics-cards';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LAUNCH_FEATURES, LAUNCH_PRICING_PLANS, LAUNCH_TESTIMONIALS, LAUNCH_STATS } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'Launch Campaign | TRADINGO',
@@ -17,138 +18,13 @@ export const metadata: Metadata = {
     'India\'s Premier B2B Trade Platform Has Arrived. Join the beta — limited slots available. Start your 30-day free trial today.',
 };
 
-const launchFeatures = [
-  {
-    icon: '📦',
-    title: 'TRADBUY',
-    description: 'AI-powered product listings with dynamic pricing, bulk upload, and smart categorization for maximum visibility.',
-    badge: 'Live',
-  },
-  {
-    icon: '💬',
-    title: 'RFQ Engine',
-    description: 'Intelligent quote request system that matches buyers with the right sellers using proprietary algorithms.',
-    badge: 'Live',
-  },
-  {
-    icon: '🏆',
-    title: 'GOCASH Rewards',
-    description: 'Earn rewards on every transaction. Redeem for listing boosts, premium features, and platform discounts.',
-    badge: 'Live',
-  },
-  {
-    icon: '⚡',
-    title: 'TRADGO Races',
-    description: 'Gamified trading competitions with leaderboards, badges, and exclusive prizes for top performers.',
-    badge: 'Beta',
-  },
-  {
-    icon: '🛡️',
-    title: 'Escrow Protection',
-    description: 'Every transaction secured by escrow. Funds released only when both parties confirm successful delivery.',
-    badge: 'Live',
-  },
-  {
-    icon: '🔍',
-    title: 'Trade Matching',
-    description: 'Proprietary matching engine connecting buyer requirements with seller catalogs in real time.',
-    badge: 'AI',
-  },
-];
+const launchFeatures = LAUNCH_FEATURES;
 
-const launchPlans = [
-  {
-    name: 'Beta Starter',
-    price: 'Free',
-    period: 'month',
-    description: 'For businesses exploring B2B trading on TRADINGO.',
-    features: [
-      'List up to 10 products',
-      'Standard analytics dashboard',
-      'Email support',
-      'Basic RFQ access',
-      '1x GOCASH earning rate',
-      'Community access',
-    ],
-    href: '/register?ref=launch',
-  },
-  {
-    name: 'Beta Business',
-    price: '₹0',
-    period: 'first 30 days',
-    description: 'Free 30-day trial of Business plan. Unlimited potential.',
-    features: [
-      'Unlimited product listings',
-      'Advanced analytics with trends',
-      'Priority 24/7 chat support',
-      'AI-powered RFQ matching',
-      '2x GOCASH earning rate',
-      'TRADGO race access',
-      'Listing boost credits (monthly)',
-      'Bulk product upload tools',
-    ],
-    href: '/register?plan=business&ref=launch',
-    popular: true,
-    highlight: 'Limited Beta Offer',
-  },
-  {
-    name: 'Beta Enterprise',
-    price: '₹1,999',
-    period: 'month',
-    description: 'For high-volume trading businesses.',
-    features: [
-      'Everything in Business',
-      'Dedicated account manager',
-      'API access for bulk operations',
-      '3x GOCASH earning rate',
-      'Custom integrations',
-      'White-label storefront',
-      'Zero platform fees during beta',
-      'Exclusive TRADGO events',
-      'SLA guarantee',
-    ],
-    href: '/register?plan=enterprise&ref=launch',
-    highlight: 'Best Value',
-  },
-];
+const launchPlans = LAUNCH_PRICING_PLANS;
 
-const launchTestimonials = [
-  {
-    quote: 'TRADINGO transformed how we source raw materials. The RFQ matching saved us weeks of vendor discovery time.',
-    author: 'Suresh Kumar',
-    role: 'Procurement Head',
-    company: 'Mumbai Electronics Co.',
-    rating: 5,
-  },
-  {
-    quote: 'The escrow system gave us the confidence to trade with new partners. Payment security was our biggest concern.',
-    author: 'Neha Agarwal',
-    role: 'CEO',
-    company: 'Delhi Textiles Pvt. Ltd.',
-    rating: 5,
-  },
-  {
-    quote: 'GOCASH rewards are a game changer. We\'ve already earned enough to offset our entire first month\'s subscription.',
-    author: 'Rahul Joshi',
-    role: 'Owner',
-    company: 'Pune Industrial Supplies',
-    rating: 5,
-  },
-  {
-    quote: 'Being part of the beta has given us early access to features that our competitors don\'t have yet.',
-    author: 'Ankit Patel',
-    role: 'Director of Operations',
-    company: 'Gujarat Chemicals Ltd.',
-    rating: 4,
-  },
-];
+const launchTestimonials = LAUNCH_TESTIMONIALS;
 
-const launchStats = [
-  { value: 50, suffix: '+', label: 'Beta Companies', prefix: '' },
-  { value: 10000, suffix: '+', label: 'Products Listed', prefix: '' },
-  { value: 500, suffix: '+', label: 'Categories', prefix: '' },
-  { value: 95, suffix: '%', label: 'Platform Uptime', prefix: '' },
-];
+const launchStats = LAUNCH_STATS;
 
 export default function LaunchPage() {
   return (

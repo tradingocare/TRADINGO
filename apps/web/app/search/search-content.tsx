@@ -1,143 +1,180 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { Search, IndianRupee, Package, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
-import { useProducts } from '@/hooks';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CTABlock } from '@/components/shared/cta-block';
+import Link from 'next/link'
+import { Search, IndianRupee, Package, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
+import { useProducts } from '@/hooks'
+import SellerBadge, { resolveSellerInfo } from '@/components/shared/SellerBadge'
+import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth'
 
 export function SearchContent({ q }: { q: string }) {
-  const [page, setPage] = useState(1);
-  const { data, isLoading, error } = useProducts({ search: q, page, limit: 20 });
+  const [page, setPage] = useState(1)
+  const { data, isLoading, error } = useProducts({ search: q, page, limit: 20 })
 
   if (!q) {
     return (
       <section className="py-20">
-        <div className="container-main text-center">
-          <Search className="mx-auto h-16 w-16 text-text-secondary dark:text-dark-text-secondary" />
-          <h1 className="mt-4 text-2xl font-bold text-text-primary dark:text-dark-text-primary">Search Products</h1>
-          <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">
-            Enter a search term to find products.
-          </p>
+        <div className="mx-auto max-w-7xl px-4 text-center">
+          <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,77,0,0.12)' }}>
+            <Search size={24} style={{ color: '#FF4D00' }} />
+          </div>
+          <h1 className="mt-4 text-2xl font-black text-white">Search Products</h1>
+          <p className="mt-2 text-sm text-white/40">Enter a search term to find products across TRADINGO.</p>
         </div>
       </section>
-    );
+    )
   }
 
   if (isLoading) {
+    const shimmer = 'relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent'
     return (
-      <div className="container-main py-20">
-        <div className="h-10 w-96 animate-pulse rounded-lg bg-surface-tertiary dark:bg-dark-surface-tertiary" />
-        <div className="mt-2 h-4 w-64 animate-pulse rounded-lg bg-surface-tertiary dark:bg-dark-surface-tertiary" />
+      <div className="mx-auto max-w-7xl px-4 pt-24">
+        <div className={`h-10 w-96 rounded-2xl ${shimmer}`} style={{ background: 'rgba(255,255,255,0.04)' }} />
+        <div className={`mt-2 h-4 w-64 rounded-xl ${shimmer}`} style={{ background: 'rgba(255,255,255,0.04)' }} />
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-border bg-surface p-6 dark:bg-dark-surface dark:border-dark-border">
-              <div className="h-40 w-full animate-pulse rounded-lg bg-surface-tertiary dark:bg-dark-surface-tertiary" />
-              <div className="mt-4 h-5 w-3/4 animate-pulse rounded bg-surface-tertiary dark:bg-dark-surface-tertiary" />
-              <div className="mt-2 h-6 w-1/3 animate-pulse rounded bg-surface-tertiary dark:bg-dark-surface-tertiary" />
-              <div className="mt-3 h-4 w-1/2 animate-pulse rounded bg-surface-tertiary dark:bg-dark-surface-tertiary" />
+            <div key={i} className={`rounded-3xl p-6 ${shimmer}`} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className={`h-40 w-full rounded-2xl ${shimmer}`} style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className={`mt-4 h-5 w-3/4 rounded-xl ${shimmer}`} style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className={`mt-2 h-6 w-1/3 rounded-xl ${shimmer}`} style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className={`mt-3 h-4 w-1/2 rounded-xl ${shimmer}`} style={{ background: 'rgba(255,255,255,0.06)' }} />
             </div>
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
     return (
       <section className="py-20">
-        <div className="container-main text-center">
-          <h1 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">Something went wrong</h1>
-          <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">Failed to load search results. Please try again.</p>
-          <Button variant="outline" className="mt-6" onClick={() => window.location.reload()}>
+        <div className="mx-auto max-w-7xl px-4 text-center">
+          <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(248,113,113,0.12)' }}>
+            <Package size={24} style={{ color: '#f87171' }} />
+          </div>
+          <h1 className="mt-4 text-2xl font-black text-white">Something went wrong</h1>
+          <p className="mt-2 text-sm text-white/40">Failed to load search results. Please try again.</p>
+          <button onClick={() => window.location.reload()}
+            className="mt-6 px-5 py-2.5 rounded-xl text-xs font-bold transition-all"
+            style={{ background: 'rgba(255,77,0,0.15)', border: '1px solid rgba(255,77,0,0.35)', color: '#FF4D00' }}>
             Try Again
-          </Button>
+          </button>
         </div>
       </section>
-    );
+    )
   }
 
-  const products = data?.data || [];
-  const total = data?.total || 0;
-  const totalPages = data?.totalPages || 1;
+  const products = data?.data || []
+  const total = data?.total || 0
+  const totalPages = data?.totalPages || 1
 
   return (
     <>
-      <section className="border-b border-border bg-surface-secondary/50 pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
-        <div className="container-main">
+      <section className="pt-24 pb-6">
+        <div className="mx-auto max-w-7xl px-4">
           <div className="flex items-center gap-3">
-            <Search className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-            <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-dark-text-primary">
-              Search results for &ldquo;{q}&rdquo;
-            </h1>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,77,0,0.12)' }}>
+              <Search size={18} style={{ color: '#FF4D00' }} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-white">
+                Search results for &ldquo;{q}&rdquo;
+              </h1>
+              <p className="text-sm text-white/40">{total} result{total !== 1 ? 's' : ''} found</p>
+            </div>
           </div>
-          <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">
-            {total} result{total !== 1 ? 's' : ''} found
-          </p>
         </div>
       </section>
 
-      <section className="py-12">
-        <div className="container-main">
+      <section className="py-6 pb-20">
+        <div className="mx-auto max-w-7xl px-4">
           {products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Package className="h-16 w-16 text-text-secondary dark:text-dark-text-secondary" />
-              <h2 className="mt-4 text-xl font-semibold text-text-primary dark:text-dark-text-primary">
-                No results found for &ldquo;{q}&rdquo;
-              </h2>
-              <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">
-                Try adjusting your search terms or browse all products.
-              </p>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <Package size={24} className="text-white/30" />
+              </div>
+              <h2 className="mt-4 text-xl font-bold text-white">No results found for &ldquo;{q}&rdquo;</h2>
+              <p className="mt-2 text-sm text-white/40">Try adjusting your search terms or browse all products.</p>
               <Link href="/products">
-                <Button variant="outline" className="mt-6">Browse All Products</Button>
+                <span className="inline-block mt-6 px-5 py-2.5 rounded-xl text-xs font-bold transition-all"
+                  style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}>
+                  Browse All Products
+                </span>
               </Link>
             </div>
           ) : (
             <>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {products.map((product) => (
-                  <Link key={product.id} href={`/products/${product.id}`}>
-                    <Card className="h-full transition-all hover:shadow-md hover:-translate-y-1">
-                      <CardContent className="p-6">
-                        <div className="flex h-40 items-center justify-center rounded-lg bg-surface-secondary dark:bg-dark-surface-secondary">
-                          <Package className="h-12 w-12 text-text-secondary dark:text-dark-text-secondary" />
+                  <Link key={product.id} href={`/products/${product.id}`} className="group block">
+                    <div className="h-full rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_12px_48px_rgba(255,77,0,0.12)]"
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        backdropFilter: 'blur(16px)',
+                        border: '1px solid rgba(255,255,255,0.09)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                      }}>
+                      <div className="relative aspect-[4/3] overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package size={48} className="text-white/10" />
                         </div>
-                        <h3 className="mt-4 font-semibold text-text-primary dark:text-dark-text-primary line-clamp-2">
+                      </div>
+                      <div className="p-5 space-y-3">
+                        <SellerBadge
+                          seller={resolveSellerInfo(product)}
+                          size="xs"
+                          showLocation={true}
+                          showLogo={false}
+                          linkToProfile={true}
+                        />
+
+                        <h3 className="text-white font-bold text-sm leading-snug line-clamp-2 group-hover:text-[#FF4D00] transition-colors">
                           {product.name}
                         </h3>
-                        <div className="mt-2 flex items-baseline gap-1">
-                          <IndianRupee className="h-4 w-4 text-text-primary" />
-                          <span className="text-xl font-bold text-text-primary dark:text-dark-text-primary">
-                            {product.price.toLocaleString('en-IN')}
+
+                        <div className="flex items-baseline gap-1">
+                          <IndianRupee size={14} style={{ color: '#FF4D00' }} />
+                          <span className="text-xl font-black text-white">
+                            {product.price?.toLocaleString('en-IN') ?? 'N/A'}
                           </span>
-                          <span className="text-xs text-text-secondary dark:text-dark-text-secondary">/{product.unit}</span>
+                          {product.unit && <span className="text-xs text-white/40">/{product.unit}</span>}
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">{product.category}</Badge>
-                          <Badge variant={product.stock > 0 ? 'success' : 'destructive'}>
-                            {product.stock > 0 ? 'In Stock' : 'Out of stock'}
-                          </Badge>
+
+                        <div className="flex flex-wrap gap-1.5">
+                          {product.category && (
+                            <span className="px-2.5 py-1 text-[10px] font-semibold rounded-full"
+                              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)' }}>
+                              {product.category}
+                            </span>
+                          )}
+                          <span className="px-2.5 py-1 text-[10px] font-semibold rounded-full"
+                            style={{
+                              background: product.stock > 0 ? 'rgba(34,197,94,0.12)' : 'rgba(248,113,113,0.12)',
+                              border: `1px solid ${product.stock > 0 ? 'rgba(34,197,94,0.3)' : 'rgba(248,113,113,0.3)'}`,
+                              color: product.stock > 0 ? '#4ade80' : '#f87171',
+                            }}>
+                            {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </Link>
                 ))}
               </div>
 
               {totalPages > 1 && (
                 <div className="mt-12 flex items-center justify-center gap-4">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                    <ChevronLeft className="mr-1 h-4 w-4" /> Previous
-                  </Button>
-                  <span className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                    Page {page} of {totalPages}
-                  </span>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-                    Next <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
+                  <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className="flex items-center gap-1 px-4 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-30"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
+                    <ChevronLeft size={14} /> Previous
+                  </button>
+                  <span className="text-sm text-white/40">Page {page} of {totalPages}</span>
+                  <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    className="flex items-center gap-1 px-4 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-30"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
+                    Next <ChevronRight size={14} />
+                  </button>
                 </div>
               )}
             </>
@@ -145,15 +182,7 @@ export function SearchContent({ q }: { q: string }) {
         </div>
       </section>
 
-      <CTABlock
-        title="Can't find what you're looking for?"
-        subtitle="Post an RFQ and let sellers come to you with competitive quotes."
-        primaryLabel="Post a Requirement"
-        primaryHref="/rfq"
-        secondaryLabel="Browse All Products"
-        secondaryHref="/products"
-        variant="accent"
-      />
+      <ClaimYourGrowth />
     </>
-  );
+  )
 }

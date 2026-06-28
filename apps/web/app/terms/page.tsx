@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { PageHeader } from '@/components/shared/page-header';
 import { CTABlock } from '@/components/shared/cta-block';
 

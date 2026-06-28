@@ -79,3 +79,4 @@ async function refreshAccessToken(): Promise<boolean> {
 }
 
 export { apiClient };
+export default apiClient;

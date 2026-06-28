@@ -7,6 +7,7 @@ import { FeatureCards } from '@/components/shared/feature-cards';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Timeline } from '@/components/shared/timeline';
 import { Separator } from '@/components/ui/separator';
+import { FEATURES_BUYER, BUYER_ONBOARDING_STEPS } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'For Buyers | TRADINGO',
@@ -14,64 +15,9 @@ export const metadata: Metadata = {
     'Source verified products from trusted sellers. Get competitive quotes and trade with confidence.',
 };
 
-const buyerFeatures = [
-  {
-    icon: '✅',
-    title: 'Verified Products',
-    description: 'Authenticated listings with detailed specifications, certifications, and seller ratings.',
-    href: '/products',
-  },
-  {
-    icon: '📄',
-    title: 'RFQ Marketplace',
-    description: 'Post your requirements and receive competitive quotes from multiple verified sellers instantly.',
-    href: '/rfq',
-    badge: 'Popular',
-  },
-  {
-    icon: '🛡️',
-    title: 'Escrow Protection',
-    description: 'Your payments are held in escrow. Pay only when you confirm satisfaction with the delivery.',
-    href: '/why-tradingo',
-  },
-  {
-    icon: '📉',
-    title: 'Price Comparison',
-    description: 'Compare quotes side-by-side to find the best price, delivery terms, and seller ratings.',
-    href: '/categories',
-  },
-  {
-    icon: '🌐',
-    title: 'Pan-India Network',
-    description: 'Source from sellers across 500+ cities. Find local suppliers to reduce logistics costs.',
-    href: '/trading',
-  },
-  {
-    icon: '📦',
-    title: 'Bulk Ordering',
-    description: 'Place bulk orders with ease. Get volume discounts and negotiate directly with suppliers.',
-    href: '/products',
-  },
-  {
-    icon: '🚚',
-    title: 'Track Deliveries',
-    description: 'Real-time tracking of your shipments with integrated logistics partners across India.',
-    href: '/trading',
-  },
-  {
-    icon: '🎧',
-    title: 'Buyer Support',
-    description: '24/7 dedicated buyer support team to help with inquiries, disputes, and order management.',
-    href: '/contact',
-  },
-];
+const buyerFeatures = FEATURES_BUYER;
 
-const rfqSteps = [
-  { number: 1, title: 'Post Your Requirement', description: 'Describe what you need — product details, quantity, delivery location, and budget.' },
-  { number: 2, title: 'Receive Quotes', description: 'Verified sellers review your RFQ and submit competitive quotes with pricing and terms.' },
-  { number: 3, title: 'Compare & Select', description: 'Compare quotes based on price, delivery time, seller rating, and payment terms.' },
-  { number: 4, title: 'Close the Deal', description: 'Finalize terms, place the order, and pay securely through our escrow system.' },
-];
+const rfqSteps = BUYER_ONBOARDING_STEPS.map(s => ({ number: s.step, title: s.title, description: s.description }));
 
 export default function ForBuyersPage() {
   return (

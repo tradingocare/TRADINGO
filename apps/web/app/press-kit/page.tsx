@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Download, Mail, Image, Users, Newspaper } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -7,6 +7,7 @@ import { CTABlock } from '@/components/shared/cta-block';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { PRESS_KIT_FACTS, PRESS_BRAND_ASSETS, PRESS_SCREENSHOTS, PRESS_LEADERSHIP, PRESS_MENTIONS } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'Press Kit | TRADINGO',
@@ -14,48 +15,15 @@ export const metadata: Metadata = {
     'Download TRADINGO brand assets, logos, screenshots, and media resources. For press inquiries and media coverage.',
 };
 
-const keyFacts = [
-  { label: 'Founded', value: '2024' },
-  { label: 'Headquarters', value: 'Mumbai, India' },
-  { label: 'Platform', value: 'B2B E-Marketplace (TEM)' },
-  { label: 'Sectors', value: 'Multi-industry' },
-  { label: 'Users', value: '10,000+ Beta Companies' },
-  { label: 'Products Listed', value: '50,000+' },
-  { label: 'Geographic Reach', value: '500+ Cities' },
-  { label: 'Trading Volume', value: '₹500Cr+' },
-];
+const keyFacts = PRESS_KIT_FACTS;
 
-const brandAssets = [
-  { name: 'TRADINGO Logo — PNG', description: 'Full color logo on transparent background', variant: 'Light' },
-  { name: 'TRADINGO Logo — Dark', description: 'Full color logo for dark backgrounds', variant: 'Dark' },
-  { name: 'TRADINGO Icon — SVG', description: 'Standalone icon in vector format', variant: 'Light' },
-  { name: 'TRADINGO Icon — Dark SVG', description: 'Standalone icon for dark backgrounds', variant: 'Dark' },
-  { name: 'TRADINGO Wordmark', description: 'Typography-only wordmark logo', variant: 'Light' },
-  { name: 'TRADINGO Wordmark Dark', description: 'Wordmark for dark background use', variant: 'Dark' },
-];
+const brandAssets = PRESS_BRAND_ASSETS;
 
-const screenshots = [
-  { title: 'Dashboard Overview', description: 'Seller dashboard with analytics and KPIs' },
-  { title: 'Product Listing', description: 'Product catalog management interface' },
-  { title: 'RFQ Management', description: 'Quote request and response workflow' },
-  { title: 'Escrow Payments', description: 'Secure payment and escrow management' },
-  { title: 'GOCASH Rewards', description: 'Rewards and loyalty program dashboard' },
-  { title: 'Mobile App', description: 'TRADINGO mobile application screens' },
-];
+const screenshots = PRESS_SCREENSHOTS;
 
-const leadership = [
-  { name: 'Rajesh Mehta', role: 'Chief Executive Officer', bio: '20+ years in B2B trade and supply chain technology.' },
-  { name: 'Priya Sharma', role: 'Chief Technology Officer', bio: 'Former engineering lead at major marketplace platforms.' },
-  { name: 'Amit Verma', role: 'Chief Operating Officer', bio: 'Operations expert with deep logistics and fulfillment experience.' },
-  { name: 'Sneha Patel', role: 'Chief Product Officer', bio: 'Product leader specializing in marketplace and fintech products.' },
-  { name: 'Vikram Singh', role: 'Chief Financial Officer', bio: 'Experienced finance leader from the B2B SaaS space.' },
-  { name: 'Ananya Gupta', role: 'VP of Marketing', bio: 'Marketing strategist with expertise in B2B brand building.' },
-];
+const leadership = PRESS_LEADERSHIP;
 
-const pressMentions = [
-  'Economic Times', 'Business Standard', 'YourStory', 'Inc42',
-  'Entrepreneur India', 'TechCircle', 'Financial Express', 'Hindu BusinessLine',
-];
+const pressMentions = PRESS_MENTIONS;
 
 export default function PressKitPage() {
   return (

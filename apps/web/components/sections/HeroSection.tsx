@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
@@ -9,92 +9,9 @@ import {
   ArrowRight, Play, Pause,
   Star, BadgeCheck, TrendingUp,
 } from 'lucide-react';
+import { HERO_VENDOR_SLIDES } from '@/data/master-data';
 
-interface VendorSlide {
-  id: number;
-  vendorName: string;
-  tagline: string;
-  category: string;
-  banner: string;
-  logo?: string;
-  badge: 'ELITE' | 'PREMIUM' | 'VERIFIED' | 'ENTERPRISE';
-  stats: { label: string; value: string }[];
-  offer?: string;
-  cta: string;
-  ctaHref: string;
-  accentColor: string;
-}
-
-const VENDOR_SLIDES: VendorSlide[] = [
-  {
-    id: 1,
-    vendorName: 'Ramesh Steel Industries',
-    tagline: 'India\'s Most Trusted Structural Steel Supplier',
-    category: 'Metals & Manufacturing',
-    banner: 'linear-gradient(135deg, #1a0a00 0%, #3d1500 40%, #0d0d1a 100%)',
-    badge: 'ELITE',
-    stats: [
-      { label: 'Products', value: '240+' },
-      { label: 'Cities', value: '38' },
-      { label: 'Monthly RFQs', value: '1.2K' },
-    ],
-    offer: 'Limited: Free Sample Delivery This Month',
-    cta: 'View Catalog',
-    ctaHref: '/companies/ramesh-steel',
-    accentColor: '#C9A84C',
-  },
-  {
-    id: 2,
-    vendorName: 'Priya Textiles Export',
-    tagline: 'Premium Fabrics. Global Standards. Pan-India Reach.',
-    category: 'Textiles & Apparel',
-    banner: 'linear-gradient(135deg, #0a0018 0%, #1e0035 40%, #0a1a0a 100%)',
-    badge: 'PREMIUM',
-    stats: [
-      { label: 'Products', value: '580+' },
-      { label: 'Exporters', value: '12' },
-      { label: 'Trust Score', value: '98' },
-    ],
-    offer: 'Bulk order discount: 15% off above \u20B95L',
-    cta: 'Get Quote',
-    ctaHref: '/companies/priya-textiles',
-    accentColor: '#9B5DE5',
-  },
-  {
-    id: 3,
-    vendorName: 'AgroFresh India Ltd.',
-    tagline: 'Farm to Industry \u2014 FSSAI Certified. MSME Verified.',
-    category: 'Agriculture & Food',
-    banner: 'linear-gradient(135deg, #001a00 0%, #003300 40%, #1a1000 100%)',
-    badge: 'ENTERPRISE',
-    stats: [
-      { label: 'Products', value: '320+' },
-      { label: 'States', value: '22' },
-      { label: 'GMV 2025', value: '\u20B94.2Cr' },
-    ],
-    offer: 'New Season Pricing Now Active',
-    cta: 'Request Sample',
-    ctaHref: '/companies/agrofresh-india',
-    accentColor: '#2DE0E0',
-  },
-  {
-    id: 4,
-    vendorName: 'Kumar Electronics Hub',
-    tagline: 'Consumer Electronics Wholesale. BIS Certified.',
-    category: 'Electronics & Technology',
-    banner: 'linear-gradient(135deg, #000d1a 0%, #001a33 40%, #1a000d 100%)',
-    badge: 'VERIFIED',
-    stats: [
-      { label: 'SKUs', value: '1,200+' },
-      { label: 'Brands', value: '28' },
-      { label: 'Avg Rating', value: '4.9\u2605' },
-    ],
-    offer: 'Same-day dispatch on 500+ products',
-    cta: 'Browse Products',
-    ctaHref: '/companies/kumar-electronics',
-    accentColor: '#3D8BFF',
-  },
-];
+const VENDOR_SLIDES = HERO_VENDOR_SLIDES;
 
 
 const BADGE_MAP = {
@@ -141,7 +58,7 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-screen overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #1F0318 0%, #110021 50%, #0a0f0a 100%)' }}>
+      style={{ background: 'linear-gradient(135deg, #1D0001 0%, #110021 50%, #0a0f0a 100%)' }}>
 
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {[
@@ -206,9 +123,9 @@ export default function HeroSection() {
             transition={{ duration: 0.65, delay: 0.1 }}
             className="flex flex-col gap-4"
           >
-            <p className="text-xl sm:text-2xl font-black leading-tight text-white whitespace-nowrap">
+            <h1 className="text-xl sm:text-2xl font-black leading-tight text-white whitespace-nowrap">
               India&apos;s Next-Generation B2B Wholesale Marketplace
-            </p>
+            </h1>
 
             <p className="text-xl sm:text-2xl font-bold"
               style={{
@@ -242,7 +159,7 @@ export default function HeroSection() {
                   Start Buying <ArrowRight size={15} />
                 </motion.span>
               </Link>
-              <Link href="/register/vendor">
+              <Link href="/register">
                 <motion.span
                   whileHover={{ y: -2, scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -258,7 +175,7 @@ export default function HeroSection() {
               </Link>
             </div>
 
-            <div className="flex gap-2 mt-1 whitespace-nowrap overflow-x-auto">
+            <div className="flex gap-2 sm:gap-3 mt-3 whitespace-nowrap overflow-x-auto pb-1">
               {[
                 { icon: '\uD83D\uDD0D', label: 'TRADFIND' },
                 { icon: '\uD83C\uDFAF', label: 'TRADMATCH' },
@@ -268,14 +185,14 @@ export default function HeroSection() {
                 { icon: '\u267E\uFE0F', label: 'TRADZERO' },
               ].map((item) => (
                 <span key={item.label}
-                  className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full
-                             text-[9px] sm:text-[10px] font-medium tracking-wide
-                             bg-white/[0.04] border border-white/[0.08]
-                             text-white/50 hover:text-white/80 hover:bg-white/[0.07]
-                             hover:border-white/[0.15] transition-all duration-300"
+                  className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl
+                             text-[9px] sm:text-[10px] font-semibold tracking-wide
+                             bg-white/[0.03] border border-white/[0.06]
+                             text-white/40 hover:text-white hover:bg-white/[0.06]
+                             hover:border-[rgba(212,175,55,0.2)] transition-all duration-300 min-w-[64px]"
                 >
-                  <span className="opacity-70">{item.icon}</span>
-                  {item.label}
+                  <span className="text-base sm:text-lg leading-none">{item.icon}</span>
+                  <span>{item.label}</span>
                 </span>
               ))}
             </div>
@@ -517,7 +434,7 @@ export default function HeroSection() {
               <p className="text-[9px] text-white/25 uppercase tracking-widest">
                 Featured Advertiser \u00B7 Slide {activeSlide + 1} of {VENDOR_SLIDES.length}
               </p>
-              <Link href="/plans"
+              <Link href="/seller-plans"
                 className="text-[9px] font-semibold uppercase tracking-widest
                            hover:underline transition-colors"
                 style={{ color: '#FF4D00' }}>

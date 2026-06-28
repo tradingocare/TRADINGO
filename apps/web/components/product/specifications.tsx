@@ -1,6 +1,9 @@
 import { cn } from '@/lib/utils';
 import { type ProductDetailSpec } from '@/types/product-detail';
 
+const GLASS = 'rgba(255,255,255,0.04)';
+const BORDER = '1px solid rgba(255,255,255,0.09)';
+
 interface SpecificationsProps {
   specifications: ProductDetailSpec[];
 }
@@ -26,27 +29,14 @@ export function Specifications({ specifications }: SpecificationsProps) {
     <div className="space-y-6">
       {Array.from(grouped.entries()).map(([group, specs]) => (
         <div key={group}>
-          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-tertiary dark:text-dark-text-tertiary">
-            {group}
-          </h4>
-          <div className="overflow-hidden rounded-xl border border-border dark:border-dark-border">
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/30">{group}</h4>
+          <div className="overflow-hidden rounded-2xl" style={{ border: BORDER }}>
             <table className="w-full text-sm">
               <tbody>
                 {specs.map((spec, idx) => (
-                  <tr
-                    key={spec.id}
-                    className={cn(
-                      idx % 2 === 0
-                        ? 'bg-surface dark:bg-dark-surface'
-                        : 'bg-surface-secondary/50 dark:bg-dark-surface-secondary/50',
-                    )}
-                  >
-                    <td className="px-4 py-3 font-medium text-text-secondary dark:text-dark-text-secondary w-2/5">
-                      {spec.key}
-                    </td>
-                    <td className="px-4 py-3 text-text-primary dark:text-dark-text-primary">
-                      {spec.value}
-                    </td>
+                  <tr key={spec.id} style={{ background: idx % 2 === 0 ? GLASS : 'rgba(255,255,255,0.02)' }}>
+                    <td className="px-4 py-3 font-semibold text-white/50 w-2/5">{spec.key}</td>
+                    <td className="px-4 py-3 text-white/80">{spec.value}</td>
                   </tr>
                 ))}
               </tbody>

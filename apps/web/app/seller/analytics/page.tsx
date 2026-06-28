@@ -1,91 +1,112 @@
-'use client';
+'use client'
+import { useState, useEffect } from 'react'
+import api from '@/lib/api/client'
+import { Loader2, TrendingUp, Eye, Heart, ShoppingCart, Package, ArrowUp, ArrowDown, BarChart3 } from 'lucide-react'
 
-import { DashboardPageHeader, StatCard, DashboardSkeleton, StatCardSkeleton } from '@/components/dashboard';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useAnalytics } from '@/hooks';
-import { TrendingUp, DollarSign, ShoppingCart, BarChart3, PieChart, Package, FileText } from 'lucide-react';
+export default function AnalyticsPage() {
+  const [overview, setOverview] = useState<any>({})
+  const [products, setProducts] = useState<any[]>([])
+  const [performance, setPerformance] = useState<any>({})
+  const [loading, setLoading] = useState(true)
 
-export default function SellerAnalyticsPage() {
-  const { data: analytics, isLoading, error } = useAnalytics();
+  useEffect(() => {
+    Promise.all([
+      api.get('/seller/analytics/overview'),
+      api.get('/seller/analytics/products'),
+      api.get('/seller/analytics/performance'),
+    ]).then(([o, p, perf]) => {
+      setOverview(o.data || {})
+      setProducts(p.data?.data || p.data || [])
+      setPerformance(perf.data || {})
+    }).catch(() => {})
+    .finally(() => setLoading(false))
+  }, [])
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <DashboardPageHeader title="Analytics" description="Your business performance metrics" />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => <StatCardSkeleton key={i} />)}
-        </div>
-        <DashboardSkeleton />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center min-h-[400px]"><Loader2 size={24} className="animate-spin text-orange-500" /></div>
 
-  if (error || !analytics) {
-    return (
-      <div className="space-y-6">
-        <DashboardPageHeader title="Analytics" description="Your business performance metrics" />
-        <Card>
-          <CardContent className="py-10 text-center">
-            <p className="text-text-secondary dark:text-dark-text-secondary">Failed to load analytics. Please try again.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const stats = [
-    { icon: DollarSign, label: 'Total Revenue', value: `₹${analytics.totalRevenue.toLocaleString('en-IN')}`, change: `${analytics.growthRate}%`, changeType: 'positive' as const },
-    { icon: ShoppingCart, label: 'Total Orders', value: String(analytics.totalOrders), change: 'All time', changeType: 'neutral' as const },
-    { icon: TrendingUp, label: 'Growth Rate', value: `${analytics.growthRate}%`, change: 'Period growth', changeType: analytics.growthRate >= 0 ? 'positive' as const : 'negative' as const },
-    { icon: Package, label: 'Products', value: String(analytics.totalProducts), change: 'Total listed', changeType: 'neutral' as const },
-    { icon: FileText, label: 'RFQs', value: String(analytics.totalRfqs), change: 'Total received', changeType: 'neutral' as const },
-    { icon: DollarSign, label: 'Avg Order Value', value: `₹${analytics.averageOrderValue.toLocaleString('en-IN')}`, change: 'Per order', changeType: 'neutral' as const },
-  ];
+  const statCards = [
+    { label: 'Total Products', value: overview.totalProducts || 0, icon: Package, color: 'blue' },
+    { label: 'Active Products', value: overview.activeProducts || 0, icon: BarChart3, color: 'green' },
+    { label: 'Total Views', value: (overview.totalViews || 0).toLocaleString(), icon: Eye, color: 'purple' },
+    { label: 'Total Saved', value: (overview.totalSaved || 0).toLocaleString(), icon: Heart, color: 'red' },
+  ]
 
   return (
     <div className="space-y-6">
-      <DashboardPageHeader
-        title="Analytics"
-        description="Your business performance metrics"
-      />
-
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} icon={stat.icon} label={stat.label} value={stat.value} change={stat.change} changeType={stat.changeType} />
-        ))}
+      <div>
+        <h1 className="text-2xl font-black text-gray-900">Product Analytics</h1>
+        <p className="text-sm text-gray-500">Performance metrics for your products</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue Overview</CardTitle>
-            <CardDescription>Monthly revenue trends for the current year</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-border bg-surface-secondary/50 dark:border-dark-border dark:bg-dark-surface-secondary/50">
-              <div className="text-center">
-                <BarChart3 className="mx-auto h-10 w-10 text-text-tertiary" />
-                <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">Chart coming soon</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {statCards.map((card, i) => {
+          const Icon = card.icon
+          return (
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{card.label}</p>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-${card.color}-50 text-${card.color}-500`}>
+                  <Icon size={16} />
+                </div>
               </div>
+              <p className="text-2xl font-black text-gray-900">{card.value}</p>
             </div>
-          </CardContent>
-        </Card>
+          )
+        })}
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Distribution</CardTitle>
-            <CardDescription>Breakdown by product category</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-border bg-surface-secondary/50 dark:border-dark-border dark:bg-dark-surface-secondary/50">
-              <div className="text-center">
-                <PieChart className="mx-auto h-10 w-10 text-text-tertiary" />
-                <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">Chart coming soon</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-4">Top Viewed Products</h3>
+          <div className="space-y-3">
+            {(performance.topByViews || []).map((p: any) => (
+              <div key={p.id} className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-700 truncate flex-1">{p.name}</p>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-gray-400"><Eye size={12} className="inline mr-1" />{p.viewCount}</span>
+                  <span className="text-xs text-gray-400"><Heart size={12} className="inline mr-1" />{p.savedCount}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-4">Top Ordered</h3>
+          <div className="space-y-3">
+            {(performance.topByOrders || []).map((p: any) => (
+              <div key={p.id} className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-700 truncate flex-1">{p.name}</p>
+                <span className="text-xs font-bold text-orange-500"><ShoppingCart size={12} className="inline mr-1" />{p.monthlyOrders} orders</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-900">Product Performance</h3>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {products.map((p: any) => (
+            <div key={p.id} className="flex items-center gap-4 px-5 py-3">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                {p.media?.[0]?.url ? <img src={p.media[0].url} alt="" className="w-full h-full object-cover" /> : <Package size={14} className="text-gray-400" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-500">
+                <span title="Views"><Eye size={12} className="inline mr-1" />{p.viewCount}</span>
+                <span title="Saved"><Heart size={12} className="inline mr-1" />{p.savedCount}</span>
+                <span title="Orders"><ShoppingCart size={12} className="inline mr-1" />{p.monthlyOrders}</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+          {products.length === 0 && <div className="py-10 text-center text-sm text-gray-400">No active products yet</div>}
+        </div>
       </div>
     </div>
-  );
+  )
 }

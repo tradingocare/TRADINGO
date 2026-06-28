@@ -9,26 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ProductDraftMultiLangDesc } from '@/lib/product-onboarding/types';
+import { INDIAN_LANGUAGES } from '@/data/master-data';
 
 interface MultiLangEditorProps {
   entries: ProductDraftMultiLangDesc[];
   onChange: (entries: ProductDraftMultiLangDesc[]) => void;
   primaryName: string;
 }
-
-const INDIAN_LANGUAGES = [
-  { locale: 'hi', name: 'Hindi' },
-  { locale: 'ta', name: 'Tamil' },
-  { locale: 'te', name: 'Telugu' },
-  { locale: 'bn', name: 'Bengali' },
-  { locale: 'mr', name: 'Marathi' },
-  { locale: 'gu', name: 'Gujarati' },
-  { locale: 'kn', name: 'Kannada' },
-  { locale: 'ml', name: 'Malayalam' },
-  { locale: 'pa', name: 'Punjabi' },
-  { locale: 'or', name: 'Odia' },
-  { locale: 'en', name: 'English' },
-];
 
 export function MultiLangEditor({ entries, onChange, primaryName }: MultiLangEditorProps) {
   const [showSelector, setShowSelector] = useState(false);

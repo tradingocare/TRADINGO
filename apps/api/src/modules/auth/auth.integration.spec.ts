@@ -10,7 +10,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 const mockPrisma = {
-  user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+  user: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   session: { create: jest.fn(), findUnique: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
 };
 const mockRedis = { get: jest.fn(), set: jest.fn(), del: jest.fn(), exists: jest.fn(), incr: jest.fn(), expire: jest.fn() };
@@ -94,12 +94,12 @@ describe('Auth Flow Integration', () => {
   describe('Login Flow', () => {
     it('completes login with valid credentials', async () => {
       mockRedis.exists.mockResolvedValue(false);
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'test@example.com', name: 'Test', role: 'USER', passwordHash: 'hash', isActive: true, loginAttempts: 0, lockedUntil: null, permissions: [] });
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'test@example.com', name: 'Test', role: 'USER', passwordHash: 'hash', isActive: true, loginAttempts: 0, lockedUntil: null, permissions: [], mobile: null, panNumber: null, status: 'active' });
       mockPrisma.session.deleteMany.mockResolvedValue({ count: 0 });
       mockPrisma.session.create.mockResolvedValue({ id: 'session-1' });
       mockPrisma.user.update.mockResolvedValue({});
 
-      const result = await controller.login({ email: 'test@example.com', password: 'Pass1234!' });
+      const result = await controller.login({ identifier: 'test@example.com', password: 'Pass1234!' });
 
       expect(result.user.email).toBe('test@example.com');
       expect(result.accessToken).toBe('mock-access-token');
@@ -107,28 +107,28 @@ describe('Auth Flow Integration', () => {
 
     it('rejects invalid credentials', async () => {
       mockRedis.exists.mockResolvedValue(false);
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue(null);
       mockRedis.incr.mockResolvedValue(1);
 
-      await expect(controller.login({ email: 'bad@example.com', password: 'WrongPass1!' }))
+      await expect(controller.login({ identifier: 'bad@example.com', password: 'WrongPass1!' }))
         .rejects.toThrow('Invalid credentials');
     });
 
     it('rejects locked account', async () => {
       mockRedis.exists.mockResolvedValue(true);
 
-      await expect(controller.login({ email: 'locked@example.com', password: 'Pass1234!' }))
+      await expect(controller.login({ identifier: 'locked@example.com', password: 'Pass1234!' }))
         .rejects.toThrow('Invalid credentials');
     });
 
     it('locks account after max failed attempts', async () => {
       mockRedis.exists.mockResolvedValue(false);
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'test@example.com', passwordHash: 'hash', isActive: true, loginAttempts: 0, lockedUntil: null });
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'test@example.com', passwordHash: 'hash', isActive: true, loginAttempts: 0, lockedUntil: null, mobile: null, panNumber: null, status: 'active', permissions: [], role: 'VIEWER' });
       const bcrypt = require('bcrypt');
       bcrypt.compare.mockResolvedValue(false);
       mockRedis.incr.mockResolvedValue(3);
 
-      await expect(controller.login({ email: 'test@example.com', password: 'WrongPass1!' }))
+      await expect(controller.login({ identifier: 'test@example.com', password: 'WrongPass1!' }))
         .rejects.toThrow('Invalid credentials');
       expect(mockRedis.expire).toHaveBeenCalled();
       expect(mockPrisma.user.update).toHaveBeenCalledWith(expect.objectContaining({

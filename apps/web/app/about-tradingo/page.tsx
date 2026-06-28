@@ -1,5 +1,5 @@
-﻿import type { Metadata } from 'next';
-import { Target, Eye, Heart } from 'lucide-react';
+import type { Metadata } from 'next';
+import { Target, Eye } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -7,83 +7,26 @@ import { FeatureCards } from '@/components/shared/feature-cards';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
 import { Testimonials } from '@/components/shared/testimonials';
+import { ABOUT_MILESTONES, ABOUT_VALUES, ABOUT_TEAM, HOMEPAGE_SUCCESS_STORIES } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'About TRADINGO | India\'s First TEM E-Marketplace',
+  description: 'Learn about TRADINGO — India\'s first Trusted Electronic Marketplace. Our mission, vision, milestones, and the team building the future of B2B trade.',
 };
 
-const milestones = [
-  { year: '2020', title: 'The Idea Is Born', description: 'TRADINGO was conceived as a solution to the trust deficit in India\'s B2B trading ecosystem.' },
-  { year: '2021', title: 'Platform Development', description: 'Months of research and development went into building the TEM framework and core marketplace.' },
-  { year: '2022', title: 'Soft Launch', description: 'TRADINGO went live in select cities with 500+ sellers and 1,000+ product listings.' },
-  { year: '2023', title: 'Pan-India Expansion', description: 'Expanded to 500+ cities. Launched GOCASH rewards and TRADGO trading races.' },
-  { year: '2024', title: 'AI & Automation', description: 'Introduced AI-powered RFQ matching, price intelligence, and automated verification systems.' },
-  { year: '2025', title: '50,000+ Traders', description: 'Crossed 50,000 registered traders. Launched TRADHEXA — six integrated trading engines.' },
-];
+const milestones = ABOUT_MILESTONES;
 
-const values = [
-  {
-    icon: '\uD83D\uDEE1\uFE0F',
-    title: 'Trust First',
-    description: 'Every feature is built on the foundation of trust. Verified identities, escrow protection, and transparent transactions.',
-  },
-  {
-    icon: '\uD83D\uDE80',
-    title: 'Innovation',
-    description: 'We continuously evolve our platform with AI, gamification, and cutting-edge technology to serve our community better.',
-  },
-  {
-    icon: '\uD83E\uDD1D',
-    title: 'Community',
-    description: 'We believe in the power of community. Every trader, buyer, and seller contributes to the TRADINGO ecosystem.',
-  },
-  {
-    icon: '\uD83D\uDD0D',
-    title: 'Transparency',
-    description: 'No hidden fees, no biased algorithms, no surprises. Complete transparency in every aspect of the platform.',
-  },
-  {
-    icon: '\u2764\uFE0F',
-    title: 'Customer Success',
-    description: 'Your success is our success. We provide dedicated support and tools to help every trader grow.',
-  },
-  {
-    icon: '\uD83C\uDF10',
-    title: 'Pan-India Vision',
-    description: 'Connecting every corner of India through trade. Breaking down geographical barriers to create a unified marketplace.',
-  },
-];
+const values = ABOUT_VALUES;
 
-const teamMembers = [
-  { name: 'Arjun Nair', role: 'Founder & CEO', bio: 'Former supply chain executive with 15+ years in B2B commerce.' },
-  { name: 'Priya Singh', role: 'Chief Technology Officer', bio: 'AI and marketplace platform expert. Previously led engineering at a major e-commerce firm.' },
-  { name: 'Rohit Sharma', role: 'Chief Operations Officer', bio: 'Operations specialist with deep expertise in logistics and pan-India distribution networks.' },
-  { name: 'Ananya Patel', role: 'Head of Product', bio: 'Product leader focused on creating intuitive trading experiences for businesses of all sizes.' },
-];
+const teamMembers = ABOUT_TEAM;
 
-const testimonialsData = [
-  {
-    quote: 'TRADINGO transformed our business. We went from local sales to pan-India distribution in just 3 months. The RFQ engine is a game-changer.',
-    author: 'Rajesh Mehta',
-    role: 'Founder',
-    company: 'Mehta Enterprises, Gujarat',
-    rating: 5,
-  },
-  {
-    quote: 'The escrow system gave us the confidence to trade with new partners. GOCASH rewards actually offset our platform costs significantly.',
-    author: 'Priya Sharma',
-    role: 'Procurement Head',
-    company: 'Sharma Industries, Rajasthan',
-    rating: 5,
-  },
-  {
-    quote: 'As a small manufacturer, getting visibility was always a challenge. TRADINGO put us on the map. We now supply to 15+ cities.',
-    author: 'Amit Verma',
-    role: 'Owner',
-    company: 'Verma Fabrics, Maharashtra',
-    rating: 4,
-  },
-];
+const testimonialsData = HOMEPAGE_SUCCESS_STORIES.map(s => ({
+  quote: s.quote,
+  author: s.name,
+  role: s.role,
+  company: s.company,
+  rating: 5,
+}));
 
 export default function AboutTradingoPage() {
   return (

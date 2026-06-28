@@ -1,26 +1,22 @@
-﻿import { Suspense } from 'react';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, IndianRupee, MapPin, Shield, Truck, Gauge } from 'lucide-react';
 import { getProduct, getProductReviews, getProductQuestions, getRelatedProducts } from '@/lib/api/products';
 import { ImageGallery } from '@/components/product/image-gallery';
 import { Specifications } from '@/components/product/specifications';
 import { VariantSelector } from '@/components/product/variant-selector';
 import { ReviewsSection } from '@/components/product/reviews-section';
 import { QaSection } from '@/components/product/qa-section';
-import { SellerCard } from '@/components/product/seller-card';
 import { BadgesBar } from '@/components/product/badges-bar';
 import { ActionButtons } from '@/components/product/action-buttons';
 import { RelatedProducts } from '@/components/product/related-products';
 import { FrequentlyBought } from '@/components/product/frequently-bought';
 import { ProductSkeleton } from '@/components/product/product-skeleton';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { CTABlock } from '@/components/shared/cta-block';
 import { SpecificationTabs } from '@/components/product-attributes/specification-tabs';
-import { IndianRupee, MapPin, Shield, Truck, Gauge } from 'lucide-react';
+import SellerBadge, { resolveSellerInfo } from '@/components/shared/SellerBadge';
+import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 import type { ProductCardData } from '@/components/product/product-card';
 import type { ProductAttributesDisplay } from '@/types/product-detail';
 
@@ -48,7 +44,9 @@ function toProductCard(p: Record<string, any>): ProductCardData {
     isBestseller: p.isBestseller,
     priceSlabs: p.priceSlabs?.map((s: any) => ({ minQty: s.minQty, maxQty: s.maxQty ?? null, price: s.price })),
     seller: {
+      id: p.company?.id || '',
       _id: p.company?.id || '',
+      slug: p.company?.slug || '',
       businessName: p.company?.name || (p as any).companyName || '',
       isVerified: (p.company?.verificationLevel && p.company.verificationLevel !== 'LEVEL_0') || false,
       isTradgoElite: (p as any).isTradgoElite,
@@ -177,310 +175,345 @@ async function ProductDetail({ slug }: { slug: string }) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <section className="border-b border-border bg-surface-secondary/50 pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
-        <div className="container-main">
-          <nav className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
-            <Link href="/products" className="hover:text-primary-600 dark:hover:text-primary-400">Products</Link>
-            <ChevronRight className="h-4 w-4" />
-            {product.category && (
-              <>
-                <Link href={`/categories/${product.category.slug}`} className="hover:text-primary-600 dark:hover:text-primary-400">{product.category.name}</Link>
-                <ChevronRight className="h-4 w-4" />
-              </>
-            )}
-            <span className="text-text-primary dark:text-dark-text-primary">{product.name}</span>
-          </nav>
-        </div>
-      </section>
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] opacity-15 rounded-full"
+          style={{ background: 'radial-gradient(circle, #FF4D00, transparent 70%)', filter: 'blur(100px)' }} />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] opacity-10 rounded-full"
+          style={{ background: 'radial-gradient(circle, #D4AF37, transparent 70%)', filter: 'blur(80px)' }} />
+      </div>
 
-      <section className="py-8 lg:py-12">
-        <div className="container-main">
-          <div className="grid gap-8 lg:grid-cols-2 xl:gap-12">
-            <div>
-              <ImageGallery
-                media={product.media || []}
-                productName={product.name}
-              />
-            </div>
+      <div className="relative z-10">
+        <section className="pt-24 pb-6">
+          <div className="mx-auto max-w-7xl px-4">
+            <nav className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs"
+              style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Link href="/products" className="text-white/50 hover:text-[#FF4D00] transition-colors">Products</Link>
+              <ChevronRight size={12} className="text-white/20" />
+              {product.category && (
+                <><Link href={`/categories/${product.category.slug}`} className="text-white/50 hover:text-[#FF4D00] transition-colors">{product.category.name}</Link>
+                <ChevronRight size={12} className="text-white/20" /></>
+              )}
+              <span className="text-white/80 font-medium">{product.name}</span>
+            </nav>
+          </div>
+        </section>
 
-            <div className="space-y-6">
+        <section className="py-4 lg:py-8">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="grid gap-8 lg:grid-cols-2 xl:gap-12">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-dark-text-primary lg:text-4xl">
-                  {product.name}
-                </h1>
-                {product.brand && (
-                  <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
-                    by <span className="font-medium text-text-primary dark:text-dark-text-primary">{product.brand}</span>
-                    {product.model && <> | Model: {product.model}</>}
-                  </p>
-                )}
-                {product.sku && (
-                  <p className="mt-1 text-xs text-text-tertiary">SKU: {product.sku}</p>
-                )}
-              </div>
-
-              <BadgesBar
-                product={{
-                  goCashEligible: product.goCashEligible,
-                  tradgoEligible: product.tradgoEligible,
-                  escrowEligible: product.escrowEligible,
-                  isSampleOrder: product.isSampleOrder,
-                  exportSupported: product.exportSupported,
-                  latitude: product.latitude,
-                  longitude: product.longitude,
-                }}
-              />
-
-              <div className="flex items-baseline gap-3">
-                {lowestPrice ? (
-                  <>
-                    <IndianRupee className="h-7 w-7 text-text-primary dark:text-dark-text-primary" />
-                    <span className="text-4xl font-bold text-text-primary dark:text-dark-text-primary">
-                      {lowestPrice.toLocaleString('en-IN')}
-                    </span>
-                    {product.priceSlabs?.length > 1 && (
-                      <span className="text-lg text-text-secondary dark:text-dark-text-secondary">
-                        - {Math.max(...product.priceSlabs.map(s => s.price)).toLocaleString('en-IN')}
-                      </span>
-                    )}
-                    <span className="text-text-secondary dark:text-dark-text-secondary">/{product.unit || 'unit'}</span>
-                  </>
-                ) : (
-                  <span className="text-2xl font-semibold text-text-secondary dark:text-dark-text-secondary">Price on Request</span>
-                )}
-              </div>
-
-              {product.priceSlabs && product.priceSlabs.length > 1 && (
-                <div className="rounded-lg border border-border bg-surface-secondary p-3 dark:bg-dark-surface-secondary dark:border-dark-border">
-                  <p className="mb-2 text-xs font-medium text-text-secondary dark:text-dark-text-secondary uppercase">Bulk Pricing</p>
-                  <div className="space-y-1">
-                    {product.priceSlabs.map((slab) => (
-                      <div key={slab.id} className="flex justify-between text-sm">
-                        <span className="text-text-secondary dark:text-dark-text-secondary">
-                          {slab.minQty}{slab.maxQty ? ` - ${slab.maxQty}` : '+'} {product.unit}
-                        </span>
-                        <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                          <IndianRupee className="inline h-3 w-3" />{slab.price.toLocaleString('en-IN')}/{product.unit || 'unit'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-3">
-                <Badge variant={inStock ? 'success' : 'destructive'}>
-                  {inStock ? (stockStatus === 'LOW_STOCK' ? 'Low Stock' : 'In Stock') : 'Out of Stock'}
-                </Badge>
-                {product.moq > 0 && (
-                  <Badge variant="secondary">MOQ: {product.moq} {product.unit || 'units'}</Badge>
-                )}
-                {product.isFeatured && <Badge variant="warning">Featured</Badge>}
-                {product.productType && <Badge variant="outline">{product.productType.replace(/_/g, ' ')}</Badge>}
-              </div>
-
-              {product.shortDescription && (
-                <p className="text-text-secondary dark:text-dark-text-secondary leading-relaxed">
-                  {product.shortDescription}
-                </p>
-              )}
-
-              {product.specifications && product.specifications.length > 0 && (
-                <div className="rounded-lg border border-border bg-surface p-4 dark:bg-dark-surface dark:border-dark-border">
-                  <Specifications specifications={product.specifications} />
-                </div>
-              )}
-
-              {product.variants && product.variants.length > 0 && (
-                <VariantSelector
-                  variants={product.variants.filter(v => v.isActive)}
-                  onSelect={() => {}}
-                  selectedVariant={null}
+                <ImageGallery
+                  media={product.media || []}
+                  productName={product.name}
                 />
-              )}
+              </div>
 
-              <ActionButtons
-                quantity={1}
-                onQuantityChange={() => {}}
-                onRFQ={() => {}}
-                onChat={() => {}}
-                onWishlist={() => {}}
-                onCompare={() => {}}
-                onBuy={() => {}}
-                attachments={documents.map(d => ({ id: d.id, url: d.url, title: d.title }))}
-              />
-
-              {product.latitude && product.longitude && (
-                <div className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
-                  <MapPin className="h-4 w-4 text-primary-500" />
-                  <span>Near Me — Far: <span className="font-medium text-text-primary dark:text-dark-text-primary">Available in your region</span></span>
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-3xl font-black text-white lg:text-4xl leading-tight">
+                    {product.name}
+                  </h1>
+                  {product.brand && (
+                    <p className="mt-1 text-sm text-white/40">
+                      by <span className="font-semibold text-white/70">{product.brand}</span>
+                      {product.model && <> | Model: {product.model}</>}
+                    </p>
+                  )}
+                  {product.sku && (
+                    <p className="mt-1 text-[10px] text-white/30">SKU: {product.sku}</p>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <Separator />
+                <BadgesBar
+                  product={{
+                    goCashEligible: product.goCashEligible,
+                    tradgoEligible: product.tradgoEligible,
+                    escrowEligible: product.escrowEligible,
+                    isSampleOrder: product.isSampleOrder,
+                    exportSupported: product.exportSupported,
+                    latitude: product.latitude,
+                    longitude: product.longitude,
+                  }}
+                />
 
-      {product.description && (
-        <section className="py-12">
-          <div className="container-main">
-            <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">Description</h2>
-            <div className="prose prose-gray max-w-3xl dark:prose-invert" dangerouslySetInnerHTML={{ __html: product.description.replace(/\n/g, '<br/>') }} />
-          </div>
-        </section>
-      )}
+                <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                  <div className="flex items-baseline gap-3">
+                    {lowestPrice ? (
+                      <>
+                        <IndianRupee size={28} style={{ color: '#FF4D00' }} />
+                        <span className="text-4xl font-black text-white">
+                          {lowestPrice.toLocaleString('en-IN')}
+                        </span>
+                        {product.priceSlabs?.length > 1 && (
+                          <span className="text-lg text-white/40">
+                            - {Math.max(...product.priceSlabs.map(s => s.price)).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                        <span className="text-white/40">/{product.unit || 'unit'}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-semibold text-white/50">Price on Request</span>
+                    )}
+                  </div>
 
-      {product.specifications && product.specifications.length > 0 && (
-        <section className="border-t border-border py-12 dark:border-dark-border">
-          <div className="container-main">
-            <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">Specifications</h2>
-            <div className="max-w-2xl">
-              <Specifications specifications={product.specifications} />
-            </div>
-          </div>
-        </section>
-      )}
-
-      {attrSections.length > 0 && (
-        <section className="border-t border-border py-12 dark:border-dark-border">
-          <div className="container-main">
-            <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">Detailed Specifications</h2>
-            <div className="max-w-3xl">
-              <SpecificationTabs sections={attrSections} />
-            </div>
-          </div>
-        </section>
-      )}
-
-      {reviews && (
-        <section className="border-t border-border py-12 dark:border-dark-border">
-          <div className="container-main">
-            <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">Reviews & Ratings</h2>
-            <ReviewsSection
-                reviews={reviews.data}
-                stats={{ average: reviews.average, total: reviews.total, breakdown: reviews.breakdown as { 5: number; 4: number; 3: number; 2: number; 1: number } }}
-                productSlug={slug}
-              />
-          </div>
-        </section>
-      )}
-
-      {questions && (
-        <section className="border-t border-border py-12 dark:border-dark-border">
-          <div className="container-main">
-            <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">Questions & Answers</h2>
-            <div className="max-w-2xl">
-              <QaSection
-                questions={questions.data}
-                productSlug={slug}
-              />
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section className="border-t border-border py-12 dark:border-dark-border">
-        <div className="container-main">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              <h2 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">Seller Information</h2>
-              <SellerCard
-                seller={{
-                  id: product.company?.id || '',
-                  name: product.company?.name || 'Unknown Seller',
-                  slug: product.company?.slug || '',
-                  logo: product.company?.logo,
-                  businessType: product.company?.businessType,
-                  trustScore: product.company?.trustScore || 0,
-                  verificationLevel: product.company?.verificationLevel || 'LEVEL_0',
-                  city: product.company?.city,
-                  state: product.company?.state,
-                  responseRate: product.company?.responseRate,
-                  createdAt: product.company?.createdAt || product.createdAt,
-                }}
-              />
-            </div>
-            <div>
-              <div className="sticky top-24 space-y-4">
-                <Card>
-                  <CardContent className="p-5">
-                    <h3 className="mb-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Trade Assurance</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-sm">
-                        <Shield className="h-5 w-5 text-accent-500" />
-                        <div>
-                          <p className="font-medium text-text-primary dark:text-dark-text-primary">Escrow Protection</p>
-                          <p className="text-xs text-text-secondary">Secure payments via escrow</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <Truck className="h-5 w-5 text-primary-500" />
-                        <div>
-                          <p className="font-medium text-text-primary dark:text-dark-text-primary">TRADGO Shipping</p>
-                          <p className="text-xs text-text-secondary">Pan-India logistics network</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <Gauge className="h-5 w-5 text-amber-500" />
-                        <div>
-                          <p className="font-medium text-text-primary dark:text-dark-text-primary">Trust Score</p>
-                          <p className="text-xs text-text-secondary">{product.company?.trustScore || 'N/A'}/100</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {product.priceSlabs && product.priceSlabs.length > 0 && (
-                  <Card>
-                    <CardContent className="p-5">
-                      <h3 className="mb-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Quantity Discounts</h3>
-                      <div className="space-y-2">
+                  {product.priceSlabs && product.priceSlabs.length > 1 && (
+                    <div className="mt-4 rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <p className="mb-2 text-[10px] font-semibold text-white/40 uppercase tracking-wider">Bulk Pricing</p>
+                      <div className="space-y-1.5">
                         {product.priceSlabs.map((slab) => (
                           <div key={slab.id} className="flex justify-between text-sm">
-                            <span className="text-text-secondary">{slab.minQty}{slab.maxQty ? `-${slab.maxQty}` : '+'} {product.unit}</span>
-                            <span className="font-medium text-text-primary">
-                              <IndianRupee className="inline h-3 w-3" />{slab.price.toLocaleString('en-IN')}
-                            </span>
+                            <span className="text-white/50">{slab.minQty}{slab.maxQty ? ` - ${slab.maxQty}` : '+'} {product.unit}</span>
+                            <span className="font-bold text-white"><IndianRupee size={10} className="inline" />{slab.price.toLocaleString('en-IN')}/{product.unit || 'unit'}</span>
                           </div>
                         ))}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {(() => {
+                    const pill = 'flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-full';
+                    return <>
+                      <span className={pill}
+                        style={{
+                          background: inStock ? 'rgba(34,197,94,0.12)' : 'rgba(248,113,113,0.12)',
+                          border: `1px solid ${inStock ? 'rgba(34,197,94,0.3)' : 'rgba(248,113,113,0.3)'}`,
+                          color: inStock ? '#4ade80' : '#f87171',
+                        }}>
+                        {inStock ? (stockStatus === 'LOW_STOCK' ? '\uD83D\uDFE1' : '\uD83D\uDFE2') : '\uD83D\uDD34'} {inStock ? (stockStatus === 'LOW_STOCK' ? 'Low Stock' : 'In Stock') : 'Out of Stock'}
+                      </span>
+                      {product.moq > 0 && (
+                        <span className={pill} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}>
+                          MOQ: {product.moq} {product.unit || 'units'}
+                        </span>
+                      )}
+                      {product.isFeatured && (
+                        <span className={pill} style={{ background: 'rgba(242,201,76,0.12)', border: '1px solid rgba(242,201,76,0.3)', color: '#F2C94C' }}>
+                          Featured
+                        </span>
+                      )}
+                      {product.productType && (
+                        <span className={pill} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
+                          {product.productType.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                    </>;
+                  })()}
+                </div>
+
+                {product.shortDescription && (
+                  <p className="text-sm leading-relaxed text-white/60">
+                    {product.shortDescription}
+                  </p>
+                )}
+
+                {product.specifications && product.specifications.length > 0 && (
+                  <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <Specifications specifications={product.specifications} />
+                  </div>
+                )}
+
+                {product.variants && product.variants.length > 0 && (
+                  <VariantSelector
+                    variants={product.variants.filter(v => v.isActive)}
+                    onSelect={() => {}}
+                    selectedVariant={null}
+                  />
+                )}
+
+                <ActionButtons
+                  quantity={1}
+                  onQuantityChange={() => {}}
+                  onRFQ={() => {}}
+                  onChat={() => {}}
+                  onWishlist={() => {}}
+                  onCompare={() => {}}
+                  onBuy={() => {}}
+                  attachments={documents.map(d => ({ id: d.id, url: d.url, title: d.title }))}
+                />
+
+                {product.latitude && product.longitude && (
+                  <div className="flex items-center gap-2 text-sm text-white/50">
+                    <MapPin size={14} style={{ color: '#FF4D00' }} />
+                    <span>Near Me - Far: <span className="font-semibold text-white/70">Available in your region</span></span>
+                  </div>
                 )}
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="border-t border-border py-12 dark:border-dark-border">
-        <div className="container-main">
-          <RelatedProducts
-            products={related}
-            title="Similar Products"
-            viewAllHref={`/categories/${product.category?.slug || ''}`}
-          />
-        </div>
-      </section>
+        {/* -- Description -- */}
+        {product.description && (
+          <section className="py-12">
+            <div className="mx-auto max-w-7xl px-4">
+              <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <h2 className="mb-6 text-2xl font-black text-white">Description</h2>
+                <div className="max-w-4xl text-sm leading-relaxed text-white/60" dangerouslySetInnerHTML={{ __html: product.description.replace(/\n/g, '<br/>') }} />
+              </div>
+            </div>
+          </section>
+        )}
 
-      <section className="py-12">
-        <div className="container-main">
-          <FrequentlyBought products={[]} />
-        </div>
-      </section>
+        {/* -- Specifications -- */}
+        {product.specifications && product.specifications.length > 0 && (
+          <section className="py-12">
+            <div className="mx-auto max-w-7xl px-4">
+              <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <h2 className="mb-6 text-2xl font-black text-white">Specifications</h2>
+                <div className="max-w-2xl">
+                  <Specifications specifications={product.specifications} />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
-      <CTABlock
-        title="Interested in this product?"
-        subtitle="Get competitive quotes from multiple sellers instantly."
-        primaryLabel="Post an RFQ"
-        primaryHref="/rfq"
-        secondaryLabel="Browse More Products"
-        secondaryHref="/products"
-        variant="accent"
-      />
+        {/* -- Detailed Attributes -- */}
+        {attrSections.length > 0 && (
+          <section className="py-12">
+            <div className="mx-auto max-w-7xl px-4">
+              <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <h2 className="mb-6 text-2xl font-black text-white">Detailed Specifications</h2>
+                <div className="max-w-3xl">
+                  <SpecificationTabs sections={attrSections} />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* -- Reviews -- */}
+        {reviews && (
+          <section className="py-12">
+            <div className="mx-auto max-w-7xl px-4">
+              <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <h2 className="mb-6 text-2xl font-black text-white">Reviews & Ratings</h2>
+                <ReviewsSection
+                  reviews={reviews.data}
+                  stats={{ average: reviews.average, total: reviews.total, breakdown: reviews.breakdown as { 5: number; 4: number; 3: number; 2: number; 1: number } }}
+                  productSlug={slug}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* -- Q&A -- */}
+        {questions && (
+          <section className="py-12">
+            <div className="mx-auto max-w-7xl px-4">
+              <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <h2 className="mb-6 text-2xl font-black text-white">Questions & Answers</h2>
+                <div className="max-w-2xl">
+                  <QaSection questions={questions.data} productSlug={slug} />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* -- Seller Information + Trade Assurance -- */}
+        <section className="py-12">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="grid gap-8 lg:grid-cols-3">
+                <div className="lg:col-span-2 space-y-6">
+                  <h2 className="text-2xl font-black text-white">Seller Information</h2>
+                  <SellerBadge
+                    seller={resolveSellerInfo(product)}
+                    size="md"
+                    showLocation={true}
+                    showStats={true}
+                    showLogo={true}
+                    linkToProfile={true}
+                  />
+                  <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      {product.company?.businessType && (
+                        <div><span className="text-white/40">Business Type</span><p className="text-white font-semibold mt-0.5">{product.company.businessType}</p></div>
+                      )}
+                      {(product as any).company?.gstNumber && (
+                        <div><span className="text-white/40">GST</span><p className="text-white font-semibold mt-0.5">{(product as any).company.gstNumber}</p></div>
+                      )}
+                      {(product as any).company?.totalProducts && (
+                        <div><span className="text-white/40">Total Products</span><p className="text-white font-semibold mt-0.5">{(product as any).company.totalProducts}</p></div>
+                      )}
+                      {product.company?.createdAt && (
+                        <div><span className="text-white/40">Member Since</span><p className="text-white font-semibold mt-0.5">{new Date(product.company.createdAt).getFullYear()}</p></div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="sticky top-24 space-y-4">
+                    <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                      <h3 className="mb-4 text-sm font-bold text-white flex items-center gap-2">
+                        <Shield size={14} style={{ color: '#FF4D00' }} />
+                        Trade Assurance
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
+                            <Shield size={16} style={{ color: '#4ade80' }} />
+                          </div>
+                          <div><p className="text-sm font-semibold text-white">Escrow Protection</p><p className="text-[11px] text-white/40">Secure payments via escrow</p></div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,77,0,0.12)' }}>
+                            <Truck size={16} style={{ color: '#FF4D00' }} />
+                          </div>
+                          <div><p className="text-sm font-semibold text-white">TRADGO Shipping</p><p className="text-[11px] text-white/40">Pan-India logistics network</p></div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(242,201,76,0.12)' }}>
+                            <Gauge size={16} style={{ color: '#F2C94C' }} />
+                          </div>
+                          <div><p className="text-sm font-semibold text-white">Trust Score</p><p className="text-[11px] text-white/40">{product.company?.trustScore || 'N/A'}/100</p></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {product.priceSlabs && product.priceSlabs.length > 0 && (
+                      <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                        <h3 className="mb-3 text-sm font-bold text-white">Quantity Discounts</h3>
+                        <div className="space-y-2">
+                          {product.priceSlabs.map((slab) => (
+                            <div key={slab.id} className="flex justify-between text-sm">
+                              <span className="text-white/50">{slab.minQty}{slab.maxQty ? `-${slab.maxQty}` : '+'} {product.unit}</span>
+                              <span className="font-bold text-white"><IndianRupee size={10} className="inline" />{slab.price.toLocaleString('en-IN')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* -- Related Products -- */}
+        <section className="py-12">
+          <div className="mx-auto max-w-7xl px-4">
+            <RelatedProducts
+              products={related}
+              title="Similar Products"
+              viewAllHref={`/categories/${product.category?.slug || ''}`}
+            />
+          </div>
+        </section>
+
+        <section className="py-12">
+          <div className="mx-auto max-w-7xl px-4">
+            <FrequentlyBought products={[]} />
+          </div>
+        </section>
+
+        <ClaimYourGrowth />
+      </div>
     </>
   );
 }

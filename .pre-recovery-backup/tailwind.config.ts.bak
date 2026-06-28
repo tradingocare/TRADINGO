@@ -1,0 +1,40 @@
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  content: [
+    './app/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+        },
+        brand: {
+          50: '#F5FBFE',
+          100: '#EFF8FE',
+          200: '#DBF1FD',
+          300: '#A8D9F0',
+          400: '#6FB8DE',
+          500: '#85C5E8',
+          600: '#6FB8DE',
+          700: '#4A9BC9',
+          800: '#2E7BAB',
+          900: '#1A5A82',
+        },
+      },
+    },
+  },
+  plugins: [],
+};
+export default config;

@@ -1,0 +1,20 @@
+/* ═══════════════════════════════════════════════════════════════
+   RECOVERY: hooks/index.ts — Single-line patch
+   Source: Session reconstruction (21 June 2026)
+   Confidence: HIGH
+   ═══════════════════════════════════════════════════════════════
+
+   File:      apps/web/hooks/index.ts
+   Action:    Add one line at the end of the file
+   Current:   export * from './use-disputes';
+   After:     export * from './use-disputes';
+              export * from './use-cursor-glow';
+
+   --- a/apps/web/hooks/index.ts
+   +++ b/apps/web/hooks/index.ts
+   @@ -12,3 +12,4 @@ export * from './use-users';
+    export * from './use-companies';
+    export * from './use-kyc';
+    export * from './use-disputes';
+   +export * from './use-cursor-glow';
+*/

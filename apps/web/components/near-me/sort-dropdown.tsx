@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUpDown } from 'lucide-react';
+import { SORT_OPTIONS } from '@/data/master-data';
 
 type SortOption = 'distance' | 'trust' | 'price_asc' | 'price_desc' | 'trending' | 'delivery';
 
@@ -8,15 +9,6 @@ interface SortDropdownProps {
   value: SortOption;
   onChange: (value: SortOption) => void;
 }
-
-const SORT_OPTIONS: { label: string; value: SortOption }[] = [
-  { label: 'Nearest', value: 'distance' },
-  { label: 'Highest Trust', value: 'trust' },
-  { label: 'Price: Low to High', value: 'price_asc' },
-  { label: 'Price: High to Low', value: 'price_desc' },
-  { label: 'Trending', value: 'trending' },
-  { label: 'Fastest Delivery', value: 'delivery' },
-];
 
 export function SortDropdown({ value, onChange }: SortDropdownProps) {
   return (
