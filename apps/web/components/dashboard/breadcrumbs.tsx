@@ -24,6 +24,7 @@ const labelMap: Record<string, string> = {
   users: 'Users',
   companies: 'Tradors',
   kyc: 'KYC Reviews',
+  verification: 'Verification',
   disputes: 'Disputes',
 };
 

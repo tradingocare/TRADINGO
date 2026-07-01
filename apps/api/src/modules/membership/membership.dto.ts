@@ -1,6 +1,6 @@
-import { IsString, IsOptional, IsNumber, IsEnum, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsEnum, IsBoolean, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SubscriptionStatus, PlanChangeType } from '@prisma/client';
+import { PlanVisibility } from '@prisma/client';
 
 export class ValidateCouponDto {
   @IsString()
@@ -69,4 +69,204 @@ export class PlanHistoryQueryDto {
   @Type(() => Number)
   @IsNumber()
   limit?: number;
+}
+
+// Admin DTOs
+export class AdminCreatePlanDto {
+  @IsString()
+  planId: string;
+
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsNumber()
+  @Min(0)
+  pricePlanA: number;
+
+  @IsNumber()
+  @Min(0)
+  pricePlanB: number;
+
+  @IsNumber()
+  @Min(0)
+  pricePlanC: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  duration?: number;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+
+  @IsOptional()
+  @IsEnum(PlanVisibility)
+  visibility?: PlanVisibility;
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
+
+  @IsOptional()
+  @IsString()
+  badgeText?: string;
+
+  @IsOptional()
+  countryPricing?: any;
+
+  @IsOptional()
+  upgradeRules?: any;
+
+  @IsOptional()
+  downgradeRules?: any;
+
+  @IsOptional()
+  @IsNumber()
+  gracePeriodDays?: number;
+
+  @IsOptional()
+  renewalRules?: any;
+
+  @IsOptional()
+  @IsNumber()
+  trialPeriodDays?: number;
+
+  @IsOptional()
+  @IsString()
+  launchOfferEndsAt?: string;
+
+  @IsOptional()
+  metadata?: any;
+
+  @IsOptional()
+  features?: string[];
+}
+
+export class AdminUpdatePlanDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  pricePlanA?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  pricePlanB?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  pricePlanC?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  duration?: number;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsEnum(PlanVisibility)
+  visibility?: PlanVisibility;
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
+
+  @IsOptional()
+  @IsString()
+  badgeText?: string;
+
+  @IsOptional()
+  countryPricing?: any;
+
+  @IsOptional()
+  upgradeRules?: any;
+
+  @IsOptional()
+  downgradeRules?: any;
+
+  @IsOptional()
+  @IsNumber()
+  gracePeriodDays?: number;
+
+  @IsOptional()
+  renewalRules?: any;
+
+  @IsOptional()
+  @IsNumber()
+  trialPeriodDays?: number;
+
+  @IsOptional()
+  @IsString()
+  launchOfferEndsAt?: string;
+
+  @IsOptional()
+  metadata?: any;
+}
+
+export class AdminUpsertPlanFeatureDto {
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsString()
+  feature: string;
+
+  @IsOptional()
+  @IsBoolean()
+  included?: boolean;
+
+  @IsOptional()
+  @IsString()
+  value?: string;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+}
+
+export class AdminCreatePlanAddonDto {
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  duration?: number;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
 }

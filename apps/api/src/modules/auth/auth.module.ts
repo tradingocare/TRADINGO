@@ -7,6 +7,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { LinkedInStrategy } from './strategies/linkedin.strategy';
 import { QueueNames } from '../../jobs/queues';
 
 @Module({
@@ -24,7 +26,7 @@ import { QueueNames } from '../../jobs/queues';
     BullModule.registerQueue({ name: QueueNames.EMAIL }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
+  providers: [AuthService, JwtStrategy, RefreshTokenStrategy, GoogleStrategy, LinkedInStrategy],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

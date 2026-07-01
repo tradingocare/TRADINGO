@@ -3,7 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { QueueNames, NotificationJobTypes, NotificationJobData } from '../../jobs/queues';
+import { QueueNames, EmailJobTypes, EmailJobData, NotificationJobTypes, NotificationJobData } from '../../jobs/queues';
 import { NotificationChannel, NotificationStatus } from '@prisma/client';
 import { NotificationGateway } from './notification.gateway';
 
@@ -15,6 +15,7 @@ export class NotificationProcessor extends WorkerHost {
     private readonly prisma: PrismaService,
     private readonly gateway: NotificationGateway,
     @InjectQueue(QueueNames.NOTIFICATION) private readonly notificationQueue: Queue,
+    @InjectQueue(QueueNames.EMAIL) private readonly emailQueue: Queue<EmailJobData>,
   ) {
     super();
   }
@@ -117,7 +118,14 @@ export class NotificationProcessor extends WorkerHost {
     if (!userId) return;
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
     if (!user?.email) throw new Error('User email not found');
-    this.logger.log(`[EMAIL] To: ${user.email}, Subject: ${subject}, Body: ${body.substring(0, 100)}...`);
+    await this.emailQueue.add(EmailJobTypes.SEND_NOTIFICATION, {
+      type: EmailJobTypes.SEND_NOTIFICATION,
+      to: user.email,
+      subject,
+      template: 'notification',
+      context: { message: body },
+    });
+    this.logger.log(`[EMAIL] Queued for SES delivery: To: ${user.email}, Subject: ${subject}`);
   }
 
   private async sendSms(userId: string | undefined, message: string): Promise<void> {

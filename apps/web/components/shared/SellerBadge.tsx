@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { MapPin, BadgeCheck, Building2, Crown, Zap, Shield, CheckCircle2 } from 'lucide-react'
+import { MapPin, Building2, Crown, Zap, Shield, CheckCircle2 } from 'lucide-react'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 
 export interface SellerInfo {
   id?:             string
@@ -116,15 +117,7 @@ export default function SellerBadge({
             {sellerName}
           </span>
 
-          {seller.isVerified && (
-            <span
-              className={`flex items-center gap-0.5 font-bold rounded-full flex-shrink-0 ${s.badge}`}
-              style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}
-            >
-              <BadgeCheck size={s.icon - 2} />
-              Verified
-            </span>
-          )}
+          {seller.isVerified && <VerifiedBadge type="verified" size={s.icon <= 10 ? 'sm' : 'md'} className="flex-shrink-0" />}
 
           {seller.isTradgoElite && (
             <span

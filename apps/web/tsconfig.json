@@ -29,6 +29,9 @@
       "@tradingo/types": [
         "../../packages/types/src"
       ],
+      "@tradingo/contracts": [
+        "../../packages/contracts/src"
+      ],
       "@tradingo/utils": [
         "../../packages/utils/src"
       ]

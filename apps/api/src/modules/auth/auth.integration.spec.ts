@@ -201,7 +201,7 @@ describe('Auth Flow Integration', () => {
       mockRedis.get.mockResolvedValue('user-1');
       mockPrisma.user.update.mockResolvedValue({});
 
-      const result = await controller.verifyEmail('valid-token');
+      const result = await controller.verifyEmail({ token: 'valid-token' });
 
       expect(result.message).toBe('Email verified successfully');
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
@@ -214,7 +214,7 @@ describe('Auth Flow Integration', () => {
     it('rejects invalid verification token', async () => {
       mockRedis.get.mockResolvedValue(null);
 
-      await expect(controller.verifyEmail('bad-token'))
+      await expect(controller.verifyEmail({ token: 'bad-token' }))
         .rejects.toThrow('Invalid or expired verification token');
     });
   });

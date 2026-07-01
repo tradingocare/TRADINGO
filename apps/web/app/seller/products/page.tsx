@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api/client'
 import { Plus, Search, Grid3X3, List, Edit3, Copy, Trash2, Archive, Send, Eye, MoreHorizontal, Loader2, Package, AlertTriangle } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 
 const TABS = ['ALL', 'DRAFT', 'PENDING_APPROVAL', 'REJECTED', 'ACTIVE', 'INACTIVE', 'DISCONTINUED'] as const
 const TAB_LABELS: Record<string, string> = { ALL: 'All', DRAFT: 'Drafts', PENDING_APPROVAL: 'Pending', REJECTED: 'Rejected', ACTIVE: 'Live', INACTIVE: 'Inactive', DISCONTINUED: 'Archived' }
@@ -14,6 +15,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function SellerProductsPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<string>('ALL')
@@ -34,7 +36,9 @@ export default function SellerProductsPage() {
       const d = res.data?.data || res
       setProducts(d.data || [])
       if (d.meta) setTotalPages(d.meta.totalPages || 1)
-    } catch {}
+    } catch {
+      toast({ title: 'Failed to load products', variant: 'destructive' })
+    }
     finally { setLoading(false) }
   }, [activeTab, page, search])
 
@@ -42,7 +46,9 @@ export default function SellerProductsPage() {
     try {
       const res = await api.get('/seller/products/status-counts')
       setCounts(res.data || {})
-    } catch {}
+    } catch {
+      toast({ title: 'Failed to load counts', variant: 'destructive' })
+    }
   }
 
   useEffect(() => { fetchCounts() }, [])
@@ -56,7 +62,10 @@ export default function SellerProductsPage() {
       else if (action === 'restore') await api.post(`/seller/products/${id}/restore`)
       else if (action === 'delete') await api.delete(`/seller/products/${id}`)
       fetchProducts(); fetchCounts()
-    } catch {}
+      toast({ title: `Product ${action}d successfully` })
+    } catch {
+      toast({ title: `Failed to ${action} product`, variant: 'destructive' })
+    }
   }
 
   const formatPrice = (p: any) => {

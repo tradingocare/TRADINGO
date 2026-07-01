@@ -1,14 +1,15 @@
 'use client';
 
 import { DashboardPageHeader, StatCard, StatusBadge, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
-import { usePayments, useGocashBalance } from '@/hooks';
+import { usePayments } from '@/hooks';
+import { useSellerWalletSummary } from '@/hooks/use-wallet';
 import { DollarSign, Clock, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Payment } from '@/lib/api/types';
 
 export default function SellerPaymentsPage() {
   const { data: payments, isLoading: paymentsLoading, error: paymentsError } = usePayments();
-  const { data: balance, isLoading: balanceLoading } = useGocashBalance();
+  const { data: balance, isLoading: balanceLoading } = useSellerWalletSummary();
 
   return (
     <div className="space-y-6">

@@ -53,6 +53,12 @@ export class AnalyticsController {
     return this.analyticsService.getAdminDashboard(query);
   }
 
+  @Get('admin/completion-rate')
+  @ApiOperation({ summary: 'Admin order completion rate metrics' })
+  async getCompletionRate(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+    return this.analyticsService.getCompletionRate(startDate, endDate);
+  }
+
   @Get('leaderboard')
   @ApiOperation({ summary: 'Top sellers leaderboard' })
   async getLeaderboard(@Query('limit') limit?: string) {
@@ -97,11 +103,5 @@ export class AnalyticsController {
   async flush() {
     await this.eventIngestionService.flush();
     return { flushed: true };
-  }
-
-  @Post('query')
-  @ApiOperation({ summary: 'Raw ClickHouse query' })
-  async rawQuery(@Body() body: { sql: string; params?: Record<string, unknown> }) {
-    return this.analyticsService.queryRaw(body.sql, body.params);
   }
 }

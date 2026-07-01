@@ -3,9 +3,10 @@ import Link         from 'next/link'
 import { motion }   from 'framer-motion'
 import { useRef }   from 'react'
 import {
-  BadgeCheck, Crown, MapPin, Star,
+  Crown, MapPin, Star,
   Package, Zap, Shield, Building2, ArrowRight,
 } from 'lucide-react'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 
 interface CompanyCardData {
   id:             string
@@ -90,12 +91,7 @@ export default function CompanyCard({
                 <Crown size={9} /> Elite
               </span>
             )}
-            {company.isVerified && (
-              <span className="flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background:'rgba(34,197,94,0.2)', border:'1px solid rgba(34,197,94,0.4)', color:'#4ade80' }}>
-                <BadgeCheck size={9} /> Verified
-              </span>
-            )}
+            {company.isVerified && <VerifiedBadge type="verified" size="sm" />}
           </div>
         </div>
 

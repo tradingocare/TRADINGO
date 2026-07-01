@@ -1,5 +1,6 @@
 import { QueryProvider } from '@/lib/query/provider';
 import { ThemeProviderWrapper } from '@/components/shared/theme-wrapper';
+import { AuthProvider } from '@/components/auth/auth-provider';
 import { SocketProvider } from './socket-provider';
 import { PresenceProvider } from './presence-provider';
 import { TypingProvider } from './typing-provider';
@@ -10,17 +11,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProviderWrapper>
       <QueryProvider>
-        <SocketProvider>
-          <PresenceProvider>
-            <NotificationProvider>
-              <ChatProvider>
-                <TypingProvider>
-                  {children}
-                </TypingProvider>
-              </ChatProvider>
-            </NotificationProvider>
-          </PresenceProvider>
-        </SocketProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <PresenceProvider>
+              <NotificationProvider>
+                <ChatProvider>
+                  <TypingProvider>
+                    {children}
+                  </TypingProvider>
+                </ChatProvider>
+              </NotificationProvider>
+            </PresenceProvider>
+          </SocketProvider>
+        </AuthProvider>
       </QueryProvider>
     </ThemeProviderWrapper>
   );

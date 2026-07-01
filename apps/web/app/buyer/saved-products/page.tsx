@@ -11,9 +11,11 @@ import { getWishlist, removeFromWishlist } from '@/lib/api/products';
 import type { WishlistItem } from '@/lib/api/products';
 import SellerBadge, { resolveSellerInfo } from '@/components/shared/SellerBadge';
 import { useAuthStore } from '@/store/auth-store';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function SavedProductsPage() {
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -22,6 +24,7 @@ export default function SavedProductsPage() {
       const res = await getWishlist(1, 50);
       setItems(res.data || []);
     } catch {
+      toast({ title: 'Failed to load saved products', variant: 'destructive' });
       setItems([]);
     } finally {
       setLoading(false);
@@ -37,7 +40,10 @@ export default function SavedProductsPage() {
     try {
       await removeFromWishlist(productId);
       setItems(prev => prev.filter(i => i.productId !== productId));
-    } catch {}
+      toast({ title: 'Product removed from saved' });
+    } catch {
+      toast({ title: 'Failed to remove product', variant: 'destructive' });
+    }
   };
 
   const filtered = items.filter(

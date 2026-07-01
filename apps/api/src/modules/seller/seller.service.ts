@@ -7,6 +7,34 @@ export class SellerService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  async getBuyers(userId: string) {
+    const company = await this.prisma.company.findFirst({
+      where: { owners: { some: { userId } }, deletedAt: null },
+      select: { id: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const orders = await this.prisma.order.findMany({
+      where: { sellerCompanyId: company.id },
+      select: {
+        buyerCompanyId: true,
+        buyerCompany: { select: { id: true, name: true, slug: true, logo: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const seen = new Set<string>();
+    const buyers = [];
+    for (const o of orders) {
+      if (!seen.has(o.buyerCompanyId) && o.buyerCompany) {
+        seen.add(o.buyerCompanyId);
+        buyers.push(o.buyerCompany);
+      }
+    }
+
+    return { data: buyers, total: buyers.length };
+  }
+
   async getProfile(userId: string) {
     const company = await this.prisma.company.findFirst({
       where: {

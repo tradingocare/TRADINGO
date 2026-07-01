@@ -33,13 +33,19 @@ export default function SellerRegistrationPage() {
     resolver: zodResolver(sellerSchema),
   });
 
-  const onSubmit = async (_data: SellerForm) => {
+  const onSubmit = async (data: SellerForm) => {
     setServerError(null);
     try {
-      // TODO: Submit seller details
+      const apiClient = (await import('@/lib/api/client')).default;
+      await apiClient.post('/companies', {
+        name: data.companyName,
+        businessType: data.businessType,
+        gstNumber: data.gst,
+        mobile: data.phone,
+      });
       router.push('/dashboard');
     } catch (err: any) {
-      setServerError(err.message || 'Submission failed');
+      setServerError(err?.response?.data?.message || err.message || 'Submission failed');
     }
   };
 

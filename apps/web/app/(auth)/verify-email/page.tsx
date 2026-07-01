@@ -32,10 +32,13 @@ export default function VerifyEmailPage() {
     }
     setLoading(true);
     try {
-      // TODO: Verify email OTP
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token') || code;
+      const apiClient = (await import('@/lib/api/client')).default;
+      await apiClient.post('/auth/verify-email', { token });
       setVerified(true);
     } catch (err: any) {
-      setError(err.message || 'Verification failed');
+      setError(err?.response?.data?.message || err.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -43,7 +46,15 @@ export default function VerifyEmailPage() {
 
   const handleResend = useCallback(async () => {
     setResendCooldown(30);
-    // TODO: Resend OTP
+    try {
+      const apiClient = (await import('@/lib/api/client')).default;
+      const email = localStorage.getItem('pendingVerificationEmail') || '';
+      if (email) {
+        await apiClient.post('/auth/resend-verification', { email });
+      }
+    } catch {
+      // Silent fail on resend
+    }
   }, []);
 
   if (verified) {

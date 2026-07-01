@@ -23,7 +23,8 @@ import { WIZARD_STEPS, type ProductDraft, type AttributeTemplate, type ProductCo
 import { getTemplateForCategory } from '@/lib/product-onboarding/attribute-template-engine';
 import { validateStep, validateAll } from '@/lib/product-onboarding/validation-engine';
 import { createInitialFormState, type FormState } from '@/lib/product-onboarding/form-engine';
-import { Loader2, CheckCircle, Image as ImageIcon, Send, Eye } from 'lucide-react';
+import { WizardCopilot, useWizardAi } from '@/components/ai/wizard-copilot';
+import { Loader2, CheckCircle, Image as ImageIcon, Send, Eye, Sparkles } from 'lucide-react';
 
 function buildApiPayload(formState: FormState, extras: {
   specs: ProductDraftSpec[]; variants: ProductDraftVariant[]; media: ProductDraftMedia[];
@@ -60,6 +61,7 @@ export function NewProductWizard() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [completeness, setCompleteness] = useState<ProductCompletenessScore | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [specs, setSpecs] = useState<ProductDraftSpec[]>([]);
   const [variants, setVariants] = useState<ProductDraftVariant[]>([]);
   const [media, setMedia] = useState<ProductDraftMedia[]>([]);
@@ -68,6 +70,7 @@ export function NewProductWizard() {
   const [multiLangDesc, setMultiLangDesc] = useState<ProductDraftMultiLangDesc[]>([]);
   const [priceSlabs, setPriceSlabs] = useState<ProductDraftPriceSlab[]>([]);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const { aiLoading, handleAiGenerate } = useWizardAi();
 
   const v = formState.values as Record<string, any>;
 
@@ -98,12 +101,47 @@ export function NewProductWizard() {
   }, [showToast, router]);
 
   useEffect(() => {
+    apiClient.get<{ data: { id: string; name: string }[] }>('/categories?page=1&limit=100')
+      .then(res => setCategories(res.data || []))
+      .catch(() => { showToast({ title: 'Failed to load categories', variant: 'destructive' }); });
+  }, []);
+
+  useEffect(() => {
     (async () => {
       if (draftId) await loadDraft(draftId);
       else setFormState(createInitialFormState());
       setLoading(false);
     })();
   }, [draftId, loadDraft]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail.description) handleFieldChange('description', detail.description)
+      if (detail.shortDescription) handleFieldChange('shortDescription', detail.shortDescription)
+      if (detail.hsCode) handleFieldChange('hsCode', detail.hsCode)
+      if (detail.specs && Array.isArray(detail.specs)) {
+        setSpecs(detail.specs.map((s: any, i: number) => ({ id: `ai-${i}`, draftId: draft?.id || '', key: s.key || s.name || `spec_${i}`, value: s.value || '', sortOrder: i })))
+      }
+      if (detail.imageSuggestions) {
+        showToast({ title: 'AI Image Suggestions', description: typeof detail.imageSuggestions === 'string' ? detail.imageSuggestions : JSON.stringify(detail.imageSuggestions), variant: 'default' })
+      }
+      if (detail.pricing) {
+        if (Array.isArray(detail.pricing.slabs)) setPriceSlabs(detail.pricing.slabs)
+      }
+      if (detail.translation) {
+        setMultiLangDesc((prev) => {
+          const existing = prev.filter((p) => p.locale !== detail.translation.locale)
+          return [...existing, { id: `ai-${detail.translation.locale}`, draftId: draft?.id || '', locale: detail.translation.locale, name: detail.translation.name || v.name || '', shortDescription: detail.translation.shortDescription || v.shortDescription || '', description: detail.translation.description || v.description || '', isPrimary: false }]
+        })
+      }
+      if (detail.score) {
+        showToast({ title: `Quality Score: ${detail.score.total || 0}/100`, description: (detail.score.recommendations || []).slice(0, 3).join(', '), variant: 'default' })
+      }
+    }
+    window.addEventListener('wizard-ai-fill', handler)
+    return () => window.removeEventListener('wizard-ai-fill', handler)
+  }, [draft?.id, v.name, v.shortDescription, v.description])
 
   const handleCategoryChange = async (categoryId: string) => {
     try {
@@ -113,7 +151,7 @@ export function NewProductWizard() {
         const init = createInitialFormState(tpl);
         return { values: { ...init.values, ...prev.values, categoryId }, touched: prev.touched, errors: prev.errors };
       });
-    } catch { /* continue */ }
+    } catch { showToast({ title: 'Failed to load template for category', variant: 'destructive' }); }
   };
 
   const handleFieldChange = (key: string, value: any) => {
@@ -173,7 +211,7 @@ export function NewProductWizard() {
         specs, variants, media, attachments, certifications, multiLangDesc, priceSlabs, step: currentStep,
       }));
       setLastAutoSavedAt(new Date().toISOString());
-    } catch { /* silent */ }
+    } catch { showToast({ title: 'Auto-save failed', variant: 'destructive' }); }
     finally { setIsSaving(false); }
   }, [draft, formState, specs, variants, media, attachments, certifications, multiLangDesc, priceSlabs, currentStep]);
 
@@ -246,8 +284,8 @@ export function NewProductWizard() {
                       <Label>Category *</Label>
                       <select value={v.categoryId || ''} onChange={(e) => handleFieldChange('categoryId', e.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary">
                         <option value="">Select category</option>
-                        {[{id:'cat-steel',label:'Steel & Metals'},{id:'cat-chemicals',label:'Chemicals'},{id:'cat-agri',label:'Agriculture'},{id:'cat-textile',label:'Textiles'},{id:'cat-electronics',label:'Electronics'},{id:'cat-machinery',label:'Machinery'},{id:'cat-plastic',label:'Plastics & Polymers'},{id:'cat-auto',label:'Automotive'},{id:'cat-construction',label:'Construction'},{id:'cat-food',label:'Food & Beverages'}].map(c => (
-                          <option key={c.id} value={c.id}>{c.label}</option>
+                        {categories.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                       </select>
                       {errors.categoryId && <p className="mt-1 text-xs text-red-500">{errors.categoryId[0]}</p>}
@@ -304,17 +342,21 @@ export function NewProductWizard() {
                     <div><Label>Export Countries (comma separated)</Label><Input value={(v.exportCountries || []).join(', ')} onChange={(e) => handleFieldChange('exportCountries', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="e.g., UAE, USA, UK, Singapore" /></div>
                   )}
                 </CardContent></Card>
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
               </div>
             )}
 
             {currentStep === 2 && (
-              <Card><CardContent className="pt-6">
-                {template ? (
-                  <DynamicForm fields={stepFields as AttributeTemplateField[]} values={v} errors={errors} onChange={handleFieldChange} template={template} />
-                ) : (
-                  <p className="text-sm text-text-secondary">Select a category first to see dynamic specification fields.</p>
-                )}
-              </CardContent></Card>
+              <div className="space-y-6">
+                <Card><CardContent className="pt-6">
+                  {template ? (
+                    <DynamicForm fields={stepFields as AttributeTemplateField[]} values={v} errors={errors} onChange={handleFieldChange} template={template} />
+                  ) : (
+                    <p className="text-sm text-text-secondary">Select a category first to see dynamic specification fields.</p>
+                  )}
+                </CardContent></Card>
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
+              </div>
             )}
 
             {currentStep === 3 && (
@@ -339,13 +381,17 @@ export function NewProductWizard() {
                   <FileUploadZone accept=".pdf,.doc,.docx,.xls,.xlsx" multiple maxFiles={20} maxSize={20} files={[]} onFilesChange={() => {}} type="attachment" />
                   <AttachmentList attachments={attachments} onChange={setAttachments} types={['pdf','brochure','datasheet','msds','other']} />
                 </CardContent></Card>
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
               </div>
             )}
 
             {currentStep === 4 && (
-              <Card><CardContent className="pt-6">
-                <PricingSlabsEditor slabs={priceSlabs} onSlabsChange={setPriceSlabs} moq={v.moq || 0} onMoqChange={(val) => handleFieldChange('moq', val)} unit={v.unit || ''} onUnitChange={(val) => handleFieldChange('unit', val)} />
-              </CardContent></Card>
+              <div className="space-y-6">
+                <Card><CardContent className="pt-6">
+                  <PricingSlabsEditor slabs={priceSlabs} onSlabsChange={setPriceSlabs} moq={v.moq || 0} onMoqChange={(val) => handleFieldChange('moq', val)} unit={v.unit || ''} onUnitChange={(val) => handleFieldChange('unit', val)} />
+                </CardContent></Card>
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
+              </div>
             )}
 
             {currentStep === 5 && (
@@ -358,13 +404,14 @@ export function NewProductWizard() {
               <div className="space-y-6">
                 <Card><CardContent className="pt-6"><h3 className="mb-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Certifications</h3><CertificationEditor certifications={certifications} onChange={setCertifications} /></CardContent></Card>
                 <Card><CardContent className="pt-6"><h3 className="mb-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Multi-Language Descriptions</h3><MultiLangEditor entries={multiLangDesc} onChange={setMultiLangDesc} primaryName={v.name || ''} /></CardContent></Card>
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
               </div>
             )}
 
             {currentStep === 7 && (
               <div className="space-y-6">
                 <Card><CardContent className="pt-6">
-                  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Completeness Check</h3><Button variant="outline" size="sm" onClick={handleRecalculateCompleteness}><Eye className="mr-1.5 h-3.5 w-3.5" /> Refresh</Button></div>
+                  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Completeness Check</h3><div className="flex gap-2"><Button variant="outline" size="sm" onClick={handleRecalculateCompleteness}><Eye className="mr-1.5 h-3.5 w-3.5" /> Refresh</Button><WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} /></div></div>
                   <CompletenessGauge score={completeness} draft={draft} />
                 </CardContent></Card>
 

@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../common/services/redis.service';
 
 @SkipThrottle()
-@Controller('health')
+@Controller()
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
@@ -16,7 +16,29 @@ export class HealthController {
   ) {}
 
   @Public()
-  @Get()
+  @Get('live')
+  live() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+
+  @Public()
+  @Get('ready')
+  @HealthCheck()
+  ready() {
+    return this.health.check([
+      () => this.prismaHealth.pingCheck('database', this.prisma as unknown as Parameters<PrismaHealthIndicator['pingCheck']>[1]),
+      () => {
+        const redisClient = this.redis as unknown as { client: { ping(): Promise<string> } };
+        return redisClient.client.ping().then(
+          () => ({ redis: { status: 'up' as const } }) as HealthIndicatorResult,
+          () => ({ redis: { status: 'down' as const, message: 'Redis ping failed' } }) as HealthIndicatorResult,
+        );
+      },
+    ]);
+  }
+
+  @Public()
+  @Get('health')
   @HealthCheck()
   check() {
     return this.health.check([

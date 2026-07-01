@@ -35,6 +35,13 @@ export class MembershipController {
     return this.membershipService.getPlans();
   }
 
+  // Launch mode: only return LAUNCH-visibility plans
+  @Get('plans/launch')
+  @Public()
+  getLaunchPlans() {
+    return this.membershipService.getLaunchPlans();
+  }
+
   @Get('plans/:slug')
   @Public()
   getPlanBySlug(@Param('slug') slug: string) {
@@ -128,7 +135,7 @@ export class MembershipController {
 
   @Get('invoice/:id')
   @UseGuards(JwtAuthGuard)
-  async getInvoice(@Param('id') id: string, @CurrentUser('sub') userId: string) {
+  async getInvoice(@Param('id') id: string) {
     return this.membershipService.getInvoice(id);
   }
 }

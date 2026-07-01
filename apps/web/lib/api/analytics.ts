@@ -7,5 +7,5 @@ export interface GetAnalyticsParams {
 }
 
 export function getAnalytics(params?: GetAnalyticsParams) {
-  return apiClient.get<AnalyticsSummary>('/analytics', { params }).then(r => r.data);
+  return apiClient.get<AnalyticsSummary>('/analytics/admin/dashboard', { params }).then(r => r.data);
 }

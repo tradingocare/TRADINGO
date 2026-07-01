@@ -18,24 +18,36 @@ export default function Section5Catalog({ vendor, onSave, onNext, onBack }: Sect
   const extractProducts = useCallback(async () => {
     if (!catalogUrl) return
     setExtracting(true)
-    // Stub: simulate extraction
-    await new Promise(r => setTimeout(r, 1500))
-    setExtracted([
-      { name: 'Product 1', description: 'Sample product description', price: 500, unit: 'Pieces', moq: 10 },
-      { name: 'Product 2', description: 'Another product', price: 1200, unit: 'Kg', moq: 5 },
-      { name: 'Product 3', description: 'Premium product', price: 2500, unit: 'Set', moq: 2 },
-    ])
-    setExtracting(false)
+    try {
+      const { default: api } = await import('../../../../lib/api/client')
+      const res = await api.post('/seller/profile/extract-catalog', { url: catalogUrl })
+      const items = res.data?.products || res.data?.data || []
+      if (items.length > 0) {
+        setExtracted(items)
+      }
+    } catch {
+      // extraction failed silently — user can manually enter products later
+    } finally {
+      setExtracting(false)
+    }
   }, [catalogUrl])
 
-  const handleCSV = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCSV = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setCsvFile(file)
-    // Client-side parse stub
-    setCsvPreview([
-      { name: 'Sample Product', description: 'Desc', price: 500, unit: 'Pieces', moq: 10 },
-    ])
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const { default: api } = await import('../../../../lib/api/client')
+      const res = await api.post('/seller/products/import/csv-preview', formData)
+      const preview = res.data?.data || res.data?.products || []
+      if (preview.length > 0) {
+        setCsvPreview(preview)
+      }
+    } catch {
+      // CSV parse failed silently
+    }
   }, [])
 
   const save = useCallback(async () => {

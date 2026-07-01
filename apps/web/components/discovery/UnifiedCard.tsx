@@ -3,11 +3,12 @@ import { useState, useRef } from 'react'
 import Link              from 'next/link'
 import { motion }        from 'framer-motion'
 import {
-  Star, MapPin, Shield, BadgeCheck,
+  Star, MapPin, Shield,
   Zap, MessageCircle, FileText, Bookmark,
   ArrowLeftRight, Coins, Crown,
   ShoppingCart, Truck,
 } from 'lucide-react'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { DiscoveryResult } from '../../types/discovery'
 import { useAuthStore }    from '../../store/auth-store'
 import { toast }             from '@/components/ui/use-toast'
@@ -102,11 +103,7 @@ export default function UnifiedCard({
         )}
 
         <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap">
-          {item.isVerified && (
-            <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/35 text-green-400">
-              <BadgeCheck size={9} /> Verified
-            </span>
-          )}
+          {item.isVerified && <VerifiedBadge type="verified" size="sm" />}
           {item.seller.isTradgoElite && (
             <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(242,201,76,0.15)', border: '1px solid rgba(242,201,76,0.4)', color: '#F2C94C' }}>

@@ -1,0 +1,114 @@
+// ==========================================================================
+// GOCASH™ Prisma Models
+// ==========================================================================
+
+import { Prisma } from '@prisma/client';
+
+declare global {
+  namespace Prisma {
+    interface GocashWallet {
+      id: string;
+      userId: string;
+      companyId: string;
+      type: 'BUYER' | 'SELLER';
+      currentBalance: number;
+      availableBalance: number;
+      pendingBalance: number;
+      lockedBalance: number;
+      expiredBalance: number;
+      lifetimeEarned: number;
+      lifetimeRedeemed: number;
+      lifetimeExpired: number;
+      phoneNumber?: string;
+      kycVerified: boolean;
+      status: 'ACTIVE' | 'LOCKED' | 'SUSPENDED' | 'EXPIRED';
+      lockedUntil?: Date;
+      user: Prisma.UserGetPayload<{}>;
+      company: Prisma.CompanyGetPayload<{}>;
+      transactions: GocashTransaction[];
+      createdAt: Date;
+      updatedAt: Date;
+    }
+
+    interface GocashTransaction {
+      id: string;
+      walletId: string;
+      reference: string;
+      type:
+        | 'SIGNUP_BONUS'
+        | 'MEMBERSHIP_BONUS'
+        | 'REFERRAL_REWARD'
+        | 'BUYER_CASHBACK'
+        | 'SELLER_REWARD'
+        | 'CAMPAIGN_REWARD'
+        | 'FESTIVAL_BONUS'
+        | 'ADMIN_CREDIT'
+        | 'REFUND'
+        | 'WALLET_CREATE'
+        | 'REDEEM_GOCASH'
+        | 'BALANCE_UNLOCK'
+        | 'WALLET_REDEMPTION_APPROVED'
+        | 'WALLET_REDEMPTION_REJECTED';
+      actor: string;
+      reason: string;
+      referenceId?: string;
+      amount: number;
+      balanceBefore: number;
+      balanceAfter: number;
+      wallet: GocashWallet;
+      approvedByUser?: Prisma.UserGetPayload<{}>;
+      approvedBy?: string;
+      createdAt: Date;
+    }
+
+    interface RewardCampaign {
+      id: string;
+      name: string;
+      description: string;
+      type: string;
+      startDate: Date;
+      endDate: Date;
+      budget: number;
+      remainingBudget: number;
+      requirement: string;
+      rewardAmount: number;
+      rewardType: string;
+      maxClaims: number;
+      claimedCount: number;
+      status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+      companyId?: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }
+
+    interface ReferralProgram {
+      id: string;
+      companyId: string;
+      name: string;
+      description: string;
+      referralCode: string;
+      rewardAmount: number;
+      commissionRate: number;
+      status: 'ACTIVE' | 'INACTIVE';
+      createdAt: Date;
+      updatedAt: Date;
+    }
+
+    interface Redemption {
+      id: string;
+      walletId: string;
+      amount: number;
+      redemptionType: string;
+      status: 'PENDING' | 'APPROVED' | 'REJECTED';
+      reference?: string;
+      redeemedAt?: Date;
+      approvedAt?: Date;
+      rejectedAt?: Date;
+      rejectionReason?: string;
+      approvedBy?: string;
+      createdAt: Date;
+      wallet: GocashWallet;
+      approvedByUser?: Prisma.UserGetPayload<{}>;
+    }
+  }
+}

@@ -31,17 +31,20 @@ export class BrandService {
     return brand;
   }
 
-  async updateBrand(userId: string, brandId: string, dto: { name?: string; logo?: string; description?: string; status?: string }) {
+  async updateBrand(userId: string, brandId: string, dto: { name?: string; logo?: string; description?: string }) {
     const company = await this.resolveCompany(userId);
     const brand = await this.prisma.productBrand.findFirst({ where: { id: brandId, companyId: company.id } });
     if (!brand) throw new NotFoundException('Brand not found');
-    return this.prisma.productBrand.update({ where: { id: brandId }, data: dto as any });
+    const { name, logo, description } = dto;
+    return this.prisma.productBrand.update({ where: { id: brandId }, data: { ...(name !== undefined && { name }), ...(logo !== undefined && { logo }), ...(description !== undefined && { description }) } });
   }
 
   async deleteBrand(userId: string, brandId: string) {
     const company = await this.resolveCompany(userId);
     const brand = await this.prisma.productBrand.findFirst({ where: { id: brandId, companyId: company.id } });
     if (!brand) throw new NotFoundException('Brand not found');
+    const productCount = await this.prisma.product.count({ where: { brandId, companyId: company.id, deletedAt: null } });
+    if (productCount > 0) throw new BadRequestException(`Cannot delete brand "${brand.name}": ${productCount} product(s) are linked to it. Reassign products first.`);
     await this.prisma.productBrand.delete({ where: { id: brandId } });
     return { success: true };
   }

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useTradgoRaces, useTradgoBadges, useLeaderboard } from '@/hooks';
 import { Trophy, Medal, Zap, TrendingUp, Flame, Crown, Star, Users } from 'lucide-react';
-import type { TradgoRace, TradgoBadge } from '@/lib/api/types';
+import type { TradgoRace, TradgoBadge, LeaderboardEntry } from '@/lib/api/types';
 
 const iconMap: Record<string, typeof Zap> = {
   Zap, TrendingUp, Flame, Crown, Star, Medal, Users, Trophy,
@@ -91,9 +91,9 @@ export default function SellerTradgoPage() {
               <p className="text-sm text-text-secondary">No leaderboard data yet.</p>
             ) : (
               <div className="space-y-3">
-                {leaderboard.map((entry: any, index: number) => (
+                {leaderboard.map((entry: LeaderboardEntry, index: number) => (
                   <div
-                    key={entry.id || index}
+                    key={entry.companyId || index}
                     className="flex items-center gap-4 rounded-lg border border-border p-3 dark:border-dark-border"
                   >
                     <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
@@ -105,10 +105,10 @@ export default function SellerTradgoPage() {
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{entry.name || entry.companyName || `Trader ${index + 1}`}</p>
+                      <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{entry.companyName}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">{entry.score || entry.points || '—'}</p>
+                      <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">{entry.score}</p>
                     </div>
                   </div>
                 ))}

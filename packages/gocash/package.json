@@ -1,0 +1,11 @@
+{
+  "name": "@tradingo/gocash",
+  "version": "1.0.0",
+  "description": "TRADINGO GOCASH™ Rewards & Wallet Engine - Type definitions and utilities",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@prisma/client": "^6.0.0"
+  }
+}

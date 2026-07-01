@@ -34,10 +34,12 @@ export default function VerifyMobilePage() {
     }
     setLoading(true);
     try {
-      // TODO: Verify mobile OTP
+      const mobile = localStorage.getItem('pendingVerificationMobile') || '';
+      const apiClient = (await import('@/lib/api/client')).default;
+      await apiClient.post('/auth/verify-otp', { type: 'mobile', value: mobile, otp: code });
       setVerified(true);
     } catch (err: any) {
-      setError(err.message || 'Verification failed');
+      setError(err?.response?.data?.message || err.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -45,7 +47,13 @@ export default function VerifyMobilePage() {
 
   const handleResend = useCallback(async () => {
     setResendCooldown(30);
-    // TODO: Resend OTP
+    try {
+      const mobile = localStorage.getItem('pendingVerificationMobile') || '';
+      const apiClient = (await import('@/lib/api/client')).default;
+      await apiClient.post('/auth/send-otp', { type: 'mobile', value: mobile });
+    } catch {
+      // Silent fail on resend
+    }
   }, []);
 
   if (verified) {

@@ -7,6 +7,8 @@ import { BestsellerService } from './bestseller.service';
 import { BestsellerQueryDto } from './dto/bestseller-query.dto';
 import { TrendingQueryDto, TopCategoriesQueryDto, TopSellersQueryDto, NearMeQueryDto } from './dto/ranking-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -53,6 +55,36 @@ export class ProductsController {
     productType?: string; status?: string; isFeatured?: string;
   }) {
     return this.productsService.findAll(query);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async adminFindAll(@Query('search') search?: string, @Query('status') status?: string, @Query('page') page = '1', @Query('limit') limit = '20') {
+    const p = parseInt(page);
+    const l = parseInt(limit);
+    const where: any = { deletedAt: null };
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { company: { name: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        skip: (p - 1) * l,
+        take: l,
+        orderBy: { createdAt: 'desc' },
+        include: { company: { select: { id: true, name: true, slug: true } } },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    return {
+      data,
+      meta: { total, page: p, limit: l, totalPages: Math.ceil(total / l), hasNext: p * l < total, hasPrevious: p > 1 },
+    };
   }
 
   @Get('companies/:companyId/products')

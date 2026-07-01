@@ -33,13 +33,15 @@ export default function AdminAnalyticsPage() {
   }
 
   const {
-    totalRevenue = 0,
-    totalOrders = 0,
-    totalProducts = 0,
-    totalRfqs = 0,
-    averageOrderValue = 0,
-    growthRate = 0,
+    gmv = 0,
+    orders = 0,
+    totalSellers = 0,
+    rfqs = 0,
+    payments = 0,
+    growth,
   } = data ?? {};
+  const growthRate = growth?.growthRate ?? 0;
+  const aov = orders > 0 ? Math.round(gmv / orders) : 0;
 
   return (
     <div className="space-y-6">
@@ -49,10 +51,10 @@ export default function AdminAnalyticsPage() {
       />
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Users} label="Total RFQs" value={String(totalRfqs)} change="All time" changeType="neutral" />
-        <StatCard icon={Building2} label="Total Orders" value={String(totalOrders)} change="All time" changeType="neutral" />
-        <StatCard icon={ShoppingCart} label="Total Products" value={String(totalProducts)} change="Listed" changeType="neutral" />
-        <StatCard icon={IndianRupee} label="Total Revenue" value={formatINR(totalRevenue)} change={growthRate > 0 ? `+${growthRate}%` : `${growthRate}%`} changeType={growthRate >= 0 ? 'positive' : 'negative'} />
+        <StatCard icon={Users} label="Total RFQs" value={String(rfqs)} change="All time" changeType="neutral" />
+        <StatCard icon={Building2} label="Total Orders" value={String(orders)} change="All time" changeType="neutral" />
+        <StatCard icon={ShoppingCart} label="Total Sellers" value={String(totalSellers)} change="Listed" changeType="neutral" />
+        <StatCard icon={IndianRupee} label="GMV" value={formatINR(gmv)} change={growthRate > 0 ? `+${growthRate}%` : `${growthRate}%`} changeType={growthRate >= 0 ? 'positive' : 'negative'} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -112,7 +114,7 @@ export default function AdminAnalyticsPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
           <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Average Order Value</h3>
-          <p className="mt-4 text-3xl font-bold text-text-primary dark:text-dark-text-primary">{formatINR(averageOrderValue)}</p>
+          <p className="mt-4 text-3xl font-bold text-text-primary dark:text-dark-text-primary">{formatINR(aov)}</p>
           <div className="mt-4 flex items-center gap-1 text-sm text-accent-600 dark:text-accent-400">
             <TrendingUp className="h-4 w-4" />
             <span>Per order</span>
@@ -124,7 +126,7 @@ export default function AdminAnalyticsPage() {
 
         <div className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
           <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Total Orders</h3>
-          <p className="mt-4 text-3xl font-bold text-text-primary dark:text-dark-text-primary">{totalOrders}</p>
+          <p className="mt-4 text-3xl font-bold text-text-primary dark:text-dark-text-primary">{orders}</p>
           <div className="mt-4 flex items-center gap-1 text-sm text-accent-600 dark:text-accent-400">
             <TrendingUp className="h-4 w-4" />
             <span>All time</span>

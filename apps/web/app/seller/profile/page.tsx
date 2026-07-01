@@ -1,12 +1,23 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { DashboardPageHeader, StatusBadge, DashboardSkeleton } from '@/components/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCompany } from '@/hooks';
+import api from '@/lib/api/client';
 import { Building2, Phone, MapPin, BadgeIndianRupee, Globe } from 'lucide-react';
+import type { Company } from '@/lib/api/types';
 
 export default function SellerProfilePage() {
-  const { data: company, isLoading, error } = useCompany('company-1');
+  const [company, setCompany] = useState<Company | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    api.get('/companies/my-company')
+      .then(res => setCompany(res.data?.data || res.data))
+      .catch(() => setError(true))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   if (isLoading) return <DashboardSkeleton />;
 

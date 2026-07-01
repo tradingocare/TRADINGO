@@ -7,9 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
 import { useSmartRfq } from '@/hooks/use-smart-rfq';
 import { useCreateQuote, useSubmitQuote } from '@/hooks/use-smart-quote';
-import { ArrowLeft, Send, Save, DollarSign, Package, Clock, Shield, FileText } from 'lucide-react';
+import { AiQuoteSidebar } from '@/components/quote/ai-quote-sidebar';
+import {
+  useAiPriceRecommendation, useAiWinningProbability, useAiMarginAnalysis,
+  useAiCompetitivenessScore, useAiQuoteReview, useAiNegotiationPrep,
+  useAiRiskAssessment, useAiQuoteQualityScore,
+} from '@/hooks/use-ai-quote';
+import { ArrowLeft, Send, Save, DollarSign, Package, Clock, Shield, FileText, Sparkles, X, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED'];
 const DELIVERY_TERMS = ['EX_WORKS', 'FOB', 'CIF', 'CFR', 'CPT', 'CIP', 'DAP', 'DDP'];
@@ -48,6 +55,31 @@ function NewQuotePage() {
   const createMutation = useCreateQuote();
   const submitMutation = useSubmitQuote();
   const [saving, setSaving] = useState(false);
+  const [showAi, setShowAi] = useState(false);
+  const [aiResult, setAiResult] = useState<{ type: string; content: any } | null>(null);
+  const { toast } = useToast();
+
+  const priceRecMutation = useAiPriceRecommendation();
+  const winProbMutation = useAiWinningProbability();
+  const marginMutation = useAiMarginAnalysis();
+  const compMutation = useAiCompetitivenessScore();
+  const reviewMutation = useAiQuoteReview();
+  const negPrepMutation = useAiNegotiationPrep();
+  const riskMutation = useAiRiskAssessment();
+  const qualityMutation = useAiQuoteQualityScore();
+
+  const isAiGenerating = priceRecMutation.isPending || winProbMutation.isPending || marginMutation.isPending || compMutation.isPending || reviewMutation.isPending || negPrepMutation.isPending || riskMutation.isPending || qualityMutation.isPending;
+
+  const handleAiAction = async (action: string, mutation: any, data: any) => {
+    try {
+      const res = await mutation.mutateAsync({ companyId, data })
+      const payload = res.data || res
+      setAiResult({ type: action, content: payload.content || payload })
+      toast({ title: 'AI Analysis Complete', description: `${action} generated successfully`, variant: 'default' })
+    } catch (err: any) {
+      toast({ title: 'AI Analysis Failed', description: err?.message || 'Could not complete analysis', variant: 'destructive' })
+    }
+  }
 
   const update = (key: string, value: any) => setForm((prev) => ({ ...prev, [key]: value }));
   const updateLineItem = (index: number, key: string, value: any) => {
@@ -112,6 +144,9 @@ function NewQuotePage() {
             </Button>
             <Button variant="accent" onClick={() => handleSave(true)} disabled={saving}>
               <Send className="mr-2 h-4 w-4" />{saving ? 'Saving...' : 'Submit Quote'}
+            </Button>
+            <Button variant="ghost" onClick={() => setShowAi(!showAi)} className={showAi ? 'text-orange-400' : ''}>
+              <Sparkles className="mr-2 h-4 w-4" />AI Advisor
             </Button>
             <Button variant="ghost" onClick={() => router.push('/seller/rfq')}>
               <ArrowLeft className="mr-2 h-4 w-4" />Back
@@ -252,30 +287,80 @@ function NewQuotePage() {
           </div>
         </div>
 
-        {/* Right sidebar - RFQ Info */}
+        {/* Right sidebar - RFQ Info / AI Advisor */}
         <div className="space-y-4">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">RFQ Details</h3>
-            {rfq ? (
-              <dl className="space-y-3">
-                <div><dt className="text-xs text-white/40">Title</dt><dd className="text-sm text-white">{rfq.title || 'N/A'}</dd></div>
-                <div><dt className="text-xs text-white/40">Status</dt><dd><StatusBadge status={rfq.status} /></dd></div>
-                <div><dt className="text-xs text-white/40">Products Required</dt><dd className="text-sm text-white">{rfq.productItems?.length ?? 0}</dd></div>
-                {rfq.expiresAt && <div><dt className="text-xs text-white/40">Expires</dt><dd className="text-sm text-white">{new Date(rfq.expiresAt).toLocaleDateString('en-IN')}</dd></div>}
-              </dl>
-            ) : (
-              <p className="text-sm text-white/40">Loading...</p>
-            )}
-          </div>
+          {!showAi ? (
+            <>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">RFQ Details</h3>
+                {rfq ? (
+                  <dl className="space-y-3">
+                    <div><dt className="text-xs text-white/40">Title</dt><dd className="text-sm text-white">{rfq.title || 'N/A'}</dd></div>
+                    <div><dt className="text-xs text-white/40">Status</dt><dd><StatusBadge status={rfq.status} /></dd></div>
+                    <div><dt className="text-xs text-white/40">Products Required</dt><dd className="text-sm text-white">{rfq.productItems?.length ?? 0}</dd></div>
+                    {rfq.expiresAt && <div><dt className="text-xs text-white/40">Expires</dt><dd className="text-sm text-white">{new Date(rfq.expiresAt).toLocaleDateString('en-IN')}</dd></div>}
+                  </dl>
+                ) : (
+                  <p className="text-sm text-white/40">Loading...</p>
+                )}
+              </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">Quick Tips</h3>
-            <ul className="space-y-2 text-xs text-white/50">
-              <li className="flex items-start gap-2"><Shield className="h-3 w-3 mt-0.5 shrink-0" /> Competitive pricing increases acceptance chance</li>
-              <li className="flex items-start gap-2"><Clock className="h-3 w-3 mt-0.5 shrink-0" /> Shorter lead time = higher ranking</li>
-              <li className="flex items-start gap-2"><FileText className="h-3 w-3 mt-0.5 shrink-0" /> Detailed terms reduce negotiation rounds</li>
-            </ul>
-          </div>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">Quick Tips</h3>
+                <ul className="space-y-2 text-xs text-white/50">
+                  <li className="flex items-start gap-2"><Shield className="h-3 w-3 mt-0.5 shrink-0" /> Competitive pricing increases acceptance chance</li>
+                  <li className="flex items-start gap-2"><Clock className="h-3 w-3 mt-0.5 shrink-0" /> Shorter lead time = higher ranking</li>
+                  <li className="flex items-start gap-2"><FileText className="h-3 w-3 mt-0.5 shrink-0" /> Detailed terms reduce negotiation rounds</li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+                <AiQuoteSidebar
+                  companyId={companyId}
+                  formData={form}
+                  lineItems={form.lineItems}
+                  rfqData={rfq as any}
+                  onPriceRecommendation={(d) => handleAiAction('Price Recommendation', priceRecMutation, d)}
+                  onWinningProbability={(d) => handleAiAction('Win Probability', winProbMutation, d)}
+                  onMarginAnalysis={(d) => handleAiAction('Margin Analysis', marginMutation, d)}
+                  onCompetitiveness={(d) => handleAiAction('Competitiveness', compMutation, d)}
+                  onReview={(d) => handleAiAction('Quote Review', reviewMutation, d)}
+                  onNegotiationPrep={(d) => handleAiAction('Negotiation Prep', negPrepMutation, d)}
+                  onRiskAssessment={(d) => handleAiAction('Risk Assessment', riskMutation, d)}
+                  onQualityScore={(d) => handleAiAction('Quality Score', qualityMutation, d)}
+                  isGenerating={isAiGenerating}
+                />
+              </div>
+
+              {aiResult && (
+                <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 backdrop-blur-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-orange-300">
+                      <CheckCircle className="h-3 w-3" />
+                      {aiResult.type}
+                    </div>
+                    <button onClick={() => setAiResult(null)} className="text-white/30 hover:text-white/60">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <pre className="text-xs text-white/70 whitespace-pre-wrap font-sans leading-relaxed max-h-60 overflow-y-auto">
+                    {typeof aiResult.content === 'object' ? JSON.stringify(aiResult.content, null, 2) : String(aiResult.content)}
+                  </pre>
+                </div>
+              )}
+
+              {isAiGenerating && (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-xl">
+                  <div className="flex items-center gap-2 text-sm text-white/50">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
+                    AI is analyzing...
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

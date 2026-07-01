@@ -855,6 +855,7 @@ export const DASHBOARD_SELLER_NAV: NavItem[] = [
   { label: 'Quotes', href: '/seller/quote', icon: 'DollarSign' },
   { label: 'Negotiations', href: '/seller/negotiation', icon: 'Handshake' },
   { label: 'Purchase Orders', href: '/seller/po', icon: 'FileCheck' },
+  { label: 'AI Workspace', href: '/seller/ai-workspace', icon: 'Sparkles' },
   { label: 'Analytics', href: '/seller/analytics', icon: 'BarChart3' },
   { label: 'TRADGO', href: '/seller/tradgo', icon: 'Trophy' },
   { label: 'GOCASH', href: '/seller/gocash', icon: 'Wallet' },

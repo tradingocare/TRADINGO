@@ -29,6 +29,8 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { CompaniesModule } from './modules/companies/companies.module';
 import { CompanyLocationsModule } from './modules/company-locations/company-locations.module';
 import { CompanyVerificationModule } from './modules/company-verification/company-verification.module';
+import { UserVerificationModule } from './modules/user-verification/user-verification.module';
+import { ReputationModule } from './modules/reputation/reputation.module';
 import { TradTrustModule } from './modules/tradtrust/tradtrust.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { IndustriesModule } from './modules/industries/industries.module';
@@ -73,6 +75,18 @@ import { SmartPoModule } from './modules/smart-po/smart-po.module';
 import { SmartOrderModule } from './modules/smart-order/smart-order.module';
 import { SmartShipmentModule } from './modules/smart-shipment/smart-shipment.module';
 import { SmartDeliveryModule } from './modules/smart-delivery/smart-delivery.module';
+import { GocashModule } from './modules/gocash/gocash.module';
+import { ReferralModule } from './modules/referral/referral.module';
+import { CampaignModule } from './modules/campaign/campaign.module';
+import { WalletApiModule } from './modules/wallet-api/wallet-api.module';
+import { GocashIntegrationModule } from './modules/gocash-integration/gocash-integration.module';
+import { SmsModule } from './modules/sms/sms.module';
+import { AdvertisingModule } from './modules/advertising/advertising.module';
+import { CrmModule } from './modules/crm/crm.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { AiModule } from './modules/ai/ai.module';
+import { AiGatewayModule } from './modules/ai-gateway/ai-gateway.module';
+import { AdminIntelligenceModule } from './modules/admin-intelligence/admin-intelligence.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -156,6 +170,8 @@ import { AppService } from './app.service';
     BillingModule,
     SellerProductModule,
     BuyerModule,
+    UserVerificationModule,
+    ReputationModule,
     CommunicationModule,
     SmartRfqModule,
     SmartNegotiationModule,
@@ -163,6 +179,18 @@ import { AppService } from './app.service';
     SmartOrderModule,
     SmartShipmentModule,
     SmartDeliveryModule,
+    GocashModule,
+    ReferralModule,
+    CampaignModule,
+    WalletApiModule,
+    GocashIntegrationModule,
+    SmsModule,
+    AdvertisingModule,
+    CrmModule,
+    FinanceModule,
+    AiModule,
+    AiGatewayModule,
+    AdminIntelligenceModule,
   ],
   controllers: [AppController],
   providers: [

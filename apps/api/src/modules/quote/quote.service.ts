@@ -408,6 +408,98 @@ export class QuoteService {
     return updated;
   }
 
+  async findMyQuotes(userId: string, page = 1, limit = 20) {
+    const companies = await this.prisma.companyOwner.findMany({
+      where: { userId, isPrimary: true },
+      select: { companyId: true },
+    });
+    const companyIds = companies.map((c) => c.companyId);
+    if (!companyIds.length) return { data: [], meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrevious: false } };
+
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.quote.findMany({
+        where: { companyId: { in: companyIds } },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          lineItems: { orderBy: { sortOrder: 'asc' } },
+          rfq: { select: { id: true, title: true, status: true } },
+          company: { select: { id: true, name: true, slug: true } },
+        },
+      }),
+      this.prisma.quote.count({ where: { companyId: { in: companyIds } } }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrevious: page > 1,
+      },
+    };
+  }
+
+  async findMyQuoteById(quoteId: string, userId: string) {
+    const companies = await this.prisma.companyOwner.findMany({
+      where: { userId, isPrimary: true },
+      select: { companyId: true },
+    });
+    const companyIds = companies.map((c) => c.companyId);
+    if (!companyIds.length) throw new NotFoundException('Quote not found');
+
+    const quote = await this.prisma.quote.findFirst({
+      where: { id: quoteId, companyId: { in: companyIds } },
+      include: {
+        lineItems: { orderBy: { sortOrder: 'asc' } },
+        attachments: true,
+        rfq: { select: { id: true, title: true, status: true, createdBy: true } },
+        company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true } },
+        events: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+    if (!quote) throw new NotFoundException('Quote not found');
+    return quote;
+  }
+
+  async getAdminOverview() {
+    const [totalQuotes, byStatus] = await Promise.all([
+      this.prisma.quote.count(),
+      this.prisma.quote.groupBy({
+        by: ['status'],
+        _count: { id: true },
+      }),
+    ]);
+
+    const stats: Record<string, number> = {};
+    for (const s of byStatus) stats[s.status] = s._count.id;
+
+    const submitted = stats['SUBMITTED'] || 0;
+    const accepted = stats['ACCEPTED'] || 0;
+    const conversionRate = submitted > 0 ? Math.round((accepted / submitted) * 1000) / 10 : 0;
+
+    const avgResult = await this.prisma.quote.aggregate({
+      _avg: { totalAmount: true },
+    });
+
+    return {
+      totalQuotes,
+      submitted,
+      accepted: stats['ACCEPTED'] || 0,
+      rejected: stats['REJECTED'] || 0,
+      expired: stats['EXPIRED'] || 0,
+      draft: stats['DRAFT'] || 0,
+      withdrawn: stats['WITHDRAWN'] || 0,
+      avgAmount: Math.round(Number(avgResult._avg.totalAmount ?? 0)),
+      conversionRate,
+    };
+  }
+
   async expireOverdueQuotes() {
     const now = new Date();
     const [expired] = await Promise.all([

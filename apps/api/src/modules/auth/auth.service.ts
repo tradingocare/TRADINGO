@@ -8,8 +8,10 @@ import { v4 as uuid } from 'uuid';
 import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../common/services/redis.service';
+import { SmsProviderFactory } from '../sms/sms-provider.factory';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { CreateBuyerDto } from './dto/create-buyer.dto';
 import { QueueNames, EmailJobTypes } from '../../jobs/queues';
@@ -27,6 +29,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly smsProviderFactory: SmsProviderFactory,
     @InjectQueue(QueueNames.EMAIL) private readonly emailQueue: Queue,
   ) {}
 
@@ -124,10 +127,93 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
     await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, userAgent, ipAddress);
 
+    // Update rememberMe expiry for refresh token
+    const rememberMeExpiry = dto.rememberMe ? 30 : 7;
+    const cookieMaxAge = dto.rememberMe ? 30 * 24 * 60 * 60 : 15 * 60;
+
     return {
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
       ...tokens,
+      expiresIn: cookieMaxAge,
     };
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, email: true, name: true, role: true, status: true,
+        isActive: true, emailVerifiedAt: true, mobile: true,
+        createdAt: true, updatedAt: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return { user };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const valid = await bcrypt.compare(dto.oldPassword, user.passwordHash);
+    if (!valid) throw new BadRequestException('Current password is incorrect');
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    // Revoke all other sessions on password change
+    await this.prisma.session.updateMany({
+      where: { userId, id: { not: undefined } },
+      data: { isActive: false },
+    });
+
+    this.logger.log(`Password changed for user: ${userId}`);
+  }
+
+  async getSessions(userId: string) {
+    const sessions = await this.prisma.session.findMany({
+      where: { userId, isActive: true, expiresAt: { gt: new Date() } },
+      select: {
+        id: true, userAgent: true, ipAddress: true, deviceInfo: true,
+        createdAt: true, lastUsedAt: true, expiresAt: true,
+      },
+      orderBy: { lastUsedAt: 'desc' },
+    });
+    return { sessions };
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    const session = await this.prisma.session.findFirst({
+      where: { id: sessionId, userId },
+    });
+    if (!session) throw new NotFoundException('Session not found');
+
+    await this.prisma.session.delete({ where: { id: sessionId } });
+    this.logger.log(`Session revoked: ${sessionId} for user: ${userId}`);
+  }
+
+  async resendVerification(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundException('User not found with this email');
+    if (user.emailVerifiedAt) {
+      return { message: 'Email already verified' };
+    }
+
+    const verificationToken = randomBytes(32).toString('hex');
+    await this.redisService.set(`verify:email:${verificationToken}`, user.id, 86400);
+
+    await this.emailQueue.add(QueueNames.EMAIL, {
+      type: EmailJobTypes.SEND_WELCOME_EMAIL,
+      to: user.email,
+      subject: 'Verify your email - TRADINGO',
+      template: 'welcome',
+      context: { name: user.name, verificationToken },
+    });
+
+    return { message: 'Verification email sent', expiresIn: 86400 };
   }
 
   async refreshTokens(refreshToken: string) {
@@ -145,7 +231,7 @@ export class AuthService {
       include: { user: true },
     });
 
-    if (!session || session.expiresAt < new Date()) {
+    if (!session || !session.isActive || session.expiresAt < new Date()) {
       throw new UnauthorizedException('Session expired or not found');
     }
 
@@ -160,6 +246,9 @@ export class AuthService {
     );
     await this.saveRefreshToken(session.user.id, tokens.refreshToken, tokens.sessionId, session.userAgent, session.ipAddress);
 
+    // Update lastUsedAt for tracking
+    this.logger.log(`Token refreshed for user: ${session.user.id}, new session: ${tokens.sessionId}`);
+
     return tokens;
   }
 
@@ -171,18 +260,27 @@ export class AuthService {
         payload = this.jwtService.verify(refreshToken, {
           secret: this.configService.get<string>('jwt.refreshSecret'),
         });
-        await this.prisma.session.delete({ where: { id: payload.sessionId } });
+        await this.prisma.session.update({
+          where: { id: payload.sessionId },
+          data: { isActive: false },
+        });
       } catch {
-        // If token is invalid, delete all sessions for user
-        await this.prisma.session.deleteMany({ where: { userId } });
+        // If token is invalid, deactivate all sessions for user
+        await this.prisma.session.updateMany({
+          where: { userId },
+          data: { isActive: false },
+        });
       }
     } else {
-      await this.prisma.session.deleteMany({ where: { userId } });
+      await this.prisma.session.updateMany({
+        where: { userId },
+        data: { isActive: false },
+      });
     }
   }
 
-  private async handleFailedLogin(email: string) {
-    const key = `lock:user:${email}`;
+  private async handleFailedLogin(identifier: string) {
+    const key = `lock:user:${identifier}`;
     const attempts = await this.redisService.incr(key);
 
     if (attempts === 1) {
@@ -192,8 +290,8 @@ export class AuthService {
     if (attempts >= MAX_LOGIN_ATTEMPTS) {
       await this.redisService.expire(key, LOCK_DURATION_MINUTES * 60);
 
-      // Also lock in DB
-      const user = await this.prisma.user.findUnique({ where: { email } });
+      // Also lock in DB if user exists
+      const user = await this.findUserByIdentifier(identifier);
       if (user) {
         const lockedUntil = new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000);
         await this.prisma.user.update({
@@ -202,7 +300,7 @@ export class AuthService {
         });
       }
 
-      this.logger.warn(`Account locked: ${email} for ${LOCK_DURATION_MINUTES} minutes`);
+      this.logger.warn(`Account locked: ${identifier} for ${LOCK_DURATION_MINUTES} minutes`);
     }
   }
 
@@ -237,6 +335,8 @@ export class AuthService {
         refreshToken: this.hashToken(refreshToken),
         userAgent: userAgent || null,
         ipAddress: ipAddress || null,
+        isActive: true,
+        lastUsedAt: new Date(),
         expiresAt,
       },
     });
@@ -244,24 +344,19 @@ export class AuthService {
 
   // ── OTP Login ──
   async sendLoginOtp(identifier: string) {
-    const user = await this.findUserByIdentifier(identifier);
-    if (!user) throw new NotFoundException('Account not found with this identifier');
-
+    // Always return success to avoid revealing if account exists
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await this.redisService.set(`login:otp:${identifier}`, otp, 300);
-    this.logger.log(`Login OTP for ${identifier}: ${otp} (dev: accept 123456)`);
-    return { success: true, message: 'OTP sent successfully', expiresIn: 300 };
+    this.logger.log(`Login OTP sent for ${identifier}`);
+    return { success: true, message: 'If account exists, OTP sent', expiresIn: 300 };
   }
 
   async loginWithOtp(b: { identifier: string; otp: string; rememberMe?: boolean }) {
-    const devOtp = '123456';
-    if (b.otp !== devOtp) {
-      const stored = await this.redisService.get(`login:otp:${b.identifier}`);
-      if (!stored || stored !== b.otp) {
-        throw new UnauthorizedException('Invalid or expired OTP');
-      }
-      await this.redisService.del(`login:otp:${b.identifier}`);
+    const stored = await this.redisService.get(`login:otp:${b.identifier}`);
+    if (!stored || stored !== b.otp) {
+      throw new UnauthorizedException('Invalid or expired OTP');
     }
+    await this.redisService.del(`login:otp:${b.identifier}`);
 
     const user = await this.findUserByIdentifier(b.identifier);
     if (!user) throw new UnauthorizedException('Account not found');
@@ -282,22 +377,17 @@ export class AuthService {
 
   // ── Forgot Password ──
   async sendResetOtp(identifier: string) {
-    const user = await this.findUserByIdentifier(identifier);
-    if (!user) throw new NotFoundException('Account not found with this identifier');
-
+    // Always return success to avoid revealing if account exists
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await this.redisService.set(`reset:otp:${identifier}`, otp, 300);
-    this.logger.log(`Reset OTP for ${identifier}: ${otp} (dev: accept 123456)`);
-    return { success: true, message: 'Reset OTP sent', expiresIn: 300 };
+    this.logger.log(`Reset OTP sent for ${identifier}`);
+    return { success: true, message: 'If account exists, reset OTP sent', expiresIn: 300 };
   }
 
   async verifyResetOtp(b: { identifier: string; otp: string }) {
-    const devOtp = '123456';
-    if (b.otp !== devOtp) {
-      const stored = await this.redisService.get(`reset:otp:${b.identifier}`);
-      if (!stored || stored !== b.otp) {
-        throw new UnauthorizedException('Invalid or expired OTP');
-      }
+    const stored = await this.redisService.get(`reset:otp:${b.identifier}`);
+    if (!stored || stored !== b.otp) {
+      throw new UnauthorizedException('Invalid or expired OTP');
     }
 
     const resetToken = randomBytes(32).toString('hex');
@@ -329,8 +419,28 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
     await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
 
-    const redirectUrl = `https://tradingo.in/login?socialLogin=true&accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
-    return res.redirect(redirectUrl);
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const redirectUrl = new URL('/login?socialLogin=true', frontendUrl);
+
+    // Set secure HTTP-only cookie for the access token
+    res.setCookie('accessToken', tokens.accessToken, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60, // 15 minutes
+    });
+
+    // Set refresh token as HTTP-only cookie too
+    res.setCookie('refreshToken', tokens.refreshToken, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    return res.redirect(redirectUrl.toString());
   }
 
   async verifyEmail(token: string) {
@@ -573,23 +683,16 @@ export class AuthService {
 
     await this.redisService.set(key, otp, 300); // 5 min expiry
 
-    this.logger.log(`OTP sent to ${type}: ${value} (dev mode: accept 123456)`);
+    if (type === 'mobile') {
+      const smsProvider = this.smsProviderFactory.getProvider();
+      await smsProvider.sendOtp(value, otp);
+    }
 
-    // In production, integrate with MSG91 (mobile) or Resend (email)
-    return {
-      success: true,
-      message: `OTP sent to ${value}`,
-      expiresIn: 300,
-    };
+    this.logger.log(`OTP sent to ${type}: ${value}`);
+    return { success: true, message: `OTP sent to ${value}`, expiresIn: 300 };
   }
 
   async verifyOtp(type: 'mobile' | 'email', value: string, otp: string) {
-    // Dev mode: accept 123456 as valid OTP
-    if (otp === '123456') {
-      this.logger.log(`OTP verified (dev mode) for ${type}: ${value}`);
-      return { verified: true, message: `${type} verified successfully` };
-    }
-
     const key = `otp:${type}:${value}`;
     const stored = await this.redisService.get(key);
 

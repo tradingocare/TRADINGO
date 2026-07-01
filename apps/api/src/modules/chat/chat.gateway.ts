@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ChatService } from './chat.service';
 import { ChatPresenceService } from './chat-presence.service';
 import { ChatAnalyticsService } from './chat-analytics.service';
+import { getWsCorsOrigin } from '../../common/utils/ws-cors';
 import { SendMessageDto } from './dto/chat.dto';
 
 const RATE_LIMIT_WINDOW = 60_000;
@@ -21,7 +22,7 @@ interface RateLimitEntry {
 
 @WebSocketGateway({
   namespace: '/chat',
-  cors: { origin: '*', credentials: true },
+  cors: { origin: getWsCorsOrigin(), credentials: true },
 })
 @Injectable()
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {

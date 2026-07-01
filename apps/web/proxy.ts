@@ -28,5 +28,8 @@ export const config = {
     '/register/:path*',
     '/forgot-password',
     '/reset-password',
+    '/verify-email',
+    '/verify-mobile',
+    '/onboarding',
   ],
 };

@@ -1,15 +1,38 @@
 'use client'
 
 import Link from 'next/link'
-import { Search, IndianRupee, Package, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { Search, IndianRupee, Package, ChevronLeft, ChevronRight, Star, Store, Sparkles, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useProducts } from '@/hooks'
 import SellerBadge, { resolveSellerInfo } from '@/components/shared/SellerBadge'
+import { RankBadge } from '@/components/shared/RankBadge'
+import { AiSearchCopilot } from '@/components/search/ai-search-copilot'
+import {
+  useAiSemanticSearch, useAiSearchIntent, useAiSimilarProducts,
+  useAiSimilarSuppliers, useAiPersonalizedRanking,
+  useAiBuyerRecommendations, useAiSellerRecommendations,
+  useAiSearchSummary, useAiSmartFilters, useAiCrossSellUpsell,
+} from '@/hooks/use-ai-search'
 import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth'
 
 export function SearchContent({ q }: { q: string }) {
   const [page, setPage] = useState(1)
+  const [aiSidebar, setAiSidebar] = useState(false)
   const { data, isLoading, error } = useProducts({ search: q, page, limit: 20 })
+  const products = data?.data || []
+  const total = data?.total || 0
+  const totalPages = data?.totalPages || 1
+
+  const semanticSearch = useAiSemanticSearch()
+  const searchIntent = useAiSearchIntent()
+  const similarProducts = useAiSimilarProducts()
+  const similarSuppliers = useAiSimilarSuppliers()
+  const personalizedRanking = useAiPersonalizedRanking()
+  const buyerRecommendations = useAiBuyerRecommendations()
+  const sellerRecommendations = useAiSellerRecommendations()
+  const searchSummary = useAiSearchSummary()
+  const smartFilters = useAiSmartFilters()
+  const crossSellUpsell = useAiCrossSellUpsell()
 
   if (!q) {
     return (
@@ -64,10 +87,6 @@ export function SearchContent({ q }: { q: string }) {
     )
   }
 
-  const products = data?.data || []
-  const total = data?.total || 0
-  const totalPages = data?.totalPages || 1
-
   return (
     <>
       <section className="pt-24 pb-6">
@@ -82,12 +101,46 @@ export function SearchContent({ q }: { q: string }) {
               </h1>
               <p className="text-sm text-white/40">{total} result{total !== 1 ? 's' : ''} found</p>
             </div>
+            <button onClick={() => setAiSidebar(!aiSidebar)}
+              className={`ml-auto flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${aiSidebar ? 'text-orange-300 bg-orange-500/15 border border-orange-400/30' : 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10'}`}>
+              <Sparkles className="h-3.5 w-3.5" />
+              AI Search
+            </button>
           </div>
         </div>
       </section>
 
       <section className="py-6 pb-20">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className={`mx-auto ${aiSidebar ? 'max-w-7xl' : 'max-w-7xl'} px-4`}>
+          <div className={`flex gap-6 ${aiSidebar ? 'flex-col lg:flex-row' : ''}`}>
+          {aiSidebar && (
+            <div className="lg:w-80 shrink-0">
+              <div className="rounded-2xl p-4 sticky top-24"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-white/50">AI Copilot</span>
+                  <button onClick={() => setAiSidebar(false)} className="text-white/30 hover:text-white/60">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <AiSearchCopilot
+                  isGenerating={semanticSearch.isPending || searchIntent.isPending || similarProducts.isPending || similarSuppliers.isPending || personalizedRanking.isPending || buyerRecommendations.isPending || sellerRecommendations.isPending || searchSummary.isPending || smartFilters.isPending || crossSellUpsell.isPending}
+                  contextData={{ query: q, totalResults: total, topResults: products?.slice(0, 5) }}
+                  onSemanticSearch={(d) => semanticSearch.mutateAsync(d)}
+                  onSearchIntent={(d) => searchIntent.mutateAsync(d)}
+                  onSimilarProducts={(d) => similarProducts.mutateAsync(d)}
+                  onSimilarSuppliers={(d) => similarSuppliers.mutateAsync(d)}
+                  onPersonalizedRanking={(d) => personalizedRanking.mutateAsync(d)}
+                  onBuyerRecommendations={(d) => buyerRecommendations.mutateAsync(d)}
+                  onSellerRecommendations={(d) => sellerRecommendations.mutateAsync(d)}
+                  onSearchSummary={(d) => searchSummary.mutateAsync(d)}
+                  onSmartFilters={(d) => smartFilters.mutateAsync(d)}
+                  onCrossSellUpsell={(d) => crossSellUpsell.mutateAsync(d)}
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
           {products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -155,6 +208,17 @@ export function SearchContent({ q }: { q: string }) {
                             }}>
                             {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
                           </span>
+                          {product.trustScoreSnapshot != null && product.trustScoreSnapshot > 0 && (
+                            <span className="px-2 py-1 text-[10px] font-semibold rounded-full flex items-center gap-1"
+                              style={{
+                                background: product.trustScoreSnapshot >= 80 ? 'rgba(245,158,11,0.12)' : product.trustScoreSnapshot >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(107,114,128,0.12)',
+                                border: `1px solid ${product.trustScoreSnapshot >= 80 ? 'rgba(245,158,11,0.3)' : product.trustScoreSnapshot >= 60 ? 'rgba(59,130,246,0.3)' : 'rgba(107,114,128,0.3)'}`,
+                                color: product.trustScoreSnapshot >= 80 ? '#f59e0b' : product.trustScoreSnapshot >= 60 ? '#3b82f6' : '#6b7280',
+                              }}>
+                              <Star size={10} fill="currentColor" />
+                              {product.trustScoreSnapshot}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -179,6 +243,8 @@ export function SearchContent({ q }: { q: string }) {
               )}
             </>
           )}
+        </div>
+          </div>
         </div>
       </section>
 

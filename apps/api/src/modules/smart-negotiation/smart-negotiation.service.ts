@@ -470,4 +470,55 @@ export class SmartNegotiationService {
     ]);
     return buildPaginatedResult(data, total, query);
   }
+
+  // ─── PERFORMANCE METRICS ─────────────────────────────────────
+
+  async getPerformanceMetrics(companyId: string, startDate?: string, endDate?: string) {
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate);
+    if (endDate) dateFilter.lte = new Date(endDate);
+    const where: any = { OR: [{ buyerCompanyId: companyId }, { sellerCompanyId: companyId }] };
+    if (startDate || endDate) where.createdAt = dateFilter;
+
+    const [total, byStatus, acceptedNegs, versionCounts] = await Promise.all([
+      this.prisma.negotiation.count({ where }),
+      this.prisma.negotiation.groupBy({ by: ['status'], _count: true, where }),
+      this.prisma.negotiation.findMany({
+        where: { ...where, acceptedAt: { not: null } },
+        select: { id: true, createdAt: true, acceptedAt: true },
+      }),
+      this.prisma.negotiationVersion.groupBy({
+        by: ['negotiationId'],
+        _count: true,
+        where: { negotiation: { ...where } },
+      }),
+    ]);
+
+    const successCount = byStatus.find(s => s.status === 'ACCEPTED')?._count || 0;
+    const rejectedCount = byStatus.find(s => s.status === 'REJECTED')?._count || 0;
+    const cancelledCount = byStatus.find(s => s.status === 'CANCELLED')?._count || 0;
+
+    let totalDurationHours = 0;
+    let durCount = 0;
+    for (const n of acceptedNegs) {
+      if (n.acceptedAt) {
+        totalDurationHours += (n.acceptedAt.getTime() - n.createdAt.getTime()) / 3600000;
+        durCount++;
+      }
+    }
+
+    const avgVersions = versionCounts.length > 0
+      ? Math.round((versionCounts.reduce((s, v) => s + v._count, 0) / versionCounts.length) * 100) / 100
+      : 0;
+
+    return {
+      totalNegotiations: total,
+      byStatus: Object.fromEntries(byStatus.map(s => [s.status, s._count])),
+      successRate: total > 0 ? Math.round((successCount / total) * 10000) / 100 : 0,
+      rejectionRate: total > 0 ? Math.round((rejectedCount / total) * 10000) / 100 : 0,
+      cancellationRate: total > 0 ? Math.round((cancelledCount / total) * 10000) / 100 : 0,
+      avgDurationHours: durCount > 0 ? Math.round((totalDurationHours / durCount) * 100) / 100 : 0,
+      avgCounterOffers: avgVersions > 0 ? avgVersions - 1 : 0,
+    };
+  }
 }

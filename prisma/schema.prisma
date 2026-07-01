@@ -16,6 +16,8 @@ enum Role {
   SUPER_ADMIN
   ADMIN
   MANAGER
+  SELLER
+  BUYER
   VIEWER
 }
 
@@ -84,6 +86,20 @@ enum VerificationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum ReputationEventType {
+  BUYER_REGISTERED
+  BUYER_VERIFIED
+  RFQ_CREATED
+  QUOTE_ACCEPTED
+  ORDER_COMPLETED
+  ORDER_CANCELLED
+  DISPUTE_OPENED
+  DISPUTE_RESOLVED
+  DELIVERY_CONFIRMED
+  MEMBERSHIP_PURCHASED
+  GOCASH_REWARDS_EARNED
 }
 
 enum SubscriptionStatus {
@@ -163,6 +179,13 @@ enum PlanType {
   TRADE_PREMIUM
   TRADE_ELITE
   TRADBUY
+}
+
+enum PlanVisibility {
+  DRAFT
+  LAUNCH
+  PUBLIC
+  ARCHIVED
 }
 
 enum RfqType {
@@ -282,6 +305,412 @@ enum CreditTransactionType {
   EXPIRED
   ADMIN_CREDIT
   ADMIN_DEBIT
+}
+
+// ============================================================================
+// GOCASH (GoCash) Rewards & Wallet Module
+// ============================================================================
+
+model GOCASH_Wallet {
+  id                 String      @id @default(uuid())
+  userId             String      @unique
+  companyId         String?    // Optional for buyer wallets
+  type              GOCASHWalletType
+  currentBalance    Decimal    @default(0) @db.Decimal(10, 2)
+  availableBalance   Decimal    @default(0) @db.Decimal(10, 2)
+  pendingBalance     Decimal    @default(0) @db.Decimal(10, 2)
+  lockedBalance      Decimal    @default(0) @db.Decimal(10, 2)
+  expiredBalance     Decimal    @default(0) @db.Decimal(10, 2)
+  lifetimeEarned     Decimal    @default(0) @db.Decimal(10, 2)
+  lifetimeRedeemed   Decimal    @default(0) @db.Decimal(10, 2)
+  lifetimeExpired    Decimal    @default(0) @db.Decimal(10, 2)
+  phoneNumber       String?
+  kycVerified        Boolean    @default(false)
+  status            GOCASHWalletStatus @default(ACTIVE)
+  lockedUntil       DateTime?
+  createdAt         DateTime   @default(now())
+  
+  // Internal relations
+  transactions       GOCASH_Transaction[]
+  redemptions       GOCASH_Redemption[]
+  
+  // Indexes
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model GOCASH_Transaction {
+  id                 String      @id @default(uuid())
+  walletId           String
+  direction          GOCASHLedgerDirection
+  status             GOCASHLedgerStatus @default(SUCCESS)
+  type              GOCASHTransactionType
+  amount            Decimal    @db.Decimal(10, 2)
+  balanceBefore      Decimal    @db.Decimal(10, 2)
+  balanceAfter       Decimal    @db.Decimal(10, 2)
+  currency           String     @default("GOCASH")
+  reference          String?    // external reference (e.g., invoice ID)
+  referenceType     String?    // module/entity type
+  referenceId       String?    // ID of related entity
+  sourceType        String?    // sub-type within module
+  sourceSystem      String?    // TRADGO, AUTH, etc.
+  idempotencyKey     String?   @unique
+  reason            String
+  notes             String?
+  actorId           String      // Who initiated the transaction
+  actorType         String      // USER, ADMIN, SYSTEM
+  approvedBy        String?    // User ID who approved if needed
+  approvedAt        DateTime?
+  createdAt         DateTime   @default(now())
+  
+  // Internal relations
+  wallet             GOCASH_Wallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([walletId])
+  @@index([createdAt])
+  @@index([type])
+  @@index([direction])
+  @@index([status])
+  @@index([idempotencyKey])
+  @@index([referenceId])
+  @@index([walletId, createdAt])
+}
+
+model RewardCampaign {
+  id                 String      @id @default(uuid())
+  name               String
+  description        String?
+  type               GOCASH_CampaignType
+  startDate          DateTime
+  endDate            DateTime
+  budget             Decimal    @db.Decimal(10, 2) @default(0)
+  remainingBudget     Decimal    @db.Decimal(10, 2)
+  requirement        String?    // Eligibility criteria
+  rewardAmount       Decimal    @db.Decimal(10, 2)
+  rewardType         String      // FIXED_AMOUNT, PERCENTAGE, SPECIFIC_ITEM
+  maxClaims           Int        @default(0) // 0 means unlimited
+  claimedCount        Int        @default(0)
+  status             GOCASH_CampaignStatus @default(ACTIVE)
+  companyId          String?
+  createdBy          String
+  
+  // Plain FK references — no Prisma relations (avoids modifying locked User/Company models)
+  
+  // Indexes
+  @@index([type])
+  @@index([status])
+  @@index([endDate])
+  @@index([companyId])
+}
+
+model ReferralProgram {
+  id                 String      @id @default(uuid())
+  companyId          String
+  name               String
+  description        String?
+  referralCode       String     @unique
+  rewardAmount       Decimal    @db.Decimal(10, 2) @default(0)
+  commissionRate     Decimal    @db.Decimal(5, 2) @default(0) // for seller referrals
+  status             GOCASH_ReferralStatus @default(ACTIVE)
+  maxReferrals       Int        @default(0) // 0 means unlimited
+  usedCount          Int        @default(0)
+  createdBy          String
+  
+  // Plain FK references — no Prisma relations (avoids modifying locked User/Company models)
+  
+  // Indexes
+  @@index([companyId])
+  @@index([referralCode])
+  @@index([status])
+}
+
+// ============================================================================
+// Referral Engine Models
+// ============================================================================
+
+model ReferralCode {
+  id                 String             @id @default(uuid())
+  code               String             @unique
+  userId             String
+  companyId          String?
+  type               ReferralCodeType
+  status             ReferralCodeStatus @default(ACTIVE)
+  rewardAmount       Decimal?           @db.Decimal(10, 2)
+  rewardType         String?            // FIXED, PERCENTAGE, TIER
+  maxUsage           Int                @default(0) // 0 = unlimited
+  currentUsage       Int                @default(0)
+  expiresAt          DateTime?
+  metadata           Json?
+  createdBy          String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Internal relations
+  usages             ReferralUsage[]
+
+  // Indexes
+  @@index([userId])
+  @@index([code])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model ReferralUsage {
+  id                 String              @id @default(uuid())
+  codeId             String
+  referrerUserId     String
+  refereeUserId      String?
+  refereeEmail       String
+  status             ReferralUsageStatus @default(PENDING)
+  source             String?             // SIGNUP, CHECKOUT, CAMPAIGN, MANUAL
+  ipAddress          String?
+  userAgent          String?
+  deviceId           String?
+  metadata           Json?
+  referredAt         DateTime            @default(now())
+  completedAt        DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  // Internal relations
+  code               ReferralCode       @relation(fields: [codeId], references: [id], onDelete: Restrict)
+  rewards            ReferralReward[]
+
+  // Indexes
+  @@index([codeId])
+  @@index([referrerUserId])
+  @@index([refereeEmail])
+  @@index([status])
+  @@index([ipAddress])
+  @@index([deviceId])
+  @@index([referredAt])
+}
+
+model ReferralReward {
+  id                 String              @id @default(uuid())
+  usageId            String
+  referrerUserId     String
+  refereeUserId      String?
+  amount             Decimal             @db.Decimal(10, 2)
+  type               String              // REFERRER, REFEREE
+  status             ReferralRewardStatus @default(PENDING)
+  transactionId      String?             // links to GOCASH_Transaction
+  paidAt             DateTime?
+  createdAt          DateTime            @default(now())
+
+  // Internal relations
+  usage              ReferralUsage       @relation(fields: [usageId], references: [id], onDelete: Restrict)
+
+  // Indexes
+  @@index([usageId])
+  @@index([referrerUserId])
+  @@index([status])
+  @@index([transactionId])
+}
+
+model ReferralAudit {
+  id                 String      @id @default(uuid())
+  usageId            String?
+  action             String      // CREATED, APPLIED, REWARDED, FAILED, REJECTED, BLACKLISTED
+  details            String?
+  ipAddress          String?
+  actorId            String?
+  metadata           Json?
+  createdAt          DateTime    @default(now())
+
+  // Indexes
+  @@index([usageId])
+  @@index([action])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model ReferralRule {
+  id                 String      @id @default(uuid())
+  name               String
+  description        String?
+  type               String      // SIGNUP, MEMBERSHIP, PURCHASE, CAMPAIGN
+  referrerReward     Decimal     @db.Decimal(10, 2)
+  refereeReward      Decimal?    @db.Decimal(10, 2)
+  rewardType         String      // FIXED, PERCENTAGE
+  minAmount          Decimal?    @db.Decimal(10, 2)
+  maxAmount          Decimal?    @db.Decimal(10, 2)
+  conditions         Json?       // Eligibility conditions
+  status             GOCASH_ReferralStatus @default(ACTIVE)
+  startDate          DateTime?
+  endDate            DateTime?
+  createdBy          String
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  // Indexes
+  @@index([type])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model ReferralBlacklist {
+  id                 String                @id @default(uuid())
+  type               ReferralBlacklistType
+  value              String
+  reason             String?
+  createdBy          String
+  expiresAt          DateTime?
+  createdAt          DateTime              @default(now())
+
+  // Indexes
+  @@index([type])
+  @@index([value])
+  @@index([expiresAt])
+}
+
+model GOCASH_Redemption {
+  id                 String      @id @default(uuid())
+  walletId           String
+  amount             Decimal    @db.Decimal(10, 2)
+  redemptionType     GOCASH_RedemptionType
+  status             GOCASH_RedemptionStatus @default(PENDING)
+  reference          String?    // Invoice/ID reference
+  redeemedAt         DateTime?   // When redeemed (if approved)
+  approvedAt         DateTime?   // When approved
+  rejectedAt         DateTime?   // When rejected
+  rejectionReason     String?    // If rejected
+  approvedBy         String?    // Admin user ID
+  createdAt          DateTime   @default(now())
+  
+  // Internal relations
+  wallet             GOCASH_Wallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([walletId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum GOCASHWalletType {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum GOCASHWalletStatus {
+  ACTIVE
+  LOCKED
+  SUSPENDED
+  EXPIRED
+}
+
+enum GOCASHLedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+enum GOCASHLedgerStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
+enum GOCASHTransactionType {
+  SIGNUP_BONUS
+  MEMBERSHIP_BONUS
+  MEMBERSHIP_RENEWAL
+  REFERRAL_REWARD
+  BUYER_CASHBACK
+  SELLER_CASHBACK
+  CAMPAIGN_REWARD
+  FESTIVAL_REWARD
+  MANUAL_CREDIT
+  MANUAL_DEBIT
+  REFUND
+  ADJUSTMENT
+  EXPIRY
+  REDEMPTION
+  TRANSFER
+  ADMIN_CORRECTION
+}
+
+enum GOCASH_CampaignType {
+  MEMBERSHIP
+  TRANSACTION
+  REFERRAL
+  FESTIVAL
+  CUSTOM
+}
+
+enum GOCASH_CampaignStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum GOCASH_ReferralStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ReferralCodeType {
+  BUYER
+  SELLER
+  MEMBERSHIP
+  CAMPAIGN
+  INVITATION
+  AFFILIATE
+}
+
+enum ReferralCodeStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+enum ReferralUsageStatus {
+  PENDING
+  COMPLETED
+  REWARDED
+  FAILED
+  REJECTED
+}
+
+enum ReferralRewardStatus {
+  PENDING
+  PAID
+  FAILED
+  REVERSED
+}
+
+enum ReferralBlacklistType {
+  EMAIL
+  IP
+  DEVICE
+  EMAIL_DOMAIN
+}
+
+enum GOCASH_RedemptionType {
+  PLANS
+  RFQ_PACKS
+  FEATURED_LISTINGS
+  SPONSORED_LISTINGS
+  ORDER_DISCOUNT
+  CASH_WITHDRAWAL
+}
+
+enum GOCASH_RedemptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum RfqAnalyticsEventType {
@@ -446,6 +875,8 @@ model User {
   permissions  String[]  @default([])
   isActive     Boolean   @default(true)
   emailVerifiedAt DateTime?
+  mobileVerifiedAt DateTime?
+  verificationLevel VerificationLevel @default(LEVEL_0)
   deletedAt    DateTime?
   loginAttempts Int      @default(0)
   lockedUntil  DateTime?
@@ -467,6 +898,10 @@ model User {
   rmCertificationReviews      CompanyCertification[] @relation("CertificationReviews")
   rfqsCreated                 Rfq[]                   @relation("RfqCreators")
   quotesSubmitted             Quote[]                 @relation("QuoteCreators")
+  userVerifications           UserVerification[]      @relation("UserVerificationUser")
+  userVerificationSubmissions UserVerification[]      @relation("UserVerificationSubmitter")
+  userVerificationReviews     UserVerification[]      @relation("UserVerificationReviews")
+  reputationEvents            ReputationEvent[]
 
   @@index([status])
   chatParticipants            ConversationParticipant[]
@@ -476,7 +911,8 @@ model User {
    disputeMessages             DisputeMessage[]
    productApprovals            ProductApproval[]
    reportedMessages            ReportedMessage[]   @relation("ReportedBy")
-   reviewedReports             ReportedMessage[]   @relation("ReviewedBy")
+    reviewedReports             ReportedMessage[]   @relation("ReviewedBy")
+    crmLeads                    CrmLead[]           @relation("CrmLeadOwner")
 }
 
 model Session {
@@ -485,6 +921,9 @@ model Session {
   refreshToken String   @unique
   userAgent    String?
   ipAddress    String?
+  deviceInfo   String?
+  isActive     Boolean  @default(true)
+  lastUsedAt   DateTime @default(now())
   expiresAt    DateTime
   createdAt    DateTime @default(now())
 
@@ -492,6 +931,7 @@ model Session {
 
   @@index([userId])
   @@index([refreshToken])
+  @@index([isActive])
 }
 
 model AuditLog {
@@ -649,6 +1089,7 @@ model Company {
   subscriptionActivatedAt DateTime?
   subscriptionExpiresAt DateTime?
   subscriptionGraceStart DateTime?
+  currentPlanId String?
   goCashBalance      Int              @default(0)
   certifications   Json?
   gallery          Json?
@@ -683,6 +1124,7 @@ model Company {
   subscriptionEvents SubscriptionEvent[]
   planHistory      PlanHistory[]
   couponRedemptions CouponRedemption[]
+  currentPlan      MembershipPlan? @relation("CurrentPlan", fields: [currentPlanId], references: [planId], onDelete: SetNull)
   referralsGiven    Referral[]           @relation("ReferralsGiven")
   referralsReceived Referral[]           @relation("ReferralsReceived")
   assignedRm       User?                @relation("RMManagedCompanies", fields: [assignedRmId], references: [id], onDelete: SetNull)
@@ -692,6 +1134,7 @@ model Company {
   quotesSubmitted  Quote[]              @relation("SellerQuotes")
   rfqCreditLedgers RfqCreditLedger[]
   rfqCreditPacks   RfqCreditPack[]
+  aiCreditUsage    AiCreditUsage[]
   rfqAnalytics     RfqAnalytics?
   rfqAnalyticsEvents RfqAnalyticsEvent[]
   chatParticipants   ConversationParticipant[]
@@ -725,7 +1168,14 @@ model Company {
     buyerShipments     Shipment[]         @relation("ShipmentBuyer")
     sellerShipments    Shipment[]         @relation("ShipmentSeller")
     buyerDeliveries    Delivery[]         @relation("DeliveryBuyer")
-    sellerDeliveries   Delivery[]         @relation("DeliverySeller")
+    sellerDeliveries    Delivery[]         @relation("DeliverySeller")
+    advertisements      Advertisement[]
+    crmLeads            CrmLead[]      @relation("CrmLeadCompany")
+    buyerCredit         BuyerCredit?
+    creditNotes         CreditNote[]
+    debitNotes          DebitNote[]
+    collectionNotes     CollectionNote[]
+    collectionTimeline  CollectionTimelineEvent[]
 
   @@index([slug])
   @@index([organizationId])
@@ -839,6 +1289,43 @@ model CompanyVerificationDocument {
   @@index([documentType])
 }
 
+model UserVerification {
+  id          String             @id @default(uuid())
+  userId      String
+  level       VerificationLevel
+  status      VerificationStatus @default(PENDING)
+  submittedBy String
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  user        User               @relation("UserVerificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  submitter   User               @relation("UserVerificationSubmitter", fields: [submittedBy], references: [id], onDelete: Restrict)
+  reviewer    User?              @relation("UserVerificationReviews", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  documents   UserVerificationDocument[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model UserVerificationDocument {
+  id             String         @id @default(uuid())
+  verificationId String
+  documentType   DocumentType
+  documentUrl    String
+  status         VerificationStatus @default(PENDING)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  verification   UserVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@index([verificationId])
+  @@index([documentType])
+}
+
 model TradTrustScore {
   id          String   @id @default(uuid())
   companyId   String
@@ -851,6 +1338,22 @@ model TradTrustScore {
 
   @@index([companyId])
   @@index([score])
+}
+
+model ReputationEvent {
+  id            String             @id @default(uuid())
+  userId        String
+  type          ReputationEventType
+  referenceId   String?
+  referenceType String?
+  metadata      Json?
+  createdAt     DateTime           @default(now())
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([type])
 }
 
 model CompanyOnboardingLog {
@@ -1036,24 +1539,44 @@ model SubscriptionEvent {
 }
 
 model MembershipPlan {
-  id          String   @id @default(uuid())
-  planId      String   @unique
-  name        String
-  description String?
-  pricePlanA  Int
-  pricePlanB  Int
-  pricePlanC  Int
-  duration    Int      @default(12)
-  features    Json
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String         @id @default(uuid())
+  planId           String         @unique
+  name             String
+  description      String?
+  pricePlanA       Int
+  pricePlanB       Int
+  pricePlanC       Int
+  duration         Int            @default(12)
+  features         Json
+  sortOrder        Int            @default(0)
+  isActive         Boolean        @default(true)
 
-  planFeatures PlanFeature[]
+  // Dynamic membership engine fields
+  visibility       PlanVisibility @default(DRAFT)
+  isFree           Boolean        @default(false)
+  badgeText        String?
+  countryPricing   Json?
+  upgradeRules     Json?
+  downgradeRules   Json?
+  gracePeriodDays  Int            @default(0)
+  renewalRules     Json?
+  trialPeriodDays  Int            @default(0)
+  launchOfferEndsAt DateTime?
+  scheduledVisibility PlanVisibility?
+  autoPublishAt    DateTime?
+  autoHideAt       DateTime?
+  metadata         Json?
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  planFeatures     PlanFeature[]
+  planAddons       PlanAddon[]
+  companies        Company[]      @relation("CurrentPlan")
 
   @@index([isActive])
   @@index([sortOrder])
+  @@index([visibility])
 }
 
 model Product {
@@ -1095,6 +1618,9 @@ model Product {
   deletedAt           DateTime?
   createdBy           String
   updatedBy           String?
+  metaTitle           String?
+  metaDescription     String?
+  focusKeywords       String[]
 
   company           Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   category          Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -1116,6 +1642,10 @@ model Product {
   productBrand      ProductBrand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
   brandId           String?
   requirementItems  RequirementListItem[]
+  translations      ProductTranslation[]
+  qualityScores     CatalogQualityScore[]
+  aiCache           ProductAiCache[]
+  aiJobs            AiJob[]
 
   @@index([slug])
   @@index([companyId])
@@ -2318,6 +2848,8 @@ model Invoice {
   items           InvoiceItem[]
   taxBreakdown    TaxBreakdown[]
   history         InvoiceHistory[]
+  creditNotes     CreditNote[]
+  debitNotes      DebitNote[]
 
   @@index([companyId])
   @@index([invoiceNumber])
@@ -2457,6 +2989,24 @@ model PlanFeature {
   @@index([planId, category])
 }
 
+model PlanAddon {
+  id          String         @id @default(uuid())
+  planId      String
+  name        String
+  description String?
+  price       Int
+  duration    Int            @default(1)
+  isActive    Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  plan        MembershipPlan @relation(fields: [planId], references: [planId], onDelete: Cascade)
+
+  @@index([planId])
+  @@index([isActive])
+}
+
 model PlanHistory {
   id         String         @id @default(uuid())
   companyId  String
@@ -2472,6 +3022,32 @@ model PlanHistory {
 
   @@index([companyId])
   @@index([companyId, createdAt])
+}
+
+model PlanAuditLog {
+  id              String   @id @default(uuid())
+  planId          String
+  action          String
+  field           String?
+  oldValue        String?
+  newValue        String?
+  changedBy       String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@index([planId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
 }
 
 model ProcessedWebhookEvent {
@@ -4806,4 +5382,965 @@ model DeliveryDocument {
 
   @@index([deliveryId])
   @@index([deliveryId, docType])
+}
+
+// ─── Campaign Engine ─────────────────────────────────────────
+
+enum CampaignType {
+  SIGNUP
+  MEMBERSHIP
+  CASHBACK
+  FESTIVAL
+  REFERRAL
+  SELLER
+  BUYER
+  CATEGORY
+  PRODUCT
+  ORDER
+  COUPON
+  LIMITED_TIME
+  AI
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+  EXPIRED
+}
+
+enum CampaignTargetType {
+  BUYER
+  SELLER
+  COMPANY
+  MEMBERSHIP
+  PRODUCT_CATEGORY
+  PRODUCT
+  STATE
+  CITY
+  INDUSTRY
+  REVENUE_TIER
+  GLOBAL_REGION
+}
+
+enum CampaignClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  FAILED
+}
+
+model Campaign {
+  id              String         @id @default(uuid())
+  name            String
+  description     String?
+  type            CampaignType
+  status          CampaignStatus @default(DRAFT)
+  priority        Int            @default(0)
+  startDate       DateTime
+  endDate         DateTime
+  budget          Decimal        @db.Decimal(12, 2) @default(0)
+  spentBudget     Decimal        @db.Decimal(12, 2) @default(0)
+  remainingBudget  Decimal       @db.Decimal(12, 2) @default(0)
+  maxRewards      Int            @default(0)
+  dailyLimit      Int            @default(0)
+  perUserLimit    Int            @default(0)
+  perCompanyLimit Int            @default(0)
+  maxClaims       Int            @default(0)
+  currentClaims   Int            @default(0)
+  rewardAmount    Decimal        @db.Decimal(10, 2) @default(0)
+  rewardType      String         @default("FIXED_AMOUNT")
+  eligibility     Json?
+  targetAudience  Json?
+  metadata        Json?
+  companyId       String?
+  createdBy       String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  rules     CampaignRule[]
+  targets   CampaignTarget[]
+  claims    CampaignClaim[]
+  analytics CampaignAnalytics[]
+
+  @@index([type])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@index([priority])
+  @@index([companyId])
+  @@index([createdBy])
+}
+
+model CampaignRule {
+  id               String   @id @default(uuid())
+  campaignId       String
+  priority         Int      @default(0)
+  conditionField   String
+  conditionOperator String
+  conditionValue   Json
+  actionType       String   // REWARD, DISCOUNT, BONUS, MULTIPLIER
+  actionValue      Json
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  campaign         Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([campaignId, priority])
+}
+
+model CampaignTarget {
+  id         String           @id @default(uuid())
+  campaignId String
+  targetType CampaignTargetType
+  targetId   String
+  isInclude  Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+
+  campaign   Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([campaignId, targetType])
+  @@index([targetType, targetId])
+}
+
+model CampaignClaim {
+  id            String             @id @default(uuid())
+  campaignId    String
+  userId        String
+  companyId     String?
+  claimType     String             // REWARD, DISCOUNT, CASHBACK
+  amount        Decimal            @db.Decimal(10, 2) @default(0)
+  status        CampaignClaimStatus @default(PENDING)
+  transactionId String?
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?
+  claimedAt     DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  campaign      Campaign           @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+
+  @@index([campaignId])
+  @@index([userId])
+  @@index([companyId])
+  @@index([campaignId, userId])
+  @@index([status])
+  @@index([transactionId])
+  @@index([ipAddress])
+  @@index([claimedAt])
+}
+
+model CampaignAnalytics {
+  id              String   @id @default(uuid())
+  campaignId      String
+  date            DateTime
+  claims          Int      @default(0)
+  approved        Int      @default(0)
+  rejected        Int      @default(0)
+  paid            Int      @default(0)
+  rewardAmount    Decimal  @db.Decimal(12, 2) @default(0)
+  uniqueUsers     Int      @default(0)
+  conversionCount Int      @default(0)
+  conversionRate  Decimal  @db.Decimal(5, 2) @default(0)
+  createdAt       DateTime @default(now())
+
+  campaign        Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+  @@index([campaignId])
+  @@index([date])
+}
+
+// ─── Enterprise Advertising Platform ────────────────────────────
+
+enum AdType {
+  SPONSORED_PRODUCT
+  SPONSORED_COMPANY
+  SPONSORED_CATEGORY
+  HOMEPAGE_BANNER
+  CATEGORY_BANNER
+  SEARCH_KEYWORD_AD
+  CITY_PROMOTION
+  FEATURED_SELLER
+  FEATURED_BRAND
+}
+
+enum AdStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  EXPIRED
+  CANCELLED
+  REJECTED
+  COMPLETED
+}
+
+enum AdPricingModel {
+  CPC
+  CPM
+  FIXED
+}
+
+enum AdTargetType {
+  COUNTRY
+  STATE
+  CITY
+  CATEGORY
+  PRODUCT
+  KEYWORD
+  INDUSTRY
+}
+
+model Advertisement {
+  id            String         @id @default(uuid())
+  companyId     String
+  type          AdType
+  status        AdStatus       @default(DRAFT)
+  pricingModel  AdPricingModel
+  title         String?
+  description   String?
+  imageUrl      String?
+  targetUrl     String?
+  dailyBudget   Decimal        @db.Decimal(12, 2) @default(0)
+  totalBudget   Decimal        @db.Decimal(12, 2) @default(0)
+  spentBudget   Decimal        @db.Decimal(12, 2) @default(0)
+  cpc           Decimal?       @db.Decimal(10, 2)
+  cpm           Decimal?       @db.Decimal(10, 2)
+  fixedPrice    Decimal?       @db.Decimal(12, 2)
+  startDate     DateTime
+  endDate       DateTime
+  autoPause     Boolean        @default(false)
+  autoResume    Boolean        @default(false)
+  autoStop      Boolean        @default(false)
+  productId     String?
+  categoryId    String?
+  keyword       String?
+  city          String?
+  brandId       String?
+  priority      Int            @default(0)
+  impressions   Int            @default(0)
+  clicks        Int            @default(0)
+  metadata      Json?
+  approvedBy    String?
+  approvedAt    DateTime?
+  rejectedReason String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  targets       AdTarget[]
+  analytics     AdAnalytics[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([type, status])
+  @@index([startDate, endDate])
+}
+
+model AdTarget {
+  id              String       @id @default(uuid())
+  advertisementId String
+  targetType      AdTargetType
+  targetValue     String
+  createdAt       DateTime     @default(now())
+
+  advertisement   Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
+
+  @@index([advertisementId])
+  @@index([targetType, targetValue])
+}
+
+model AdAnalytics {
+  id              String       @id @default(uuid())
+  advertisementId String
+  date            DateTime
+  impressions     Int          @default(0)
+  clicks          Int          @default(0)
+  spend           Decimal      @db.Decimal(12, 2) @default(0)
+  conversions     Int          @default(0)
+  conversionValue Decimal?     @db.Decimal(12, 2)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  advertisement   Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
+
+  @@unique([advertisementId, date])
+  @@index([advertisementId])
+  @@index([date])
+}
+
+// ─── Enterprise CRM & Lead Management ──────────────────────────
+
+enum CrmLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  QUOTATION_SENT
+  NEGOTIATION
+  WON
+  LOST
+  DORMANT
+}
+
+enum CrmPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum CrmLeadSource {
+  REFERRAL
+  WEBSITE
+  SOCIAL_MEDIA
+  COLD_CALL
+  EVENT
+  PARTNER
+  DIRECT
+  OTHER
+}
+
+enum CrmFollowUpStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+  ESCALATED
+}
+
+enum CrmTaskType {
+  CALL
+  MEETING
+  REMINDER
+  EMAIL
+  WHATSAPP
+  CUSTOM
+}
+
+enum CrmTaskStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model CrmLead {
+  id               String       @id @default(uuid())
+  companyId        String?
+  name             String
+  email            String?
+  mobile           String?
+  source           CrmLeadSource?
+  status           CrmLeadStatus @default(NEW)
+  stageId          String?
+  priority         CrmPriority   @default(MEDIUM)
+  ownerId          String?
+  score            Int           @default(0)
+  estimatedValue   Decimal?      @db.Decimal(12, 2)
+  description      String?
+  convertedAt      DateTime?
+  convertedCompanyId String?
+  lostReason       String?
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  company          Company?      @relation("CrmLeadCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  owner            User?         @relation("CrmLeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  stage            CrmPipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  followUps        CrmFollowUp[]
+  notes            CrmNote[]
+  tasks            CrmTask[]
+  timeline         CrmTimelineEvent[]
+
+  @@index([companyId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([stageId])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model CrmFollowUp {
+  id          String           @id @default(uuid())
+  leadId      String
+  title       String
+  description String?
+  dueDate     DateTime
+  completedAt DateTime?
+  status      CrmFollowUpStatus @default(PENDING)
+  reminderSent Boolean         @default(false)
+  escalatedTo String?
+  escalatedAt DateTime?
+  assignedTo  String?
+  createdBy   String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  lead        CrmLead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([dueDate])
+  @@index([status])
+  @@index([assignedTo])
+}
+
+model CrmNote {
+  id          String      @id @default(uuid())
+  leadId      String
+  content     String
+  isPinned    Boolean     @default(false)
+  mentions    String[]
+  attachments Json?
+  createdBy   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  lead        CrmLead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model CrmTask {
+  id          String       @id @default(uuid())
+  leadId      String
+  type        CrmTaskType
+  title       String
+  description String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  status      CrmTaskStatus @default(PENDING)
+  assignedTo  String?
+  createdBy   String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  lead        CrmLead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([dueDate])
+  @@index([assignedTo])
+  @@index([type])
+}
+
+model CrmTimelineEvent {
+  id          String   @id @default(uuid())
+  leadId      String
+  type        String
+  description String?
+  metadata    Json?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  lead        CrmLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([leadId, createdAt])
+  @@index([type])
+}
+
+model CrmPipelineStage {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  order     Int      @default(0)
+  color     String?
+  isDefault Boolean  @default(false)
+  isWon     Boolean  @default(false)
+  isLost    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads     CrmLead[]
+
+  @@index([order])
+}
+
+// ──────────────────────────────────────────────
+// Phase 16.5 — Enterprise Finance Engine
+// ──────────────────────────────────────────────
+
+enum CreditStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+  CLOSED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum CreditApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum CreditNoteStatus {
+  DRAFT
+  ISSUED
+  APPLIED
+  CANCELLED
+}
+
+enum DebitNoteStatus {
+  DRAFT
+  ISSUED
+  APPLIED
+  CANCELLED
+}
+
+enum CollectionActionType {
+  CALL
+  EMAIL
+  VISIT
+  LETTER
+  PAYMENT_PLAN
+  ESCALATION
+  LEGAL
+}
+
+model BuyerCredit {
+  id              String       @id @default(uuid())
+  companyId       String       @unique
+  creditLimit     Decimal      @default(0) @db.Decimal(14, 2)
+  availableCredit Decimal      @default(0) @db.Decimal(14, 2)
+  usedCredit      Decimal      @default(0) @db.Decimal(14, 2)
+  blockedCredit   Decimal      @default(0) @db.Decimal(14, 2)
+  status          CreditStatus @default(ACTIVE)
+  riskLevel       RiskLevel    @default(LOW)
+  lastReviewedAt  DateTime?
+  reviewedBy      String?
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  company         Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  history         CreditHistory[]
+  approvals       CreditApproval[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([riskLevel])
+}
+
+model CreditHistory {
+  id          String       @id @default(uuid())
+  buyerCreditId String
+  changeType  String       // LIMIT_CHANGED, CREDIT_USED, CREDIT_RELEASED, BLOCKED, SUSPENDED, RESTORED
+  amount      Decimal?     @db.Decimal(14, 2)
+  balanceAfter Decimal?    @db.Decimal(14, 2)
+  reason      String?
+  changedBy   String
+  createdAt   DateTime     @default(now())
+
+  buyerCredit BuyerCredit  @relation(fields: [buyerCreditId], references: [id], onDelete: Cascade)
+
+  @@index([buyerCreditId])
+  @@index([createdAt])
+}
+
+model CreditApproval {
+  id              String               @id @default(uuid())
+  buyerCreditId   String
+  requestType     String               // LIMIT_INCREASE, CREDIT_EXTENSION, SUSPENSION_OVERRIDE
+  status          CreditApprovalStatus @default(PENDING)
+  requestedLimit  Decimal?             @db.Decimal(14, 2)
+  currentLimit    Decimal?             @db.Decimal(14, 2)
+  reason          String?
+  requestedBy     String
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  reviewedAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  buyerCredit     BuyerCredit          @relation(fields: [buyerCreditId], references: [id], onDelete: Cascade)
+
+  @@index([buyerCreditId])
+  @@index([status])
+}
+
+model CreditNote {
+  id              String           @id @default(uuid())
+  creditNoteNumber String          @unique
+  invoiceId       String
+  companyId       String
+  reason          String           // RETURN, DISCOUNT, ADJUSTMENT, CANCELLATION, OTHER
+  subtotal        Decimal          @default(0) @db.Decimal(12, 2)
+  taxAmount       Decimal?         @default(0) @db.Decimal(12, 2)
+  totalAmount     Decimal          @default(0) @db.Decimal(12, 2)
+  currency        String           @default("INR")
+  gstNumber       String?
+  gstType         TaxType?
+  cgstAmount      Decimal?         @db.Decimal(12, 2)
+  sgstAmount      Decimal?         @db.Decimal(12, 2)
+  igstAmount      Decimal?         @db.Decimal(12, 2)
+  hsnSacCode      String?
+  status          CreditNoteStatus @default(DRAFT)
+  issuedAt        DateTime?
+  appliedAt       DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  invoice         Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  items           CreditNoteItem[]
+
+  @@index([creditNoteNumber])
+  @@index([invoiceId])
+  @@index([companyId])
+  @@index([status])
+}
+
+model CreditNoteItem {
+  id          String      @id @default(uuid())
+  creditNoteId String
+  description String
+  hsnSacCode  String?
+  quantity    Int         @default(1)
+  unitPrice   Decimal     @db.Decimal(12, 2)
+  amount      Decimal     @db.Decimal(12, 2)
+  sortOrder   Int         @default(0)
+
+  creditNote  CreditNote  @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([creditNoteId])
+}
+
+model DebitNote {
+  id             String          @id @default(uuid())
+  debitNoteNumber String         @unique
+  invoiceId      String
+  companyId      String
+  reason         String          // ADDITIONAL_CHARGE, PENALTY, INTEREST, SHORTAGE, OTHER
+  subtotal       Decimal         @default(0) @db.Decimal(12, 2)
+  taxAmount      Decimal?        @default(0) @db.Decimal(12, 2)
+  totalAmount    Decimal         @default(0) @db.Decimal(12, 2)
+  currency       String          @default("INR")
+  gstNumber      String?
+  gstType        TaxType?
+  cgstAmount     Decimal?        @db.Decimal(12, 2)
+  sgstAmount     Decimal?        @db.Decimal(12, 2)
+  igstAmount     Decimal?        @db.Decimal(12, 2)
+  hsnSacCode     String?
+  status         DebitNoteStatus @default(DRAFT)
+  issuedAt       DateTime?
+  appliedAt      DateTime?
+  cancelledAt    DateTime?
+  cancelReason   String?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  invoice        Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  items          DebitNoteItem[]
+
+  @@index([debitNoteNumber])
+  @@index([invoiceId])
+  @@index([companyId])
+  @@index([status])
+}
+
+model DebitNoteItem {
+  id         String     @id @default(uuid())
+  debitNoteId String
+  description String
+  hsnSacCode String?
+  quantity   Int        @default(1)
+  unitPrice  Decimal    @db.Decimal(12, 2)
+  amount     Decimal    @db.Decimal(12, 2)
+  sortOrder  Int        @default(0)
+
+  debitNote  DebitNote  @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+
+  @@index([debitNoteId])
+}
+
+model CollectionNote {
+  id          String   @id @default(uuid())
+  companyId   String
+  actionType  CollectionActionType
+  content     String
+  contactedPerson String?
+  outcome     String?
+  followUpAt  DateTime?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+  @@index([createdAt])
+}
+
+model CollectionTimelineEvent {
+  id          String   @id @default(uuid())
+  companyId   String
+  type        String   // PAYMENT_RECEIVED, REMINDER_SENT, NOTE_ADDED, PROMISE_TO_PAY, ESCALATED, DISPUTE
+  description String?
+  metadata    Json?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+  @@index([companyId, createdAt])
+}
+
+// ──────────────────────────────────────────────
+// Phase 16.6A — AI Product Intelligence
+// ──────────────────────────────────────────────
+
+enum AiJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AiJobType {
+  DESCRIPTION_GENERATION
+  SEO_GENERATION
+  TRANSLATION
+  SPEC_SUGGESTION
+  IMAGE_SUGGESTION
+  QUALITY_SCORE
+  DUPLICATE_DETECTION
+  BULK_ENHANCEMENT
+}
+
+model ProductTranslation {
+  id               String   @id @default(uuid())
+  productId        String
+  locale           String
+  name             String
+  shortDescription String?
+  description      String?
+  isPrimary        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locale])
+  @@index([productId])
+  @@index([locale])
+}
+
+model CatalogQualityScore {
+  id                  String   @id @default(uuid())
+  productId           String   @unique
+  total               Int      @default(0)
+  titleQuality        Int      @default(0)
+  descriptionQuality  Int      @default(0)
+  imageQuality        Int      @default(0)
+  specificationQuality Int     @default(0)
+  seoQuality          Int      @default(0)
+  categoryQuality     Int      @default(0)
+  brandQuality        Int      @default(0)
+  attributeQuality    Int      @default(0)
+  completeness        Int      @default(0)
+  recommendations     Json?
+  lastCalculatedAt    DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  product             Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([total])
+}
+
+model ProductAiCache {
+  id          String     @id @default(uuid())
+  productId   String
+  cacheType   AiJobType
+  prompt      String?
+  response    Json?
+  model       String?
+  accepted    Boolean?
+  createdAt   DateTime   @default(now())
+
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, cacheType])
+  @@index([createdAt])
+}
+
+model AiJob {
+  id          String       @id @default(uuid())
+  productId   String?
+  companyId   String?
+  jobType     AiJobType
+  status      AiJobStatus  @default(PENDING)
+  payload     Json?
+  result      Json?
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  product     Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([jobType])
+  @@index([createdAt])
+}
+
+// ──────────────────────────────────────────────
+// Phase 16.6C.1 — Enterprise AI Gateway & Provider Registry
+// ──────────────────────────────────────────────
+
+enum AiProviderStatus {
+  ACTIVE
+  DEGRADED
+  DOWN
+  DISABLED
+}
+
+enum TaskType {
+  PRODUCT_DESCRIPTION
+  SEO_GENERATION
+  TRANSLATION
+  SPEC_SUGGESTION
+  IMAGE_SUGGESTION
+  QUALITY_SCORING
+  DUPLICATE_DETECTION
+  OCR
+  FAST_SUGGESTION
+  LIVE_SEARCH
+  WEBSITE_IMPORT
+  RFQ_ANALYSIS
+  QUOTE_ANALYSIS
+  NEGOTIATION
+  CRM_ANALYSIS
+  FINANCE_ANALYSIS
+  SEARCH_ANALYSIS
+  ADMIN_INTELLIGENCE
+  GENERAL_CHAT
+}
+
+enum AiCreditPeriod {
+  MONTHLY
+  LIFETIME
+  PER_BUSINESS
+}
+
+model AiProvider {
+  id              String             @id @default(uuid())
+  name            String             @unique
+  displayName     String
+  providerType    String             // e.g. "openrouter", "gemini", "groq", "tavily", "firecrawl", "openai", "anthropic"
+  enabled         Boolean            @default(false)
+  priority        Int                @default(0)
+  baseUrl         String?
+  supportedModels Json               // JSON array of model names/objects
+  supportedTasks  TaskType[]         // which task types this provider can handle
+  timeoutMs       Int                @default(30000)
+  retryCount      Int                @default(3)
+  retryDelayMs    Int                @default(1000)
+  rateLimitRpm    Int                @default(60)
+  rateLimitTpm    Int                @default(100000)
+  costPer1kInput  Float              @default(0)
+  costPer1kOutput Float              @default(0)
+  healthStatus    AiProviderStatus   @default(DISABLED)
+  lastHealthCheckAt DateTime?
+  lastSuccessAt   DateTime?
+  lastFailureAt   DateTime?
+  failureCount    Int                @default(0)
+  circuitOpen     Boolean            @default(false)
+  circuitOpenUntil DateTime?
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([enabled, priority])
+  @@index([providerType])
+}
+
+model AiPrompt {
+  id              String   @id @default(uuid())
+  taskType        TaskType
+  version         Int      @default(1)
+  name            String
+  description     String?
+  systemPrompt    String
+  userPrompt      String?
+  variables       Json?    // JSON array of variable names expected in the prompt
+  temperature     Float    @default(0.7)
+  maxTokens       Int      @default(2048)
+  providerOverride String? // optional: force a specific provider
+  modelOverride   String?  // optional: force a specific model
+  isActive        Boolean  @default(true)
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([taskType, version])
+  @@index([taskType, isActive])
+  @@index([name])
+}
+
+model AiUsage {
+  id              String   @id @default(uuid())
+  companyId       String
+  userId          String?
+  taskType        TaskType
+  providerId      String?
+  providerName    String?
+  modelName       String?
+  promptVersion   Int?
+  promptTokens    Int      @default(0)
+  completionTokens Int     @default(0)
+  totalTokens     Int      @default(0)
+  latencyMs       Int      @default(0)
+  estimatedCost   Float    @default(0)
+  cacheHit        Boolean  @default(false)
+  queueTimeMs     Int      @default(0)
+  success         Boolean  @default(true)
+  errorMessage    String?
+  idempotencyKey  String?  @unique
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([userId, createdAt])
+  @@index([taskType, createdAt])
+  @@index([providerId, createdAt])
+  @@index([createdAt])
+}
+
+model AiCreditUsage {
+  id          String   @id @default(uuid())
+  companyId   String
+  periodStart DateTime
+  periodEnd   DateTime
+  used        Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, periodStart])
+  @@index([companyId])
 }

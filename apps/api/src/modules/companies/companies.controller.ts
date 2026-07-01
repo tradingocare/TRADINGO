@@ -74,6 +74,13 @@ export class CompaniesController {
     return this.companiesService.searchCompanies(query, { businessType, city, state });
   }
 
+  @Get('my-company')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user company' })
+  async findMyCompany(@CurrentUser('sub') userId: string) {
+    return this.companiesService.findByOwner(userId);
+  }
+
   @Get(':slug')
   @Public()
   @ApiOperation({ summary: 'Get company by slug' })
@@ -165,6 +172,13 @@ export class CompaniesController {
     @CurrentUser('sub') userId: string,
   ) {
     return this.companiesService.updateSubscription(id, plan, status, expiresAt, userId);
+  }
+
+  @Get(':id/rank')
+  @Public()
+  @ApiOperation({ summary: 'Get company rank position' })
+  async getCompanyRank(@Param('id') id: string) {
+    return this.companiesService.getCompanyRank(id);
   }
 
   @Post(':id/assign-rm')

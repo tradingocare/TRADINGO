@@ -29,6 +29,7 @@ import {
   FileCheck,
   Truck,
   PackageCheck,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -114,7 +115,7 @@ export function Sidebar({ items, title, className }: SidebarProps) {
 const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard, Package, FileText, ShoppingCart, BarChart3, Trophy: Award, Wallet: CreditCard,
   Star: Award, Headphones: LifeBuoy, Settings, Heart: Award, Store: Package, Scale: ClipboardList,
-  Users, Grid3X3: ClipboardList, Shield: Award, AlertTriangle, ScrollText: FileText, Activity: Zap,
+  Users, Grid3X3: ClipboardList, Shield: Award, AlertTriangle, ScrollText: FileText, Activity: Zap, Sparkles,
   Flask: Rocket, PlusCircle: Rocket, Globe, Bell, Download, MessageSquare, Handshake, FileCheck, Truck, PackageCheck,
 };
 

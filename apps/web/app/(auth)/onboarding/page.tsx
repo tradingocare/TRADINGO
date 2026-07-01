@@ -72,10 +72,20 @@ export default function OnboardingPage() {
     if (!isValid) return;
     setServerError(null);
     try {
-      // TODO: Submit onboarding data
+      const apiClient = (await import('@/lib/api/client')).default;
+      const data = {
+        ...step1.getValues(),
+        ...step2.getValues(),
+        ...step3.getValues(),
+      };
+      // Use the onboarding controller to advance
+      const companyId = localStorage.getItem('currentCompanyId');
+      if (companyId) {
+        await apiClient.post(`/onboarding/${companyId}/advance`, { onboardingStatus: 'BUSINESS_ADDED', data });
+      }
       router.push('/dashboard');
     } catch (err: any) {
-      setServerError(err.message || 'Submission failed');
+      setServerError(err?.response?.data?.message || err.message || 'Submission failed');
     }
   };
 

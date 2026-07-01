@@ -1,26 +1,35 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { DashboardPageHeader, StatCard, StatusBadge, DashboardSkeleton } from '@/components/dashboard';
-import { useProducts, useRfqs, useOrders, useGocashBalance, useNotifications } from '@/hooks';
-import { Package, FileText, PlusCircle, BarChart3, Trophy, Store, Users, DollarSign, type LucideIcon } from 'lucide-react';
-import { SELLER_QUICK_ACTIONS, TRADING_STATS } from '@/data/master-data';
+import { useNotifications } from '@/hooks';
+import { Package, FileText, PlusCircle, BarChart3, Trophy, Store, Users, Eye, Heart, ShoppingCart, type LucideIcon } from 'lucide-react';
+import { SELLER_QUICK_ACTIONS } from '@/data/master-data';
 import Link from 'next/link';
+import api from '@/lib/api/client';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   PlusCircle, FileText, BarChart3, Trophy,
-  Package, Store, Users, DollarSign,
+  Package, Store, Users, Eye, Heart, ShoppingCart,
 };
+
+const STAT_ICONS = ['Package', 'Store', 'Users', 'ShoppingCart'];
 
 const shimmer = 'relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent'
 
 export default function SellerDashboardPage() {
-  const { isLoading: productsLoading } = useProducts({ limit: 1 });
-  const { isLoading: rfqsLoading } = useRfqs({ limit: 1 });
-  const { isLoading: ordersLoading } = useOrders({ limit: 1 });
-  const { isLoading: balanceLoading } = useGocashBalance();
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const { data: notifications, isLoading: notifsLoading } = useNotifications({ limit: 5 });
 
-  const isLoading = productsLoading || rfqsLoading || ordersLoading || balanceLoading;
+  useEffect(() => {
+    api.get('/seller/analytics/overview')
+      .then(res => setAnalytics(res.data?.data || res.data))
+      .catch(() => {})
+      .finally(() => setAnalyticsLoading(false));
+  }, []);
+
+  const isLoading = analyticsLoading;
 
   if (isLoading) {
     return (
@@ -36,6 +45,18 @@ export default function SellerDashboardPage() {
     );
   }
 
+  const summaryStats = analytics ? [
+    { label: 'Total Products', value: String(analytics.totalProducts || 0), icon: 'Package' },
+    { label: 'Active Products', value: String(analytics.activeProducts || 0), icon: 'Store' },
+    { label: 'Total Views', value: String(analytics.totalViews || 0), icon: 'Eye' },
+    { label: 'Total Orders', value: String(analytics.totalOrders || 0), icon: 'ShoppingCart' },
+  ] : [
+    { label: 'Total Products', value: '0', icon: 'Package' },
+    { label: 'Active Products', value: '0', icon: 'Store' },
+    { label: 'Total Views', value: '0', icon: 'Eye' },
+    { label: 'Total Orders', value: '0', icon: 'ShoppingCart' },
+  ];
+
   return (
     <div className="min-h-screen" style={{ background: '#1D0001' }}>
       <div
@@ -50,7 +71,7 @@ export default function SellerDashboardPage() {
           />
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {TRADING_STATS.map((stat) => (
+            {summaryStats.map((stat) => (
               <StatCard key={stat.label} icon={ICON_MAP[stat.icon]} label={stat.label} value={stat.value} />
             ))}
           </div>

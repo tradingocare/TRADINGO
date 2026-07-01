@@ -1,68 +1,57 @@
 'use client';
 
 import { useState } from 'react';
-import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
+import { DashboardPageHeader, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Building2, Mail, Phone, Package, Star } from 'lucide-react';
-
-interface Buyer {
-  id: string;
-  companyName: string;
-  contactName: string;
-  email: string;
-  phone: string;
-  totalOrders: number;
-  lastOrderDate: string;
-  status: string;
-  rating: number;
-}
-
-const buyers: Buyer[] = [
-  { id: '1', companyName: 'TechMart India', contactName: 'Rahul Sharma', email: 'rahul@techmart.in', phone: '+91-9876543210', totalOrders: 24, lastOrderDate: '2026-06-12', status: 'active', rating: 4.8 },
-  { id: '2', companyName: 'Green Foods Ltd', contactName: 'Priya Patel', email: 'priya@greenfoods.com', phone: '+91-9876543211', totalOrders: 15, lastOrderDate: '2026-06-09', status: 'active', rating: 4.5 },
-  { id: '3', companyName: 'BuildRight Construction', contactName: 'Amit Singh', email: 'amit@buildright.in', phone: '+91-9876543212', totalOrders: 8, lastOrderDate: '2026-05-20', status: 'active', rating: 4.2 },
-  { id: '4', companyName: 'Fashion Hub India', contactName: 'Neha Gupta', email: 'neha@fashionhub.in', phone: '+91-9876543213', totalOrders: 3, lastOrderDate: '2026-04-15', status: 'inactive', rating: 3.8 },
-];
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api/client';
+import { Search, Building2, MapPin } from 'lucide-react';
 
 export default function SellerBuyersPage() {
   const [search, setSearch] = useState('');
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['seller', 'buyers'],
+    queryFn: () => apiClient.get('/seller/buyers').then(r => r.data),
+  });
 
-  const filtered = buyers.filter(
-    (b) =>
-      b.companyName.toLowerCase().includes(search.toLowerCase()) ||
-      b.contactName.toLowerCase().includes(search.toLowerCase()),
+  const buyers = data?.data || [];
+  const filtered = buyers.filter((b: any) =>
+    b.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        title="Saved Buyers"
-        description="Manage your preferred buyers and trading partners"
+        title="Buyers"
+        description="Companies you have done business with"
       />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-        <Input
-          placeholder="Search buyers by name or company..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+        <Input placeholder="Search buyers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+      {isLoading ? (
+        <TableSkeleton rows={4} />
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <Building2 className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No buyers found</h3>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
-            {search ? 'Try a different search term.' : 'Saved buyers will appear here once you complete orders.'}
+          <h3 className="mt-4 text-lg font-semibold text-text-primary">Failed to load buyers</h3>
+          <p className="mt-1 text-sm text-text-secondary">Please try again later.</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
+          <Building2 className="h-12 w-12 text-text-tertiary" />
+          <h3 className="mt-4 text-lg font-semibold text-text-primary">No buyers found</h3>
+          <p className="mt-1 text-sm text-text-secondary">
+            {search ? 'Try a different search term.' : 'Buyers will appear here once you complete orders.'}
           </p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((buyer) => (
+          {filtered.map((buyer: any) => (
             <Card key={buyer.id}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
@@ -71,39 +60,19 @@ export default function SellerBuyersPage() {
                       <Building2 className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
-                        {buyer.companyName}
-                      </h3>
-                      <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
-                        {buyer.contactName}
-                      </p>
+                      <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">{buyer.name}</h3>
+                      {(buyer.city || buyer.state) && (
+                        <div className="flex items-center gap-1 mt-0.5 text-xs text-text-secondary dark:text-dark-text-secondary">
+                          <MapPin className="h-3 w-3" />
+                          {[buyer.city, buyer.state].filter(Boolean).join(', ')}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <StatusBadge status={buyer.status} />
                 </div>
 
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-text-secondary dark:text-dark-text-secondary">
-                    <Mail className="h-3.5 w-3.5" />
-                    <span>{buyer.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-text-secondary dark:text-dark-text-secondary">
-                    <Phone className="h-3.5 w-3.5" />
-                    <span>{buyer.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-text-secondary dark:text-dark-text-secondary">
-                    <Package className="h-3.5 w-3.5" />
-                    <span>{buyer.totalOrders} orders</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-text-secondary dark:text-dark-text-secondary">
-                    <Star className="h-3.5 w-3.5 text-amber-500" />
-                    <span>{buyer.rating.toFixed(1)} rating</span>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs text-text-tertiary dark:border-dark-border">
-                  <span>Last order: {buyer.lastOrderDate}</span>
-                  <Button variant="outline" size="sm">Contact</Button>
+                <div className="mt-4">
+                  <Button variant="outline" size="sm" className="w-full">View Profile</Button>
                 </div>
               </CardContent>
             </Card>

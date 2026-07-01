@@ -70,7 +70,7 @@ describe('AuthController', () => {
     it('should verify email and return success message', async () => {
       authService.verifyEmail.mockResolvedValue(undefined);
 
-      const result = await controller.verifyEmail('token-123');
+      const result = await controller.verifyEmail({ token: 'token-123' });
       expect(authService.verifyEmail).toHaveBeenCalledWith('token-123');
       expect(result.message).toBe('Email verified successfully');
     });

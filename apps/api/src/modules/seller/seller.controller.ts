@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards } from '@nestjs/common';
 import { SellerService } from './seller.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -26,5 +26,10 @@ export class SellerController {
   @Post('go-live')
   goLive(@CurrentUser('sub') userId: string) {
     return this.sellerService.goLive(userId);
+  }
+
+  @Get('buyers')
+  getBuyers(@CurrentUser('sub') userId: string) {
+    return this.sellerService.getBuyers(userId);
   }
 }

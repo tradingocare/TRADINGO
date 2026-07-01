@@ -12,7 +12,11 @@ export const smartRfqApi = {
   create(data: any) { return apiClient.post('/smart-rfq', data).then(r => r.data); },
   list(params?: SmartRfqParams) { return apiClient.get('/smart-rfq', { params }).then(r => r.data); },
   getById(id: string) { return apiClient.get(`/smart-rfq/${id}`).then(r => r.data); },
+  update(id: string, data: any) { return apiClient.patch(`/smart-rfq/${id}`, data).then(r => r.data); },
+  getQuotes(id: string) { return apiClient.get(`/smart-rfq/${id}/quotes`).then(r => r.data); },
   duplicate(id: string) { return apiClient.post(`/smart-rfq/${id}/duplicate`).then(r => r.data); },
+  acceptQuote(rfqId: string, quoteId: string) { return apiClient.post(`/smart-rfq/${rfqId}/accept-quote/${quoteId}`).then(r => r.data); },
+  rejectQuote(rfqId: string, quoteId: string) { return apiClient.post(`/smart-rfq/${rfqId}/reject-quote/${quoteId}`).then(r => r.data); },
   findSuppliers(id: string) { return apiClient.get(`/smart-rfq/${id}/suppliers`).then(r => r.data); },
   getMatchingStats() { return apiClient.get('/smart-rfq/near-to-far/stats').then(r => r.data); },
   seller: {

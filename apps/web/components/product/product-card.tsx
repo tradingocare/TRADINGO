@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Star, MapPin, TrendingUp, Building2, Crown, BadgeCheck,
+  Star, MapPin, TrendingUp, Building2, Crown,
   CheckCircle2, Zap, ShoppingCart, MessageCircle, FileQuestion,
   ArrowLeftRight, Bookmark, Info, Package, Truck, Coins,
   ChevronLeft, ChevronRight, Clock,
@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/auth-store'
 import { useCompareStore } from '@/store/compare-store'
 import { useWishlistStore } from '@/store/wishlist-store'
 import { resolveSellerInfo } from '@/components/shared/SellerBadge'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { toast } from '@/components/ui/use-toast'
 
 export interface ProductCardData {
@@ -270,12 +271,7 @@ export default function ProductCard({
               -{discountPct}% OFF
             </span>
           )}
-          {product.seller.isVerified && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold"
-              style={{ background: 'rgba(22,163,74,0.12)', color: '#16A34A', border: '1px solid rgba(22,163,74,0.25)', backdropFilter: 'blur(4px)' }}>
-              <BadgeCheck size={10} /> Verified
-            </span>
-          )}
+          {product.seller.isVerified && <VerifiedBadge type="verified" size="sm" />}
         </div>
       </div>
 

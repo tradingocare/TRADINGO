@@ -1,10 +1,11 @@
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { getWsCorsOrigin } from '../../common/utils/ws-cors';
 
 @WebSocketGateway({
   namespace: '/chat',
-  cors: { origin: '*', credentials: true },
+  cors: { origin: getWsCorsOrigin(), credentials: true },
 })
 export class NotificationGateway {
   @WebSocketServer()

@@ -3,7 +3,7 @@ import { getKycSubmissions, reviewKyc, type GetKycSubmissionsParams } from '@/li
 
 export function useKycSubmissions(params?: GetKycSubmissionsParams) {
   return useQuery({
-    queryKey: ['kyc', params],
+    queryKey: ['company-verifications', params],
     queryFn: () => getKycSubmissions(params),
   });
 }
@@ -14,7 +14,7 @@ export function useReviewKyc() {
     mutationFn: ({ id, status, notes }: { id: string; status: string; notes?: string }) =>
       reviewKyc(id, status, notes),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kyc'] });
+      queryClient.invalidateQueries({ queryKey: ['company-verifications'] });
     },
   });
 }

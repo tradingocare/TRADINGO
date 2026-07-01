@@ -89,6 +89,18 @@ export class SmartShipmentController {
     return this.shipmentService.getDocuments(userId, id);
   }
 
+  @Get('performance/metrics')
+  @ApiOperation({ summary: 'Shipment performance metrics (on-time rate, avg transit time, failure rate)' })
+  getPerformanceMetrics(@CurrentUser('sub') userId: string, @Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+    return this.shipmentService.getUserCompany(userId).then((c) => this.shipmentService.getPerformanceMetrics(c.id, startDate, endDate));
+  }
+
+  @Get('delivery/performance')
+  @ApiOperation({ summary: 'Delivery performance metrics (confirmation rate, avg delivery time)' })
+  getDeliveryMetrics(@CurrentUser('sub') userId: string, @Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+    return this.shipmentService.getUserCompany(userId).then((c) => this.shipmentService.getDeliveryMetrics(c.id, startDate, endDate));
+  }
+
   @Get('courier-providers')
   @ApiOperation({ summary: 'List active courier providers' })
   getCourierProviders() {

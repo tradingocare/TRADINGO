@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { ClickhouseService } from './clickhouse.service';
 
 export interface DashboardQuery {
@@ -12,7 +13,10 @@ export interface DashboardQuery {
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
 
-  constructor(private readonly clickhouse: ClickhouseService) {}
+  constructor(
+    private readonly clickhouse: ClickhouseService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async getSellerDashboard(companyId: string, query: DashboardQuery) {
     const { start, end } = this.getDateRange(query);
@@ -87,6 +91,31 @@ export class AnalyticsService {
     return this.getDailyMetrics(companyId, start, end);
   }
 
+  async getCompletionRate(startDate?: string, endDate?: string) {
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate);
+    if (endDate) dateFilter.lte = new Date(endDate);
+    const orderWhere: any = {};
+    if (startDate || endDate) orderWhere.createdAt = dateFilter;
+
+    const [completed, cancelled, disputed] = await Promise.all([
+      this.prisma.order.count({ where: { ...orderWhere, status: 'COMPLETED', deletedAt: null } }),
+      this.prisma.order.count({ where: { ...orderWhere, status: 'CANCELLED', deletedAt: null } }),
+      this.prisma.dispute.count({ where: { ...orderWhere, status: { not: 'RESOLVED' } } }),
+    ]);
+
+    const total = completed + cancelled + disputed;
+    return {
+      totalOrders: total,
+      completedOrders: completed,
+      cancelledOrders: cancelled,
+      openDisputes: disputed,
+      completionRate: total > 0 ? Math.round((completed / total) * 10000) / 100 : 0,
+      cancellationRate: total > 0 ? Math.round((cancelled / total) * 10000) / 100 : 0,
+      disputeRate: total > 0 ? Math.round((disputed / total) * 10000) / 100 : 0,
+    };
+  }
+
   async getSellerLeaderboard(limit = 100) {
     return this.clickhouse.query<{
       company_id: string;
@@ -125,10 +154,6 @@ export class AnalyticsService {
     const { start, end } = this.getDateRange(query);
     const daily = await this.getDailyMetrics(companyId, start, end);
     return { daily, period: { start: start.toISOString(), end: end.toISOString() } };
-  }
-
-  async queryRaw(sql: string, params?: Record<string, unknown>) {
-    return this.clickhouse.query(sql, params);
   }
 
   private async getDailyMetrics(companyId: string, start: Date, end: Date) {

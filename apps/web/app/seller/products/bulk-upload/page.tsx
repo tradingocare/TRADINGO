@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Upload, Download, AlertCircle, CheckCircle, X, FileSpreadsheet } from 'lucide-react';
+import api from '@/lib/api/client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface PreviewRow {
   row: number;
@@ -17,12 +19,49 @@ interface PreviewRow {
   errors: string[];
 }
 
+function parseCSV(text: string): PreviewRow[] {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const rows: PreviewRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+    const errors: string[] = [];
+    if (!cols[0]) errors.push('Product name is required');
+    if (cols[2] && isNaN(Number(cols[2].replace(/,/g, '')))) errors.push('Price must be a number');
+    rows.push({
+      row: i,
+      name: cols[0] || '',
+      category: cols[1] || '',
+      price: cols[2] || '',
+      stock: cols[3] || '',
+      unit: cols[4] || '',
+      errors,
+    });
+  }
+  return rows;
+}
+
+function parseFile(file: File): Promise<PreviewRow[]> {
+  return new Promise((resolve, reject) => {
+    if (file.name.endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(parseCSV(e.target?.result as string || ''));
+      reader.onerror = reject;
+      reader.readAsText(file);
+    } else {
+      reject(new Error('Only CSV files are supported. Upload a CSV file.'));
+    }
+  });
+}
+
 export default function BulkUploadPage() {
+  const { toast } = useToast();
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; failed: number; errors: any[] } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: DragEvent) => {
@@ -44,22 +83,34 @@ export default function BulkUploadPage() {
     if (f) processFile(f);
   };
 
-  const processFile = (f: File) => {
+  const processFile = async (f: File) => {
     setFile(f);
     setUploaded(false);
-    setPreview([
-      { row: 1, name: 'Product A', category: 'Electronics', price: '1,500', stock: '100', unit: 'pcs', errors: [] },
-      { row: 2, name: 'Product B', category: 'Textiles', price: '250', stock: '500', unit: 'meters', errors: ['Price must be a number'] },
-      { row: 3, name: '', category: 'Food', price: '99', stock: '50', unit: 'kg', errors: ['Product name is required'] },
-    ]);
+    setImportResult(null);
+    try {
+      const rows = await parseFile(f);
+      setPreview(rows);
+    } catch {
+      toast({ title: 'Failed to parse file', description: 'Upload a valid CSV file', variant: 'destructive' });
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (preview.length === 0) return;
     setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
+    try {
+      const validRows = preview.filter(r => r.errors.length === 0);
+      const res = await api.post('/seller/bulk/import', {
+        rows: validRows.map(r => ({ name: r.name, category: r.category, originalPrice: Number(r.price.replace(/,/g, '')) || undefined, sku: undefined, unit: r.unit, moq: r.stock ? Number(r.stock) : undefined })),
+      });
+      const result = res.data?.data || res.data || res;
+      setImportResult({ imported: result.imported || 0, failed: result.failed || 0, errors: result.errors || [] });
       setUploaded(true);
-    }, 2000);
+      toast({ title: `Import complete: ${result.imported || 0} products imported` });
+    } catch {
+      toast({ title: 'Import failed', variant: 'destructive' });
+    }
+    finally { setUploading(false); }
   };
 
   const handleDownloadTemplate = () => {
@@ -96,9 +147,12 @@ export default function BulkUploadPage() {
               Upload Complete
             </h3>
             <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
-              {preview.length} products have been uploaded successfully.
+              {importResult ? `${importResult.imported} products imported` : `${preview.length} products processed.`}
             </p>
-            <Button className="mt-6" onClick={() => { setFile(null); setPreview([]); setUploaded(false); }}>
+            {importResult?.failed ? (
+              <p className="mt-1 text-sm text-red-500">{importResult.failed} rows failed</p>
+            ) : null}
+            <Button className="mt-6" onClick={() => { setFile(null); setPreview([]); setUploaded(false); setImportResult(null); }}>
               Upload Another File
             </Button>
           </CardContent>

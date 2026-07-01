@@ -1,20 +1,24 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { DashboardPageHeader } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSmartRfq } from '@/hooks/use-smart-rfq';
+import { smartRfqApi } from '@/lib/api/smart-rfq';
 import { ArrowLeft, Save } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function EditRfqPage() {
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const id = params.id as string;
   const { data: rfq, isLoading } = useSmartRfq(id);
   const [form, setForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (rfq) setForm({
@@ -27,9 +31,15 @@ export default function EditRfqPage() {
   const update = (key: string, value: any) => setForm((prev: any) => ({ ...prev, [key]: value }));
 
   const handleSave = async () => {
-    const { updateRfq } = await import('@/lib/api/rfqs');
-    await updateRfq(id, form);
-    router.push(`/buyer/rfq/${id}`);
+    setSaving(true);
+    try {
+      await smartRfqApi.update(id, form);
+      toast({ title: 'RFQ updated successfully' });
+      router.push(`/buyer/rfq/${id}`);
+    } catch {
+      toast({ title: 'Failed to update RFQ', variant: 'destructive' });
+    }
+    finally { setSaving(false); }
   };
 
   return (

@@ -34,11 +34,14 @@ export class ProductExportService {
       csv += Object.values(formatProduct(p)).map(v => `"${String(v).replace(/"/g, '""')}"`).join(',') + '\n';
     }
 
+    const exportId = `${company.id.slice(0, 8)}-${Date.now()}`;
+    const fileUrl = `data:text/csv;base64,${Buffer.from(csv).toString('base64')}`;
+
     const job = await this.prisma.productExportJob.create({
-      data: { companyId: company.id, type, status: 'COMPLETED', fileUrl: `data:text/csv;base64,${Buffer.from(csv).toString('base64')}` },
+      data: { companyId: company.id, type, status: 'COMPLETED', fileUrl },
     });
 
-    return { jobId: job.id, status: 'COMPLETED', rowCount: products.length };
+    return { jobId: job.id, status: 'COMPLETED', rowCount: products.length, type, fileUrl };
   }
 
   async listJobs(userId: string) {

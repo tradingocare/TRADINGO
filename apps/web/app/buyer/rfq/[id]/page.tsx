@@ -5,12 +5,14 @@ import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSmartRfq, useDuplicateSmartRfq } from '@/hooks/use-smart-rfq';
+import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Copy, Edit3, Archive, FileText, Package, Store, MapPin, Clock, Calendar, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function BuyerRfqDetail() {
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const id = params.id as string;
   const { data: rfq, isLoading, error } = useSmartRfq(id);
   const duplicateMutation = useDuplicateSmartRfq();
@@ -44,8 +46,11 @@ export default function BuyerRfqDetail() {
   const handleDuplicate = async () => {
     try {
       const result = await duplicateMutation.mutateAsync(id);
+      toast({ title: 'RFQ duplicated' });
       router.push(`/buyer/rfq/${result.id || result}`);
-    } catch {}
+    } catch {
+      toast({ title: 'Failed to duplicate RFQ', variant: 'destructive' });
+    }
   };
 
   return (

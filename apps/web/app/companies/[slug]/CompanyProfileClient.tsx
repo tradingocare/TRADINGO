@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  BadgeCheck, MapPin, Building2, Star,
+  MapPin, Building2, Star,
   Zap, Shield, Package, MessageCircle, FileText,
   Calendar, Users, Award, Truck, TrendingUp,
   CheckCircle2, Clock, Globe,
@@ -12,6 +12,7 @@ import {
   Image, Factory, Map, BookOpen, Video,
   Store, Tag, Leaf,
 } from 'lucide-react'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
 import toast from 'react-hot-toast'
@@ -56,22 +57,20 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const [c, p, r, s] = await Promise.allSettled([
-          api.get(`/companies/${slug}`),
-          api.get(`/companies/${slug}/products?page=1&limit=12`),
-          api.get(`/companies/${slug}/reviews?page=1&limit=6`),
-          api.get(`/companies/${slug}/similar`),
-        ])
-        const get = (x: any) => x.status==='fulfilled' ? (x.value as any).data || x.value : null
-        const cd = get(c)
-        setCompany(cd?.data || cd)
-        setProducts(get(p))
-        setReviews(get(r))
-        const sd = get(s)
-        setSimilar(Array.isArray(sd) ? sd : sd?.companies || [])
-      } catch {}
-      finally { setLoading(false) }
+      const [c, p, r, s] = await Promise.allSettled([
+        api.get(`/companies/${slug}`),
+        api.get(`/companies/${slug}/products?page=1&limit=12`),
+        api.get(`/companies/${slug}/reviews?page=1&limit=6`),
+        api.get(`/companies/${slug}/similar`),
+      ])
+      const get = (x: any) => x.status==='fulfilled' ? (x.value as any).data || x.value : null
+      const cd = get(c)
+      setCompany(cd?.data || cd)
+      setProducts(get(p))
+      setReviews(get(r))
+      const sd = get(s)
+      setSimilar(Array.isArray(sd) ? sd : sd?.companies || [])
+      setLoading(false)
     }
     load()
   }, [slug])
@@ -141,12 +140,7 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
             style={{ background: banner ? `url(${banner}) center/cover` : 'linear-gradient(135deg,#1a0030 0%,#0d0d1a 50%,#1D0001 100%)' }}>
             <div className="absolute inset-0" style={{ background:'linear-gradient(to bottom,transparent 30%,rgba(15,5,20,0.97) 100%)' }} />
             <div className="absolute top-4 left-4 flex gap-2">
-              {company.verificationLevel !== 'LEVEL_0' && (
-                <span className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full"
-                  style={{ background:'rgba(34,197,94,0.2)', border:'1px solid rgba(34,197,94,0.4)', color:'#4ade80' }}>
-                  <BadgeCheck size={12} /> KYC Verified
-                </span>
-              )}
+              {company.verificationLevel !== 'LEVEL_0' && <VerifiedBadge type="verified" size="md" />}
               {company.gstNumber && (
                 <span className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full"
                   style={{ background:'rgba(61,139,255,0.15)', border:'1px solid rgba(61,139,255,0.35)', color:'#3D8BFF' }}>

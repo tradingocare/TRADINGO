@@ -2,6 +2,8 @@ export const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
+  SELLER: 'SELLER',
+  BUYER: 'BUYER',
   VIEWER: 'VIEWER',
 } as const;
 
@@ -11,6 +13,8 @@ export const ROLE_HIERARCHY: Record<Role, number> = {
   SUPER_ADMIN: 100,
   ADMIN: 80,
   MANAGER: 50,
+  SELLER: 30,
+  BUYER: 20,
   VIEWER: 10,
 };
 
@@ -20,7 +24,7 @@ export const ROUTE_PREFIXES = {
   ADMIN: '/admin',
 } as const;
 
-export const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password'] as const;
+export const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/verify-mobile', '/onboarding'] as const;
 
 const ADMIN_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN'];
 const MANAGER_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];

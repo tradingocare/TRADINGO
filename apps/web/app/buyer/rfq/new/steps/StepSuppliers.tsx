@@ -5,29 +5,39 @@ import { useRfqWizardStore, type WizardSupplier } from '@/store/rfq-wizard-store
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Store, UserPlus } from 'lucide-react';
-
-const MOCK_SUPPLIERS: WizardSupplier[] = [
-  { companyId: 's1', companyName: 'Premium Steel Works', matchScore: 94, selected: false },
-  { companyId: 's2', companyName: 'Industrial Bearings Co.', matchScore: 88, selected: false },
-  { companyId: 's3', companyName: 'Allied Manufacturing Pvt Ltd', matchScore: 82, selected: false },
-  { companyId: 's4', companyName: 'National Hardware Supply', matchScore: 76, selected: false },
-  { companyId: 's5', companyName: 'Precision Components Ltd', matchScore: 71, selected: false },
-];
+import { Search, Store, UserPlus, Loader2 } from 'lucide-react';
+import { apiClient } from '@/lib/api/client';
 
 export function StepSuppliers() {
   const { suppliers, addSuppliers, toggleSupplier } = useRfqWizardStore();
   const [search, setSearch] = useState('');
   const [showSuggested, setShowSuggested] = useState(suppliers.length === 0);
+  const [loading, setLoading] = useState(false);
 
-  const allSuppliers = suppliers.length > 0 ? suppliers : MOCK_SUPPLIERS;
+  const allSuppliers = suppliers;
   const filtered = allSuppliers.filter((s) =>
-    s.companyName.toLowerCase().includes(search.toLowerCase())
+    s.companyName?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleLoadSuggested = () => {
-    addSuppliers(MOCK_SUPPLIERS);
-    setShowSuggested(true);
+  const handleLoadSuggested = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get('/smart-rfq/suppliers/suggested', { params: { limit: 10 } });
+      const suggested: WizardSupplier[] = (res.data?.data || res.data || []).map((s: any) => ({
+        companyId: s.companyId || s.id,
+        companyName: s.companyName || s.name,
+        matchScore: s.matchScore || s.score || 0,
+        selected: false,
+      }));
+      if (suggested.length > 0) {
+        addSuppliers(suggested);
+      }
+    } catch {
+      // silently fail — suppliers step can proceed without suggestions
+    } finally {
+      setLoading(false);
+      setShowSuggested(true);
+    }
   };
 
   return (
@@ -38,8 +48,9 @@ export function StepSuppliers() {
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-white/[0.06] p-8 text-center">
           <Store className="h-8 w-8 text-white/30" />
           <p className="mt-2 text-sm text-white/60">Suggested suppliers from Near To Far™ will appear here</p>
-          <Button variant="accent" size="sm" className="mt-4" onClick={handleLoadSuggested}>
-            <UserPlus className="mr-2 h-4 w-4" /> Load Suggested Suppliers
+          <Button variant="accent" size="sm" className="mt-4" onClick={handleLoadSuggested} disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+            {loading ? 'Loading...' : 'Load Suggested Suppliers'}
           </Button>
         </div>
       ) : (

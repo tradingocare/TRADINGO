@@ -105,4 +105,12 @@ export class SmartNegotiationController {
   getAudit(@Query() pagination?: PaginationDto) {
     return this.negotiationService.getAdminAudit(pagination);
   }
+
+  // ─── PERFORMANCE METRICS ─────────────────────────────────────
+
+  @Get('performance/metrics')
+  @ApiOperation({ summary: 'Negotiation performance metrics (success rate, duration, counter offers)' })
+  getPerformanceMetrics(@CurrentUser('sub') userId: string, @Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+    return this.negotiationService.getUserCompany(userId).then((c) => this.negotiationService.getPerformanceMetrics(c.id, startDate, endDate));
+  }
 }

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import api from '@/lib/api/client'
+import { toast } from '@/components/ui/use-toast'
 import { Loader2, TrendingUp, Eye, Heart, ShoppingCart, Package, ArrowUp, ArrowDown, BarChart3 } from 'lucide-react'
 
 export default function AnalyticsPage() {
@@ -18,7 +19,9 @@ export default function AnalyticsPage() {
       setOverview(o.data || {})
       setProducts(p.data?.data || p.data || [])
       setPerformance(perf.data || {})
-    }).catch(() => {})
+    }).catch(() => {
+      toast({ title: 'Failed to load analytics', variant: 'destructive' });
+    })
     .finally(() => setLoading(false))
   }, [])
 

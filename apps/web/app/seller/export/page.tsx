@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react'
 import api from '@/lib/api/client'
 import { Loader2, Download, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 
 const STATUS_ICONS: Record<string, any> = { COMPLETED: CheckCircle, PROCESSING: Clock, FAILED: AlertCircle, PENDING: Clock }
 const STATUS_COLORS: Record<string, string> = { COMPLETED: 'text-green-600 bg-green-50', PROCESSING: 'text-blue-600 bg-blue-50', FAILED: 'text-red-600 bg-red-50', PENDING: 'text-yellow-600 bg-yellow-50' }
 
 export default function ExportPage() {
+  const { toast } = useToast()
   const [jobs, setJobs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -15,7 +17,9 @@ export default function ExportPage() {
     try {
       const res = await api.get('/seller/export/jobs')
       setJobs(res.data || [])
-    } catch {}
+    } catch {
+      toast({ title: 'Failed to load export history', variant: 'destructive' })
+    }
     finally { setLoading(false) }
   }
 
@@ -25,8 +29,11 @@ export default function ExportPage() {
     setExporting(true)
     try {
       const res = await api.post('/seller/export/start', { type })
+      toast({ title: 'Export started' })
       fetchJobs()
-    } catch {}
+    } catch {
+      toast({ title: 'Failed to start export', variant: 'destructive' })
+    }
     finally { setExporting(false) }
   }
 
@@ -38,8 +45,11 @@ export default function ExportPage() {
         const a = document.createElement('a')
         a.href = fileUrl; a.download = `products.${type === 'EXCEL' ? 'xlsx' : 'csv'}`
         a.click()
+        toast({ title: 'Download started' })
       }
-    } catch {}
+    } catch {
+      toast({ title: 'Download failed', variant: 'destructive' })
+    }
   }
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })

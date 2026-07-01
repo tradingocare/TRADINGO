@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { TradfindController } from './tradfind.controller';
 import { TradfindService } from './tradfind.service';
 import { SearchModule } from '../search/search.module';
+import { AiGatewayModule } from '../ai-gateway/ai-gateway.module';
+import { AiSearchController } from './ai-search.controller';
+import { AiSearchService } from './ai-search.service';
 import { ProductSearchService } from './services/product-search.service';
 import { CompanySearchService } from './services/company-search.service';
 import { GeoSearchService } from './services/geo-search.service';
@@ -14,10 +17,11 @@ import { DiscoveryFeedService } from './services/discovery-feed.service';
 import { SearchAnalyticsService } from './services/search-analytics.service';
 
 @Module({
-  imports: [SearchModule],
-  controllers: [TradfindController],
+  imports: [SearchModule, AiGatewayModule],
+  controllers: [TradfindController, AiSearchController],
   providers: [
     TradfindService,
+    AiSearchService,
     ProductSearchService,
     CompanySearchService,
     GeoSearchService,
@@ -29,6 +33,6 @@ import { SearchAnalyticsService } from './services/search-analytics.service';
     DiscoveryFeedService,
     SearchAnalyticsService,
   ],
-  exports: [TradfindService],
+  exports: [TradfindService, AiSearchService],
 })
 export class TradfindModule {}

@@ -196,14 +196,56 @@ export default function ProductDiscoveryClient() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      Object.entries(f).forEach(([k, v]) => {
-        if (v !== undefined && v !== '' && v !== null)
-          params.set(k, String(v))
-      })
+      if (f.q) params.set('q', f.q)
+      if (f.categoryId) params.set('categoryId', f.categoryId)
+      if (f.minPrice !== undefined) params.set('minPrice', String(f.minPrice))
+      if (f.maxPrice !== undefined) params.set('maxPrice', String(f.maxPrice))
+      if (f.sortBy === 'price_asc') params.set('sort', 'price_asc')
+      else if (f.sortBy === 'price_desc') params.set('sort', 'price_desc')
+      else if (f.sortBy === 'newest') params.set('sort', 'newest')
+      params.set('page', String(f.page || 1))
+      params.set('limit', String(f.limit || 24))
 
-      const res: any = await api.get(`/v1/search-ai/query?${params}`)
-      const d = res.data || res
-      setData(d)
+      const res: any = await api.get(`/search/products?${params}`)
+      const body = res.data || res
+      const hits: any[] = body.hits || body.data || []
+      setData({
+        results: hits.map((h: any) => ({
+          id: h.id || h._id,
+          type: 'product',
+          name: h.name || '',
+          slug: h.slug || '',
+          images: h.media?.[0]?.url ? [h.media[0].url] : h.images || [],
+          description: h.shortDescription || h.description,
+          categoryName: h.categoryName || h.category?.name || '',
+          subCategory: h.subCategory || '',
+          isVerified: h.company?.verificationLevel !== 'LEVEL_0' || false,
+          trustScore: h.trustScoreSnapshot || h.company?.trustScore || 0,
+          rating: h.rating || 0,
+          reviewCount: h.reviewCount || 0,
+          responseTime: h.deliveryEta ? `< ${h.deliveryEta}` : '',
+          geoRing: 5,
+          city: h.city || '',
+          state: h.state || '',
+          seller: {
+            id: h.companyId || h.company?.id || '',
+            name: h.company?.name || '',
+            slug: h.company?.slug || '',
+            isVerified: h.company?.verificationLevel !== 'LEVEL_0' || false,
+            trustScore: h.trustScoreSnapshot || h.company?.trustScore || 0,
+          },
+          price: h.originalPrice ? Number(h.originalPrice) : undefined,
+          unit: h.unit || '',
+          moq: h.moq || 1,
+          inStock: h.status === 'ACTIVE' || true,
+          deliveryEta: h.deliveryEta || '',
+        })),
+        total: body.total || hits.length,
+        page: body.page || 1,
+        pages: body.totalPages || Math.ceil((body.total || hits.length) / (f.limit || 24)) || 1,
+        geoBreakdown: [],
+        meta: { query: f.q || '', language: 'en', corrected: '', fromCache: false, responseMs: 0 },
+      } as DiscoveryResponse)
     } catch {
       setData(prev => prev || {
         results: [],
@@ -211,7 +253,7 @@ export default function ProductDiscoveryClient() {
         geoBreakdown: [],
         meta: { query: f.q, language: 'en', corrected: '', fromCache: false, responseMs: 0 },
       } as DiscoveryResponse)
-      toast({ title: 'Backend API unavailable — using master data', variant: 'destructive' })
+      toast({ title: 'Search API unavailable — using offline catalog', variant: 'destructive' })
     } finally {
       setLoading(false)
     }

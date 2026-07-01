@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Headers, Req, Res } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, Body, HttpCode, HttpStatus, UseGuards, Headers, Req, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from './auth.service';
@@ -6,6 +6,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { CreateBuyerDto } from './dto/create-buyer.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto, VerifyResetOtpDto, ResetPasswordDto, SendOtpDto, VerifyOtpDto, LoginOtpDto, VerifyEmailDto, ResendVerificationDto } from './dto/forgot-password.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -51,12 +53,53 @@ export class AuthController {
     return this.authService.refreshTokens(refreshToken);
   }
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@CurrentUser('sub') userId: string) {
+    return this.authService.getProfile(userId);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  async changePassword(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(userId, dto);
+    return { message: 'Password changed successfully' };
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  async getSessions(@CurrentUser('sub') userId: string) {
+    return this.authService.getSessions(userId);
+  }
+
+  @Delete('sessions/:sessionId')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeSession(
+    @CurrentUser('sub') userId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    await this.authService.revokeSession(userId, sessionId);
+  }
+
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async verifyEmail(@Body('token') token: string) {
-    await this.authService.verifyEmail(token);
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.authService.verifyEmail(dto.token);
     return { message: 'Email verified successfully' };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto.email);
   }
 
   @Post('verify-pan')
@@ -83,55 +126,52 @@ export class AuthController {
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async sendOtp(@Body() body: { type: 'mobile' | 'email'; value: string }) {
-    return this.authService.sendOtp(body.type, body.value);
+  async sendOtp(@Body() dto: SendOtpDto) {
+    return this.authService.sendOtp(dto.type, dto.value);
   }
 
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async verifyOtp(@Body() body: { type: 'mobile' | 'email'; value: string; otp: string }) {
-    return this.authService.verifyOtp(body.type, body.value, body.otp);
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyOtp(dto.type, dto.value, dto.otp);
   }
 
-  // ── OTP Login ──
   @Post('send-login-otp')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async sendLoginOtp(@Body() b: { identifier: string }) {
-    return this.authService.sendLoginOtp(b.identifier);
+  async sendLoginOtp(@Body() dto: ForgotPasswordDto) {
+    return this.authService.sendLoginOtp(dto.identifier);
   }
 
   @Post('login-otp')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async loginWithOtp(@Body() b: { identifier: string; otp: string; rememberMe?: boolean }) {
-    return this.authService.loginWithOtp(b);
+  async loginWithOtp(@Body() dto: LoginOtpDto) {
+    return this.authService.loginWithOtp(dto);
   }
 
-  // ── Forgot Password ──
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async forgotPassword(@Body() b: { identifier: string }) {
-    return this.authService.sendResetOtp(b.identifier);
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.sendResetOtp(dto.identifier);
   }
 
   @Post('verify-reset-otp')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async verifyResetOtp(@Body() b: { identifier: string; otp: string }) {
-    return this.authService.verifyResetOtp(b);
+  async verifyResetOtp(@Body() dto: VerifyResetOtpDto) {
+    return this.authService.verifyResetOtp(dto);
   }
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async resetPassword(@Body() b: { resetToken: string; newPassword: string }) {
-    return this.authService.resetPassword(b);
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
-  // ── Google OAuth ──
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth() {}
@@ -142,7 +182,6 @@ export class AuthController {
     return this.authService.socialLoginCallback(req.user, res);
   }
 
-  // ── LinkedIn OAuth ──
   @Get('linkedin')
   @UseGuards(AuthGuard('linkedin'))
   linkedInAuth() {}

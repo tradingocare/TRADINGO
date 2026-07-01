@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 import {
   Star, Bookmark, ShoppingCart, MessageCircle, FileQuestion,
   ArrowLeftRight, ChevronLeft, ChevronRight, Package,
-  BadgeCheck, Building2,
+  Building2,
 } from 'lucide-react'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { useAuthStore } from '@/store/auth-store'
 import { useCompareStore } from '@/store/compare-store'
 import { useWishlistStore } from '@/store/wishlist-store'
@@ -163,7 +164,7 @@ export default function CompactProductCard({
               {seller.name || 'Verified Supplier'}
             </span>
           )}
-          {seller.isVerified && <BadgeCheck size={9} style={{ color: '#16A34A' }} />}
+          {seller.isVerified && <VerifiedBadge type="verified" showLabel={false} size="sm" />}
         </div>
 
         {/* Action buttons */}

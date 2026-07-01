@@ -8,6 +8,7 @@ import { RfqProcessor } from './rfq.processor';
 import { EscrowProcessor } from './escrow.processor';
 import { SettlementProcessor } from './settlement.processor';
 import { DisputeProcessor } from './dispute.processor';
+import { AiProcessor } from './ai.processor';
 import { BestsellerProcessor } from './bestseller.processor';
 import { JobSchedulerService } from './job-scheduler.service';
 import { QueueNames } from './queues';
@@ -35,6 +36,7 @@ import { DisputeService, DisputeAnalyticsService, AdminService, AdminAssignmentS
       { name: QueueNames.ANALYTICS },
         { name: QueueNames.MALWARE },
         { name: QueueNames.BESTSELLER },
+        { name: QueueNames.AI },
     ),
   ],
   providers: [
@@ -47,6 +49,7 @@ import { DisputeService, DisputeAnalyticsService, AdminService, AdminAssignmentS
     SettlementProcessor,
     DisputeProcessor,
     BestsellerProcessor,
+    AiProcessor,
     TradTrustService,
     EscrowService,
     EscrowAnalyticsService,

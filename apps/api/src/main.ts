@@ -1,4 +1,5 @@
 import helmet from '@fastify/helmet';
+import csrf from '@fastify/csrf-protection';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -6,6 +7,7 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { collectDefaultMetrics, Registry } from 'prom-client';
 import { createServer } from 'http';
+import * as Sentry from '@sentry/nestjs';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
@@ -16,20 +18,27 @@ import { RedisIoAdapter } from './modules/chat/redis-io-adapter';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: true, bodyLimit: 10 * 1024 * 1024 }),
+    new FastifyAdapter({ logger: true, bodyLimit: 100 * 1024 * 1024 }),
   );
 
-  // Security headers
-  await app.register(helmet, { contentSecurityPolicy: false });
-
+  // Sentry initialization
   const configService = app.get(ConfigService);
+  const sentryDsn = configService.get<string>('sentry.dsn', '');
+  const sentryEnabled = configService.get<boolean>('sentry.enabled', false);
+  if (sentryDsn && sentryEnabled) {
+    Sentry.init({ dsn: sentryDsn, environment: configService.get<string>('NODE_ENV', 'development') });
+  }
+
+  // Security headers
+  await app.register(helmet);
+
+  // CSRF protection
+  await app.register(csrf);
 
   // Redis Socket.io adapter for horizontal scaling
   const redisIoAdapter = new RedisIoAdapter(app);
   await redisIoAdapter.connectToRedis(configService);
   app.useWebSocketAdapter(redisIoAdapter);
-
-  // Sentry initializes via @sentry/nestjs/setup in AppModule
 
   // CORS
   app.enableCors({

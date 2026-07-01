@@ -3,12 +3,13 @@ import { useState, useRef } from 'react'
 import Link           from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  BadgeCheck, Crown, Heart, MapPin,
+  Crown, Heart, MapPin,
   Package, ChevronDown, ChevronUp, Truck,
   Coins, ShoppingCart, FileText, MessageCircle,
   ArrowLeftRight, Shield, Info,
   Plus, Minus, TrendingDown,
 } from 'lucide-react'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { useRouter }    from 'next/navigation'
 import { useAuthStore } from '../../store/auth-store'
 import toast            from 'react-hot-toast'
@@ -209,12 +210,7 @@ export default function ProductCard({ product, onCompare, inCompare }: Props) {
 
         {/* Top badges — dark glass pills */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10 max-w-[70%]">
-          {product.isVerified && (
-            <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white"
-              style={{ background:'rgba(0,0,0,0.5)', backdropFilter:'blur(16px)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:999, boxShadow:'0 2px 8px rgba(0,0,0,0.25)' }}>
-              <BadgeCheck size={10} className="text-green-400" /> Verified
-            </span>
-          )}
+          {product.isVerified && <VerifiedBadge type="verified" size="sm" />}
           {product.seller.isTradgoElite && (
             <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold"
               style={{ background:'rgba(0,0,0,0.5)', backdropFilter:'blur(16px)', border:'1px solid rgba(242,201,76,0.25)', borderRadius:999, boxShadow:'0 2px 8px rgba(0,0,0,0.25)', color:'#F2C94C' }}>

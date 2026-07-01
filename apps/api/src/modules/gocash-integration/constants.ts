@@ -1,0 +1,39 @@
+export const GOCASH_REWARDS = {
+  MEMBERSHIP: {
+    SIGNUP_BONUS: 200,
+    PLAN_UPGRADE: 500,
+    PLAN_RENEWAL: 100,
+  },
+  ORDER: {
+    COMPLETED: 50,
+    MILESTONE_10: 200,
+    MILESTONE_50: 1000,
+    MILESTONE_100: 2500,
+  },
+  RFQ: {
+    CREATED: 25,
+    CLOSED: 50,
+  },
+  QUOTE: {
+    ACCEPTED: 100,
+    SUBMITTED: 25,
+  },
+  NEGOTIATION: {
+    COMPLETED: 75,
+  },
+  PO: {
+    CONFIRMED: 100,
+    FULFILLED: 150,
+  },
+  SHIPMENT: {
+    CREATED: 25,
+    DELIVERED: 50,
+  },
+  DELIVERY: {
+    CONFIRMED: 75,
+  },
+} as const;
+
+export const INTEGRATION_SOURCE = 'GOCASH_INTEGRATION';
+export const SYSTEM_ACTOR = 'SYSTEM';
+export const SYSTEM_ACTOR_TYPE = 'SYSTEM';

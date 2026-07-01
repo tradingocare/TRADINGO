@@ -376,6 +376,25 @@ export class CompaniesService {
     return company;
   }
 
+  async findByOwner(userId: string) {
+    const owner = await this.prisma.companyOwner.findFirst({
+      where: { userId },
+      include: {
+        company: {
+          include: {
+            owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+            locations: { where: { deletedAt: null } },
+            categories: { include: { category: true } },
+            certificationDocs: true,
+            _count: { select: { locations: true, verifications: true, products: true } },
+          },
+        },
+      },
+    });
+    if (!owner) throw new ForbiddenException('Company not found');
+    return owner.company;
+  }
+
   async findBySlug(slug: string) {
     const company = await this.prisma.company.findFirst({
       where: { slug, deletedAt: null },
@@ -733,6 +752,40 @@ export class CompaniesService {
     }
 
     this.logger.warn(`No available RM found for auto-assignment to company ${companyId}`);
+  }
+
+  async getCompanyRank(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { trustScore: true, verificationLevel: true, totalProducts: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const higherRanked = await this.prisma.company.count({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        OR: [
+          { trustScore: { gt: company.trustScore ?? 0 } },
+          { trustScore: company.trustScore ?? 0, totalProducts: { gt: company.totalProducts ?? 0 } },
+        ],
+      },
+    });
+
+    const totalActive = await this.prisma.company.count({
+      where: { deletedAt: null, status: 'ACTIVE' },
+    });
+
+    return {
+      companyId,
+      rank: higherRanked + 1,
+      totalActive,
+      percentile: totalActive > 0
+        ? Math.round(((totalActive - higherRanked) / totalActive) * 100)
+        : 0,
+      trustScore: company.trustScore,
+      verificationLevel: company.verificationLevel,
+    };
   }
 
   private async requireOwnerOrAdmin(companyId: string, userId: string) {

@@ -39,7 +39,7 @@ export class SmartShipmentService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  private async getUserCompany(userId: string) {
+  async getUserCompany(userId: string) {
     const owner = await this.prisma.companyOwner.findFirst({
       where: { userId },
       include: { company: true },
@@ -389,6 +389,84 @@ export class SmartShipmentService {
       orderBy: { sortOrder: 'asc' },
       select: { id: true, name: true, slug: true, trackingUrl: true },
     });
+  }
+
+  // ─── PERFORMANCE METRICS ─────────────────────────────────────
+
+  async getPerformanceMetrics(companyId: string, startDate?: string, endDate?: string) {
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate);
+    if (endDate) dateFilter.lte = new Date(endDate);
+    const where: any = { OR: [{ buyerCompanyId: companyId }, { sellerCompanyId: companyId }], deletedAt: null };
+    if (startDate || endDate) where.createdAt = dateFilter;
+
+    const [total, byStatus, delivered, deliveryFailed] = await Promise.all([
+      this.prisma.shipment.count({ where }),
+      this.prisma.shipment.groupBy({ by: ['status'], _count: true, where }),
+      this.prisma.shipment.findMany({
+        where: { ...where, status: 'DELIVERED' },
+        select: { id: true, createdAt: true, deliveredAt: true, estimatedDeliveryDate: true },
+      }),
+      this.prisma.shipment.count({ where: { ...where, status: 'DELIVERY_FAILED' } }),
+    ]);
+
+    let onTimeCount = 0;
+    let totalTransitHours = 0;
+    let transitCount = 0;
+
+    for (const s of delivered) {
+      if (s.deliveredAt) {
+        const hrs = (s.deliveredAt.getTime() - s.createdAt.getTime()) / 3600000;
+        totalTransitHours += hrs;
+        transitCount++;
+        if (s.estimatedDeliveryDate && s.deliveredAt <= s.estimatedDeliveryDate) {
+          onTimeCount++;
+        }
+      }
+    }
+
+    return {
+      totalShipments: total,
+      byStatus: Object.fromEntries(byStatus.map(s => [s.status, s._count])),
+      onTimeDeliveryRate: delivered.length > 0 ? Math.round((onTimeCount / delivered.length) * 10000) / 100 : 0,
+      avgTransitTimeHours: transitCount > 0 ? Math.round((totalTransitHours / transitCount) * 100) / 100 : 0,
+      deliveryFailureRate: total > 0 ? Math.round((deliveryFailed / total) * 10000) / 100 : 0,
+      totalDelivered: delivered.length,
+    };
+  }
+
+  async getDeliveryMetrics(companyId: string, startDate?: string, endDate?: string) {
+    const dateFilter: any = {};
+    if (startDate) dateFilter.gte = new Date(startDate);
+    if (endDate) dateFilter.lte = new Date(endDate);
+    const where: any = { OR: [{ buyerCompanyId: companyId }, { sellerCompanyId: companyId }], deletedAt: null };
+    if (startDate || endDate) where.createdAt = dateFilter;
+
+    const [total, confirmed, failed, delivered] = await Promise.all([
+      this.prisma.shipment.count({ where }),
+      this.prisma.shipment.count({ where: { ...where, status: 'DELIVERED' } }),
+      this.prisma.shipment.count({ where: { ...where, status: { in: ['DELIVERY_FAILED'] } } }),
+      this.prisma.shipment.findMany({
+        where: { ...where, status: 'DELIVERED', deliveredAt: { not: null } },
+        select: { deliveredAt: true, createdAt: true },
+      }),
+    ]);
+
+    let totalDeliveryHours = 0;
+    for (const s of delivered) {
+      if (s.deliveredAt) {
+        totalDeliveryHours += (s.deliveredAt.getTime() - s.createdAt.getTime()) / 3600000;
+      }
+    }
+
+    return {
+      totalShipments: total,
+      deliveryConfirmationRate: total > 0 ? Math.round((confirmed / total) * 10000) / 100 : 0,
+      deliveryFailureRate: total > 0 ? Math.round((failed / total) * 10000) / 100 : 0,
+      avgDeliveryTimeHours: delivered.length > 0 ? Math.round((totalDeliveryHours / delivered.length) * 100) / 100 : 0,
+      totalDelivered: confirmed,
+      totalFailed: failed,
+    };
   }
 
   // ─── ADMIN ─────────────────────────────────────────────────────────

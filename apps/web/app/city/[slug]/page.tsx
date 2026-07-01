@@ -2,12 +2,11 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { MapPin, IndianRupee, Package, Store } from 'lucide-react';
-import { getProducts } from '@/lib/api/products';
-import type { Product, PaginatedResponse } from '@/lib/api/types';
+import { MapPin, IndianRupee, Package, Store, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { RankBadge } from '@/components/shared/RankBadge';
 import { CTABlock } from '@/components/shared/cta-block';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -38,6 +37,14 @@ function CitySkeleton() {
   );
 }
 
+async function fetchApi<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(process.env.NEXT_PUBLIC_API_URL + path, { next: { revalidate: 60 } });
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+}
+
 export default async function CityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   return (
@@ -50,22 +57,22 @@ export default async function CityPage({ params }: { params: Promise<{ slug: str
 async function CityContent({ slug }: { slug: string }) {
   const cityName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-  let result: PaginatedResponse<Product>;
-  try {
-    result = await getProducts({ limit: 50 } as Record<string, unknown> as never);
-  } catch {
-    notFound();
-  }
+  const cityRanking = await fetchApi<{
+    city: string; companyCount: number; productCount: number;
+    topCompanies: Array<{ rank: number; id: string; name: string; slug: string; logo: string | null; trustScore: number; totalProducts: number; verificationLevel: string }>;
+    topProducts: Array<{ id: string; name: string; slug: string; price: number | null; image: string | null; companyName: string; companySlug: string; trustScore: number }>;
+  }>(`/tradgo/city-rankings/${encodeURIComponent(cityName)}`);
 
-  const cityProducts = result.data;
-  const uniqueSellers = new Set(cityProducts.map(p => p.companyId)).size;
+  if (!cityRanking) notFound();
+
+  const { companyCount, productCount, topCompanies, topProducts } = cityRanking;
 
   const cityJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'City',
     name: cityName,
     description: `Marketplace in ${cityName} on TRADINGO`,
-    numberOfActiveListings: cityProducts.length,
+    numberOfActiveListings: productCount,
   };
 
   return (
@@ -85,13 +92,13 @@ async function CityContent({ slug }: { slug: string }) {
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary-600 dark:text-primary-400" />
               <span className="text-text-secondary dark:text-dark-text-secondary">
-                {cityProducts.length} listing{cityProducts.length !== 1 ? 's' : ''}
+                {productCount} listing{productCount !== 1 ? 's' : ''}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <Store className="h-5 w-5 text-primary-600 dark:text-primary-400" />
               <span className="text-text-secondary dark:text-dark-text-secondary">
-                {uniqueSellers} active seller{uniqueSellers !== 1 ? 's' : ''}
+                {companyCount} active seller{companyCount !== 1 ? 's' : ''}
               </span>
             </div>
           </div>
@@ -100,7 +107,7 @@ async function CityContent({ slug }: { slug: string }) {
 
       <section className="py-12">
         <div className="container-main">
-          {cityProducts.length === 0 ? (
+          {topProducts.length === 0 && topCompanies.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <MapPin className="h-16 w-16 text-text-secondary dark:text-dark-text-secondary" />
               <h2 className="mt-4 text-xl font-semibold text-text-primary dark:text-dark-text-primary">
@@ -116,32 +123,75 @@ async function CityContent({ slug }: { slug: string }) {
               </Link>
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {cityProducts.map((product) => (
-                <Link key={product.id} href={`/products/${product.id}`}>
-                  <Card className="h-full transition-all hover:shadow-md hover:-translate-y-1">
-                    <CardContent className="p-6">
-                      <div className="flex h-40 items-center justify-center rounded-lg bg-surface-secondary dark:bg-dark-surface-secondary">
-                        <Package className="h-12 w-12 text-text-secondary dark:text-dark-text-secondary" />
-                      </div>
-                      <h3 className="mt-4 font-semibold text-text-primary dark:text-dark-text-primary line-clamp-2">
-                        {product.name}
-                      </h3>
-                      <div className="mt-2 flex items-baseline gap-1">
-                        <IndianRupee className="h-4 w-4 text-text-primary dark:text-dark-text-primary" />
-                        <span className="text-xl font-bold text-text-primary dark:text-dark-text-primary">
-                          {product.price.toLocaleString()}
-                        </span>
-                        <span className="text-xs text-text-secondary dark:text-dark-text-secondary">/{product.unit}</span>
-                      </div>
-                      <Badge variant={product.stock > 0 ? 'success' : 'destructive'} className="mt-3">
-                        {product.stock > 0 ? 'In Stock' : 'Out of stock'}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+            <>
+              {topCompanies.length > 0 && (
+                <div className="mb-12">
+                  <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+                    Top Sellers in {cityName}
+                  </h2>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {topCompanies.map((company) => (
+                      <Link key={company.id} href={`/companies/${company.slug}`}>
+                        <Card className="h-full transition-all hover:shadow-md hover:-translate-y-1">
+                          <CardContent className="p-5">
+                            <div className="flex items-center gap-3">
+                              <RankBadge rank={company.rank} size="md" showLabel />
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-text-primary dark:text-dark-text-primary truncate">{company.name}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Star className="h-3.5 w-3.5 text-amber-500" />
+                                  <span className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">{company.trustScore}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {topProducts.length > 0 && (
+                <div>
+                  <h2 className="mb-6 text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+                    Top Products in {cityName}
+                  </h2>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {topProducts.map((product) => (
+                      <Link key={product.id} href={`/products/${product.slug}`}>
+                        <Card className="h-full transition-all hover:shadow-md hover:-translate-y-1">
+                          <CardContent className="p-6">
+                            <div className="flex h-40 items-center justify-center rounded-lg bg-surface-secondary dark:bg-dark-surface-secondary overflow-hidden">
+                              {product.image ? (
+                                <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <Package className="h-12 w-12 text-text-secondary dark:text-dark-text-secondary" />
+                              )}
+                            </div>
+                            <h3 className="mt-4 font-semibold text-text-primary dark:text-dark-text-primary line-clamp-2">
+                              {product.name}
+                            </h3>
+                            <div className="mt-1 flex items-center gap-1 text-xs text-text-secondary dark:text-dark-text-secondary">
+                              <Store className="h-3 w-3" />
+                              <span className="truncate">{product.companyName}</span>
+                            </div>
+                            {product.price != null && (
+                              <div className="mt-2 flex items-baseline gap-1">
+                                <IndianRupee className="h-4 w-4 text-text-primary dark:text-dark-text-primary" />
+                                <span className="text-xl font-bold text-text-primary dark:text-dark-text-primary">
+                                  {product.price.toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

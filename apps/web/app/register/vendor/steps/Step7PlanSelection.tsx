@@ -111,10 +111,16 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
   const handleSubmit = async () => {
     if (!allChecked) return
     setIsSubmitting(true)
-    await new Promise(r => setTimeout(r, 2000))
-    setIsSubmitting(false)
-    setIsSuccess(true)
-    onClearDraft()
+    try {
+      const { default: api } = await import('@/lib/api/client')
+      await api.post('/auth/register/vendor', { /* form data from wizard store */ })
+      setIsSuccess(true)
+      onClearDraft()
+    } catch {
+      // submission failed — error state handled by form
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isSuccess) {

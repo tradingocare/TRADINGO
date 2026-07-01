@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { BrandService } from './brand.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CreateBrandDto } from './dto/create-brand.dto';
+import { UpdateBrandDto } from './dto/update-brand.dto';
 
 @ApiTags('Seller Brands')
 @UseGuards(JwtAuthGuard)
@@ -18,13 +20,13 @@ export class BrandController {
 
   @Post()
   @ApiOperation({ summary: 'Create brand' })
-  create(@CurrentUser('sub') userId: string, @Body() dto: { name: string; logo?: string; description?: string }) {
+  create(@CurrentUser('sub') userId: string, @Body() dto: CreateBrandDto) {
     return this.service.createBrand(userId, dto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update brand' })
-  update(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: any) {
+  update(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: UpdateBrandDto) {
     return this.service.updateBrand(userId, id, dto);
   }
 

@@ -13,7 +13,11 @@ export function getDashboardForRole(role: string): string {
     case 'ADMIN':
       return '/admin/dashboard';
     case 'MANAGER':
+    case 'SELLER':
     case 'VIEWER':
+      return '/seller/dashboard';
+    case 'BUYER':
+      return '/buyer/dashboard';
     default:
       return '/seller/dashboard';
   }

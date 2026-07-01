@@ -5,6 +5,8 @@ export interface User {
   role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN';
   phone?: string;
   isVerified: boolean;
+  emailVerifiedAt?: string;
+  verificationLevel?: string;
   createdAt: string;
 }
 
@@ -35,6 +37,7 @@ export interface Product {
   stock: number;
   images?: string[];
   status: 'active' | 'draft' | 'archived';
+  trustScoreSnapshot?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -178,14 +181,28 @@ export interface Notification {
 }
 
 export interface AnalyticsSummary {
-  totalRevenue: number;
-  totalOrders: number;
-  totalProducts: number;
-  totalRfqs: number;
-  averageOrderValue: number;
-  growthRate: number;
-  periodStart: string;
-  periodEnd: string;
+  gmv: number;
+  totalSellers: number;
+  totalBuyers: number;
+  rfqs: number;
+  orders: number;
+  disputes: number;
+  payments: number;
+  settlements: number;
+  growth: { revenue: number; growthRate: number };
+  period: { start: string; end: string };
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  companyId: string;
+  companyName: string;
+  slug: string;
+  logo: string | null;
+  trustScore: number | null;
+  totalProducts: number | null;
+  verificationLevel: string;
+  score: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -199,13 +216,15 @@ export interface PaginatedResponse<T> {
 export interface KYCSubmission {
   id: string;
   companyId: string;
-  companyName?: string;
-  documentType: string;
-  status: 'pending' | 'verified' | 'rejected';
-  submittedAt: string;
-  reviewedAt?: string;
-  reviewerId?: string;
+  company?: { id: string; name: string; slug: string };
+  level: string;
+  status: string;
+  documents: { id: string; documentType: string; status: string }[];
   notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  reviewedAt?: string;
+  reviewer?: { id: string; name: string };
 }
 
 export interface ApiError {

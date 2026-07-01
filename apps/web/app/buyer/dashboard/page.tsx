@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { DashboardPageHeader, StatCard, StatusBadge, DashboardSkeleton } from '@/components/dashboard';
-import { useRfqs, useQuotes, useOrders, useGocashBalance, useBuyerDashboard } from '@/hooks';
+import { useRfqs, useQuotes, useOrders, useBuyerDashboard } from '@/hooks';
+import { useBuyerWalletSummary } from '@/hooks/use-wallet';
 import { FileText, Quote, ShoppingCart, Award, ArrowRight, Heart, Store, Bell, ClipboardList, type LucideIcon } from 'lucide-react';
 import { BUYER_QUICK_ACTIONS } from '@/data/master-data';
 
@@ -17,7 +18,7 @@ export default function BuyerDashboardPage() {
   const { data: rfqsData, isLoading: rfqsLoading } = useRfqs({ limit: 5 });
   const { data: quotesData, isLoading: quotesLoading } = useQuotes({ limit: 1 });
   const { data: ordersData, isLoading: ordersLoading } = useOrders({ limit: 1 });
-  const { data: balanceData, isLoading: balanceLoading } = useGocashBalance();
+  const { data: balanceData, isLoading: balanceLoading } = useBuyerWalletSummary();
   const { data: dashboardData, isLoading: dashLoading } = useBuyerDashboard();
 
   if (rfqsLoading || quotesLoading || ordersLoading || balanceLoading || dashLoading) {

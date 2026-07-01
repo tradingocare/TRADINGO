@@ -11,6 +11,7 @@ export enum QueueNames {
   DISPUTE = 'dispute',
   ANALYTICS = 'analytics',
   BESTSELLER = 'bestseller',
+  AI = 'ai',
 }
 
 export enum AnalyticsJobTypes {
@@ -147,4 +148,23 @@ export enum BestsellerJobTypes {
 
 export interface BestsellerJobData {
   type: BestsellerJobTypes;
+}
+
+export enum AiJobTypes {
+  PROCESS_BULK = 'PROCESS_BULK',
+  GENERATE_DESCRIPTION = 'GENERATE_DESCRIPTION',
+  GENERATE_SEO = 'GENERATE_SEO',
+  TRANSLATE = 'TRANSLATE',
+  SUGGEST_SPECS = 'SUGGEST_SPECS',
+  SUGGEST_IMAGES = 'SUGGEST_IMAGES',
+  QUALITY_SCORE = 'QUALITY_SCORE',
+  DUPLICATE_DETECT = 'DUPLICATE_DETECT',
+}
+
+export interface AiJobData {
+  type: AiJobTypes;
+  companyId: string;
+  userId: string;
+  productIds: string[];
+  options?: Record<string, unknown>;
 }

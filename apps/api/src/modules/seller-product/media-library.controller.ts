@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MediaLibraryService } from './media-library.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CreateMediaDto } from './dto/create-media.dto';
+import { UpdateMediaDto } from './dto/update-media.dto';
 
 @ApiTags('Seller Media Library')
 @UseGuards(JwtAuthGuard)
@@ -18,13 +20,13 @@ export class MediaLibraryController {
 
   @Post()
   @ApiOperation({ summary: 'Upload media' })
-  uploadMedia(@CurrentUser('sub') userId: string, @Body() dto: any) {
+  uploadMedia(@CurrentUser('sub') userId: string, @Body() dto: CreateMediaDto) {
     return this.service.uploadMedia(userId, dto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update media' })
-  updateMedia(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: any) {
+  updateMedia(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: UpdateMediaDto) {
     return this.service.updateMedia(userId, id, dto);
   }
 

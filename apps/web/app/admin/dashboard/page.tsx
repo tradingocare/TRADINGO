@@ -2,8 +2,12 @@
 
 import { DashboardPageHeader, StatCard, DashboardSkeleton } from '@/components/dashboard';
 import { useUsers, useCompanies, useRfqs, useKycSubmissions } from '@/hooks';
-import { Users, Building2, FileText, ShieldCheck, Shield, AlertTriangle, Activity } from 'lucide-react';
+import { useFraudSummary } from '@/hooks/use-wallet';
+import { useAiExecutiveCopilot } from '@/hooks/use-ai-admin';
+import { AiAdminCopilot } from '@/components/admin/ai-admin-copilot';
+import { Users, Building2, FileText, ShieldCheck, Shield, AlertTriangle, Activity, BadgeCheck, Scale, Ban, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 import { ADMIN_QUICK_LINKS } from '@/data/master-data';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -15,8 +19,9 @@ export default function AdminDashboardPage() {
   const { data: companiesData, isLoading: companiesLoad } = useCompanies({ limit: 1 });
   const { data: rfqsData, isLoading: rfqsLoad } = useRfqs({ limit: 1 });
   const { data: kycData, isLoading: kycLoad } = useKycSubmissions({ limit: 1 });
+  const { data: fraudData, isLoading: fraudLoad } = useFraudSummary();
 
-  if (usersLoad || companiesLoad || rfqsLoad || kycLoad) {
+  if (usersLoad || companiesLoad || rfqsLoad || kycLoad || fraudLoad) {
     return <DashboardSkeleton />;
   }
 
@@ -25,18 +30,35 @@ export default function AdminDashboardPage() {
   const activeRfqs = rfqsData?.total ?? 0;
   const pendingKyc = kycData?.total ?? 0;
 
+  const execCopilot = useAiExecutiveCopilot();
+  const [showCopilot, setShowCopilot] = useState(false);
+
   return (
     <div className="space-y-6">
-      <DashboardPageHeader
-        title="Admin Dashboard"
-        description="Platform overview"
-      />
+      <div className="flex items-center justify-between">
+        <DashboardPageHeader
+          title="Admin Dashboard"
+          description="Platform overview"
+        />
+        <button onClick={() => setShowCopilot(!showCopilot)}
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${showCopilot ? 'text-orange-300 bg-orange-500/15 border border-orange-400/30' : 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10'}`}>
+          <Sparkles className="h-3.5 w-3.5" />
+          AI Copilot
+        </button>
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Users} label="Total Users" value={String(totalUsers)} change="Registered" changeType="neutral" />
         <StatCard icon={Building2} label="Total Companies" value={String(totalCompanies)} change="Registered" changeType="neutral" />
         <StatCard icon={FileText} label="Active RFQs" value={String(activeRfqs)} change="Total" changeType="neutral" />
         <StatCard icon={ShieldCheck} label="Pending KYC" value={String(pendingKyc)} change="Awaiting review" changeType="neutral" />
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={BadgeCheck} label="Open Disputes" value={String(fraudData?.summary?.openDisputes ?? 0)} change="Disputes" changeType={fraudData?.summary?.openDisputes ? 'negative' : 'positive'} />
+        <StatCard icon={Ban} label="Blacklisted" value={String(fraudData?.summary?.blacklistedEntries ?? 0)} change="Entries" changeType="neutral" />
+        <StatCard icon={Shield} label="Fraud Alerts (24h)" value={String(fraudData?.summary?.totalAlerts ?? 0)} change="Alerts" changeType={fraudData?.summary?.totalAlerts ? 'negative' : 'positive'} />
+        <StatCard icon={Scale} label="Verification Status" value={`${pendingKyc} Pending`} change="Awaiting review" changeType={pendingKyc ? 'neutral' : 'positive'} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -112,6 +134,34 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {showCopilot && (
+        <div className="rounded-2xl p-4"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-white/50">AI Executive Copilot</span>
+            <button onClick={() => setShowCopilot(false)} className="text-white/30 hover:text-white/60">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <AiAdminCopilot
+            isGenerating={execCopilot.isPending}
+            contextData={{ platformHealth: { totalUsers, totalCompanies, activeRfqs, pendingKyc, openDisputes: fraudData?.summary?.openDisputes, fraudAlerts: fraudData?.summary?.totalAlerts }, focusArea: 'dashboard' }}
+            onMorningBrief={async () => ({})}
+            onRevenueForecast={async () => ({})}
+            onUserGrowthPrediction={async () => ({})}
+            onFraudIntelligence={async () => ({})}
+            onChurnPrediction={async () => ({})}
+            onCategoryIntelligence={async () => ({})}
+            onGeoIntelligence={async () => ({})}
+            onMarketTrends={async () => ({})}
+            onAlerts={async () => ({})}
+            onExecutiveCopilot={(d) => execCopilot.mutateAsync(d)}
+            onReport={async () => ({})}
+            onDecisionSupport={async () => ({})}
+          />
+        </div>
+      )}
     </div>
   );
 }

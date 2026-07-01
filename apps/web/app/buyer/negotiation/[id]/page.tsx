@@ -5,14 +5,22 @@ import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
 import {
   useNegotiationDetail, useNegotiationVersions, useNegotiationTimeline,
   useCounterOffer, useAcceptNegotiation, useRejectNegotiation, useCancelNegotiation,
 } from '@/hooks/use-smart-negotiation';
 import { useGeneratePo } from '@/hooks/use-smart-po';
+import { AiNegotiationCopilot } from '@/components/negotiation/ai-negotiation-copilot';
+import {
+  useAiNegotiationStrategy, useAiSellerSuggestions,
+  useAiSentiment, useAiDealProbability, useAiSuggestedReplies,
+  useAiRiskDetection, useAiConversationSummary, useAiNegotiationMemory,
+  useAiNegotiationTimeline as useAiTimeline,
+} from '@/hooks/use-ai-negotiation';
 import { useState } from 'react';
 import {
-  ArrowLeft, DollarSign, Clock, Shield, Package, FileText, Check, X, Send, History, Activity, Building2, Truck, Tag, FileCheck
+  ArrowLeft, DollarSign, Clock, Shield, Package, FileText, Check, X, Send, Sparkles, History, Activity, Building2, Truck, Tag, FileCheck, CheckCircle, XCircle
 } from 'lucide-react';
 
 const formatStatus = (s: string) => s.replace(/_/g, ' ').toLowerCase();
@@ -33,6 +41,33 @@ export default function BuyerNegotiationDetailPage() {
   const cancelMutation = useCancelNegotiation();
 
   const n: any = negotiation;
+  const { toast } = useToast();
+
+  const [showAi, setShowAi] = useState(false);
+  const [aiResult, setAiResult] = useState<{ type: string; content: any } | null>(null);
+
+  const stratMutation = useAiNegotiationStrategy();
+  const sellerSuggestionsMutation = useAiSellerSuggestions();
+  const sentimentMutation = useAiSentiment();
+  const probabilityMutation = useAiDealProbability();
+  const repliesMutation = useAiSuggestedReplies();
+  const riskMutation = useAiRiskDetection();
+  const summaryMutation = useAiConversationSummary();
+  const memoryMutation = useAiNegotiationMemory();
+  const aiTimelineMutation = useAiTimeline();
+
+  const isAiGenerating = stratMutation.isPending || sellerSuggestionsMutation.isPending || sentimentMutation.isPending || probabilityMutation.isPending || repliesMutation.isPending || riskMutation.isPending || summaryMutation.isPending || memoryMutation.isPending || aiTimelineMutation.isPending;
+
+  const handleAiAction = async (label: string, mutation: any, data: any) => {
+    try {
+      const res = await mutation.mutateAsync({ negotiationId: id, data })
+      const payload = res.data || res
+      setAiResult({ type: label, content: payload.content || payload })
+      toast({ title: 'AI Analysis Complete', description: `${label} generated successfully`, variant: 'default' })
+    } catch (err: any) {
+      toast({ title: 'AI Analysis Failed', description: err?.message || 'Could not complete analysis', variant: 'destructive' })
+    }
+  }
 
   const [counterForm, setCounterForm] = useState(false);
   const [form, setForm] = useState<any>({});
@@ -117,6 +152,9 @@ export default function BuyerNegotiationDetailPage() {
                 Cancel
               </Button>
             )}
+            <Button variant="ghost" onClick={() => setShowAi(!showAi)} className={showAi ? 'text-orange-400' : ''}>
+              <Sparkles className="mr-2 h-4 w-4" />AI Copilot
+            </Button>
             <Button variant="ghost" onClick={() => router.push('/buyer/negotiation')}>
               <ArrowLeft className="mr-2 h-4 w-4" />Back
             </Button>
@@ -340,29 +378,78 @@ export default function BuyerNegotiationDetailPage() {
             )}
           </div>
 
-          {/* RFQ Info */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
-              <FileText className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wider">Quote Details</span>
+          {/* AI Copilot / Quote Details */}
+          {showAi ? (
+            <>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+                <AiNegotiationCopilot
+                  negotiationId={id}
+                  negotiationData={n || {}}
+                  role="BUYER"
+                  onStrategy={(d) => handleAiAction('Strategy', stratMutation, d)}
+                  onBuyerBehavior={(d) => handleAiAction('Buyer Insights', sellerSuggestionsMutation, d)}
+                  onSellerSuggestions={(d) => handleAiAction('Seller Behaviour', sellerSuggestionsMutation, d)}
+                  onSentiment={(d) => handleAiAction('Sentiment', sentimentMutation, d)}
+                  onDealProbability={(d) => handleAiAction('Deal Probability', probabilityMutation, d)}
+                  onReplies={(d) => handleAiAction('Suggested Replies', repliesMutation, d)}
+                  onRisk={(d) => handleAiAction('Risk Detection', riskMutation, d)}
+                  onSummary={(d) => handleAiAction('Summary', summaryMutation, d)}
+                  onMemory={(d) => handleAiAction('AI Memory', memoryMutation, d)}
+                  onTimeline={(d) => handleAiAction('Timeline', aiTimelineMutation, d)}
+                  isGenerating={isAiGenerating}
+                />
+              </div>
+
+              {aiResult && (
+                <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 backdrop-blur-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-orange-300">
+                      <CheckCircle className="h-3 w-3" />
+                      {aiResult.type}
+                    </div>
+                    <button onClick={() => setAiResult(null)} className="text-white/30 hover:text-white/60">
+                      <XCircle className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <pre className="text-xs text-white/70 whitespace-pre-wrap font-sans leading-relaxed max-h-60 overflow-y-auto">
+                    {typeof aiResult.content === 'object' ? JSON.stringify(aiResult.content, null, 2) : String(aiResult.content)}
+                  </pre>
+                </div>
+              )}
+
+              {isAiGenerating && (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-xl">
+                  <div className="flex items-center gap-2 text-sm text-white/50">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
+                    AI is analysing...
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-white/60 mb-3">
+                <FileText className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wider">Quote Details</span>
+              </div>
+              {n.quote && (
+                <dl className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <dt className="text-white/40">Line Items</dt>
+                    <dd className="text-white">{n.quote.lineItems?.length || 0}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-white/40">Total</dt>
+                    <dd className="text-white font-medium">{n.quote.currency} {n.quote.totalAmount?.toLocaleString('en-IN')}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-white/40">Tax</dt>
+                    <dd className="text-white">{n.quote.taxAmount?.toLocaleString('en-IN') || '-'}</dd>
+                  </div>
+                </dl>
+              )}
             </div>
-            {n.quote && (
-              <dl className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <dt className="text-white/40">Line Items</dt>
-                  <dd className="text-white">{n.quote.lineItems?.length || 0}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-white/40">Total</dt>
-                  <dd className="text-white font-medium">{n.quote.currency} {n.quote.totalAmount?.toLocaleString('en-IN')}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-white/40">Tax</dt>
-                  <dd className="text-white">{n.quote.taxAmount?.toLocaleString('en-IN') || '-'}</dd>
-                </div>
-              </dl>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

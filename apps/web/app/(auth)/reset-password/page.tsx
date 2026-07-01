@@ -44,13 +44,20 @@ export default function ResetPasswordPage() {
 
   const password = watch('password');
 
-  const onSubmit = async (_data: ResetForm) => {
+  const onSubmit = async (data: ResetForm) => {
     setServerError(null);
     try {
-      // TODO: Reset password via token
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      if (!token) {
+        setServerError('Missing reset token. Please use the link from your email.');
+        return;
+      }
+      const apiClient = (await import('@/lib/api/client')).default;
+      await apiClient.post('/auth/reset-password', { resetToken: token, newPassword: data.password });
       setDone(true);
     } catch (err: any) {
-      setServerError(err.message || 'Something went wrong');
+      setServerError(err?.response?.data?.message || err.message || 'Reset failed');
     }
   };
 

@@ -60,6 +60,81 @@ export class TradgoService {
     return badges;
   }
 
+  // ─── UNIFIED BADGE REGISTRY ─────────────────────────────────
+
+  async getUnifiedBadges(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { verificationLevel: true, totalProducts: true, trustScore: true, createdAt: true, status: true },
+    });
+    if (!company) return [];
+
+    const badges: { badge: string; earned: boolean; label: string; description: string }[] = [];
+
+    const vl = company.verificationLevel;
+    badges.push({ badge: 'verified', earned: vl !== 'LEVEL_0', label: 'Verified', description: 'Identity and business verified' });
+    badges.push({ badge: 'trusted', earned: vl === 'LEVEL_2' || vl === 'LEVEL_3', label: 'Trusted', description: 'Level 2+ verification achieved' });
+    badges.push({ badge: 'premium', earned: vl === 'LEVEL_4' || vl === 'LEVEL_5', label: 'Premium', description: 'Level 4+ verification achieved' });
+    badges.push({ badge: 'gold', earned: (company.trustScore ?? 0) >= 90, label: 'Gold', description: 'Trust score of 90+' });
+    badges.push({ badge: 'platinum', earned: (company.trustScore ?? 0) >= 95 && (vl === 'LEVEL_5' || vl === 'LEVEL_6'), label: 'Platinum', description: 'Trust score 95+ and Level 5+ verification' });
+    badges.push({ badge: 'elite', earned: vl === 'LEVEL_6', label: 'Elite', description: 'Level 6 verification achieved' });
+    badges.push({ badge: 'top-seller', earned: (company.totalProducts ?? 0) >= 100, label: 'Top Seller', description: 'Listed 100+ products' });
+    badges.push({ badge: 'fast-responder', earned: (company.totalProducts ?? 0) >= 10 && (company.trustScore ?? 0) >= 60, label: 'Fast Responder', description: '10+ products and 60+ trust score' });
+    badges.push({ badge: 'reliable-supplier', earned: (company.trustScore ?? 0) >= 70 && vl !== 'LEVEL_0', label: 'Reliable Supplier', description: 'Trust score 70+ and verified' });
+    badges.push({ badge: 'future', earned: false, label: 'Future', description: 'Coming soon' });
+
+    return badges;
+  }
+
+  // ─── TRUST SIGNALS ──────────────────────────────────────────
+
+  async getTrustSignals(companyId: string) {
+    const [company, orderCounts, shipmentCounts, quoteCounts, rfqCounts, wallet] = await Promise.all([
+      this.prisma.company.findUnique({
+        where: { id: companyId },
+        select: { trustScore: true, verificationLevel: true, status: true, totalProducts: true, responseRate: true, createdAt: true },
+      }),
+      this.prisma.order.aggregate({
+        where: { OR: [{ buyerCompanyId: companyId }, { sellerCompanyId: companyId }], deletedAt: null },
+        _count: true,
+      }),
+      this.prisma.shipment.aggregate({
+        where: { OR: [{ buyerCompanyId: companyId }, { sellerCompanyId: companyId }], deletedAt: null },
+        _count: true,
+      }),
+      this.prisma.quote.aggregate({
+        where: { OR: [{ companyId }, { rfq: { companyId } }] },
+        _count: true,
+      }),
+      this.prisma.rfq.aggregate({
+        where: { companyId, deletedAt: null },
+        _count: true,
+      }),
+      this.prisma.gOCASH_Wallet.findFirst({
+        where: { companyId },
+        select: { currentBalance: true, lifetimeEarned: true, status: true },
+      }),
+    ]);
+
+    if (!company) return null;
+
+    return {
+      trustScore: company.trustScore,
+      verificationLevel: company.verificationLevel,
+      companyStatus: company.status,
+      totalProducts: company.totalProducts,
+      responseRate: company.responseRate,
+      memberSince: company.createdAt,
+      totalOrders: orderCounts._count,
+      totalShipments: shipmentCounts._count,
+      totalQuotes: quoteCounts._count,
+      totalRfqs: rfqCounts._count,
+      goCashBalance: wallet ? Number(wallet.currentBalance) : 0,
+      goCashLifetimeEarned: wallet ? Number(wallet.lifetimeEarned) : 0,
+      walletStatus: wallet?.status ?? null,
+    };
+  }
+
   async getLeaderboard(limit = 20) {
     const companies = await this.prisma.company.findMany({
       where: { deletedAt: null, status: 'ACTIVE' },
@@ -79,5 +154,204 @@ export class TradgoService {
       verificationLevel: c.verificationLevel,
       score: Math.round((c.trustScore ?? 0) * 0.6 + Math.min((c.totalProducts ?? 0) * 2, 40)),
     }));
+  }
+
+  // ─── UNIFIED RANKING FACADE ───────────────────────────────
+
+  async getUnifiedRanking(companyId: string) {
+    const [leaderboard, trustSignals] = await Promise.all([
+      this.getLeaderboard(100),
+      this.getTrustSignals(companyId),
+    ]);
+
+    const leaderboardEntry = leaderboard.find(e => e.companyId === companyId);
+    const rank = leaderboardEntry?.rank ?? null;
+    const totalEntries = leaderboard.length;
+
+    const badges = await this.getUnifiedBadges(companyId);
+
+    return {
+      companyId,
+      rank,
+      totalEntries,
+      percentile: rank && totalEntries > 0
+        ? Math.round((1 - rank / totalEntries) * 100)
+        : null,
+      trustScore: trustSignals?.trustScore ?? null,
+      verificationLevel: trustSignals?.verificationLevel ?? null,
+      totalProducts: trustSignals?.totalProducts ?? 0,
+      totalOrders: trustSignals?.totalOrders ?? 0,
+      badges: badges.filter(b => b.earned).map(b => b.badge),
+    };
+  }
+
+  async getCityRankings(city: string, limit = 10) {
+    const [companies, products] = await Promise.all([
+      this.prisma.company.findMany({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          locations: { some: { city: { equals: city, mode: 'insensitive' }, deletedAt: null } },
+        },
+        orderBy: { trustScore: 'desc' },
+        take: limit,
+        select: { id: true, name: true, slug: true, logo: true, trustScore: true, totalProducts: true, verificationLevel: true },
+      }),
+      this.prisma.product.findMany({
+        where: {
+          status: 'ACTIVE',
+          company: {
+            deletedAt: null,
+            locations: { some: { city: { equals: city, mode: 'insensitive' }, deletedAt: null } },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: { id: true, name: true, slug: true, originalPrice: true, media: { where: { type: 'IMAGE' }, take: 1, select: { url: true } }, company: { select: { name: true, slug: true, trustScore: true } } },
+      }),
+    ]);
+
+    return {
+      city,
+      companyCount: await this.prisma.company.count({
+        where: {
+          deletedAt: null,
+          locations: { some: { city: { equals: city, mode: 'insensitive' }, deletedAt: null } },
+        },
+      }),
+      productCount: await this.prisma.product.count({
+        where: {
+          status: 'ACTIVE',
+          company: {
+            deletedAt: null,
+            locations: { some: { city: { equals: city, mode: 'insensitive' }, deletedAt: null } },
+          },
+        },
+      }),
+      topCompanies: companies.map((c, i) => ({
+        rank: i + 1,
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        logo: c.logo,
+        trustScore: c.trustScore,
+        totalProducts: c.totalProducts,
+        verificationLevel: c.verificationLevel,
+      })),
+      topProducts: products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        price: p.originalPrice ? Number(p.originalPrice) : null,
+        image: p.media?.[0]?.url ?? null,
+        companyName: p.company.name,
+        companySlug: p.company.slug,
+        trustScore: p.company.trustScore,
+      })),
+    };
+  }
+
+  async getStateRankings(state: string, limit = 10) {
+    const [companies, products] = await Promise.all([
+      this.prisma.company.findMany({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          locations: { some: { state: { equals: state, mode: 'insensitive' }, deletedAt: null } },
+        },
+        orderBy: { trustScore: 'desc' },
+        take: limit,
+        select: { id: true, name: true, slug: true, logo: true, trustScore: true, totalProducts: true, verificationLevel: true },
+      }),
+      this.prisma.product.findMany({
+        where: {
+          status: 'ACTIVE',
+          company: {
+            deletedAt: null,
+            locations: { some: { state: { equals: state, mode: 'insensitive' }, deletedAt: null } },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: { id: true, name: true, slug: true, originalPrice: true, media: { where: { type: 'IMAGE' }, take: 1, select: { url: true } }, company: { select: { name: true, slug: true, trustScore: true } } },
+      }),
+    ]);
+
+    return {
+      state,
+      companyCount: companies.length,
+      productCount: products.length,
+      topCompanies: companies.map((c, i) => ({
+        rank: i + 1,
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        logo: c.logo,
+        trustScore: c.trustScore,
+        totalProducts: c.totalProducts,
+        verificationLevel: c.verificationLevel,
+      })),
+      topProducts: products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        price: p.originalPrice ? Number(p.originalPrice) : null,
+        image: p.media?.[0]?.url ?? null,
+        companyName: p.company.name,
+        companySlug: p.company.slug,
+        trustScore: p.company.trustScore,
+      })),
+    };
+  }
+
+  async getCategoryRankings(categoryId: string, limit = 10) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        categoryId,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: { id: true, name: true, slug: true, originalPrice: true, media: { where: { type: 'IMAGE' }, take: 1, select: { url: true } }, company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true } } },
+    });
+
+    const companyIds = [...new Set(products.map(p => p.company.id))];
+    const companies = await this.prisma.company.findMany({
+      where: { id: { in: companyIds }, deletedAt: null },
+      select: { id: true, name: true, slug: true, logo: true, trustScore: true, totalProducts: true, verificationLevel: true },
+    });
+
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true, name: true },
+    });
+
+    return {
+      category: category ?? { id: categoryId, name: categoryId },
+      totalProducts: await this.prisma.product.count({ where: { status: 'ACTIVE', categoryId } }),
+      topProducts: products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        price: p.originalPrice ? Number(p.originalPrice) : null,
+        image: p.media?.[0]?.url ?? null,
+        companyName: p.company.name,
+        companySlug: p.company.slug,
+        trustScore: p.company.trustScore,
+      })),
+      topCompanies: companies
+        .sort((a, b) => (b.trustScore ?? 0) - (a.trustScore ?? 0))
+        .slice(0, limit)
+        .map((c, i) => ({
+          rank: i + 1,
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          logo: c.logo,
+          trustScore: c.trustScore,
+          totalProducts: c.totalProducts,
+          verificationLevel: c.verificationLevel,
+        })),
+    };
   }
 }

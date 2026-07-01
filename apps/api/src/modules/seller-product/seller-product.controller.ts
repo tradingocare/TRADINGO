@@ -4,6 +4,8 @@ import { SellerProductService } from './seller-product.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ProductStatus } from '@prisma/client';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @ApiTags('Seller Products')
 @UseGuards(JwtAuthGuard)
@@ -37,14 +39,14 @@ export class SellerProductController {
 
   @Post()
   @ApiOperation({ summary: 'Create product' })
-  createProduct(@CurrentUser('sub') userId: string, @Body() dto: any) {
-    return this.service.createProduct(userId, dto);
+  createProduct(@CurrentUser('sub') userId: string, @Body() dto: CreateProductDto) {
+    return this.service.createProduct(userId, dto as any);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update product' })
-  updateProduct(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: any) {
-    return this.service.updateProduct(userId, id, dto);
+  updateProduct(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.service.updateProduct(userId, id, dto as any);
   }
 
   @Delete(':id')

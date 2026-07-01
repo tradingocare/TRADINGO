@@ -13,6 +13,7 @@ import { QueueNames } from '../../jobs/queues';
 @Module({
   imports: [
     BullModule.registerQueue({ name: QueueNames.NOTIFICATION }),
+    BullModule.registerQueue({ name: QueueNames.EMAIL }),
     AnalyticsModule,
   ],
   controllers: [NotificationController],
