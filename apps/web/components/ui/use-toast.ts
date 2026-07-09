@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 interface Toast {
   id: string;
@@ -27,6 +27,7 @@ let toastIdCounter = 0;
 const toastFn: ToastFn = (options: ToastOptions) => {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}-${++toastIdCounter}`;
   const newToast: Toast = { id, ...options };
+  console.debug(`[toast] Generated toast ID: ${id}`);
   toastListeners.forEach((listener) => listener(newToast));
   return id;
 };
@@ -43,18 +44,18 @@ export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((t: Toast) => {
-    setToasts((prev) => [...prev, t]);
+    setToasts((prev) => (prev.some((x) => x.id === t.id) ? prev : [...prev, t]));
     setTimeout(() => {
       setToasts((prev) => prev.filter((x) => x.id !== t.id));
     }, 5000);
   }, []);
 
-  useState(() => {
+  useEffect(() => {
     toastListeners.push(addToast);
     return () => {
       toastListeners = toastListeners.filter((l) => l !== addToast);
     };
-  });
+  }, [addToast]);
 
   const dismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((x) => x.id !== id));
