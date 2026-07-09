@@ -15,15 +15,29 @@ interface ToastOptions {
   variant?: 'default' | 'destructive';
 }
 
-let toastListeners: ((toast: Toast) => void)[] = [];
-let toastId = 0;
+interface ToastFn {
+  (options: ToastOptions): string;
+  success: (message: string, description?: string) => string;
+  error: (message: string, description?: string) => string;
+}
 
-export function toast(options: ToastOptions) {
-  const id = String(++toastId);
+let toastListeners: ((toast: Toast) => void)[] = [];
+let toastIdCounter = 0;
+
+const toastFn: ToastFn = (options: ToastOptions) => {
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}-${++toastIdCounter}`;
   const newToast: Toast = { id, ...options };
   toastListeners.forEach((listener) => listener(newToast));
   return id;
-}
+};
+
+toastFn.success = (message: string, description?: string) =>
+  toast({ title: message, description, variant: 'default' });
+
+toastFn.error = (message: string, description?: string) =>
+  toast({ title: message, description, variant: 'destructive' });
+
+export const toast = toastFn;
 
 export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
