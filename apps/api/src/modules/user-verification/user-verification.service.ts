@@ -90,6 +90,8 @@ export class UserVerificationService {
         VerificationLevel.LEVEL_4,
         VerificationLevel.LEVEL_5,
         VerificationLevel.LEVEL_6,
+        VerificationLevel.LEVEL_7,
+        VerificationLevel.LEVEL_8,
       ];
       const currentLevelIndex = levelOrder.indexOf(verification.user.verificationLevel);
       const newLevelIndex = levelOrder.indexOf(verification.level);

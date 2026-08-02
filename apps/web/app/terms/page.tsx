@@ -4,6 +4,13 @@ import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
   title: 'Terms of Service | TRADINGO',
+  description: 'TRADINGO Terms of Service govern the use of India\'s first Trusted Electronic Marketplace (TEM). Read about account registration, marketplace rules, fees, and dispute resolution.',
+  openGraph: {
+    title: 'Terms of Service | TRADINGO',
+    description: 'Review the TRADINGO Terms of Service including marketplace rules, fees, intellectual property, and dispute resolution policies.',
+    type: 'website',
+    siteName: 'TRADINGO',
+  },
 };
 
 const termsSections = [

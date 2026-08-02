@@ -21,6 +21,16 @@ const RANKING_WEIGHTS = {
 export class QuoteService {
   private readonly logger = new Logger(QuoteService.name);
 
+  private readonly catalogInclude = {
+    rfqProductItem: {
+      include: {
+        catalogCategory: { select: { id: true, name: true, slug: true } },
+        catalogSubcategory: { select: { id: true, name: true, slug: true } },
+        catalogItem: { select: { id: true, name: true, slug: true, unit: true, keywords: true } },
+      },
+    },
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
@@ -136,7 +146,7 @@ export class QuoteService {
       where,
       orderBy: isBuyer ? { createdAt: 'desc' } : { createdAt: 'desc' },
       include: {
-        lineItems: { orderBy: { sortOrder: 'asc' } },
+        lineItems: { orderBy: { sortOrder: 'asc' }, include: this.catalogInclude },
         attachments: true,
         company: { select: { id: true, name: true, slug: true, trustScore: true, responseRate: true, verificationLevel: true } },
       },
@@ -153,7 +163,7 @@ export class QuoteService {
     const quote = await this.prisma.quote.findFirst({
       where: { id: quoteId, rfqId },
       include: {
-        lineItems: { orderBy: { sortOrder: 'asc' } },
+        lineItems: { orderBy: { sortOrder: 'asc' }, include: this.catalogInclude },
         attachments: true,
         company: { select: { id: true, name: true, slug: true, trustScore: true, responseRate: true, verificationLevel: true } },
         events: { orderBy: { createdAt: 'desc' } },
@@ -424,7 +434,7 @@ export class QuoteService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          lineItems: { orderBy: { sortOrder: 'asc' } },
+          lineItems: { orderBy: { sortOrder: 'asc' }, include: this.catalogInclude },
           rfq: { select: { id: true, title: true, status: true } },
           company: { select: { id: true, name: true, slug: true } },
         },
@@ -456,7 +466,7 @@ export class QuoteService {
     const quote = await this.prisma.quote.findFirst({
       where: { id: quoteId, companyId: { in: companyIds } },
       include: {
-        lineItems: { orderBy: { sortOrder: 'asc' } },
+        lineItems: { orderBy: { sortOrder: 'asc' }, include: this.catalogInclude },
         attachments: true,
         rfq: { select: { id: true, title: true, status: true, createdBy: true } },
         company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true } },

@@ -1,0 +1,1771 @@
+{
+  "info": {
+    "name": "Tradingo API — TradHexa Platform",
+    "description": "Complete API collection for the Tradingo TradHexa platform — covering Authentication, Catalog, RFQ, Quotes, Smart Negotiation, Products, GOCASH Wallet, AI Gateway, TradeTalk, Admin, TradeServ, and Enterprise Catalog.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api/v1",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Set timestamp for unique data",
+          "pm.variables.set('timestamp', Date.now());"
+        ],
+        "type": "text/javascript",
+        "packages": {}
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Auth & user management endpoints",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test{{timestamp}}@tradingo.com\",\n  \"password\": \"SecurePass123!\",\n  \"name\": \"Test User\",\n  \"companyName\": \"Test Corp\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user account"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Has accessToken', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.accessToken).to.be.a('string');",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@tradingo.com\",\n  \"password\": \"SecurePass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with email and password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Has accessToken', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.accessToken).to.be.a('string');",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "  if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Refresh access token using refresh token"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Has accessToken', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.accessToken).to.be.a('string');",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@tradingo.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "forgot-password"]
+            },
+            "description": "Request password reset email"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"password\": \"NewSecurePass456!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password"]
+            },
+            "description": "Reset password using token from email"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"SecurePass123!\",\n  \"newPassword\": \"NewSecurePass456!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "change-password"]
+            },
+            "description": "Change password for authenticated user"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get current authenticated user profile"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Has user data', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id || json.email).to.exist;",
+                  "  if (json.id) pm.collectionVariables.set('userId', json.id);",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Me",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Updated User Name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Update current user profile"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"email-verification-token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-email"]
+            },
+            "description": "Verify email address with token"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "description": "Master category endpoints",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            },
+            "description": "Get all master categories"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Returns array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('array').or.have.property('data').that.is.an('array');",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories", "1"]
+            },
+            "description": "Get a single category by ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Has category data', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id || json.name).to.exist;",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Subcategories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories/1/subcategories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories", "1", "subcategories"]
+            },
+            "description": "Get subcategories for a category"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Returns array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('array').or.have.property('data').that.is.an('array');",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "RFQ",
+      "description": "Request for Quote endpoints — buyer & smart RFQ",
+      "item": [
+        {
+          "name": "Create RFQ",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"RFQ {{timestamp}}\",\n  \"description\": \"Need bulk raw materials\",\n  \"categoryId\": 1,\n  \"quantity\": 100,\n  \"unit\": \"kg\",\n  \"deliveryDate\": \"2026-08-15T00:00:00.000Z\",\n  \"budget\": 5000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/rfq",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "rfq"]
+            },
+            "description": "Create a new RFQ for a company"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Has RFQ id', () => {",
+                  "  const json = pm.response.json();",
+                  "  const id = json.id || (json.data && json.data.id);",
+                  "  if (id) pm.collectionVariables.set('rfqId', id);",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Company RFQs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/rfq",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "rfq"]
+            },
+            "description": "List all RFQs for a company"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get RFQ by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/rfq/{{rfqId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "rfq", "{{rfqId}}"]
+            },
+            "description": "Get a single RFQ by ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Has RFQ data', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id || json.title).to.exist;",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publish RFQ",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/rfq/{{rfqId}}/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "rfq", "{{rfqId}}", "publish"]
+            },
+            "description": "Publish an RFQ to make it visible to sellers"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Smart RFQs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/smart-rfq",
+              "host": ["{{baseUrl}}"],
+              "path": ["smart-rfq"]
+            },
+            "description": "List all smart RFQs across companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Smart RFQ by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/smart-rfq/{{rfqId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["smart-rfq", "{{rfqId}}"]
+            },
+            "description": "Get a single smart RFQ by ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accept Quote",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/smart-rfq/{{rfqId}}/accept-quote/{{quoteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["smart-rfq", "{{rfqId}}", "accept-quote", "{{quoteId}}"]
+            },
+            "description": "Accept a quote for a smart RFQ"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Quotes",
+      "description": "Quote management endpoints for sellers",
+      "item": [
+        {
+          "name": "Create Quote",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 4500,\n  \"currency\": \"USD\",\n  \"validUntil\": \"2026-08-01T00:00:00.000Z\",\n  \"terms\": \"Net 30\",\n  \"notes\": \"Includes shipping\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/rfq/{{rfqId}}/quotes",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "rfq", "{{rfqId}}", "quotes"]
+            },
+            "description": "Submit a quote for an RFQ"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Has quote id', () => {",
+                  "  const json = pm.response.json();",
+                  "  const id = json.id || (json.data && json.data.id);",
+                  "  if (id) pm.collectionVariables.set('quoteId', id);",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Quotes for RFQ",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/rfq/{{rfqId}}/quotes",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "rfq", "{{rfqId}}", "quotes"]
+            },
+            "description": "List all quotes for a specific RFQ"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accept Quote (Legacy)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/companies/{{companyId}}/rfq/{{rfqId}}/quotes/{{quoteId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["companies", "{{companyId}}", "rfq", "{{rfqId}}", "quotes", "{{quoteId}}", "accept"]
+            },
+            "description": "Accept a quote (legacy company-scoped endpoint)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Smart Negotiation",
+      "description": "AI-powered negotiation endpoints",
+      "item": [
+        {
+          "name": "Create Negotiation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rfqId\": \"{{rfqId}}\",\n  \"quoteId\": \"{{quoteId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/smart-negotiation",
+              "host": ["{{baseUrl}}"],
+              "path": ["smart-negotiation"]
+            },
+            "description": "Start a new negotiation session"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Has negotiation id', () => {",
+                  "  const json = pm.response.json();",
+                  "  const id = json.id || (json.data && json.data.id);",
+                  "  if (id) pm.collectionVariables.set('negotiationId', id);",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Negotiation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/smart-negotiation/{{negotiationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["smart-negotiation", "{{negotiationId}}"]
+            },
+            "description": "Get negotiation details by ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Counter Offer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 4200,\n  \"terms\": \"Net 45 with 2% early payment discount\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/smart-negotiation/{{negotiationId}}/counter",
+              "host": ["{{baseUrl}}"],
+              "path": ["smart-negotiation", "{{negotiationId}}", "counter"]
+            },
+            "description": "Submit a counter offer in the negotiation"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accept Negotiation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/smart-negotiation/{{negotiationId}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["smart-negotiation", "{{negotiationId}}", "accept"]
+            },
+            "description": "Accept the current negotiation terms"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "AI Strategy",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/smart-negotiation/{{negotiationId}}/ai/strategy",
+              "host": ["{{baseUrl}}"],
+              "path": ["smart-negotiation", "{{negotiationId}}", "ai", "strategy"]
+            },
+            "description": "Get AI-powered negotiation strategy recommendation"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "description": "Product management for sellers",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "List all published products"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Get product details by ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Product (Seller)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Product {{timestamp}}\",\n  \"description\": \"High-quality industrial component\",\n  \"categoryId\": 1,\n  \"price\": 99.99,\n  \"currency\": \"USD\",\n  \"stock\": 500,\n  \"sku\": \"TP-{{timestamp}}\",\n  \"images\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/seller/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["seller", "products"]
+            },
+            "description": "Create a new product as a seller"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Has product id', () => {",
+                  "  const json = pm.response.json();",
+                  "  const id = json.id || (json.data && json.data.id);",
+                  "  if (id) pm.collectionVariables.set('productId', id);",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Product (Seller)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Product Name\",\n  \"price\": 89.99,\n  \"stock\": 750\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/seller/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["seller", "products", "{{productId}}"]
+            },
+            "description": "Update an existing product"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Product (Seller)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/seller/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["seller", "products", "{{productId}}"]
+            },
+            "description": "Delete a product"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GOCASH Wallet",
+      "description": "Digital wallet & financial operations",
+      "item": [
+        {
+          "name": "Buyer Wallet Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/buyer/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "buyer", "summary"]
+            },
+            "description": "Get buyer wallet summary with balance and stats"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Has wallet data', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.balance || json.totalBalance).to.exist;",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Wallet Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/buyer/balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "buyer", "balance"]
+            },
+            "description": "Get buyer wallet current balance"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/buyer/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "buyer", "transactions"]
+            },
+            "description": "Get buyer wallet transaction history"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Returns array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('array').or.have.property('data').that.is.an('array');",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buyer Statement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/buyer/statement",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "buyer", "statement"]
+            },
+            "description": "Get buyer wallet statement (supports ?period=monthly|quarterly|yearly&from=&to=)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seller Wallet Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/seller/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "seller", "summary"]
+            },
+            "description": "Get seller wallet summary with analytics"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI Gateway",
+      "description": "AI processing and streaming endpoints",
+      "item": [
+        {
+          "name": "AI Process",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskType\": \"NEGOTIATION\",\n  \"input\": {\n    \"action\": \"strategy\",\n    \"context\": {\n      \"negotiationId\": \"{{negotiationId}}\",\n      \"buyerAmount\": 4200,\n      \"sellerAmount\": 4500,\n      \"productCategory\": \"Industrial Supplies\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-gateway/process",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-gateway", "process"]
+            },
+            "description": "Process an AI task through the gateway"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Has result', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.result || json.data).to.exist;",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "AI Stream (SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskType\": \"NEGOTIATION\",\n  \"input\": {\n    \"action\": \"strategy\",\n    \"context\": {\n      \"negotiationId\": \"{{negotiationId}}\",\n      \"buyerAmount\": 4200,\n      \"sellerAmount\": 4500\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-gateway/stream",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-gateway", "stream"]
+            },
+            "description": "Stream AI response via Server-Sent Events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log('SSE stream response received'); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TradeTalk",
+      "description": "Real-time business messaging & conversations",
+      "item": [
+        {
+          "name": "Create Conversation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participantIds\": [\"user-id-1\", \"user-id-2\"],\n  \"subject\": \"Q1 Supply Agreement\",\n  \"rfqId\": \"{{rfqId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tradetalk/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["tradetalk", "conversations"]
+            },
+            "description": "Create a new TradeTalk conversation"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tradetalk/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["tradetalk", "conversations"]
+            },
+            "description": "List user's conversations"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Thank you for the quote. Can we discuss the payment terms?\",\n  \"messageType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tradetalk/conversations/1/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["tradetalk", "conversations", "1", "messages"]
+            },
+            "description": "Send a message in a conversation"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tradetalk/conversations/1/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["tradetalk", "conversations", "1", "messages"]
+            },
+            "description": "Get all messages in a conversation"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users & Admin",
+      "description": "User management and admin endpoints",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            },
+            "description": "List all users (admin)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Get user details by ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Admin Setting",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"platform.maintenance_mode\",\n  \"value\": \"false\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "settings"]
+            },
+            "description": "Create or update an admin setting"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TradeServ",
+      "description": "Professional services marketplace",
+      "item": [
+        {
+          "name": "List Professionals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tradeserv/professionals",
+              "host": ["{{baseUrl}}"],
+              "path": ["tradeserv", "professionals"]
+            },
+            "description": "List all trade service professionals"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Professional",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tradeserv/professionals/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["tradeserv", "professionals", "1"]
+            },
+            "description": "Get professional profile by ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Professional Service",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Customs Clearance Consulting\",\n  \"description\": \"Expert customs clearance advisory for international trade\",\n  \"categoryId\": 1,\n  \"price\": 250,\n  \"currency\": \"USD\",\n  \"duration\": \"3 days\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tradeserv/professionals/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["tradeserv", "professionals", "services"]
+            },
+            "description": "Create a new professional service listing"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professionalId\": 1,\n  \"serviceId\": 1,\n  \"scheduledAt\": \"2026-07-20T10:00:00.000Z\",\n  \"notes\": \"Need urgent customs consultation\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tradeserv/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["tradeserv", "bookings"]
+            },
+            "description": "Book a professional service"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(201); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Enterprise Catalog",
+      "description": "Enterprise master catalog & search intelligence",
+      "item": [
+        {
+          "name": "Catalog Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enterprise-catalog/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["enterprise-catalog", "health"]
+            },
+            "description": "Check enterprise catalog health status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Has health status', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status || json.healthy).to.exist;",
+                  "});",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autocomplete",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enterprise-catalog/autocomplete?q=industrial",
+              "host": ["{{baseUrl}}"],
+              "path": ["enterprise-catalog", "autocomplete"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "industrial"
+                }
+              ]
+            },
+            "description": "Autocomplete search across catalog entities"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Catalog",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"industrial supplies\",\n  \"filters\": {\n    \"category\": \"Industrial\",\n    \"minPrice\": 10,\n    \"maxPrice\": 10000\n  },\n  \"page\": 1,\n  \"limit\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enterprise-catalog/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["enterprise-catalog", "search"]
+            },
+            "description": "Unified enterprise catalog search"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 2xx', () => { pm.response.to.have.status(200); });",
+                  "pm.test('Log response', () => { console.log(JSON.stringify(pm.response.json(), null, 2)); });"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

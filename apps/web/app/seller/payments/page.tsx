@@ -1,6 +1,7 @@
 'use client';
 
 import { DashboardPageHeader, StatCard, StatusBadge, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
+import { EmptyState } from '@/components/ui/empty-state';
 import { usePayments } from '@/hooks';
 import { useSellerWalletSummary } from '@/hooks/use-wallet';
 import { DollarSign, Clock, Download } from 'lucide-react';
@@ -39,15 +40,9 @@ export default function SellerPaymentsPage() {
       {paymentsLoading ? (
         <TableSkeleton />
       ) : paymentsError ? (
-        <div className="rounded-xl border border-border bg-surface p-10 text-center dark:bg-dark-surface dark:border-dark-border">
-          <p className="text-text-secondary dark:text-dark-text-secondary">Failed to load payments. Please try again.</p>
-        </div>
+        <EmptyState icon={DollarSign} variant="error" title="Failed to load payments" description="Please try again." />
       ) : !payments?.data?.length ? (
-        <div className="rounded-xl border border-border bg-surface p-10 text-center dark:bg-dark-surface dark:border-dark-border">
-          <DollarSign className="mx-auto h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No transactions yet</h3>
-          <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">Your payment history will appear here.</p>
-        </div>
+        <EmptyState icon={DollarSign} title="No transactions yet" description="Your payment history will appear here." />
       ) : (
         <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
           <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">

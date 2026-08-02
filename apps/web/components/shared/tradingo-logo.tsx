@@ -33,7 +33,7 @@ export function TradingoLogo({ className, height = 40, showText = true, priority
         <span className={cn(
           'text-xl font-bold tracking-tight',
           light
-            ? 'text-white'
+            ? 'text-gray-900'
             : 'text-text-primary dark:text-dark-text-primary'
         )}>
           TRADINGO

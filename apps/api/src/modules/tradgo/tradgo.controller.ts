@@ -1,11 +1,14 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TradgoService } from './tradgo.service';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('TRADGO')
+@Throttle(RateLimits.MARKETPLACE_READ)
 @Controller('tradgo')
 export class TradgoController {
   constructor(private readonly tradgoService: TradgoService) {}

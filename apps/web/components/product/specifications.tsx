@@ -1,8 +1,5 @@
-import { cn } from '@/lib/utils';
-import { type ProductDetailSpec } from '@/types/product-detail';
-
-const GLASS = 'rgba(255,255,255,0.04)';
-const BORDER = '1px solid rgba(255,255,255,0.09)';
+import { CheckCircle2 } from 'lucide-react';
+import type { ProductDetailSpec } from '@/types/product-detail';
 
 interface SpecificationsProps {
   specifications: ProductDetailSpec[];
@@ -26,21 +23,23 @@ export function Specifications({ specifications }: SpecificationsProps) {
   const grouped = parseGroupedSpecs(specifications);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {Array.from(grouped.entries()).map(([group, specs]) => (
-        <div key={group}>
-          <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/30">{group}</h4>
-          <div className="overflow-hidden rounded-2xl" style={{ border: BORDER }}>
-            <table className="w-full text-sm">
-              <tbody>
-                {specs.map((spec, idx) => (
-                  <tr key={spec.id} style={{ background: idx % 2 === 0 ? GLASS : 'rgba(255,255,255,0.02)' }}>
-                    <td className="px-4 py-3 font-semibold text-white/50 w-2/5">{spec.key}</td>
-                    <td className="px-4 py-3 text-white/80">{spec.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div key={group} className="rounded-xl border border-border bg-bg-elevated/70 p-3">
+          <div className="mb-3 flex items-center gap-2">
+            <CheckCircle2 size={13} className="text-accent" />
+            <h4 className="text-xs font-semibold uppercase tracking-[0.22em] text-text-tertiary">{group}</h4>
+          </div>
+          <div className="space-y-2">
+            {specs.map((spec) => (
+              <div
+                key={spec.id}
+                className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface px-3 py-2"
+              >
+                <span className="text-xs text-text-secondary">{spec.key}</span>
+                <span className="text-sm font-semibold text-text-primary text-right">{spec.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       ))}

@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, HttpCode, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LabelService } from './label.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CreateLabelDto, UpdateLabelDto } from './dto';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Communication Hub — Labels')
 @UseGuards(JwtAuthGuard)
+@Throttle(RateLimits.WRITE_GENERAL)
 @Controller('communication')
 export class LabelController {
   constructor(private readonly service: LabelService) {}
@@ -18,14 +22,14 @@ export class LabelController {
 
   @Post('labels')
   @ApiOperation({ summary: 'Create a label' })
-  create(@CurrentUser('companyId') companyId: string, @Body() body: { name: string; color?: string }) {
-    return this.service.create(companyId, body);
+  create(@CurrentUser('companyId') companyId: string, @Body() dto: CreateLabelDto) {
+    return this.service.create(companyId, dto);
   }
 
   @Patch('labels/:id')
   @ApiOperation({ summary: 'Update a label' })
-  update(@CurrentUser('companyId') companyId: string, @Param('id') id: string, @Body() body: { name?: string; color?: string }) {
-    return this.service.update(id, companyId, body);
+  update(@CurrentUser('companyId') companyId: string, @Param('id') id: string, @Body() dto: UpdateLabelDto) {
+    return this.service.update(id, companyId, dto);
   }
 
   @Delete('labels/:id')

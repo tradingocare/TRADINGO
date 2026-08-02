@@ -4,6 +4,13 @@ import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | TRADINGO',
+  description: 'TRADINGO Privacy Policy explains how we collect, use, share, and protect your personal and business information on India\'s first Trusted Electronic Marketplace.',
+  openGraph: {
+    title: 'Privacy Policy | TRADINGO',
+    description: 'Learn how TRADINGO collects, uses, and protects your data on our B2B marketplace platform.',
+    type: 'website',
+    siteName: 'TRADINGO',
+  },
 };
 
 const policySections = [

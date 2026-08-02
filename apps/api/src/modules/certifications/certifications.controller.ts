@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CertificationsService } from './certifications.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
@@ -12,6 +13,7 @@ import { UpdateCertificationDto } from './dto/update-certification.dto';
 @ApiTags('Certifications')
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/certifications')
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 export class CertificationsController {
   constructor(private readonly certificationsService: CertificationsService) {}
 

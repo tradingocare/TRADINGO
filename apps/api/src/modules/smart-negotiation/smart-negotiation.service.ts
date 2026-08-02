@@ -14,6 +14,16 @@ const NEGOTIATION_FIELDS = [
 export class SmartNegotiationService {
   private readonly logger = new Logger(SmartNegotiationService.name);
 
+  private readonly catalogInclude = {
+    rfqProductItem: {
+      include: {
+        catalogCategory: { select: { id: true, name: true, slug: true } },
+        catalogSubcategory: { select: { id: true, name: true, slug: true } },
+        catalogItem: { select: { id: true, name: true, slug: true, unit: true, keywords: true } },
+      },
+    },
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
@@ -347,7 +357,7 @@ export class SmartNegotiationService {
         where,
         include: {
           quote: { select: { id: true, totalAmount: true, currency: true, status: true } },
-          rfq: { select: { id: true, title: true, rfqNumber: true } },
+          rfq: { select: { id: true, title: true, rfqNumber: true, catalogCategoryId: true } },
           buyerCompany: { select: { id: true, name: true, slug: true, trustScore: true } },
           sellerCompany: { select: { id: true, name: true, slug: true, trustScore: true } },
           versions: { orderBy: { version: 'desc' }, take: 1 },
@@ -368,11 +378,11 @@ export class SmartNegotiationService {
       include: {
         quote: {
           include: {
-            lineItems: true,
+            lineItems: { orderBy: { sortOrder: 'asc' }, include: this.catalogInclude },
             company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true } },
           },
         },
-        rfq: { select: { id: true, title: true, rfqNumber: true, status: true } },
+        rfq: { select: { id: true, title: true, rfqNumber: true, status: true, catalogCategoryId: true } },
         buyerCompany: { select: { id: true, name: true, slug: true, logo: true, trustScore: true } },
         sellerCompany: { select: { id: true, name: true, slug: true, logo: true, trustScore: true } },
         versions: { orderBy: { version: 'asc' } },
@@ -380,12 +390,20 @@ export class SmartNegotiationService {
       },
     });
     if (!negotiation) throw new NotFoundException('Negotiation not found');
+    const company = await this.getUserCompany(userId);
+    const isBuyer = negotiation.buyerCompanyId === company.id;
+    const isSeller = negotiation.sellerCompanyId === company.id;
+    if (!isBuyer && !isSeller) throw new ForbiddenException('Not authorized');
     return negotiation;
   }
 
   async getVersions(negotiationId: string, userId: string) {
     const negotiation = await this.prisma.negotiation.findUnique({ where: { id: negotiationId } });
     if (!negotiation) throw new NotFoundException('Negotiation not found');
+    const company = await this.getUserCompany(userId);
+    const isBuyer = negotiation.buyerCompanyId === company.id;
+    const isSeller = negotiation.sellerCompanyId === company.id;
+    if (!isBuyer && !isSeller) throw new ForbiddenException('Not authorized');
     return this.prisma.negotiationVersion.findMany({
       where: { negotiationId },
       orderBy: { version: 'asc' },
@@ -395,6 +413,10 @@ export class SmartNegotiationService {
   async getTimeline(negotiationId: string, userId: string) {
     const negotiation = await this.prisma.negotiation.findUnique({ where: { id: negotiationId } });
     if (!negotiation) throw new NotFoundException('Negotiation not found');
+    const company = await this.getUserCompany(userId);
+    const isBuyer = negotiation.buyerCompanyId === company.id;
+    const isSeller = negotiation.sellerCompanyId === company.id;
+    if (!isBuyer && !isSeller) throw new ForbiddenException('Not authorized');
     return this.prisma.negotiationEvent.findMany({
       where: { negotiationId },
       orderBy: { createdAt: 'asc' },
@@ -422,10 +444,9 @@ export class SmartNegotiationService {
         where,
         include: {
           quote: { select: { id: true, totalAmount: true, currency: true } },
-          rfq: { select: { id: true, title: true } },
+          rfq: { select: { id: true, title: true, catalogCategoryId: true } },
           buyerCompany: { select: { id: true, name: true } },
           sellerCompany: { select: { id: true, name: true } },
-          _count: { select: { versions: true } },
         },
         orderBy: { [query.sort]: query.order } as any,
         take: query.limit,
@@ -444,7 +465,7 @@ export class SmartNegotiationService {
         where,
         include: {
           quote: { select: { id: true, totalAmount: true } },
-          rfq: { select: { id: true, title: true } },
+          rfq: { select: { id: true, title: true, catalogCategoryId: true } },
           buyerCompany: { select: { id: true, name: true } },
           sellerCompany: { select: { id: true, name: true } },
         },

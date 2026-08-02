@@ -1,0 +1,3 @@
+module.exports=[577865,a=>{"use strict";var b=a.i(201494),c=a.i(324107);a.s(["default",0,function(){return(0,b.jsx)(c.NotFoundState,{title:"Page not found",message:"The TradeServ page you are looking for does not exist or has been moved.",showHome:!0,showDashboard:!0,dashboardHref:"/tradeserv"})}])},459588,a=>{a.n(a.i(577865))}];
+
+//# sourceMappingURL=apps_web_app_tradeserv_not-found_tsx_1ayul5f._.js.map

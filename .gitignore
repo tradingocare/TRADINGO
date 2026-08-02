@@ -4,7 +4,18 @@ dist/
 coverage/
 .env
 .env.*.local
+apps/api/.env
 *.log
 .DS_Store
 *.tsbuildinfo
 .turbo/
+
+# Production SSL certs (local rehearsal only)
+infrastructure/nginx/ssl/*.pem
+.env.production.rehearsal
+
+# Terraform provider cache (local only)
+infrastructure/terraform/.terraform/
+
+# pnpm store cache (local only)
+.pnpm-store/

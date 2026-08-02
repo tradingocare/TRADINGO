@@ -49,6 +49,8 @@ export class InvoiceService {
       params.taxExempt || false,
     );
 
+    const amountInRupees = (params.amount - (params.discountAmount || 0)) / 100;
+
     const invoice = await this.prisma.invoice.create({
       data: {
         invoiceNumber,
@@ -58,10 +60,10 @@ export class InvoiceService {
         planId: params.planId,
         planName: params.planName,
         planTier: params.planTier,
-        subtotal: params.amount - (params.discountAmount || 0),
+        subtotal: amountInRupees,
         taxAmount: tax.totalTax,
         discountAmount: params.discountAmount || 0,
-        totalAmount: tax.totalTax + (params.amount - (params.discountAmount || 0)),
+        totalAmount: tax.totalTax + amountInRupees,
         currency: 'INR',
         billingName: params.billingName || null,
         billingAddress: params.billingAddress || null,
@@ -83,8 +85,8 @@ export class InvoiceService {
         description: `${params.planName} - ${params.planTier === 'A' ? 'Annual' : params.planTier === 'B' ? '2 Years' : '3 Years'}`,
         hsnSacCode: hsnSac,
         quantity: 1,
-        unitPrice: params.amount - (params.discountAmount || 0),
-        amount: params.amount - (params.discountAmount || 0),
+        unitPrice: amountInRupees,
+        amount: amountInRupees,
         sortOrder: 1,
       },
     });

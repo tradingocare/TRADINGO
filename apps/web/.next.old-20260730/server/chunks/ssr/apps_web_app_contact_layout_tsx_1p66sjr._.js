@@ -1,0 +1,3 @@
+module.exports=[86219,a=>{"use strict";a.s(["default",0,function({children:a}){return a},"metadata",0,{title:"Contact Us | TRADINGO",description:"Get in touch with the TRADINGO team. Our support team is available 24/7 to help with your global trade needs.",openGraph:{title:"Contact Us | TRADINGO",description:"Get in touch with the TRADINGO team. Our support team is available 24/7 to help with your global trade needs."}}])},278218,a=>{a.n(a.i(86219))}];
+
+//# sourceMappingURL=apps_web_app_contact_layout_tsx_1p66sjr._.js.map

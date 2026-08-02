@@ -36,3 +36,13 @@ export function useCashFlow(params?: any) { return useQuery({ queryKey: ['financ
 
 export function useRmFinanceDashboard() { return useQuery({ queryKey: ['finance', 'rm', 'dashboard'], queryFn: () => financeApi.getRmFinanceDashboard().then(r => r.data) }); }
 export function useRmFinancePerformance() { return useQuery({ queryKey: ['finance', 'rm', 'performance'], queryFn: () => financeApi.getRmFinancePerformance().then(r => r.data) }); }
+
+// Finance Ops Aggregator hooks (Sprint 6J)
+export function useFinanceOpsDashboard() { return useQuery({ queryKey: ['finance', 'ops', 'dashboard'], queryFn: () => financeApi.getFinanceOpsDashboard().then(r => r.data), refetchInterval: 30000 }); }
+export function useRevenueAnalytics(params?: { period?: string; startDate?: string; endDate?: string }) { return useQuery({ queryKey: ['finance', 'ops', 'revenue', params], queryFn: () => financeApi.getRevenueAnalytics(params).then(r => r.data) }); }
+export function useSettlements(params?: any) { return useQuery({ queryKey: ['finance', 'ops', 'settlements', params], queryFn: () => financeApi.getSettlements(params).then(r => r.data), keepPreviousData: true } as any); }
+export function useRefundList(params?: any) { return useQuery({ queryKey: ['finance', 'ops', 'refunds', params], queryFn: () => financeApi.getRefundList(params).then(r => r.data), keepPreviousData: true } as any); }
+export function useDisputeList(params?: any) { return useQuery({ queryKey: ['finance', 'ops', 'disputes', params], queryFn: () => financeApi.getDisputeList(params).then(r => r.data), keepPreviousData: true } as any); }
+export function useCommissionSummary() { return useQuery({ queryKey: ['finance', 'ops', 'commissions'], queryFn: () => financeApi.getCommissionSummary().then(r => r.data) }); }
+export function useReconciliation(params?: any) { return useQuery({ queryKey: ['finance', 'ops', 'reconciliation', params], queryFn: () => financeApi.getReconciliation(params).then(r => r.data), keepPreviousData: true } as any); }
+export function useSearchFinance(q: string) { return useQuery({ queryKey: ['finance', 'ops', 'search', q], queryFn: () => financeApi.searchFinance(q).then(r => r.data), enabled: q.length >= 2 }); }

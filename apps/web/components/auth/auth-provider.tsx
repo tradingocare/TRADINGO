@@ -58,9 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { email, password },
     );
     setAccessToken(res.data.accessToken);
-    localStorage.setItem('refreshToken', res.data.refreshToken);
     localStorage.setItem('userRole', res.data.user.role);
-    document.cookie = `accessToken=${res.data.accessToken}; path=/; max-age=${rememberMe ? 604800 : 3600}; SameSite=Lax`;
     document.cookie = `userRole=${res.data.user.role}; path=/; max-age=86400; SameSite=Lax`;
     if (rememberMe) {
       localStorage.setItem('rememberMe', 'true');
@@ -74,19 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data,
     );
     setAccessToken(res.data.accessToken);
-    localStorage.setItem('refreshToken', res.data.refreshToken);
     localStorage.setItem('userRole', res.data.user.role);
-    document.cookie = `accessToken=${res.data.accessToken}; path=/; max-age=3600; SameSite=Lax`;
-    document.cookie = `userRole=${res.data.user.role}; path=/; max-age=86400; SameSite=Lax`;
+    document.cookie = `userRole=${res.data.user.role}; path=/; max-age=3600; SameSite=Lax`;
     setUser(res.data.user);
   }, []);
 
   const logout = useCallback(() => {
     clearTokens();
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('rememberMe');
-    document.cookie = 'accessToken=; path=/; max-age=0';
     document.cookie = 'userRole=; path=/; max-age=0';
     setUser(null);
     router.push('/login');

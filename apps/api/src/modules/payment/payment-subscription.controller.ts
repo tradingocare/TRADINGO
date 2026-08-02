@@ -1,4 +1,5 @@
-import { Controller, Post, Param, Body, UseGuards, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
 import { MembershipService } from '../membership/membership.service';
@@ -6,8 +7,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateSubscriptionOrderDto, VerifySubscriptionPaymentDto } from './dto/subscription-order.dto';
-import { v4 as uuid } from 'uuid';
 
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 @ApiTags('Subscription Payments')
 @Controller('payment')
 export class PaymentSubscriptionController {
@@ -57,6 +58,28 @@ export class PaymentSubscriptionController {
   ) {
     const company = await this.resolveCompany(userId);
     return this.paymentService.createSubscriptionGatewayOrder(company.id, userId, dto, 'STRIPE');
+  }
+
+  @Get('lookup/:paymentId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Look up subscription payment by ID' })
+  async lookupPayment(
+    @CurrentUser('sub') userId: string,
+    @Param('paymentId') paymentId: string,
+  ) {
+    const company = await this.resolveCompany(userId);
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: paymentId, companyId: company.id },
+    });
+    if (!payment) throw new Error('Payment not found');
+    return {
+      id: payment.id,
+      status: payment.status,
+      amount: payment.amount,
+      currency: payment.currency,
+      planId: (payment.notes as any)?.planId || null,
+      paidAt: payment.paidAt,
+    };
   }
 
   @Post('stripe/verify')

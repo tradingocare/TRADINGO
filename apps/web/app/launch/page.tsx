@@ -48,7 +48,7 @@ export default function LaunchPage() {
                 <Button size="xl" variant="secondary" className="w-full sm:w-auto gap-2 bg-white text-primary-700 hover:bg-primary-50">
                   Join Now <ArrowRight className="h-5 w-5" />
                 </Button>
-                <Button size="xl" variant="outline" className="w-full sm:w-auto gap-2 border-white/30 text-white hover:bg-white/10">
+                <Button size="xl" variant="outline" className="w-full sm:w-auto gap-2 border-border text-white hover:bg-surface">
                   Explore Features
                 </Button>
               </div>
@@ -129,7 +129,7 @@ export default function LaunchPage() {
               <Button size="xl" variant="secondary" className="w-full sm:w-auto gap-2 bg-white text-primary-700 hover:bg-primary-50">
                 Reserve Your Spot <ArrowRight className="h-5 w-5" />
               </Button>
-              <Button size="xl" variant="outline" className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10">
+              <Button size="xl" variant="outline" className="w-full sm:w-auto border-border text-white hover:bg-surface">
                 Learn About Beta
               </Button>
             </div>

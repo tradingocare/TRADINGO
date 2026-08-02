@@ -16,7 +16,9 @@ import {
   useAiCompetitivenessScore, useAiQuoteReview, useAiNegotiationPrep,
   useAiRiskAssessment, useAiQuoteQualityScore,
 } from '@/hooks/use-ai-quote';
+import { useAuthStore } from '@/store/auth-store';
 import { ArrowLeft, Send, Save, DollarSign, Package, Clock, Shield, FileText, Sparkles, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Select } from '@/components/ui/select';
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED'];
 const DELIVERY_TERMS = ['EX_WORKS', 'FOB', 'CIF', 'CFR', 'CPT', 'CIP', 'DAP', 'DDP'];
@@ -50,7 +52,7 @@ function NewQuotePage() {
     })),
   });
 
-  const companyId = 'company-id-placeholder'; // Resolve from auth store
+  const companyId = useAuthStore((s: any) => s.user?.companyId || '');
 
   const createMutation = useCreateQuote();
   const submitMutation = useSubmitQuote();
@@ -158,21 +160,21 @@ function NewQuotePage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {/* Line Items */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
             <div className="flex items-center gap-2 text-white/60 mb-4">
               <Package className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Products / Line Items</span>
             </div>
             <div className="space-y-3">
               {form.lineItems.map((li: any, i: number) => (
-                <div key={i} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                <div key={i} className="rounded-lg border border-border bg-surface p-3">
                   <div className="grid gap-3 sm:grid-cols-4">
                     <div className="sm:col-span-2">
                       <Label className="text-xs text-white/60">Product *</Label>
                       <Input
                         value={li.productName}
                         onChange={(e) => updateLineItem(i, 'productName', e.target.value)}
-                        className="bg-white/[0.04] border-white/[0.06] text-white mt-1"
+                        className="bg-surface border-border text-text-primary mt-1"
                       />
                     </div>
                     <div>
@@ -181,7 +183,7 @@ function NewQuotePage() {
                         type="number" min={1}
                         value={li.quantity}
                         onChange={(e) => updateLineItem(i, 'quantity', e.target.value)}
-                        className="bg-white/[0.04] border-white/[0.06] text-white mt-1"
+                        className="bg-surface border-border text-text-primary mt-1"
                       />
                     </div>
                     <div>
@@ -190,7 +192,7 @@ function NewQuotePage() {
                         type="number" min={0} step={0.01}
                         value={li.unitPrice}
                         onChange={(e) => updateLineItem(i, 'unitPrice', e.target.value)}
-                        className="bg-white/[0.04] border-white/[0.06] text-white mt-1"
+                        className="bg-surface border-border text-text-primary mt-1"
                         placeholder="0.00"
                       />
                     </div>
@@ -201,7 +203,7 @@ function NewQuotePage() {
           </div>
 
           {/* Pricing Summary */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
             <div className="flex items-center gap-2 text-white/60 mb-4">
               <DollarSign className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Pricing</span>
@@ -209,28 +211,26 @@ function NewQuotePage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1">
                 <Label className="text-xs text-white/60">Currency</Label>
-                <select
+                <Select
                   value={form.currency}
-                  onChange={(e) => update('currency', e.target.value)}
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-                >
-                  {CURRENCIES.map((c) => <option key={c} value={c} className="bg-gray-900 text-white">{c}</option>)}
-                </select>
+                  onChange={(e) => update('currency', e.target.value)}>
+                  {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-white/60">Subtotal</Label>
-                <Input type="number" min={0} step={0.01} value={form.subtotal} onChange={(e) => update('subtotal', e.target.value)} className="bg-white/[0.04] border-white/[0.06] text-white" />
+                <Input type="number" min={0} step={0.01} value={form.subtotal} onChange={(e) => update('subtotal', e.target.value)} className="bg-surface border-border text-white" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-white/60">Discount %</Label>
-                <Input type="number" min={0} max={100} step={0.01} value={form.discountPercent} onChange={(e) => update('discountPercent', e.target.value)} className="bg-white/[0.04] border-white/[0.06] text-white" />
+                <Input type="number" min={0} max={100} step={0.01} value={form.discountPercent} onChange={(e) => update('discountPercent', e.target.value)} className="bg-surface border-border text-white" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-white/60">Tax (GST)</Label>
-                <Input type="number" min={0} step={0.01} value={form.taxAmount} onChange={(e) => update('taxAmount', e.target.value)} className="bg-white/[0.04] border-white/[0.06] text-white" />
+                <Input type="number" min={0} step={0.01} value={form.taxAmount} onChange={(e) => update('taxAmount', e.target.value)} className="bg-surface border-border text-white" />
               </div>
             </div>
-            <div className="mt-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <div className="mt-4 rounded-lg border border-border bg-surface p-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-white/60">Total Amount</span>
                 <span className="font-bold text-white">
@@ -246,7 +246,7 @@ function NewQuotePage() {
           </div>
 
           {/* Terms */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
             <div className="flex items-center gap-2 text-white/60 mb-4">
               <FileText className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Terms & Delivery</span>
@@ -254,33 +254,31 @@ function NewQuotePage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1">
                 <Label className="text-xs text-white/60">Delivery Terms</Label>
-                <select value={form.deliveryTerms} onChange={(e) => update('deliveryTerms', e.target.value)}
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50">
-                  <option value="" className="bg-gray-900 text-white/60">Select</option>
-                  {DELIVERY_TERMS.map((t) => <option key={t} value={t} className="bg-gray-900 text-white">{t.replace('_', ' ')}</option>)}
-                </select>
+                <Select value={form.deliveryTerms} onChange={(e) => update('deliveryTerms', e.target.value)}>
+                  <option value="">Select</option>
+                  {DELIVERY_TERMS.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-white/60">Payment Terms</Label>
-                <select value={form.paymentTerms} onChange={(e) => update('paymentTerms', e.target.value)}
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50">
-                  <option value="" className="bg-gray-900 text-white/60">Select</option>
-                  {PAYMENT_TERMS_LIST.map((t) => <option key={t} value={t} className="bg-gray-900 text-white">{t.replace('_', ' ')}</option>)}
-                </select>
+                <Select value={form.paymentTerms} onChange={(e) => update('paymentTerms', e.target.value)}>
+                  <option value="">Select</option>
+                  {PAYMENT_TERMS_LIST.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-white/60">Lead Time (days)</Label>
-                <Input type="number" min={1} value={form.leadTimeDays} onChange={(e) => update('leadTimeDays', e.target.value)} className="bg-white/[0.04] border-white/[0.06] text-white" />
+                <Input type="number" min={1} value={form.leadTimeDays} onChange={(e) => update('leadTimeDays', e.target.value)} className="bg-surface border-border text-white" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-white/60">Validity Date</Label>
-                <Input type="date" value={form.validityDate} onChange={(e) => update('validityDate', e.target.value)} className="bg-white/[0.04] border-white/[0.06] text-white" />
+                <Input type="date" value={form.validityDate} onChange={(e) => update('validityDate', e.target.value)} className="bg-surface border-border text-white" />
               </div>
             </div>
             <div className="mt-4 space-y-1">
               <Label className="text-xs text-white/60">Notes</Label>
               <textarea value={form.notes} onChange={(e) => update('notes', e.target.value)} rows={3}
-                className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                 placeholder="Warranty, freight, GST details, remarks..."
               />
             </div>
@@ -291,7 +289,7 @@ function NewQuotePage() {
         <div className="space-y-4">
           {!showAi ? (
             <>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+              <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
                 <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">RFQ Details</h3>
                 {rfq ? (
                   <dl className="space-y-3">
@@ -305,7 +303,7 @@ function NewQuotePage() {
                 )}
               </div>
 
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+              <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
                 <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">Quick Tips</h3>
                 <ul className="space-y-2 text-xs text-white/50">
                   <li className="flex items-start gap-2"><Shield className="h-3 w-3 mt-0.5 shrink-0" /> Competitive pricing increases acceptance chance</li>
@@ -316,7 +314,7 @@ function NewQuotePage() {
             </>
           ) : (
             <>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+              <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
                 <AiQuoteSidebar
                   companyId={companyId}
                   formData={form}
@@ -352,7 +350,7 @@ function NewQuotePage() {
               )}
 
               {isAiGenerating && (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-xl">
+                <div className="rounded-xl border border-border bg-surface p-4 backdrop-blur-xl">
                   <div className="flex items-center gap-2 text-sm text-white/50">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
                     AI is analyzing...

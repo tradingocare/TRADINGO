@@ -57,7 +57,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }
   }
 
-  async leadScoring(companyId: string, userId: string, payload: any) {
+  async leadScoring(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
@@ -73,7 +73,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async nextBestAction(companyId: string, userId: string, payload: any) {
+  async nextBestAction(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.recentActivities) context.recentActivities = payload.recentActivities
@@ -85,7 +85,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async conversionProbability(companyId: string, userId: string, payload: any) {
+  async conversionProbability(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
@@ -102,7 +102,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async leadInsights(companyId: string, userId: string, payload: any) {
+  async leadInsights(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
@@ -115,7 +115,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sentiment(companyId: string, userId: string, payload: any) {
+  async sentiment(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       notes: payload.notes ?? [],
       interactions: payload.interactions ?? [],
@@ -126,7 +126,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async pipelineHealth(companyId: string, userId: string, payload: any) {
+  async pipelineHealth(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       stages: payload.stages ?? [],
       totalPipelineValue: payload.totalPipelineValue || 0,
@@ -143,7 +143,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async forecast(companyId: string, userId: string, payload: any) {
+  async forecast(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       currentPipelineValue: payload.currentPipelineValue || 0,
       activeDeals: payload.activeDeals || 0,
@@ -157,7 +157,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async dealRisk(companyId: string, userId: string, payload: any) {
+  async dealRisk(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
@@ -174,7 +174,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async recommendedActions(companyId: string, userId: string, payload: any) {
+  async recommendedActions(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
@@ -186,7 +186,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async communicationTips(companyId: string, userId: string, payload: any) {
+  async communicationTips(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       leadName: payload.leadName,
       leadStatus: payload.leadStatus,
@@ -199,7 +199,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async followUpPriority(companyId: string, userId: string, payload: any) {
+  async followUpPriority(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       followUps: payload.followUps ?? [],
       maxRecommendations: payload.maxRecommendations || 5,
@@ -210,7 +210,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sidebar(companyId: string, userId: string, payload: any) {
+  async sidebar(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData

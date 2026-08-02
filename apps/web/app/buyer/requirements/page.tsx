@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
 import { useRequirementLists, useCreateRequirementList, useDeleteRequirementList } from '@/hooks';
 import { Plus, ClipboardList, Trash2, Calendar, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function BuyerRequirementsPage() {
-  const { data: lists, isLoading } = useRequirementLists();
+  const { data: lists, isLoading, isError } = useRequirementLists();
   const createList = useCreateRequirementList();
   const deleteList = useDeleteRequirementList();
   const [showForm, setShowForm] = useState(false);
@@ -27,7 +28,7 @@ export default function BuyerRequirementsPage() {
     switch (p) {
       case 'HIGH': return 'text-red-500 bg-red-50 dark:bg-red-900/20';
       case 'LOW': return 'text-green-500 bg-green-50 dark:bg-green-900/20';
-      default: return 'text-amber-500 bg-amber-50 dark:bg-amber-900/20';
+      default: return 'text-accent-500 bg-amber-50 dark:bg-amber-900/20';
     }
   };
 
@@ -48,12 +49,11 @@ export default function BuyerRequirementsPage() {
               <Textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               <div className="flex gap-4">
                 <Input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="w-48" />
-                <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 text-sm dark:bg-dark-surface dark:border-dark-border">
+                <Select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
                   <option value="LOW">Low</option>
                   <option value="MEDIUM">Medium</option>
                   <option value="HIGH">High</option>
-                </select>
+                </Select>
               </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={createList.isPending}>Create</Button>
@@ -69,6 +69,13 @@ export default function BuyerRequirementsPage() {
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}><CardContent className="p-5"><div className="h-24 animate-pulse rounded-lg bg-surface-secondary/50" /></CardContent></Card>
           ))}
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">Failed to load requirement lists</h3>
+          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Something went wrong. Please try again.</p>
+          <Button variant="accent" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       ) : !lists?.length ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
@@ -107,7 +114,7 @@ export default function BuyerRequirementsPage() {
                     ))}
                     {list.items.length > 3 && (
                       <button onClick={() => setExpandedId(expandedId === list.id ? null : list.id)}
-                        className="flex w-full items-center justify-center gap-1 py-1 text-xs text-[#FF5A1F] hover:text-[#FF4D00]">
+                        className="flex w-full items-center justify-center gap-1 py-1 text-xs text-[#f97316] hover:text-accent-500">
                         {expandedId === list.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         {expandedId === list.id ? 'Show less' : `${list.items.length - 3} more items`}
                       </button>

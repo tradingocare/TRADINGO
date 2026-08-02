@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { DashboardPageHeader, StatusBadge, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { useAdminDeliveryAnalytics, useAdminDeliveries } from '@/hooks/use-smart-delivery';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Tabs } from '@/components/ui/tabs';
 import { Package, AlertCircle, Truck, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 const statusTabs = ['ALL', 'OUT_FOR_DELIVERY', 'DELIVERED', 'DELIVERY_CONFIRMED', 'DELIVERY_FAILED', 'REJECTED', 'COMPLETED'];
@@ -32,13 +34,8 @@ export default function AdminDeliveryDashboard() {
     <div className="space-y-6">
       <DashboardPageHeader title="Delivery Management" description="Monitor all deliveries across the platform" />
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
-        {(['overview', 'all', 'exceptions'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${tab === t ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'}`}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+      <div className="border border-border rounded-xl p-1 bg-surface">
+        <Tabs tabs={[{ value: 'overview', label: 'Overview' }, { value: 'all', label: 'All' }, { value: 'exceptions', label: 'Exceptions' }]} value={tab} onChange={setTab as (v: string) => void} />
       </div>
 
       {tab === 'overview' && (
@@ -54,7 +51,7 @@ export default function AdminDeliveryDashboard() {
             </div>
           )}
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border p-6 backdrop-blur-xl bg-surface">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Status Distribution</h3>
             <div className="flex flex-wrap gap-2">
               {Object.entries(statusColor).map(([s, cls]) => (
@@ -65,12 +62,12 @@ export default function AdminDeliveryDashboard() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border p-6 backdrop-blur-xl bg-surface">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Recent Deliveries</h3>
             {analyticsLoading ? <TableSkeleton rows={5} /> : (
               <div className="space-y-3">
                 {analytics?.recent?.slice(0, 10).map((d: any) => (
-                  <div key={d.id} className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                  <div key={d.id} className="flex items-center justify-between rounded-lg border border-border px-4 py-3 bg-surface">
                     <div className="flex items-center gap-3">
                       <StatusBadge status={d.status} />
                       <p className="font-mono text-sm text-white">{d.deliveryNumber}</p>
@@ -87,19 +84,14 @@ export default function AdminDeliveryDashboard() {
 
       {tab === 'all' && (
         <>
-          <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.04] p-1 overflow-x-auto">
-            {statusTabs.map((s) => (
-              <button key={s} onClick={() => setStatus(s)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap ${status === s ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'}`}>
-                {s === 'ALL' ? 'All' : s.split('_').map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
-              </button>
-            ))}
+<div className="rounded-xl border border-border p-1 bg-surface">
+            <Tabs tabs={statusTabs.map(s => ({ value: s, label: s === 'ALL' ? 'All' : s.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ') }))} value={status} onChange={setStatus as (v: string) => void} />
           </div>
           {deliveriesLoading ? <TableSkeleton rows={8} /> : deliveries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12"><Package className="h-12 w-12 text-white/30" /><p className="mt-4 text-lg font-medium text-white">No deliveries found</p></div>
+            <EmptyState icon={Package} title="No deliveries found" />
           ) : (
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-              <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
+            <div className="rounded-xl border border-border backdrop-blur-xl bg-surface">
+              <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
                 <div className="col-span-2">Delivery</div>
                 <div className="col-span-2">Order</div>
                 <div className="col-span-2">Buyer</div>
@@ -108,7 +100,7 @@ export default function AdminDeliveryDashboard() {
                 <div className="col-span-2">Date</div>
               </div>
               {deliveries.map((d: any) => (
-                <div key={d.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
+                <div key={d.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
                   <p className="font-mono text-sm text-white sm:col-span-2">{d.deliveryNumber}</p>
                   <p className="text-sm text-white/70 sm:col-span-2">{d.order?.orderNumber ?? '—'}</p>
                   <p className="text-sm text-white/70 sm:col-span-2">{d.buyerCompany?.name ?? '—'}</p>
@@ -133,11 +125,7 @@ export default function AdminDeliveryDashboard() {
               <p className="text-xs text-white/50">{new Date(d.updatedAt).toLocaleDateString('en-IN')}</p>
             </div>
           )) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12">
-              <CheckCircle className="h-12 w-12 text-emerald-500" />
-              <p className="mt-4 text-lg font-medium text-white">No exceptions</p>
-              <p className="mt-1 text-sm text-white/60">All deliveries are proceeding normally.</p>
-            </div>
+            <EmptyState icon={CheckCircle} title="No exceptions" description="All deliveries are proceeding normally." />
           )}
         </div>
       )}

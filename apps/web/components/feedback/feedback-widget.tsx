@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { BugReportForm } from './bug-report-form';
 import { FeatureRequestForm } from './feature-request-form';
@@ -46,30 +47,12 @@ export function FeedbackWidget() {
           <Card className="w-80 shadow-2xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-semibold">Beta Feedback</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
+              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close feedback">
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="mb-3 flex border-b border-border dark:border-dark-border">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-1 px-3 py-2 text-xs font-medium transition-colors ${
-                        activeTab === tab.id
-                          ? 'border-b-2 border-blue-500 text-blue-600'
-                          : 'text-text-secondary hover:text-text-primary'
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <Tabs tabs={tabs.map(t => ({ value: t.id, label: t.label, icon: <t.icon className="h-3.5 w-3.5" /> }))} value={activeTab} onChange={(v) => setActiveTab(v as Tab)} variant="underline" className="border-b border-border dark:border-dark-border" />
               {activeTab === 'bug' && <BugReportForm onSubmit={(d) => submitFeedback('bug', d)} />}
               {activeTab === 'feature' && <FeatureRequestForm onSubmit={(d) => submitFeedback('feature', d)} />}
               {activeTab === 'nps' && <NpsSurvey onSubmit={(s, c) => submitFeedback('nps', { score: s, comment: c })} />}
@@ -80,6 +63,7 @@ export function FeedbackWidget() {
             onClick={() => setOpen(true)}
             className="h-12 w-12 rounded-full shadow-lg"
             size="icon"
+            aria-label="Open feedback"
           >
             <MessageSquare className="h-5 w-5" />
           </Button>

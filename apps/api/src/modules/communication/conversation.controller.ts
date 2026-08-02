@@ -1,12 +1,16 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpCode, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { ConversationService } from './conversation.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CreateConversationDto, AddParticipantDto } from './dto';
 
 @ApiTags('Communication Hub — Conversations')
+@Throttle(RateLimits.WRITE_GENERAL)
 @UseGuards(JwtAuthGuard)
 @Controller('communication/conversations')
 export class ConversationController {
@@ -14,7 +18,7 @@ export class ConversationController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new conversation' })
-  create(@CurrentUser('sub') userId: string, @Body() body: any) {
+  create(@CurrentUser('sub') userId: string, @Body() body: CreateConversationDto) {
     return this.service.create({ ...body, createdBy: userId });
   }
 
@@ -59,8 +63,8 @@ export class ConversationController {
 
   @Post(':id/participants')
   @ApiOperation({ summary: 'Add participant' })
-  addParticipant(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() body: { companyId: string; userId: string }) {
-    return this.service.addParticipant(id, userId, body.companyId, body.userId);
+  addParticipant(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: AddParticipantDto) {
+    return this.service.addParticipant(id, userId, dto.companyId, dto.userId);
   }
 
   @Delete(':id/participants/:participantId')

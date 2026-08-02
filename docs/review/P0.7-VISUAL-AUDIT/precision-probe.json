@@ -1,0 +1,150 @@
+{
+  "underline": {
+    "cls": "bg-gradient-to-r from-accent-500 via-[#FF7A33] to-[#f59e0b] bg-clip-text text-[15px] font-bold leading-none tr",
+    "bgImage": "linear-gradient(to right in oklab, rgb(255, 77, 0) 0%, rgb(255, 122, 51) 50%, rgb(245, 158, 11) 100%)",
+    "width": 85.34375
+  },
+  "products": {
+    "cardFound": false
+  },
+  "modePills": [
+    {
+      "text": "Products",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(107, 120, 148)",
+      "cls": "px-3 h-full text-xs font-semibold transition-all"
+    },
+    {
+      "text": "Services",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(107, 120, 148)",
+      "cls": "px-3 h-full text-xs font-semibold transition-all"
+    },
+    {
+      "text": "All Results",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(240, 244, 255)",
+      "cls": "px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all bg-accent"
+    },
+    {
+      "text": "Products",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(168, 180, 204)",
+      "cls": "px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all bg-transp"
+    },
+    {
+      "text": "Services",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(168, 180, 204)",
+      "cls": "px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all bg-transp"
+    },
+    {
+      "text": "Companies",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(168, 180, 204)",
+      "cls": "px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all bg-transp"
+    }
+  ],
+  "kickerEl": {
+    "text": "Discovery Engine",
+    "color": "rgb(240, 244, 255)",
+    "cls": "text-[11px] font-black uppercase tracking-[0.28em] text-accent"
+  },
+  "engineBarIcons": [],
+  "companies": {
+    "star": {
+      "fill": "none",
+      "color": "rgb(240, 244, 255)"
+    },
+    "searchBtn": {
+      "bg": "rgba(0, 0, 0, 0)",
+      "img": "none",
+      "color": "rgb(255, 255, 255)",
+      "cls": "px-6 py-3 rounded-2xl font-bold text-sm bg-accent text-btn-primary-text"
+    },
+    "kicker": {
+      "text": "Tradors Directory",
+      "color": "rgb(240, 244, 255)",
+      "cls": "inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-f"
+    },
+    "verifiedBadges": []
+  },
+  "detail": {
+    "btns": [
+      {
+        "text": "",
+        "bg": "rgb(0, 7, 45)",
+        "img": "none",
+        "color": "rgb(168, 180, 204)"
+      },
+      {
+        "text": "",
+        "bg": "rgb(0, 7, 45)",
+        "img": "none",
+        "color": "rgb(240, 244, 255)"
+      },
+      {
+        "text": "",
+        "bg": "oklab(0.102351 -0.00735114 -0.0705443 / 0.7)",
+        "img": "none",
+        "color": "rgb(240, 244, 255)"
+      },
+      {
+        "text": "",
+        "bg": "oklab(0.102351 -0.00735114 -0.0705443 / 0.75)",
+        "img": "none",
+        "color": "rgb(240, 244, 255)"
+      },
+      {
+        "text": "2",
+        "bg": "rgb(0, 7, 45)",
+        "img": "none",
+        "color": "rgb(168, 180, 204)"
+      },
+      {
+        "text": "5",
+        "bg": "rgb(0, 7, 45)",
+        "img": "none",
+        "color": "rgb(168, 180, 204)"
+      },
+      {
+        "text": "10",
+        "bg": "rgb(0, 7, 45)",
+        "img": "none",
+        "color": "rgb(168, 180, 204)"
+      },
+      {
+        "text": "25",
+        "bg": "rgb(0, 7, 45)",
+        "img": "none",
+        "color": "rgb(168, 180, 204)"
+      },
+      {
+        "text": "50",
+        "bg": "rgb(0, 7, 45)",
+        "img": "none",
+        "color": "rgb(168, 180, 204)"
+      },
+      {
+        "text": "Request Call / RFQ",
+        "bg": "rgb(0, 7, 45)",
+        "img": "none",
+        "color": "rgb(240, 244, 255)"
+      }
+    ],
+    "chips": [
+      {
+        "cls": "inline-flex items-center gap-1 rounded-full border border-accent/20 bg",
+        "bg": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "cls": "mb-3 flex h-10 w-10 items-center justify-center rounded-2xl border bor",
+        "bg": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "cls": "flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-",
+        "bg": "rgba(0, 0, 0, 0)"
+      }
+    ]
+  }
+}

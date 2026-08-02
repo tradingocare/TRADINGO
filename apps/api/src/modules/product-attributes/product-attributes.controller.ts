@@ -1,11 +1,14 @@
 import { Controller, Get, Post, Delete, Param, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductAttributesService } from './product-attributes.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { SaveAttributesDto } from './dto/save-attributes.dto';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Product Attributes')
 @UseGuards(JwtAuthGuard)
+@Throttle(RateLimits.WRITE_GENERAL)
 @Controller('products/:productId/attributes')
 export class ProductAttributesController {
   constructor(private readonly service: ProductAttributesService) {}

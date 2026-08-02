@@ -1,0 +1,46 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tradingo-api-pdb
+  namespace: tradingo
+  labels:
+    app: tradingo-api
+    app.kubernetes.io/name: tradingo-api
+    app.kubernetes.io/part-of: tradingo-platform
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: tradingo-api
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tradingo-web-pdb
+  namespace: tradingo
+  labels:
+    app: tradingo-web
+    app.kubernetes.io/name: tradingo-web
+    app.kubernetes.io/part-of: tradingo-platform
+    app.kubernetes.io/component: web
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: tradingo-web
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tradingo-postgres-pdb
+  namespace: tradingo
+  labels:
+    app: tradingo-postgres
+    app.kubernetes.io/part-of: tradingo-platform
+    app.kubernetes.io/component: database
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: tradingo-postgres

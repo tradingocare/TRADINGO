@@ -10,22 +10,32 @@ import { renderTemplate } from '../common/utils/template.utils';
 @Processor(QueueNames.EMAIL)
 export class EmailProcessor extends WorkerHost {
   private readonly logger = new Logger(EmailProcessor.name);
-  private readonly ses: SESClient;
+  private ses: SESClient | null = null;
   private readonly fromAddress: string;
+  private readonly sesConfigured: boolean;
 
   constructor(private readonly configService: ConfigService) {
     super();
-    this.ses = new SESClient({
-      region: this.configService.get<string>('aws.region', 'us-east-1'),
-      credentials: {
-        accessKeyId: this.configService.get<string>('aws.accessKeyId')!,
-        secretAccessKey: this.configService.get<string>('aws.secretAccessKey')!,
-      },
-    });
-    this.fromAddress = this.configService.get<string>('EMAIL_FROM', 'noreply@tradingo.io');
+    const awsAccessKey = this.configService.get<string>('aws.accessKeyId');
+    const awsSecretKey = this.configService.get<string>('aws.secretAccessKey');
+    this.sesConfigured = !!(awsAccessKey && awsSecretKey);
+    if (this.sesConfigured) {
+      this.ses = new SESClient({
+        region: this.configService.get<string>('aws.region', 'us-east-1'),
+        credentials: { accessKeyId: awsAccessKey!, secretAccessKey: awsSecretKey! },
+      });
+    } else {
+      this.logger.warn('AWS credentials not configured — email delivery disabled. Set AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY.');
+    }
+    this.fromAddress = this.configService.get<string>('EMAIL_FROM', 'noreply@tradingotech.com');
   }
 
   async process(job: Job<EmailJobData>): Promise<void> {
+    if (!this.sesConfigured || !this.ses) {
+      this.logger.warn(`SES not configured — skipping email job ${job.id} (${job.data.type})`);
+      return;
+    }
+
     this.logger.log(`Processing email job ${job.id} of type ${job.data.type}`);
 
     switch (job.data.type) {
@@ -44,6 +54,7 @@ export class EmailProcessor extends WorkerHost {
   }
 
   private async sendWelcomeEmail(data: EmailJobData): Promise<void> {
+    if (!this.ses) { this.logger.warn('SES not configured — cannot send welcome email'); return; }
     const htmlBody = renderTemplate(data.template, data.context);
     await this.ses.send(new SendEmailCommand({
       Source: this.fromAddress,
@@ -57,6 +68,7 @@ export class EmailProcessor extends WorkerHost {
   }
 
   private async sendPasswordReset(data: EmailJobData): Promise<void> {
+    if (!this.ses) { this.logger.warn('SES not configured — cannot send password reset email'); return; }
     const htmlBody = renderTemplate(data.template, data.context);
     await this.ses.send(new SendEmailCommand({
       Source: this.fromAddress,
@@ -70,6 +82,7 @@ export class EmailProcessor extends WorkerHost {
   }
 
   private async sendNotification(data: EmailJobData): Promise<void> {
+    if (!this.ses) { this.logger.warn('SES not configured — cannot send notification email'); return; }
     const htmlBody = renderTemplate(data.template, data.context);
     await this.ses.send(new SendEmailCommand({
       Source: this.fromAddress,

@@ -5,13 +5,16 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BetaProgramService } from './beta-program.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Beta Onboarding')
 @Controller('beta-onboarding')
 @UseGuards(JwtAuthGuard)
+@Throttle(RateLimits.WRITE_GENERAL)
 @ApiBearerAuth()
 export class BetaOnboardingController {
   constructor(private readonly betaProgramService: BetaProgramService) {}

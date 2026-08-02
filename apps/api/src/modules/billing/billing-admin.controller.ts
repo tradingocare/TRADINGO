@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
 import { InvoiceService } from './invoice.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { VoidInvoiceDto } from './dto/void-invoice.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -59,10 +60,10 @@ export class BillingAdminController {
   @ApiOperation({ summary: 'Void an invoice (admin only)' })
   async voidInvoice(
     @Param('id') id: string,
-    @Body() body: { reason: string },
+    @Body() dto: VoidInvoiceDto,
     @Query('adminId') adminId: string,
   ) {
-    return this.invoiceService.voidInvoice(id, body.reason, adminId || 'admin');
+    return this.invoiceService.voidInvoice(id, dto.reason, adminId || 'admin');
   }
 
   @Get('reports/monthly')
@@ -83,6 +84,7 @@ export class BillingAdminController {
         sgstAmount: true, igstAmount: true, issuedAt: true,
         planName: true, companyId: true,
       },
+      take: 10000,
     });
 
     const monthlyData = Array.from({ length: 12 }, (_, month) => {
@@ -127,5 +129,17 @@ export class BillingAdminController {
       currentMonthRevenue: Number(currentMonthRevenue._sum.totalAmount || 0),
       currency: 'INR',
     };
+  }
+
+  @Get('revenue-overview')
+  @ApiOperation({ summary: 'Revenue overview (admin)' })
+  async getRevenueOverview() {
+    return this.billingService.getRevenueOverview();
+  }
+
+  @Get('prorate/:companyId')
+  @ApiOperation({ summary: 'Calculate prorated amount' })
+  async calculateProration(@Param('companyId') companyId: string, @Query('newPlanPrice') newPlanPrice: string) {
+    return this.billingService.calculateProratedAmount(companyId, Number(newPlanPrice));
   }
 }

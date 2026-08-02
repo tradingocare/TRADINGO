@@ -1,13 +1,14 @@
-import { Suspense } from 'react';
+﻿import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { MapPin, IndianRupee, Package, Store, Star } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { MapPin, Package, Star, Store } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { RankBadge } from '@/components/shared/RankBadge';
 import { CTABlock } from '@/components/shared/cta-block';
+import { ProductCard } from '@/components/product/product-card';
+import { fromBasicProduct } from '@/components/product/card-converters';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -79,7 +80,7 @@ async function CityContent({ slug }: { slug: string }) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(cityJsonLd) }} />
 
-      <section className="border-b border-border bg-surface-secondary/50 pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
+      <section className="border-b border-border pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
         <div className="container-main">
           <nav className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
             <MapPin className="h-4 w-4" />
@@ -159,34 +160,11 @@ async function CityContent({ slug }: { slug: string }) {
                   </h2>
                   <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {topProducts.map((product) => (
-                      <Link key={product.id} href={`/products/${product.slug}`}>
-                        <Card className="h-full transition-all hover:shadow-md hover:-translate-y-1">
-                          <CardContent className="p-6">
-                            <div className="flex h-40 items-center justify-center rounded-lg bg-surface-secondary dark:bg-dark-surface-secondary overflow-hidden">
-                              {product.image ? (
-                                <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
-                              ) : (
-                                <Package className="h-12 w-12 text-text-secondary dark:text-dark-text-secondary" />
-                              )}
-                            </div>
-                            <h3 className="mt-4 font-semibold text-text-primary dark:text-dark-text-primary line-clamp-2">
-                              {product.name}
-                            </h3>
-                            <div className="mt-1 flex items-center gap-1 text-xs text-text-secondary dark:text-dark-text-secondary">
-                              <Store className="h-3 w-3" />
-                              <span className="truncate">{product.companyName}</span>
-                            </div>
-                            {product.price != null && (
-                              <div className="mt-2 flex items-baseline gap-1">
-                                <IndianRupee className="h-4 w-4 text-text-primary dark:text-dark-text-primary" />
-                                <span className="text-xl font-bold text-text-primary dark:text-dark-text-primary">
-                                  {product.price.toLocaleString('en-IN')}
-                                </span>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Link>
+                      <ProductCard
+                        key={product.id}
+                        product={fromBasicProduct(product)}
+                        variant="minimal"
+                      />
                     ))}
                   </div>
                 </div>

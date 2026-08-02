@@ -6,6 +6,7 @@ import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/da
 import { Button } from '@/components/ui/button';
 import { useShipmentDetail, useShipmentTimeline, useUpdateShipmentStatus, useAssignCourier, useCourierProviders } from '@/hooks/use-smart-shipment';
 import { AlertCircle, ArrowLeft, Package, Truck, CheckCircle, Clock, MapPin, FileText, Box, Weight } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
 
 const statusColor: Record<string, string> = {
@@ -39,10 +40,7 @@ export default function SellerShipmentDetailPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Shipment Detail" description="Manage shipment" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-white">Failed to load shipment</p>
-        </div>
+        <EmptyState icon={AlertCircle} variant="error" title="Failed to load shipment" />
       </div>
     );
   }
@@ -71,16 +69,16 @@ export default function SellerShipmentDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Truck className="h-4 w-4" /> Courier & Tracking</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Truck className="h-4 w-4" /> Courier & Tracking</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-xs text-white/50">Courier</p>
-                <p className="text-sm text-white">{shipment.courierProvider?.name ?? 'Not assigned'}</p>
+                <p className="text-xs text-text-tertiary">Courier</p>
+                <p className="text-sm text-text-primary">{shipment.courierProvider?.name ?? 'Not assigned'}</p>
               </div>
               <div>
-                <p className="text-xs text-white/50">Tracking</p>
-                <p className="font-mono text-sm text-white">{shipment.trackingNumber ?? '—'}</p>
+                <p className="text-xs text-text-tertiary">Tracking</p>
+                <p className="font-mono text-sm text-text-primary">{shipment.trackingNumber ?? '—'}</p>
               </div>
             </div>
 
@@ -91,7 +89,7 @@ export default function SellerShipmentDetailPage() {
                   <select
                     value={selectedCourier}
                     onChange={(e) => setSelectedCourier(e.target.value)}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary"
                   >
                     <option value="">Select courier...</option>
                     {courierProviders?.map((cp: any) => (
@@ -101,12 +99,12 @@ export default function SellerShipmentDetailPage() {
                   <input
                     type="text" placeholder="Tracking Number *"
                     value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/40"
                   />
                   <input
                     type="date" placeholder="Expected Delivery"
                     value={eta} onChange={(e) => setEta(e.target.value)}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary"
                   />
                   <div className="flex gap-2">
                     <Button variant="accent" size="sm"
@@ -125,18 +123,18 @@ export default function SellerShipmentDetailPage() {
             ) : null}
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Box className="h-4 w-4" /> Packages ({shipment.packages?.length ?? 0})</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Box className="h-4 w-4" /> Packages ({shipment.packages?.length ?? 0})</h3>
             {shipment.packages?.length ? (
               <div className="space-y-2">
                 {shipment.packages.map((pkg: any) => (
-                  <div key={pkg.id} className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                  <div key={pkg.id} className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3">
                     <div>
-                      <p className="text-sm font-medium text-white">{pkg.label ?? 'Package'}</p>
-                      {pkg.contents && <p className="text-xs text-white/50">{pkg.contents}</p>}
+                      <p className="text-sm font-medium text-text-primary">{pkg.label ?? 'Package'}</p>
+                      {pkg.contents && <p className="text-xs text-text-tertiary">{pkg.contents}</p>}
                     </div>
                     <div className="text-right">
-                      {pkg.weight && <p className="text-xs text-white/60">{pkg.weight} {pkg.weightUnit}</p>}
+                      {pkg.weight && <p className="text-xs text-text-secondary">{pkg.weight} {pkg.weightUnit}</p>}
                     </div>
                   </div>
                 ))}
@@ -144,24 +142,24 @@ export default function SellerShipmentDetailPage() {
             ) : <p className="text-sm text-white/50">No packages</p>}
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Clock className="h-4 w-4" /> Timeline</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Clock className="h-4 w-4" /> Timeline</h3>
             {(!timeline || timeline.length === 0) ? (
-              <p className="text-sm text-white/50">No timeline events.</p>
+              <p className="text-sm text-text-tertiary">No timeline events.</p>
             ) : (
               <div className="space-y-4">
                 {[...timeline].reverse().map((event: any) => (
                   <div key={event.id} className="flex gap-4">
                     <div className="flex flex-col items-center">
-                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-white/20'}`} />
-                      <div className="mt-1 h-full w-px bg-white/[0.06]" />
+                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-text-tertiary'}`} />
+                      <div className="mt-1 h-full w-px bg-surface-secondary" />
                     </div>
                     <div className="pb-4">
                       <div className="flex items-center gap-2">
                         <StatusBadge status={event.toStatus} />
-                        {event.fromStatus && <span className="text-xs text-white/40">from <StatusBadge status={event.fromStatus} /></span>}
+                        {event.fromStatus && <span className="text-xs text-text-tertiary">from <StatusBadge status={event.fromStatus} /></span>}
                       </div>
-                      <p className="mt-1 text-xs text-white/50">
+                      <p className="mt-1 text-xs text-text-tertiary">
                         {new Date(event.createdAt).toLocaleString('en-IN')}
                         {event.changedByRole && ` — by ${event.changedByRole}`}
                       </p>
@@ -176,20 +174,20 @@ export default function SellerShipmentDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Package className="h-4 w-4" /> Shipment Info</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Package className="h-4 w-4" /> Shipment Info</h3>
             <div className="space-y-3">
-              <div><p className="text-xs text-white/50">Status</p><StatusBadge status={shipment.status} /></div>
-              <div><p className="text-xs text-white/50">Type</p><p className="text-sm text-white">{shipment.type}</p></div>
-              <div><p className="text-xs text-white/50">Order</p><p className="font-mono text-sm text-white">{shipment.order?.orderNumber ?? '—'}</p></div>
-              <div><p className="text-xs text-white/50">Buyer</p><p className="text-sm text-white">{shipment.buyerCompany?.name ?? '—'}</p></div>
-              <div><p className="text-xs text-white/50">Packages</p><p className="text-sm text-white">{shipment.totalPackages}</p></div>
-              {shipment.weight && <div><p className="text-xs text-white/50">Weight</p><p className="text-sm text-white">{Number(shipment.weight)} kg</p></div>}
+              <div><p className="text-xs text-text-tertiary">Status</p><StatusBadge status={shipment.status} /></div>
+              <div><p className="text-xs text-text-tertiary">Type</p><p className="text-sm text-text-primary">{shipment.type}</p></div>
+              <div><p className="text-xs text-text-tertiary">Order</p><p className="font-mono text-sm text-text-primary">{shipment.order?.orderNumber ?? '—'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Buyer</p><p className="text-sm text-text-primary">{shipment.buyerCompany?.name ?? '—'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Packages</p><p className="text-sm text-text-primary">{shipment.totalPackages}</p></div>
+              {shipment.weight && <div><p className="text-xs text-text-tertiary">Weight</p><p className="text-sm text-text-primary">{Number(shipment.weight)} kg</p></div>}
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Actions</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">Actions</h3>
             <div className="space-y-3">
               {canPack && (
                 <Button variant="accent" className="w-full" onClick={() => updateStatus.mutate({ shipmentId: id, status: 'PACKED' })} disabled={updateStatus.isPending}>
@@ -229,18 +227,18 @@ export default function SellerShipmentDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><FileText className="h-4 w-4" /> Documents</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><FileText className="h-4 w-4" /> Documents</h3>
             {shipment.documents?.length ? (
               <div className="space-y-2">
                 {shipment.documents.map((doc: any) => (
                   <a key={doc.id} href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm text-white/70 hover:text-orange-400">
+                    className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-secondary hover:text-orange-400">
                     <FileText className="h-4 w-4" /> {doc.fileName}
                   </a>
                 ))}
               </div>
-            ) : <p className="text-sm text-white/50">No documents uploaded</p>}
+            ) : <p className="text-sm text-text-tertiary">No documents uploaded</p>}
           </div>
         </div>
       </div>

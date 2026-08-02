@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PutObjectCommandInput, GetObjectCommand } from '@aws-sdk/client-s3';
 
@@ -26,6 +26,15 @@ export class StorageService {
     });
     this.bucket = this.configService.get<string>('aws.bucket')!;
     this.cloudfrontDomain = this.configService.get<string>('aws.cloudfrontDomain') || '';
+  }
+
+  async check(): Promise<boolean> {
+    try {
+      await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async uploadFile(

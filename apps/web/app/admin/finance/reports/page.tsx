@@ -3,6 +3,8 @@
 import { DashboardPageHeader, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFinanceDashboard, useCreditUtilization } from '@/hooks/use-finance';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { DollarSign, TrendingUp, Clock, CreditCard, BarChart3 } from 'lucide-react';
 
 export default function AdminFinanceReportsPage() {
@@ -26,24 +28,22 @@ export default function AdminFinanceReportsPage() {
       <Card>
         <CardHeader><CardTitle>Monthly Revenue (Last 24 Months)</CardTitle></CardHeader>
         <CardContent>
-          {isLoading ? <TableSkeleton rows={12} /> : !dashboard?.monthlySummary?.length ? <p className="text-sm text-gray-400">No data</p> : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="border-b border-gray-700 text-left text-sm text-gray-400"><th className="p-3">Month</th><th className="p-3">Revenue</th><th className="p-3">Pending</th><th className="p-3">Refunded</th><th className="p-3">Net</th><th className="p-3">Transactions</th></tr></thead>
-                <tbody>
-                  {dashboard.monthlySummary.map((m: any) => (
-                    <tr key={m.month} className="border-b border-gray-700/50">
-                      <td className="p-3 text-sm">{m.month}</td>
-                      <td className="p-3 text-sm text-green-400">₹{m.revenue.toLocaleString()}</td>
-                      <td className="p-3 text-sm text-yellow-400">₹{m.pending.toLocaleString()}</td>
-                      <td className="p-3 text-sm text-red-400">₹{m.refunded.toLocaleString()}</td>
-                      <td className="p-3 text-sm font-medium">₹{(m.revenue - m.refunded).toLocaleString()}</td>
-                      <td className="p-3 text-sm">{m.transactions}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {isLoading ? <TableSkeleton rows={12} /> : !dashboard?.monthlySummary?.length ? <EmptyState title="No data" /> : (
+            <Table>
+              <THead><TR><TH>Month</TH><TH>Revenue</TH><TH>Pending</TH><TH>Refunded</TH><TH>Net</TH><TH>Transactions</TH></TR></THead>
+              <TBody>
+                {dashboard.monthlySummary.map((m: any) => (
+                  <TR key={m.month}>
+                    <TD>{m.month}</TD>
+                    <TD className="text-green-400">₹{m.revenue.toLocaleString()}</TD>
+                    <TD className="text-yellow-400">₹{m.pending.toLocaleString()}</TD>
+                    <TD className="text-red-400">₹{m.refunded.toLocaleString()}</TD>
+                    <TD className="font-medium">₹{(m.revenue - m.refunded).toLocaleString()}</TD>
+                    <TD>{m.transactions}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </CardContent>
       </Card>

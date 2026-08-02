@@ -11,6 +11,7 @@ import { useAd, useAdAnalytics, usePauseAd, useResumeAd, useStopAd, useFundAd } 
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Play, Pause, Square, Wallet, Eye, MousePointerClick, TrendingUp, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 
 const AD_TYPE_LABELS: Record<string, string> = {
   SPONSORED_PRODUCT: 'Sponsored Product',
@@ -25,12 +26,12 @@ const AD_TYPE_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  DRAFT: 'bg-gray-500/20 text-gray-400',
+  DRAFT: 'bg-bg-elevated text-gray-400',
   PENDING_REVIEW: 'bg-yellow-500/20 text-yellow-400',
   ACTIVE: 'bg-green-500/20 text-green-400',
   PAUSED: 'bg-blue-500/20 text-blue-400',
   EXPIRED: 'bg-red-500/20 text-red-400',
-  CANCELLED: 'bg-gray-500/20 text-gray-400',
+  CANCELLED: 'bg-bg-elevated text-gray-400',
   REJECTED: 'bg-red-500/20 text-red-400',
   COMPLETED: 'bg-purple-500/20 text-purple-400',
 };
@@ -94,27 +95,27 @@ export default function AdDetailPage() {
       } />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Status</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Status</CardTitle></CardHeader>
           <CardContent><Badge className={STATUS_STYLES[ad.status]}>{ad.status.replace('_', ' ')}</Badge></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Type</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Type</CardTitle></CardHeader>
           <CardContent className="font-medium">{AD_TYPE_LABELS[ad.type] || ad.type}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Pricing</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Pricing</CardTitle></CardHeader>
           <CardContent className="font-medium">{ad.pricingModel}{ad.cpc ? ` (₹${ad.cpc}/click)` : ad.cpm ? ` (₹${ad.cpm}/1K)` : ''}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Budget Usage</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Budget Usage</CardTitle></CardHeader>
           <CardContent className="font-medium">₹{Number(ad.spentBudget).toLocaleString()} / ₹{Number(ad.totalBudget).toLocaleString()}</CardContent></Card>
       </div>
 
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><Eye className="h-3 w-3" /> Impressions</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><Eye className="h-3 w-3" /> Impressions</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">{summary.impressions.toLocaleString()}</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><MousePointerClick className="h-3 w-3" /> Clicks</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><MousePointerClick className="h-3 w-3" /> Clicks</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">{summary.clicks.toLocaleString()}</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> CTR</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><TrendingUp className="h-3 w-3" /> CTR</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">{summary.ctr}%</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><DollarSign className="h-3 w-3" /> CPC</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><DollarSign className="h-3 w-3" /> CPC</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">₹{summary.cpc}</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> ROI</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><TrendingUp className="h-3 w-3" /> ROI</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">{summary.roi}%</CardContent></Card>
         </div>
       )}
@@ -123,16 +124,16 @@ export default function AdDetailPage() {
         <Card>
           <CardHeader><CardTitle>Campaign Details</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-gray-400">Start</span><span>{new Date(ad.startDate).toLocaleDateString()}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">End</span><span>{new Date(ad.endDate).toLocaleDateString()}</span></div>
-            {ad.description && <div className="flex justify-between"><span className="text-gray-400">Description</span><span className="text-right max-w-xs">{ad.description}</span></div>}
-            {ad.targetUrl && <div className="flex justify-between"><span className="text-gray-400">Target URL</span><span className="text-right max-w-xs truncate">{ad.targetUrl}</span></div>}
-            {ad.keyword && <div className="flex justify-between"><span className="text-gray-400">Keyword</span><span>{ad.keyword}</span></div>}
-            {ad.city && <div className="flex justify-between"><span className="text-gray-400">City</span><span>{ad.city}</span></div>}
-            <div className="flex justify-between"><span className="text-gray-400">Daily Budget</span><span>₹{Number(ad.dailyBudget).toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">Auto Pause</span><span>{ad.autoPause ? 'Yes' : 'No'}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">Auto Resume</span><span>{ad.autoResume ? 'Yes' : 'No'}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">Auto Stop</span><span>{ad.autoStop ? 'Yes' : 'No'}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">Start</span><span>{new Date(ad.startDate).toLocaleDateString()}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">End</span><span>{new Date(ad.endDate).toLocaleDateString()}</span></div>
+            {ad.description && <div className="flex justify-between"><span className="text-text-tertiary">Description</span><span className="text-right max-w-xs">{ad.description}</span></div>}
+            {ad.targetUrl && <div className="flex justify-between"><span className="text-text-tertiary">Target URL</span><span className="text-right max-w-xs truncate">{ad.targetUrl}</span></div>}
+            {ad.keyword && <div className="flex justify-between"><span className="text-text-tertiary">Keyword</span><span>{ad.keyword}</span></div>}
+            {ad.city && <div className="flex justify-between"><span className="text-text-tertiary">City</span><span>{ad.city}</span></div>}
+            <div className="flex justify-between"><span className="text-text-tertiary">Daily Budget</span><span>₹{Number(ad.dailyBudget).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">Auto Pause</span><span>{ad.autoPause ? 'Yes' : 'No'}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">Auto Resume</span><span>{ad.autoResume ? 'Yes' : 'No'}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">Auto Stop</span><span>{ad.autoStop ? 'Yes' : 'No'}</span></div>
           </CardContent>
         </Card>
 
@@ -144,8 +145,8 @@ export default function AdDetailPage() {
               {ad.status === 'PAUSED' && <Button onClick={handleResume} variant="outline"><Play className="mr-2 h-4 w-4" /> Resume</Button>}
               {(ad.status === 'ACTIVE' || ad.status === 'PAUSED') && <Button onClick={handleStop} variant="outline" className="text-red-400"><Square className="mr-2 h-4 w-4" /> Stop</Button>}
             </div>
-            <div className="border-t border-gray-800 pt-4">
-              <label className="text-sm text-gray-400 mb-2 block">Fund Campaign (GOCASH)</label>
+            <div className="border-t border-border pt-4">
+              <label className="text-sm text-text-tertiary mb-2 block">Fund Campaign (GOCASH)</label>
               <div className="flex gap-2">
                 <Input type="number" min="1" value={fundAmount} onChange={e => setFundAmount(e.target.value)} placeholder="Amount" />
                 <Button onClick={handleFund} disabled={funding}><Wallet className="mr-2 h-4 w-4" />{funding ? 'Adding...' : 'Add Budget'}</Button>
@@ -161,7 +162,7 @@ export default function AdDetailPage() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {ad.targets.map(t => (
-                <Badge key={t.id} className="bg-gray-800 text-gray-300">{t.targetType}: {t.targetValue}</Badge>
+                <Badge key={t.id} className="bg-surface-secondary text-text-tertiary">{t.targetType}: {t.targetValue}</Badge>
               ))}
             </div>
           </CardContent>
@@ -172,28 +173,20 @@ export default function AdDetailPage() {
         <Card>
           <CardHeader><CardTitle>Daily Analytics</CardTitle></CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-gray-800 text-left text-gray-400">
-                  <th className="pb-3 pr-4">Date</th>
-                  <th className="pb-3 pr-4">Impressions</th>
-                  <th className="pb-3 pr-4">Clicks</th>
-                  <th className="pb-3 pr-4">Spend</th>
-                  <th className="pb-3 pr-4">Conversions</th>
-                </tr></thead>
-                <tbody>
+            <Table>
+                <THead><TR><TH>Date</TH><TH>Impressions</TH><TH>Clicks</TH><TH>Spend</TH><TH>Conversions</TH></TR></THead>
+                <TBody>
                   {analytics.daily.map(d => (
-                    <tr key={d.id} className="border-b border-gray-800/50">
-                      <td className="py-3 pr-4">{new Date(d.date).toLocaleDateString()}</td>
-                      <td className="py-3 pr-4">{d.impressions.toLocaleString()}</td>
-                      <td className="py-3 pr-4">{d.clicks.toLocaleString()}</td>
-                      <td className="py-3 pr-4">₹{Number(d.spend).toLocaleString()}</td>
-                      <td className="py-3 pr-4">{d.conversions}</td>
-                    </tr>
+                    <TR key={d.id}>
+                      <TD>{new Date(d.date).toLocaleDateString()}</TD>
+                      <TD>{d.impressions.toLocaleString()}</TD>
+                      <TD>{d.clicks.toLocaleString()}</TD>
+                      <TD>₹{Number(d.spend).toLocaleString()}</TD>
+                      <TD>{d.conversions}</TD>
+                    </TR>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TBody>
+              </Table>
           </CardContent>
         </Card>
       )}

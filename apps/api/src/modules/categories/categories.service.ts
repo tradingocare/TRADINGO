@@ -25,34 +25,59 @@ export class CategoriesService {
     return slug;
   }
 
+  private async validateSlugUniqueness(slug: string, excludeId?: string): Promise<void> {
+    const where: Prisma.CategoryWhereInput = { slug };
+    if (excludeId) where.id = { not: excludeId };
+    const existing = await this.prisma.category.findFirst({ where, select: { id: true } });
+    if (existing) throw new ConflictException(`Slug '${slug}' is already in use`);
+  }
+
+  private async detectCircularReference(id: string, newParentId: string): Promise<void> {
+    let currentId: string | null = newParentId;
+    const visited = new Set<string>();
+    while (currentId) {
+      if (currentId === id) throw new ConflictException('Circular reference detected: category cannot be its own ancestor');
+      if (visited.has(currentId)) break;
+      visited.add(currentId);
+      const parent: { parentId: string | null } | null = await this.prisma.category.findUnique({
+        where: { id: currentId },
+        select: { parentId: true },
+      });
+      currentId = parent?.parentId ?? null;
+    }
+  }
+
   async create(dto: CreateCategoryDto, userId: string) {
     const slug = dto.slug || await this.generateUniqueSlug(dto.name);
-    const existing = await this.prisma.category.findUnique({ where: { slug }, select: { id: true } });
-    if (existing) throw new ConflictException('Category slug already exists');
+    if (dto.slug) await this.validateSlugUniqueness(slug);
 
     if (dto.parentId) {
       const parent = await this.prisma.category.findUnique({ where: { id: dto.parentId }, select: { id: true } });
       if (!parent) throw new NotFoundException('Parent category not found');
     }
 
-    const category = await this.prisma.category.create({
-      data: {
-        parentId: dto.parentId,
-        name: dto.name,
-        slug,
-        description: dto.description,
-        icon: dto.icon,
-        image: dto.image,
-        seoTitle: dto.seoTitle,
-        seoDescription: dto.seoDescription,
-        isActive: dto.isActive ?? true,
-        sortOrder: dto.sortOrder ?? 0,
-      },
-      include: { parent: { select: { id: true, name: true, slug: true } } },
-    });
+    const category = await this.prisma.$transaction(async (tx) => {
+      const c = await tx.category.create({
+        data: {
+          parentId: dto.parentId,
+          name: dto.name,
+          slug,
+          description: dto.description,
+          icon: dto.icon,
+          image: dto.image,
+          seoTitle: dto.seoTitle,
+          seoDescription: dto.seoDescription,
+          isActive: dto.isActive ?? true,
+          sortOrder: dto.sortOrder ?? 0,
+        },
+        include: { parent: { select: { id: true, name: true, slug: true } } },
+      });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'CATEGORY_CREATED', resource: `category:${category.id}`, metadata: { name: dto.name, slug } },
+      await tx.auditLog.create({
+        data: { userId, action: 'CATEGORY_CREATED', resource: `category:${c.id}`, metadata: { name: dto.name, slug } },
+      }).catch((err) => this.logger.warn(`Audit log failed for category create: ${err.message}`));
+
+      return c;
     });
 
     this.logger.log(`Category ${category.id} created by ${userId}`);
@@ -60,31 +85,40 @@ export class CategoriesService {
   }
 
   async findAll(query: { cursor?: string; limit?: number; search?: string; isActive?: string }) {
-    const { cursor, limit = 50, search, isActive } = query;
-    const where: Prisma.CategoryWhereInput = {};
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    if (isActive !== undefined) where.isActive = isActive === 'true';
+    try {
+      const { cursor, search, isActive } = query || {};
+      const limit = Math.min(Math.max(Number(query?.limit) || 50, 1), 100);
+      const where: Prisma.CategoryWhereInput = {};
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+      if (isActive !== undefined) where.isActive = isActive === 'true';
 
-    const findArgs: Prisma.CategoryFindManyArgs = {
-      where,
-      take: limit,
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: {
-        parent: { select: { id: true, name: true, slug: true } },
-        _count: { select: { children: true, products: true } },
-      },
-    };
-    if (cursor) { findArgs.cursor = { id: cursor }; findArgs.skip = 1; }
-    const [data, total] = await Promise.all([
-      this.prisma.category.findMany(findArgs),
-      this.prisma.category.count({ where }),
-    ]);
-    return { data, meta: { total, limit, cursor: data.length > 0 ? data[data.length - 1].id : undefined } };
+      const findArgs: Prisma.CategoryFindManyArgs = {
+        where,
+        take: limit + 1,
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        include: {
+          parent: { select: { id: true, name: true, slug: true } },
+          _count: { select: { children: true, products: true } },
+        },
+      };
+      if (cursor) {
+        findArgs.cursor = { id: cursor };
+        findArgs.skip = 1;
+      }
+      const data = await this.prisma.category.findMany(findArgs);
+      const hasMore = data.length > limit;
+      if (hasMore) data.pop();
+      const total = await this.prisma.category.count({ where });
+      return { data, meta: { total, limit, cursor: data.length > 0 ? data[data.length - 1].id : undefined } };
+    } catch (err) {
+      this.logger.error(`Error in CategoriesService.findAll: ${err instanceof Error ? err.message : String(err)}`);
+      return { data: [], meta: { total: 0, limit: 50, cursor: undefined } };
+    }
   }
 
   async findById(id: string) {
@@ -117,7 +151,7 @@ export class CategoriesService {
     const all = await this.prisma.category.findMany({
       where: { isActive: true },
       include: {
-        _count: { select: { children: true, products: true } },
+        _count: { select: { children: true, products: true, serviceMasters: true } },
       },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' } ],
     });
@@ -162,41 +196,50 @@ export class CategoriesService {
   }
 
   async update(id: string, dto: UpdateCategoryDto, userId: string) {
-    const category = await this.prisma.category.findUnique({ where: { id }, select: { id: true } });
-    if (!category) throw new NotFoundException('Category not found');
+    const existing = await this.prisma.category.findUnique({ where: { id }, select: { id: true, name: true } });
+    if (!existing) throw new NotFoundException('Category not found');
 
     if (dto.parentId) {
       if (dto.parentId === id) throw new ConflictException('Category cannot be its own parent');
       const parent = await this.prisma.category.findUnique({ where: { id: dto.parentId }, select: { id: true } });
       if (!parent) throw new NotFoundException('Parent category not found');
+      await this.detectCircularReference(id, dto.parentId);
     }
 
-    const updated = await this.prisma.category.update({
-      where: { id },
-      data: { ...dto },
-      include: { parent: { select: { id: true, name: true, slug: true } } },
-    });
+    if (dto.slug) await this.validateSlugUniqueness(dto.slug, id);
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'CATEGORY_UPDATED', resource: `category:${id}`, metadata: { changes: { ...dto } } },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.category.update({
+        where: { id },
+        data: { ...dto },
+        include: { parent: { select: { id: true, name: true, slug: true } } },
+      });
+
+      await tx.auditLog.create({
+        data: { userId, action: 'CATEGORY_UPDATED', resource: `category:${id}`, metadata: { changes: { ...dto } } },
+      }).catch((err) => this.logger.warn(`Audit log failed for category update: ${err.message}`));
+
+      return u;
     });
 
     return updated;
   }
 
   async remove(id: string, userId: string) {
-    const category = await this.prisma.category.findUnique({
-      where: { id },
-      include: { _count: { select: { children: true, products: true } } },
-    });
-    if (!category) throw new NotFoundException('Category not found');
-    if (category._count.children > 0) throw new ConflictException('Cannot delete category with child categories');
-    if (category._count.products > 0) throw new ConflictException('Cannot delete category with associated products');
+    await this.prisma.$transaction(async (tx) => {
+      const category = await tx.category.findUnique({
+        where: { id },
+        include: { _count: { select: { children: true, products: true } } },
+      });
+      if (!category) throw new NotFoundException('Category not found');
+      if (category._count.children > 0) throw new ConflictException('Cannot delete category with child categories');
+      if (category._count.products > 0) throw new ConflictException('Cannot delete category with associated products');
 
-    await this.prisma.category.delete({ where: { id } });
+      await tx.category.delete({ where: { id } });
 
-    await this.prisma.auditLog.create({
-      data: { userId, action: 'CATEGORY_DELETED', resource: `category:${id}`, metadata: { name: category.name } },
+      await tx.auditLog.create({
+        data: { userId, action: 'CATEGORY_DELETED', resource: `category:${id}`, metadata: { name: category.name } },
+      }).catch((err) => this.logger.warn(`Audit log failed for category delete: ${err.message}`));
     });
 
     this.logger.log(`Category ${id} deleted by ${userId}`);

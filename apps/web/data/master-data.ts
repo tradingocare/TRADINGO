@@ -435,12 +435,15 @@ export const FOOTER_COMPANY_LINKS = [
   { label: 'Contact Us', href: '/contact' },
   { label: 'Privacy Policy', href: '/privacy' },
   { label: 'Terms of Service', href: '/terms' },
+  { label: 'Cookies Policy', href: '/cookies' },
+  { label: 'Refund Policy', href: '/refund' },
+  { label: 'Disclaimer', href: '/disclaimer' },
 ]
 export const FOOTER_SOCIAL_LINKS = [
-  { label: 'Facebook', href: 'https://facebook.com/tradingo' },
-  { label: 'X', href: 'https://x.com/tradingo' },
   { label: 'LinkedIn', href: 'https://linkedin.com/company/tradingo' },
-  { label: 'YouTube', href: 'https://youtube.com/@tradingo' },
+  { label: 'Facebook', href: 'https://facebook.com/tradingo' },
+  { label: 'Instagram', href: 'https://instagram.com/tradingo' },
+  { label: 'YouTube', href: 'https://www.youtube.com/@TradingoIndia' },
 ]
 export const FOOTER_SELLER_LINKS = [
   { label: 'Start Selling', href: '/register' },
@@ -490,7 +493,7 @@ export const MASTER_ENGINES: MasterEngine[] = [
   { id: 'TRADRFQ', name: 'TRADRFQ', tagline: 'RFQ & Negotiation', subtitle: 'RFQ & Negotiation', description: 'Post bulk requirements, receive multi-vendor quotes, compare, negotiate, and convert to order.', color: '#F15BB5', href: '/tradhexa/tradrfq' },
   { id: 'TRADCONNECT', name: 'TRADCONNECT', tagline: 'Secure Chat', subtitle: 'Secure Chat', description: 'WhatsApp-style B2B chat. Phone numbers are never shared. Direct connect between buyers and sellers.', color: '#2DE0E0', href: '/tradhexa/tradconnect' },
   { id: 'TRADTRUST', name: 'TRADTRUST', tagline: 'Verification', subtitle: 'Verification', description: '5-layer KYC: PAN, GST, Aadhaar, Business Registration, Bank. Trust score shown on every seller.', color: '#F2C94C', href: '/tradhexa/tradtrust' },
-  { id: 'TRADZERO', name: 'TRADZERO', tagline: 'Zero-Risk Payments', subtitle: 'Zero-Risk Payments', description: 'Escrow holds your payment. Released to seller only after you confirm delivery. Dispute resolution included.', color: '#FF7A3D', href: '/tradhexa/tradzero' },
+  { id: 'TRADZERO', name: 'TRADZERO', tagline: 'Zero-Risk Payments', subtitle: 'Zero-Risk Payments', description: 'Escrow holds your payment. Released to seller only after you confirm delivery. Dispute resolution included.', color: '#fbbf24', href: '/tradhexa/tradzero' },
   { id: 'TRADBUY', name: 'TRADBUY', tagline: 'Instant Purchase', description: 'Buy products instantly at listed prices with secure payment processing and automated order matching.', color: '#3B82F6', href: '/tradbuy' },
   { id: 'TRADGO', name: 'TRADGO', tagline: 'Gamified Trading', description: 'Participate in trading races, earn badges, climb leaderboards, and unlock exclusive seller perks.', color: '#F43F5E', href: '/tradgo' },
   { id: 'GOCASH', name: 'GOCASH', tagline: 'Rewards Engine', description: 'Earn GOCASH rewards on every successful trade and redeem them for platform benefits and discounts.', color: '#F59E0B', href: '/gocash' },
@@ -514,8 +517,8 @@ export const SEARCH_MODES = [
 
 // ─── GEO / NEAR-TO-FAR ──────────────────────────────────────────
 export const GEO_RINGS = [
-  { ring: 1, scope: 'near_me',    label: 'My Area',     color: '#FF4D00', description: 'Within 5 km' },
-  { ring: 2, scope: 'city',       label: 'My City',     color: '#FF7A3D', description: 'Within city limits' },
+  { ring: 1, scope: 'near_me',    label: 'My Area',     color: '#f59e0b', description: 'Within 5 km' },
+  { ring: 2, scope: 'city',       label: 'My City',     color: '#fbbf24', description: 'Within city limits' },
   { ring: 3, scope: 'district',   label: 'My District', color: '#F2C94C', description: 'Same district' },
   { ring: 4, scope: 'state',      label: 'My State',    color: '#2DE0E0', description: 'Same state' },
   { ring: 5, scope: 'pan_india',  label: 'Pan India',  color: '#3D8BFF', description: 'All India' },
@@ -538,7 +541,7 @@ export interface HeroVendorSlide {
   accentColor: string
 }
 export const HERO_VENDOR_SLIDES: HeroVendorSlide[] = [
-  { id: 1, vendorName: 'Anand Steels & Metals', tagline: 'Premium Steel & Metal Products Since 1998', category: 'Industrial Machinery', banner: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹45Cr+' }, { label: 'Orders', value: '12.5K+' }, { label: 'Happy Clients', value: '2,800+' }], offer: 'Free delivery on orders above ₹1L', cta: 'View Products', ctaHref: '/products', accentColor: '#FF4D00' },
+  { id: 1, vendorName: 'Anand Steels & Metals', tagline: 'Premium Steel & Metal Products Since 1998', category: 'Industrial Machinery', banner: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹45Cr+' }, { label: 'Orders', value: '12.5K+' }, { label: 'Happy Clients', value: '2,800+' }], offer: 'Free delivery on orders above ₹1L', cta: 'View Products', ctaHref: '/products', accentColor: '#f59e0b' },
   { id: 2, vendorName: 'Green Earth Pharma', tagline: 'Trusted Pharmaceutical Manufacturer', category: 'Pharmaceuticals', banner: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹120Cr+' }, { label: 'Orders', value: '45K+' }, { label: 'Happy Clients', value: '5,200+' }], offer: 'Bulk order discount up to 15%', cta: 'Explore Range', ctaHref: '/products', accentColor: '#10B981' },
   { id: 3, vendorName: 'TexFab India', tagline: 'India\'s Leading Textile Exporter', category: 'Textiles & Apparel', banner: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹280Cr+' }, { label: 'Orders', value: '89K+' }, { label: 'Happy Clients', value: '12,000+' }], offer: 'Sample free on first order', cta: 'Shop Now', ctaHref: '/products', accentColor: '#8B5CF6' },
   { id: 4, vendorName: 'Precision Auto Parts', tagline: 'OEM & Aftermarket Auto Components', category: 'Automotive', banner: 'https://images.unsplash.com/photo-1563903530908-af12d1551ac4?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹520Cr+' }, { label: 'Orders', value: '2.5L+' }, { label: 'Happy Clients', value: '18,000+' }], offer: 'Bulk pricing available', cta: 'View Catalog', ctaHref: '/products', accentColor: '#3D8BFF' },
@@ -651,7 +654,7 @@ export const WHY_DIFFERENTIATORS: Differentiator[] = [
   { title: 'Hyperlocal + Global', tagline: 'Near-to-Far\u2122 Discovery', icon: 'MapPin', color: '#F15BB5', details: ['Discover sellers near you first, then expand to district, state, nation, and global', '6 geo rings for precision sourcing', 'Optimized logistics with local-first matching'] },
   { title: 'Zero-Risk Transactions', tagline: 'Trade Without Worry', icon: 'Shield', color: '#2DE0E0', details: ['TRADZERO escrow protects every payment', 'Payment released only after delivery confirmation', 'Dedicated dispute resolution team'] },
   { title: 'Gamified Trading', tagline: 'Trade, Compete, Earn', icon: 'Award', color: '#F2C94C', details: ['TRADGO trading races with monthly leaderboards', 'Earn GOCASH rewards on every transaction', 'Unlock Elite Seller status and exclusive perks'] },
-  { title: 'Trust-First Ecosystem', tagline: 'Verified Every Step', icon: 'Shield', color: '#FF7A3D', details: ['5-layer seller KYC verification (PAN, GST, Aadhaar, Business, Bank)', 'Public trust scores and verified purchase reviews', 'Strict anti-fraud policies with AI monitoring'] },
+  { title: 'Trust-First Ecosystem', tagline: 'Verified Every Step', icon: 'Shield', color: '#fbbf24', details: ['5-layer seller KYC verification (PAN, GST, Aadhaar, Business, Bank)', 'Public trust scores and verified purchase reviews', 'Strict anti-fraud policies with AI monitoring'] },
 ]
 export const WHY_COMPARISON = [
   { feature: 'AI Search', tradindo: '\u2705 Natural Language AI', others: '\u274C Keyword-based' },
@@ -790,9 +793,9 @@ export const LAUNCH_STATS = [
 
 // ─── CONTACT DATA ─────────────────────────────────────────────────
 export const CONTACT_METHODS = [
-  { label: 'Email', icon: 'Mail', title: 'Email Us', description: 'Our team typically responds within 24 hours.', action: 'hello@tradingo.in', href: 'mailto:hello@tradingo.in', value: 'hello@tradingo.in', subtitle: 'Email' },
-  { label: 'Phone', icon: 'Phone', title: 'Call Us', description: 'Monday to Saturday, 10 AM to 7 PM IST.', action: '+91 9999 0000 00', href: 'tel:+919999000000', value: '+91 9999 0000 00', subtitle: 'Phone' },
-  { label: 'Visit', icon: 'MapPin', title: 'Visit Us', description: 'Come say hello at our headquarters.', action: 'Indore, Madhya Pradesh, India', href: 'https://maps.google.com/?q=Indore', value: 'Indore, Madhya Pradesh, India', subtitle: 'Office' },
+  { label: 'Email', icon: 'Mail', title: 'Email Us', description: 'Our team typically responds within 24 hours.', action: 'support@tradingo.com', href: 'mailto:support@tradingo.com', value: 'support@tradingo.com', subtitle: 'Email' },
+  { label: 'Phone', icon: 'Phone', title: 'Call Us', description: 'Monday to Saturday, 10 AM to 7 PM IST.', action: '+91 1800-TRADINGO', href: 'tel:+911800TRADINGO', value: '+91 1800-TRADINGO', subtitle: 'Phone' },
+  { label: 'Visit', icon: 'MapPin', title: 'Visit Us', description: 'Come say hello at our headquarters.', action: 'BKC, Mumbai 400051, Maharashtra, India', href: 'https://maps.google.com/?q=BKC+Mumbai', value: 'BKC, Mumbai 400051, Maharashtra, India', subtitle: 'Office' },
 ]
 export const BUSINESS_HOURS = [
   { day: 'Weekdays', hours: '9:00 AM – 8:00 PM IST', label: 'Monday – Friday', value: '9:00 AM – 8:00 PM IST', time: '9:00 AM – 8:00 PM IST', dayLabel: 'Monday – Friday' },
@@ -803,7 +806,7 @@ export const BUSINESS_HOURS = [
 // ─── PRESS KIT DATA ──────────────────────────────────────────────
 export const PRESS_KIT_FACTS = [
   { label: 'Founded', value: '2023' },
-  { label: 'Headquarters', value: 'Indore, Madhya Pradesh, India' },
+  { label: 'Headquarters', value: 'BKC, Mumbai 400051, Maharashtra, India' },
   { label: 'Platform', value: 'TRADHEXA B2B Marketplace' },
   { label: 'Sellers', value: '1.8L+' },
   { label: 'Buyers', value: '5.2L+' },
@@ -856,9 +859,16 @@ export const DASHBOARD_SELLER_NAV: NavItem[] = [
   { label: 'Negotiations', href: '/seller/negotiation', icon: 'Handshake' },
   { label: 'Purchase Orders', href: '/seller/po', icon: 'FileCheck' },
   { label: 'AI Workspace', href: '/seller/ai-workspace', icon: 'Sparkles' },
+  { label: 'AI Agent', href: '/seller/agent', icon: 'Bot' },
+  { label: 'Professional Agent', href: '/seller/professional-agent', icon: 'Bot' },
+  { label: 'Success Insights', href: '/seller/success-insights', icon: 'BarChart3' },
   { label: 'Analytics', href: '/seller/analytics', icon: 'BarChart3' },
+  { label: 'Referrals', href: '/seller/referrals', icon: 'Gift' },
   { label: 'TRADGO', href: '/seller/tradgo', icon: 'Trophy' },
   { label: 'GOCASH', href: '/seller/gocash', icon: 'Wallet' },
+  { label: 'Ecosystem', href: '/seller/ecosystem', icon: 'Zap' },
+  { label: 'TradeTalk', href: '/tradetalk/communities', icon: 'MessageCircle' },
+  { label: 'Community Agent', href: '/tradetalk/community-agent', icon: 'Bot' },
   { label: 'Reviews', href: '/seller/reviews', icon: 'Star' },
   { label: 'Support', href: '/seller/support', icon: 'Headphones', badge: 'New' },
   { label: 'Settings', href: '/seller/settings', icon: 'Settings' },
@@ -876,11 +886,16 @@ export const DASHBOARD_BUYER_NAV: NavItem[] = [
   { label: 'Shipments', href: '/buyer/shipment', icon: 'Truck' },
   { label: 'Deliveries', href: '/buyer/delivery', icon: 'PackageCheck' },
   { label: 'Suppliers', href: '/buyer/suppliers', icon: 'Store' },
+  { label: 'AI Agent', href: '/buyer/agent', icon: 'Bot' },
   { label: 'Notifications', href: '/buyer/notifications', icon: 'Bell' },
   { label: 'Downloads', href: '/buyer/downloads', icon: 'Download' },
   { label: 'Analytics', href: '/buyer/analytics', icon: 'BarChart3' },
   { label: 'Compare', href: '/compare', icon: 'Scale' },
+  { label: 'Referrals', href: '/buyer/referrals', icon: 'Gift' },
   { label: 'GOCASH', href: '/buyer/gocash', icon: 'Wallet' },
+  { label: 'Ecosystem', href: '/buyer/ecosystem', icon: 'Zap' },
+  { label: 'TradeTalk', href: '/tradetalk/communities', icon: 'MessageCircle' },
+  { label: 'Community Agent', href: '/tradetalk/community-agent', icon: 'Bot' },
   { label: 'Support', href: '/buyer/support', icon: 'Headphones' },
   { label: 'Settings', href: '/buyer/settings', icon: 'Settings' },
 ]
@@ -897,10 +912,32 @@ export const DASHBOARD_ADMIN_NAV: NavItem[] = [
   { label: 'Orders', href: '/admin/order', icon: 'ShoppingCart' },
   { label: 'Shipments', href: '/admin/shipment', icon: 'Truck' },
   { label: 'Deliveries', href: '/admin/delivery', icon: 'PackageCheck' },
+  { label: 'TradeServ', href: '/admin/tradeserv', icon: 'Handshake' },
+  { label: 'Finance', href: '/admin/finance', icon: 'DollarSign' },
   { label: 'Verification', href: '/admin/verification', icon: 'Shield', badge: '234' },
+  { label: 'CRM / Leads', href: '/admin/crm', icon: 'Users' },
+  { label: 'Referrals', href: '/admin/referrals', icon: 'Award' },
+  { label: 'SMS Console', href: '/admin/sms', icon: 'MessageSquare' },
+  { label: 'Ecosystem', href: '/admin/ecosystem', icon: 'Zap' },
+  { label: 'TradeTalk', href: '/admin/tradetalk', icon: 'MessageCircle' },
+  { label: 'Community Agent', href: '/tradetalk/community-agent', icon: 'Bot' },
+  { label: 'AI Agent', href: '/admin/agent', icon: 'Bot' },
+  { label: 'Founder AI', href: '/admin/founder-ai', icon: 'Sparkles' },
+  { label: 'Enterprise Intelligence', href: '/founder/intelligence', icon: 'Activity' },
+  { label: 'Founder Intelligence', href: '/admin/founder-intelligence', icon: 'BrainCircuit' },
+  { label: 'Executive Agent', href: '/founder/executive', icon: 'Crown' },
   { label: 'Fraud Dashboard', href: '/admin/fraud-dashboard', icon: 'AlertTriangle', badge: '12' },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: 'ScrollText' },
   { label: 'System Health', href: '/admin/system-health', icon: 'Activity' },
+  { label: 'Geo Intelligence', href: '/admin/geo-intelligence', icon: 'Map' },
+  { label: 'Freight Intelligence', href: '/admin/freight-intelligence', icon: 'Truck' },
+  { label: 'Market Intelligence', href: '/admin/market-intelligence', icon: 'TrendingUp' },
+  { label: 'Marketplace Rankings', href: '/admin/marketplace-rankings', icon: 'Award' },
+  { label: 'Catalog Intelligence', href: '/admin/catalog-intelligence', icon: 'BarChart3' },
+  { label: 'AI Federation', href: '/admin/ai-federation', icon: 'Share2' },
+  { label: 'AI Orchestrator', href: '/admin/ai-orchestrator', icon: 'Cpu' },
+  { label: 'AI Runtime', href: '/admin/ai-runtime', icon: 'Server' },
+  { label: 'Territory Intelligence', href: '/admin/territory-intelligence', icon: 'Globe' },
   { label: 'Analytics', href: '/admin/analytics', icon: 'BarChart3' },
   { label: 'Beta Features', href: '/admin/beta', icon: 'Flask' },
   { label: 'Settings', href: '/admin/settings', icon: 'Settings' },
@@ -979,12 +1016,14 @@ export const SELLER_QUICK_ACTIONS = [
   { label: 'Add Product', href: '/seller/products/new', icon: 'PlusCircle', color: '#3D8BFF' },
   { label: 'View RFQs', href: '/seller/rfqs', icon: 'FileText', color: '#F59E0B' },
   { label: 'Analytics', href: '/seller/analytics', icon: 'BarChart3', color: '#9B5DE5' },
+  { label: 'Refer & Earn', href: '/seller/referrals', icon: 'Gift', color: '#10B981' },
   { label: 'TRADGO Race', href: '/seller/tradgo', icon: 'Trophy', color: '#F43F5E' },
 ]
 export const BUYER_QUICK_ACTIONS = [
   { label: 'Create RFQ', href: '/rfq', icon: 'FileText', color: '#3D8BFF' },
-  { label: 'Browse Products', href: '/products', icon: 'Search', color: '#FF4D00' },
+  { label: 'Browse Products', href: '/products', icon: 'Search', color: '#f59e0b' },
   { label: 'Saved Products', href: '/buyer/saved-products', icon: 'Heart', color: '#F43F5E' },
+  { label: 'Refer & Earn', href: '/buyer/referrals', icon: 'Gift', color: '#10B981' },
   { label: 'Compare Quotes', href: '/buyer/compare-quotes', icon: 'GitCompare', color: '#9B5DE5' },
 ]
 export const ADMIN_QUICK_LINKS = [
@@ -1072,10 +1111,14 @@ export const SITEMAP_STATIC_ROUTES = [
   { path: '/press-kit', priority: 0.4, changefreq: 'monthly' as const },
   { path: '/privacy', priority: 0.4, changefreq: 'yearly' as const },
   { path: '/terms', priority: 0.4, changefreq: 'yearly' as const },
+  { path: '/cookies', priority: 0.3, changefreq: 'yearly' as const },
+  { path: '/refund', priority: 0.3, changefreq: 'yearly' as const },
+  { path: '/disclaimer', priority: 0.3, changefreq: 'yearly' as const },
   { path: '/companies', priority: 0.7, changefreq: 'daily' as const },
   { path: '/seller-plans', priority: 0.6, changefreq: 'weekly' as const },
-  { path: '/browse', priority: 0.7, changefreq: 'daily' as const },
+  { path: '/products', priority: 0.7, changefreq: 'daily' as const },
   { path: '/search', priority: 0.8, changefreq: 'daily' as const },
   { path: '/rfq', priority: 0.7, changefreq: 'weekly' as const },
   { path: '/status', priority: 0.3, changefreq: 'hourly' as const },
+  { path: '/tradeserv', priority: 0.7, changefreq: 'weekly' as const },
 ]

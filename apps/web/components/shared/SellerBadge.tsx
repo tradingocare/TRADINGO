@@ -90,17 +90,17 @@ export default function SellerBadge({
 
   const inner = (
     <div
-      className={`flex items-center ${s.gap} ${s.padding} rounded-xl w-fit max-w-full transition-all duration-200 ${linkToProfile ? 'cursor-pointer hover:border-[rgba(255,77,0,0.35)] group' : ''} ${className}`}
+      className={`flex items-center ${s.gap} ${s.padding} rounded-xl w-fit max-w-full transition-all duration-200 ${linkToProfile ? 'cursor-pointer hover:border-[rgba(245, 158, 11, 0.35)] group' : ''} ${className}`}
       style={{
-        background: 'rgba(255,255,255,0.05)',
+        background: 'rgba(255,255,255,0.8)',
         backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.09)',
+        border: '1px solid var(--border-color)',
       }}
     >
       {showLogo && (
         <div
           className={`${s.logo} overflow-hidden flex-shrink-0 flex items-center justify-center font-black transition-colors duration-200`}
-          style={{ background: 'rgba(255,77,0,0.12)', border: '1px solid rgba(255,77,0,0.2)', color: '#FF4D00' }}
+          style={{ background: 'rgba(0, 255, 255, 0.12)', border: '1px solid rgba(0, 255, 255, 0.2)', color: 'var(--accent)' }}
         >
           {seller.logo ? (
             <img src={seller.logo} alt={sellerName} className="w-full h-full object-cover" />
@@ -112,8 +112,8 @@ export default function SellerBadge({
 
       <div className="flex flex-col min-w-0 flex-1">
         <div className="flex items-center gap-1 flex-wrap">
-          <Building2 size={s.icon} className="text-white/35 flex-shrink-0" />
-          <span className={`${s.text} font-bold text-white truncate ${linkToProfile ? 'group-hover:text-[#FF4D00] transition-colors' : ''}`}>
+          <Building2 size={s.icon} className="text-gray-400 flex-shrink-0" />
+          <span className={`${s.text} font-bold text-gray-900 truncate ${linkToProfile ? 'group-hover:text-accent-500 transition-colors' : ''}`}>
             {sellerName}
           </span>
 
@@ -122,7 +122,7 @@ export default function SellerBadge({
           {seller.isTradgoElite && (
             <span
               className={`flex items-center gap-0.5 font-bold rounded-full flex-shrink-0 ${s.badge}`}
-              style={{ background: 'rgba(242,201,76,0.12)', border: '1px solid rgba(242,201,76,0.3)', color: '#F2C94C' }}
+              style={{ background: 'rgba(0,255,255,0.12)', border: '1px solid rgba(0,255,255,0.3)', color: 'var(--accent)' }}
             >
               <Crown size={s.icon - 2} />
               Elite
@@ -131,15 +131,15 @@ export default function SellerBadge({
         </div>
 
         {(showLocation || (!showLocation && !showStats)) && (seller.city || seller.state) && (
-          <div className={`flex items-center gap-1 ${s.subtext} text-white/40 mt-0.5`}>
-            <MapPin size={s.icon - 2} style={{ color: '#FF4D00' }} className="flex-shrink-0" />
+          <div className={`flex items-center gap-1 ${s.subtext} text-gray-400 mt-0.5`}>
+            <MapPin size={s.icon - 2} className="flex-shrink-0 text-accent-500" />
             <span className="truncate">
               {[seller.city, seller.state].filter(Boolean).join(', ')}
             </span>
             {seller.yearsActive && (
               <>
-                <span className="text-white/20 mx-0.5">·</span>
-                <span className="text-white/30 flex-shrink-0">{seller.yearsActive} yrs</span>
+                <span className="text-gray-300 mx-0.5">·</span>
+                <span className="text-gray-400 flex-shrink-0">{seller.yearsActive} yrs</span>
               </>
             )}
           </div>
@@ -155,32 +155,32 @@ export default function SellerBadge({
             )}
             {seller.avgResponseTime && (
               <span className={`${s.subtext} flex items-center gap-0.5`} style={{ color: 'rgba(255,255,255,0.4)' }}>
-                <Zap size={s.icon - 3} style={{ color: '#FF4D00' }} />
+                <Zap size={s.icon - 3} className="text-accent-500" />
                 {seller.avgResponseTime}
               </span>
             )}
             {seller.ordersFulfilled && seller.ordersFulfilled > 0 && (
-              <span className={`${s.subtext} text-white/30`}>
+              <span className={`${s.subtext} text-gray-400`}>
                 {seller.ordersFulfilled >= 1000
                   ? `${(seller.ordersFulfilled / 1000).toFixed(1)}K`
                   : seller.ordersFulfilled}+ orders
               </span>
             )}
             {seller.trustScore && seller.trustScore >= 60 && (
-              <span className={`${s.subtext} flex items-center gap-0.5 text-white/35`}>
+              <span className={`${s.subtext} flex items-center gap-0.5 text-gray-400`}>
                 <Shield size={s.icon - 3} className="text-green-400" />
                 {seller.trustScore}/100
               </span>
             )}
             {seller.yearsActive && (
-              <span className={`${s.subtext} text-white/30`}>{seller.yearsActive} yrs active</span>
+              <span className={`${s.subtext} text-gray-400`}>{seller.yearsActive} yrs active</span>
             )}
           </div>
         )}
 
         {showStats && size === 'md' && !!seller.trustScore && (
           <div className="mt-1.5 flex items-center gap-1.5 w-full max-w-[200px]">
-            <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.95)' }}>
               <div
                 className="h-full rounded-full transition-all"
                 style={{
@@ -189,7 +189,7 @@ export default function SellerBadge({
                 }}
               />
             </div>
-            <span className="text-[8px] text-white/25 flex-shrink-0">{seller.trustScore}/100</span>
+            <span className="text-[8px] text-gray-300 flex-shrink-0">{seller.trustScore}/100</span>
           </div>
         )}
       </div>

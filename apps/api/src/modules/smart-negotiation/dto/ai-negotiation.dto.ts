@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsObject, IsNumber, IsArray, Min, Max, IsBoolean, IsEnum } from 'class-validator'
+import { IsString, IsOptional, IsObject, IsNumber, IsArray, Min, Max } from 'class-validator'
 
 export class AiNegotiationStrategyDto {
   @IsObject()

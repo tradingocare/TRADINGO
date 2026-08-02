@@ -30,7 +30,7 @@ export default function FeaturesPage() {
         description="Everything you need to buy and sell across borders — from AI-powered matching to secure escrow payments."
       />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <SectionHeader
@@ -58,7 +58,7 @@ export default function FeaturesPage() {
 
       <Separator />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <SectionHeader

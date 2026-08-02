@@ -89,7 +89,7 @@ export class TradmatchService {
     return match;
   }
 
-  private async scoreAndRankVendors(rfq: any, maxVendors: number) {
+  private async scoreAndRankVendors(rfq: Record<string, any>, maxVendors: number) {
     const rfqLocation = await this.prisma.rfqLocation.findFirst({
       where: { rfqId: rfq.id, isPrimary: true },
     }) ?? await this.prisma.rfqLocation.findFirst({ where: { rfqId: rfq.id } });
@@ -119,7 +119,7 @@ export class TradmatchService {
     return scored.slice(0, maxVendors);
   }
 
-  private calculateScore(vendor: any, rfq: any, rfqLocation: any) {
+  private calculateScore(vendor: Record<string, any>, rfq: Record<string, any>, rfqLocation: Record<string, any> | null) {
     const categoryScore = this.categoryMatchScore(vendor, rfq);
     const geoScore = this.geoMatchScore(vendor, rfqLocation);
     const trustScore = (vendor.trustScore ?? 0) / 100;
@@ -139,7 +139,7 @@ export class TradmatchService {
     return { vendorId: vendor.id, categoryScore, geoScore, trustScore, responseScore, tradgoScore, planScore, finalScore };
   }
 
-  private categoryMatchScore(vendor: any, rfq: any): number {
+  private categoryMatchScore(vendor: Record<string, any>, rfq: Record<string, any>): number {
     if (!rfq.categoryId) return 0.5;
     const vendorCategoryIds = (vendor.categories ?? []).map((cc: any) => cc.categoryId);
     if (vendorCategoryIds.includes(rfq.categoryId)) return 1.0;
@@ -148,7 +148,7 @@ export class TradmatchService {
     return 0.3;
   }
 
-  private geoMatchScore(vendor: any, rfqLocation: any): number {
+  private geoMatchScore(vendor: Record<string, any>, rfqLocation: Record<string, any> | null): number {
     if (!rfqLocation) return 0.5;
     const vendorLocation = vendor.locations?.[0];
     if (!vendorLocation) return 0.3;
@@ -205,7 +205,7 @@ export class TradmatchService {
     });
   }
 
-  private async expandRadius(rfqLocation: any, buyerCompanyId: string, categoryId: string | null) {
+  private async expandRadius(rfqLocation: Record<string, any>, buyerCompanyId: string, categoryId: string | null) {
     const where: any = {
       id: { not: buyerCompanyId },
       status: 'ACTIVE',
@@ -230,7 +230,7 @@ export class TradmatchService {
     });
   }
 
-  private async broadcastMatches(rfqId: string, matches: any[]) {
+  private async broadcastMatches(rfqId: string, matches: Record<string, any>[]) {
     const now = new Date();
     const data = matches.map((m: any) => ({
       rfqId,

@@ -48,13 +48,13 @@ export default function CreateShipmentPage() {
         }
       />
 
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl space-y-4">
+      <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl space-y-4">
         <div>
           <p className="mb-2 text-sm font-medium text-white">Select Order</p>
           <select
             value={selectedOrderId}
             onChange={(e) => setSelectedOrderId(e.target.value)}
-            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white"
           >
             <option value="">Choose an order...</option>
             {validOrders.map((o: any) => (
@@ -86,7 +86,7 @@ export default function CreateShipmentPage() {
             onChange={(e) => setSpecialInstructions(e.target.value)}
             rows={3}
             placeholder="Fragile, handle with care..."
-            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
           />
         </div>
 

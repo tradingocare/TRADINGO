@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RfqService } from '../rfq/rfq.service';
+import { CatalogAdapterService } from '../catalog-adapter/catalog-adapter.service';
 import { PaginationDto, buildPaginationQuery, buildPaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class SmartRfqService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly rfqService: RfqService,
+    private readonly catalogAdapter: CatalogAdapterService,
   ) {}
 
   async getUserCompany(userId: string) {
@@ -25,7 +27,7 @@ export class SmartRfqService {
     visibility?: string; urgency?: string; budgetMin?: number; budgetMax?: number; showBudget?: boolean;
     currency?: string; quantity?: number; unit?: string; preferredLocation?: string;
     deliveryAddress?: any; paymentPreference?: string; expiresAt?: string;
-    categoryId?: string; industryId?: string;
+    categoryId?: string; catalogCategoryId?: string; industryId?: string;
     locations?: { city: string; state?: string; country?: string; pincode?: string; isPrimary?: boolean }[];
     attachments?: { type: string; url: string; originalName?: string; mimeType?: string; fileSize?: number }[];
     productItems?: { productId?: string; categoryId?: string; productName: string; description?: string; quantity?: number; unit?: string; targetPrice?: number; isService?: boolean }[];
@@ -55,6 +57,7 @@ export class SmartRfqService {
         paymentPreference: data.paymentPreference,
         expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
         categoryId: data.categoryId,
+        catalogCategoryId: data.catalogCategoryId,
         industryId: data.industryId,
         createdBy: userId,
         updatedBy: userId,
@@ -107,6 +110,7 @@ export class SmartRfqService {
         deliveryAddress: (original.deliveryAddress as object) ?? undefined,
         paymentPreference: original.paymentPreference,
         categoryId: original.categoryId,
+        catalogCategoryId: original.catalogCategoryId,
         industryId: original.industryId,
         createdBy: userId,
         updatedBy: userId,
@@ -131,11 +135,90 @@ export class SmartRfqService {
         locations: true,
         attachments: true,
         productItems: true,
+        category: { select: { id: true, name: true, slug: true } },
+        catalogCategory: { select: { id: true, name: true, slug: true } },
         _count: { select: { quotes: true, vendorMatches: true } },
       },
     });
     if (!rfq) throw new NotFoundException('RFQ not found');
     return rfq;
+  }
+
+  async bulkMigrateCategories() {
+    const rfqs = await this.prisma.rfq.findMany({
+      where: { categoryId: { not: null }, catalogCategoryId: null, deletedAt: null },
+      select: { id: true, categoryId: true },
+    });
+
+    const oldIds = rfqs.map((r) => r.categoryId).filter(Boolean) as string[];
+    if (oldIds.length === 0) return { migrated: 0, total: 0, unresolved: [] };
+
+    const batchResult = await this.catalogAdapter.batchResolve(oldIds, 'oldToNew');
+    let migrated = 0;
+    for (const resolved of batchResult.resolved) {
+      const targetRfqs = rfqs.filter((r) => r.categoryId === resolved.sourceId);
+      for (const rfq of targetRfqs) {
+        await this.prisma.rfq.update({
+          where: { id: rfq.id },
+          data: { catalogCategoryId: resolved.targetId },
+        });
+        migrated++;
+      }
+    }
+
+    return {
+      migrated,
+      total: rfqs.length,
+      unresolved: batchResult.unresolved.map((u) => ({ id: u.id, name: u.name })),
+    };
+  }
+
+  async bulkMigrateProductItems() {
+    const items = await this.prisma.rfqProductItem.findMany({
+      where: { catalogItemId: null },
+      select: { id: true, productName: true, categoryId: true, rfq: { select: { catalogCategoryId: true } } },
+    });
+
+    const withCategory = items.filter((i) => i.rfq.catalogCategoryId);
+    let migrated = 0;
+    const unresolved: { id: string; name: string }[] = [];
+
+    for (const item of withCategory) {
+      const categoryId = item.rfq.catalogCategoryId as string;
+      const catalogItems = await this.prisma.catalogItem.findMany({
+        where: {
+          name: { contains: item.productName, mode: 'insensitive' },
+          subcategory: { categoryId },
+        },
+        select: { id: true, subcategoryId: true },
+        take: 1,
+      });
+
+      if (catalogItems.length > 0) {
+        const match = catalogItems[0];
+        const sub = await this.prisma.catalogSubcategory.findUnique({
+          where: { id: match.subcategoryId },
+          select: { categoryId: true },
+        });
+        await this.prisma.rfqProductItem.update({
+          where: { id: item.id },
+          data: {
+            catalogCategoryId: sub?.categoryId,
+            catalogSubcategoryId: match.subcategoryId,
+            catalogItemId: match.id,
+          },
+        });
+        migrated++;
+      } else {
+        unresolved.push({ id: item.id, name: item.productName });
+      }
+    }
+
+    return {
+      migrated,
+      total: items.length,
+      unresolved,
+    };
   }
 
   async updateRfq(userId: string, rfqId: string, data: { title?: string; description?: string; expiresAt?: string; status?: string }) {

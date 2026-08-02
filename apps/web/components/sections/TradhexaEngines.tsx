@@ -22,17 +22,16 @@ export default function TradhexaEngines() {
         <div className="absolute -right-40 bottom-1/3 h-[300px] w-[300px] rounded-full bg-[rgba(212,175,55,0.02)] blur-[100px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mx-auto max-w-4xl text-center"
+          className="mx-auto max-w-[1600px] text-center"
         >
-          <div className="relative overflow-hidden rounded-[32px] border border-[rgba(212,175,55,0.1)] bg-[rgba(255,255,255,0.015)] p-8 sm:p-10"
+          <div className="relative overflow-hidden rounded-[32px] border border-[rgba(212,175,55,0.1)] bg-surface backdrop-blur-xl p-8 sm:p-10"
             style={{
-              backdropFilter: 'blur(20px)',
               boxShadow: '0 0 60px rgba(212,175,55,0.04), 0 8px 32px rgba(0,0,0,0.2)',
             }}
           >
@@ -51,10 +50,10 @@ export default function TradhexaEngines() {
               <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
                 {'\u26A1'} TRADHEXA &mdash; 6 Powerful Trading Engines
               </span>
-              <h2 className="mt-4 whitespace-nowrap text-2xl font-black tracking-tight text-white sm:text-3xl lg:text-4xl">
+              <h2 className="mt-4 whitespace-nowrap text-2xl font-black tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
                 TRADHEXA &mdash; 6 Powerful Trading Engines
               </h2>
-              <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-white/50">
+              <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-text-secondary">
                 Six integrated engines powering the TRADINGO ecosystem. From instant discovery to
                 zero-risk transactions, everything you need in one platform.
               </p>
@@ -76,7 +75,7 @@ export default function TradhexaEngines() {
                 <Link href={engine.href} className="flex flex-1 flex-col">
                   <motion.div
                     whileHover={{ y: -6, scale: 1.02 }}
-                    className="group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.015] p-7 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
+                    className="group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface-secondary p-7 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
                     style={{
                       backdropFilter: 'blur(20px)',
                       boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
@@ -95,20 +94,20 @@ export default function TradhexaEngines() {
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-base font-black text-white">{engine.name}</h3>
-                            <ArrowRight size={12} className="text-white/20 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-[#D4AF37]" />
+                            <h3 className="text-base font-black text-text-primary">{engine.name}</h3>
+                            <ArrowRight size={12} className="text-text-tertiary transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-[#D4AF37]" />
                           </div>
-                          <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">{engine.tagline}</p>
+                          <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">{engine.tagline}</p>
                         </div>
                       </div>
 
-                      <p className="mt-4 flex-1 text-sm leading-relaxed text-white/45">
+                      <p className="mt-4 flex-1 text-sm leading-relaxed text-text-secondary">
                         {engine.description}
                       </p>
 
                       <div className="mt-5 flex flex-wrap gap-1.5">
                         {engine.features.slice(0, 3).map((f) => (
-                          <span key={f} className="rounded-full bg-white/[0.04] px-2.5 py-0.5 text-[9px] text-white/35">{f}</span>
+                          <span key={f} className="rounded-full bg-surface-secondary px-2.5 py-0.5 text-[9px] text-text-tertiary">{f}</span>
                         ))}
                         <span className="rounded-full bg-[rgba(212,175,55,0.06)] px-2.5 py-0.5 text-[9px] text-[#D4AF37]/60">{engine.features.length - 3}+</span>
                       </div>

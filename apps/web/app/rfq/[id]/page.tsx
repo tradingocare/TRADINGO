@@ -67,7 +67,7 @@ async function RfqContent({ id }: { id: string }) {
 
   return (
     <>
-      <section className="border-b border-border bg-surface-secondary/50 pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
+      <section className="border-b border-border pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
         <div className="container-main">
           <nav className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
             <Link href="/rfq" className="hover:text-primary-600 dark:hover:text-primary-400">RFQs</Link>

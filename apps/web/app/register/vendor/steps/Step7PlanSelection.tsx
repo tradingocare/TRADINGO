@@ -2,12 +2,14 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, Star, Zap, Crown, Loader2, Shield, Tag, UserCheck } from 'lucide-react'
+import { CheckCircle2, Star, Zap, Crown, Shield, Tag, UserCheck, AlertCircle, AlertTriangle } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import StepCard from '../components/StepCard'
+import api from '@/lib/api/client'
 import type { VendorRegistrationState, PlanSelectionForm } from '@/types/vendor-registration'
 
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 const PLANS = [
   {
@@ -70,6 +72,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
   const [agreedAccuracy, setAgreedAccuracy] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const handleReferral = () => {
     const code = referralCode.trim()
@@ -111,13 +114,57 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
   const handleSubmit = async () => {
     if (!allChecked) return
     setIsSubmitting(true)
+    setSubmitError(null)
     try {
-      const { default: api } = await import('@/lib/api/client')
-      await api.post('/auth/register/vendor', { /* form data from wizard store */ })
+      await api.post('/auth/register/vendor', {
+        businessName: bi.businessName,
+        tradeName: bi.tradeName,
+        businessType: bi.businessType,
+        sellerType: bi.sellerType,
+        yearEstablished: bi.yearEstablished,
+        totalEmployees: bi.totalEmployees,
+        annualTurnover: bi.annualTurnover,
+        website: bi.website,
+        ownerName: cc.ownerName,
+        designation: cc.designation,
+        email: cc.email,
+        mobileNumber: cc.mobileNumber,
+        alternateMobile: cc.alternateMobile,
+        password: cc.password,
+        panNumber: (allData.pan || {}).panNumber,
+        panHolderName: (allData.pan || {}).panHolderName,
+        dateOfBirth: (allData.pan || {}).dateOfBirth,
+        hasGst: gst.hasGst || false,
+        gstNumber: gst.gstNumber,
+        gstExemptReason: gst.gstExemptReason,
+        description: bp.description,
+        tagline: bp.tagline,
+        primaryCategory: bp.primaryCategory,
+        secondaryCategories: bp.secondaryCategories || [],
+        productTypes: bp.productTypes,
+        moqRange: bp.moqRange,
+        supplyCapacity: bp.supplyCapacity,
+        leadTime: bp.leadTime,
+        exportCapability: bp.exportCapability || false,
+        exportCountries: bp.exportCountries,
+        addressLine1: bp.addressLine1,
+        addressLine2: bp.addressLine2,
+        city: bp.city,
+        district: bp.district,
+        state: bp.state,
+        pincode: bp.pincode,
+        accountHolderName: bd.accountHolderName,
+        accountNumber: bd.accountNumber,
+        ifscCode: bd.ifscCode,
+        accountType: bd.accountType,
+        planId: selectedPlan,
+        referralCode: referralCode.trim() || undefined,
+        rmCode: rmCode.trim() || undefined,
+      })
       setIsSuccess(true)
       onClearDraft()
-    } catch {
-      // submission failed — error state handled by form
+    } catch (err: any) {
+      setSubmitError(err?.response?.data?.message || err?.message || 'Registration failed. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -148,10 +195,10 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
           </div>
           <div
             className="rounded-xl p-4 mt-4"
-            style={{ background: 'rgba(255,77,0,0.06)', border: '1px solid rgba(255,77,0,0.15)' }}
+            style={{ background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.15)' }}
           >
             <p className="text-white/60 text-xs text-center">
-              Meanwhile, check out our <span className="text-[#FF7A3D] font-semibold">Help Center</span> for seller tips
+              Meanwhile, check out our <span className="text-[#fbbf24] font-semibold">Help Center</span> for seller tips
             </p>
           </div>
         </div>
@@ -161,7 +208,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
 
   return (
     <StepCard
-      icon={<Star size={20} style={{ color: '#FF4D00' }} />}
+      icon={<Star size={20} style={{ color: '#f59e0b' }} />}
       title="Plan Selection & Confirmation"
       subtitle="Choose your plan and confirm details"
     >
@@ -177,14 +224,14 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
                 className="snap-center shrink-0 w-[200px] rounded-xl p-4 text-left transition-all duration-200 relative"
                 style={{
                   background: selectedPlan === plan.id
-                    ? 'rgba(255,77,0,0.08)'
-                    : 'rgba(255,255,255,0.03)',
+                    ? 'rgba(245, 158, 11, 0.08)'
+                    : 'var(--bg-elevated)',
                   border: selectedPlan === plan.id
-                    ? '1px solid rgba(255,77,0,0.5)'
+                    ? '1px solid rgba(245, 158, 11, 0.5)'
                     : plan.highlight
-                      ? '1px solid rgba(255,77,0,0.15)'
-                      : '1px solid rgba(255,255,255,0.08)',
-                  boxShadow: selectedPlan === plan.id ? '0 0 20px rgba(255,77,0,0.15)' : 'none',
+                      ? '1px solid rgba(245, 158, 11, 0.15)'
+                      : '1px solid var(--border-color)',
+                  boxShadow: selectedPlan === plan.id ? '0 0 20px rgba(245, 158, 11, 0.15)' : 'none',
                 }}
               >
                 {plan.badge && (
@@ -192,7 +239,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
                     className="absolute -top-2.5 left-3 px-2 py-0.5 rounded-full text-[9px] font-bold"
                     style={{
                       background: plan.badge === 'Recommended'
-                        ? 'linear-gradient(135deg, #FF4D00, #FF7A3D)'
+                        ? 'linear-gradient(135deg, #f59e0b, #fbbf24)'
                         : plan.badge === 'Premium'
                           ? 'linear-gradient(135deg, #7c3aed, #a78bfa)'
                           : 'rgba(74,222,128,0.15)',
@@ -202,7 +249,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
                     {plan.badge}
                   </span>
                 )}
-                <div className="flex items-center gap-2 mb-2 mt-1" style={{ color: selectedPlan === plan.id ? '#FF7A3D' : 'rgba(255,255,255,0.35)' }}>
+                <div className="flex items-center gap-2 mb-2 mt-1" style={{ color: selectedPlan === plan.id ? '#fbbf24' : 'rgba(255,255,255,0.35)' }}>
                   {plan.icon}
                 </div>
                 <p className="text-white font-bold text-sm">{plan.name}</p>
@@ -213,7 +260,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
                 <ul className="space-y-1.5">
                   {plan.features.map((f, i) => (
                     <li key={i} className="flex items-center gap-1.5 text-white/45 text-[10px]">
-                      <CheckCircle2 size={10} className="shrink-0" style={{ color: selectedPlan === plan.id ? '#FF7A3D' : 'rgba(255,255,255,0.2)' }} />
+                      <CheckCircle2 size={10} className="shrink-0" style={{ color: selectedPlan === plan.id ? '#fbbf24' : 'rgba(255,255,255,0.2)' }} />
                       {f}
                     </li>
                   ))}
@@ -223,7 +270,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ background: '#FF4D00' }}
+                    style={{ background: '#f59e0b' }}
                   >
                     <CheckCircle2 size={12} className="text-white" />
                   </motion.div>
@@ -233,7 +280,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
           </div>
         </div>
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+        <div className="h-px" style={{ backgroundColor: 'var(--bg-elevated)' }} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -243,7 +290,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
             <div className="flex gap-2">
               <input
                 className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
                 value={referralCode}
                 onChange={e => { setReferralCode(e.target.value); setReferralApplied(false) }}
                 placeholder="Enter code"
@@ -252,7 +299,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
                 type="button"
                 onClick={handleReferral}
                 className="px-3 py-3 rounded-xl text-xs font-semibold transition-all"
-                style={{ background: 'rgba(255,77,0,0.12)', border: '1px solid rgba(255,77,0,0.3)', color: '#FF7A3D' }}
+                style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24' }}
               >
                 Apply
               </button>
@@ -277,7 +324,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
             </label>
             <input
               className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+              style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
               value={rmCode}
               onChange={e => handleRmCode(e.target.value)}
               placeholder="RM + 5 digits"
@@ -298,11 +345,11 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
           </div>
         </div>
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+        <div className="h-px" style={{ backgroundColor: 'var(--bg-elevated)' }} />
 
         <div
           className="rounded-xl p-5"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+          style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
         >
           <p className="text-white/70 text-xs font-semibold uppercase tracking-wider mb-4">Registration Summary</p>
           <div className="space-y-2.5">
@@ -342,8 +389,8 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
               <div
                 className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200"
                 style={{
-                  background: item.checked ? 'linear-gradient(135deg, #FF4D00, #FF7A3D)' : 'rgba(255,255,255,0.06)',
-                  border: item.checked ? '1px solid rgba(255,77,0,0.5)' : '1px solid rgba(255,255,255,0.12)',
+                  background: item.checked ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : 'var(--bg-elevated)',
+                  border: item.checked ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
                 }}
               >
                 {item.checked && <CheckCircle2 size={12} className="text-white" />}
@@ -352,6 +399,14 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
             </label>
           ))}
         </div>
+
+        {submitError && (
+          <div className="p-3 rounded-xl flex items-start gap-2"
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
+            <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />
+            <p className="text-red-300 text-sm">{submitError}</p>
+          </div>
+        )}
 
         <div className="flex gap-3 mt-2">
           <button type="button" onClick={onBack}
@@ -372,7 +427,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
           >
             {isSubmitting ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
+                <LoadingSpinner size="xs" />
                 Creating your account...
               </>
             ) : (

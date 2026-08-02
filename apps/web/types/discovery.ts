@@ -49,14 +49,7 @@ export interface DiscoveryResult {
   geoRing:      number
   city:         string
   state:        string
-  seller: {
-    id:           string
-    name:         string
-    slug?:        string
-    isVerified:   boolean
-    trustScore:   number
-    isTradgoElite?: boolean
-  }
+  seller: DiscoveryResultSeller
   price?:           number
   originalPrice?:   number
   unit?:            string
@@ -65,12 +58,36 @@ export interface DiscoveryResult {
   stockQty?:        number
   priceSlabs?:      { minQty:number; maxQty:number|null; price:number }[]
   deliveryEta?:     string
+  deliveryEstimate?: string
+  freeDeliveryAbove?: number
+  monthlyOrders?:   number
+  returnPolicy?:    string
+  warrantyPeriod?:  string
+  gstInvoiceAvailable?: boolean
+  tradeCreditEligible?: boolean
+  certifications?:  string[]
+  specifications?:  { key: string; label?: string; value: string }[]
+  keywords?:        string[]
+  brand?:           string
+  listedDate?:      string
   gocashEarn?:      number
   serviceType?:     string
   experience?:      string
   pricingModel?:    'fixed' | 'hourly' | 'project' | 'monthly'
   coverageArea?:    string
   availability?:    string
+}
+
+export interface DiscoveryResultSeller {
+  id: string
+  name: string
+  slug?: string
+  isVerified: boolean
+  trustScore: number
+  isTradgoElite?: boolean
+  isGstRegistered?: boolean
+  isoCertified?: boolean
+  yearsActive?: number
 }
 
 export interface DiscoveryResponse {

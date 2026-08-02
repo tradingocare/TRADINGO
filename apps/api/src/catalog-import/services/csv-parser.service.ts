@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { parse } from 'csv-parse/sync';
+import * as XLSX from 'xlsx';
 
 export interface CsvRow {
   serialNo: number;
@@ -68,6 +69,56 @@ export class CsvParserService {
       };
     }
 
+    return this.parseRecords(records, records.length > 1);
+  }
+
+  parseXlsx(buffer: Buffer): CsvParseResult {
+    const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
+    const sheetName = workbook.SheetNames[0];
+
+    if (!sheetName) {
+      return {
+        rows: [],
+        categories: [],
+        subcategories: new Map(),
+        products: [],
+        services: [],
+        totalRows: 0,
+        validRows: 0,
+        invalidRows: 0,
+        errors: [{ row: 0, message: 'XLSX file has no sheets' }],
+      };
+    }
+
+    const sheet = workbook.Sheets[sheetName];
+    const rawData: (string | number | undefined)[][] = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      defval: '',
+      blankrows: false,
+    });
+
+    if (rawData.length < 2) {
+      return {
+        rows: [],
+        categories: [],
+        subcategories: new Map(),
+        products: [],
+        services: [],
+        totalRows: 0,
+        validRows: 0,
+        invalidRows: 0,
+        errors: [{ row: 0, message: 'XLSX file is empty or has only header' }],
+      };
+    }
+
+    const records: string[][] = rawData.map(row =>
+      row.map(cell => (cell != null ? String(cell).trim() : ''))
+    );
+
+    return this.parseRecords(records, false);
+  }
+
+  private parseRecords(records: string[][], isCsv: boolean): CsvParseResult {
     const rows: CsvRow[] = [];
     const errors: { row: number; message: string }[] = [];
     const categorySet = new Set<string>();
@@ -129,7 +180,8 @@ export class CsvParserService {
       finalSubcategories.set(cat, [...subs]);
     }
 
-    this.logger.log(`Parsed ${rows.length} valid rows from CSV (${errors.length} errors)`);
+    const source = isCsv ? 'CSV' : 'XLSX';
+    this.logger.log(`Parsed ${rows.length} valid rows from ${source} (${errors.length} errors)`);
 
     return {
       rows,

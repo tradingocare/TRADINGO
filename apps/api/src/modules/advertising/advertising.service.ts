@@ -62,7 +62,7 @@ export class AdvertisingService {
           create: dto.targets.map(t => ({ targetType: t.targetType, targetValue: t.targetValue })),
         } : undefined,
       },
-      include: { targets: true },
+      include: { targets: { select: { id: true, targetType: true, targetValue: true } } },
     });
 
     return ad;
@@ -97,7 +97,7 @@ export class AdvertisingService {
         skip,
         take: limit,
         orderBy,
-        include: { company: { select: { id: true, name: true, slug: true, logo: true } }, targets: true },
+        include: { company: { select: { id: true, name: true, slug: true, logo: true } }, targets: { select: { id: true, targetType: true, targetValue: true } } },
       }),
       this.prisma.advertisement.count({ where }),
     ]);
@@ -122,7 +122,7 @@ export class AdvertisingService {
   async findById(id: string) {
     const ad = await this.prisma.advertisement.findUnique({
       where: { id },
-      include: { company: { select: { id: true, name: true, slug: true, logo: true } }, targets: true, analytics: { orderBy: { date: 'desc' }, take: 90 } },
+      include: { company: { select: { id: true, name: true, slug: true, logo: true } }, targets: { select: { id: true, targetType: true, targetValue: true } }, analytics: { select: { date: true, impressions: true, clicks: true, spend: true, conversions: true }, orderBy: { date: 'desc' }, take: 90 } },
     });
     if (!ad) throw new NotFoundException('Advertisement not found');
     return ad;
@@ -151,7 +151,7 @@ export class AdvertisingService {
     if (dto.autoResume !== undefined) updateData.autoResume = dto.autoResume;
     if (dto.autoStop !== undefined) updateData.autoStop = dto.autoStop;
     if (dto.priority !== undefined) updateData.priority = dto.priority;
-    if (dto.metadata !== undefined) updateData.metadata = dto.metadata as any;
+    if (dto.metadata !== undefined) updateData.metadata = dto.metadata as Record<string, any>;
 
     if (dto.targets) {
       await this.prisma.adTarget.deleteMany({ where: { advertisementId: id } });
@@ -160,7 +160,7 @@ export class AdvertisingService {
       };
     }
 
-    return this.prisma.advertisement.update({ where: { id }, data: updateData, include: { targets: true } });
+    return this.prisma.advertisement.update({ where: { id }, data: updateData, include: { targets: { select: { id: true, targetType: true, targetValue: true } } } });
   }
 
   async delete(id: string) {
@@ -236,7 +236,7 @@ export class AdvertisingService {
     await this.gocashService.debit({
       walletId: wallet.id,
       amount,
-      type: 'MANUAL_DEBIT' as any,
+      type: 'MANUAL_DEBIT' as const,
       reason: `Funding advertisement: ${ad.title || ad.type}`,
       actorId: userId,
       actorType: 'USER',
@@ -299,7 +299,7 @@ export class AdvertisingService {
       this.prisma.advertisement.count({ where: { companyId, status: AdStatus.ACTIVE } }),
       this.prisma.advertisement.count({ where: { companyId, status: AdStatus.PAUSED } }),
       this.prisma.advertisement.count({ where: { companyId, status: AdStatus.COMPLETED } }),
-      this.prisma.advertisement.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 10, include: { targets: true } }),
+      this.prisma.advertisement.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 10, include: { targets: { select: { id: true, targetType: true, targetValue: true } } } }),
       this.prisma.advertisement.aggregate({ where: { companyId }, _sum: { spentBudget: true, impressions: true, clicks: true } }),
     ]);
 
@@ -330,7 +330,7 @@ export class AdvertisingService {
       },
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       take: limit,
-      include: { company: { select: { id: true, name: true, slug: true, logo: true } }, targets: true },
+      include: { company: { select: { id: true, name: true, slug: true, logo: true } }, targets: { select: { id: true, targetType: true, targetValue: true } } },
     });
     return ads;
   }
@@ -342,6 +342,7 @@ export class AdvertisingService {
     const daily = await this.prisma.adAnalytics.findMany({
       where: { advertisementId: id },
       orderBy: { date: 'asc' },
+      take: 1000,
     });
 
     const totalImpressions = daily.reduce((s, a) => s + a.impressions, 0);
@@ -423,6 +424,7 @@ export class AdvertisingService {
     const exhausted = await this.prisma.advertisement.findMany({
       where: { status: AdStatus.ACTIVE },
       select: { id: true, spentBudget: true, totalBudget: true },
+      take: 1000,
     });
     const budgetExhaustedIds = exhausted
       .filter(a => Number(a.spentBudget) >= Number(a.totalBudget) && Number(a.totalBudget) > 0)

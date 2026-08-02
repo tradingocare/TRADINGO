@@ -10,19 +10,108 @@ export interface User {
   createdAt: string;
 }
 
+export interface CompanyCategory {
+  category?: { name: string };
+  name?: string;
+}
+
+export interface CompanyLocation {
+  city?: string;
+  state?: string;
+}
+
+export interface CertificationDoc {
+  name?: string;
+  issuedBy?: string;
+  expiresAt?: string;
+}
+
+export interface CompanyVideo {
+  url?: string;
+  title?: string;
+}
+
+export interface CompanyCatalogue {
+  url?: string;
+  name?: string;
+  title?: string;
+}
+
+export interface CompanyInfrastructure {
+  factoryArea?: string;
+  productionCapacity?: string;
+  numberOfUnits?: string;
+  rdCapabilities?: string;
+  warehouseDetails?: string;
+  machineryDetails?: string;
+}
+
+export interface CompanySocialLinks {
+  whatsapp?: string;
+  [key: string]: string | undefined;
+}
+
 export interface Company {
   id: string;
   name: string;
   ownerId: string;
   type: string;
   gst?: string;
+  gstNumber?: string;
+  panNumber?: string;
   phone?: string;
+  mobile?: string;
+  email?: string;
+  website?: string;
   address?: string;
   city?: string;
   state?: string;
   status: 'active' | 'inactive' | 'suspended';
   verificationStatus: 'pending' | 'verified' | 'rejected';
+  verificationLevel?: string;
   createdAt: string;
+  logo?: string;
+  bannerUrl?: string;
+  banner?: string;
+  description?: string;
+  rating?: number;
+  reviewCount?: number;
+  categories: (string | CompanyCategory)[];
+  locations: CompanyLocation[];
+  trustScore?: number;
+  businessType?: string;
+  establishedYear?: string;
+  employeeCount?: string;
+  annualRevenue?: number;
+  exportPercentage?: string;
+  paymentTerms?: string;
+  deliveryMode?: string;
+  packagingDetails?: string;
+  leadTime?: string;
+  samplePolicy?: string;
+  qualityCerts: string[];
+  certificationDocs: CertificationDoc[];
+  certifications: string[];
+  exportMarkets: string[];
+  industries: string[];
+  geographicReach?: string;
+  totalProducts?: number;
+  responseTime?: string;
+  responseRate?: string;
+  onTimeDelivery?: number;
+  orderCount?: number;
+  businessHours: Record<string, string>;
+  images: string[];
+  galleryImages: string[];
+  factoryImages: string[];
+  videos: CompanyVideo[];
+  catalogues: CompanyCatalogue[];
+  cataloguesUrl?: string;
+  infrastructure?: CompanyInfrastructure | string;
+  socialLinks?: CompanySocialLinks;
+  latitude?: number;
+  longitude?: number;
+  slug?: string;
 }
 
 export interface Product {

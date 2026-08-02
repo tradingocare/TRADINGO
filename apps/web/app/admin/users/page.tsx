@@ -2,6 +2,8 @@
 
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
 import { useUsers } from '@/hooks';
+import { Alert } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
 import { User, AlertCircle } from 'lucide-react';
 import type { User as UserType } from '@/lib/api/types';
 
@@ -13,11 +15,7 @@ export default function AdminUsersPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Users" description="Manage platform users" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load users</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
-        </div>
+        <Alert variant="error" title="Failed to load users">{error.message}</Alert>
       </div>
     );
   }
@@ -39,11 +37,7 @@ export default function AdminUsersPage() {
       />
 
       {users.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <User className="h-12 w-12 text-text-tertiary" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">No users found</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Users will appear here once they register on the platform.</p>
-        </div>
+        <EmptyState icon={User} title="No users found" description="Users will appear here once they register on the platform." />
       ) : (
         <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
           <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">

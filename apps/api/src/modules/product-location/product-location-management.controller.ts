@@ -1,13 +1,16 @@
 import { Controller, Get, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductLocationService } from './product-location.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { BulkUpdateLocationDto, SellerProductLocationQueryDto, UpdateProductLocationDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Product Location Management')
 @UseGuards(JwtAuthGuard)
+@Throttle(RateLimits.ADMIN_WRITE)
 @Controller('product-locations')
 export class ProductLocationManagementController {
   constructor(

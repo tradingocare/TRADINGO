@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { MessageReactions } from './message-reactions';
 import { FileText, Headphones, CheckCheck, Check } from 'lucide-react';
@@ -23,7 +24,7 @@ interface ChatMessageProps {
   onReact: (messageId: string, emoji: string) => void;
 }
 
-export function ChatMessage({ message, isOwn, onReact }: ChatMessageProps) {
+const ChatMessage = memo(function ChatMessage({ message, isOwn, onReact }: ChatMessageProps) {
   const reactions = message.reactions ?? {};
   const readBy = message.readBy ?? [];
   const time = new Date(message.createdAt).toLocaleTimeString('en-IN', {
@@ -48,15 +49,15 @@ export function ChatMessage({ message, isOwn, onReact }: ChatMessageProps) {
         );
       case 'file':
         return (
-          <a
-            href={message.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-lg border border-border bg-surface-secondary/50 p-3 transition-colors hover:bg-surface-secondary dark:border-dark-border dark:bg-dark-surface-secondary/50 dark:hover:bg-dark-surface-secondary"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-              <FileText className="h-4 w-4" />
-            </div>
+            <a
+              href={message.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-lg border border-border bg-surface-secondary/50 p-3 transition-colors hover:bg-surface-secondary dark:border-dark-border dark:bg-dark-surface-secondary/50 dark:hover:bg-dark-surface-secondary"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
+                <FileText className="h-4 w-4" />
+              </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-text-primary dark:text-dark-text-primary">
                 {message.fileName ?? 'File'}
@@ -95,7 +96,7 @@ export function ChatMessage({ message, isOwn, onReact }: ChatMessageProps) {
         className={cn(
           'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium',
           isOwn
-            ? 'bg-primary-600 text-white'
+            ? 'bg-primary-600 text-gray-900'
             : 'bg-surface-secondary text-text-primary dark:bg-dark-surface-secondary dark:text-dark-text-primary',
         )}
       >
@@ -113,7 +114,7 @@ export function ChatMessage({ message, isOwn, onReact }: ChatMessageProps) {
           className={cn(
             'rounded-xl px-4 py-2',
             isOwn
-              ? 'bg-primary-600 text-white rounded-tr-sm'
+              ? 'bg-primary-600 text-gray-900 rounded-tr-sm'
               : 'bg-surface-secondary dark:bg-dark-surface-secondary text-text-primary dark:text-dark-text-primary rounded-tl-sm',
           )}
         >
@@ -137,4 +138,6 @@ export function ChatMessage({ message, isOwn, onReact }: ChatMessageProps) {
       </div>
     </div>
   );
-}
+})
+
+export { ChatMessage }

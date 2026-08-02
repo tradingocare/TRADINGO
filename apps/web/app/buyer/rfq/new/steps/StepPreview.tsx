@@ -32,13 +32,13 @@ export function StepPreview() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-4">
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.04] p-4">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <FileText className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Requirement</span>
             </div>
-            <h3 className="text-lg font-semibold text-white">{title || 'Untitled RFQ'}</h3>
-            {description && <p className="mt-1 text-sm text-white/60">{description}</p>}
+            <h3 className="text-lg font-semibold text-text-primary">{title || 'Untitled RFQ'}</h3>
+            {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
             <div className="mt-3 flex flex-wrap gap-2">
               <StatusBadge status={rfqType} />
               <Badge variant={priority === 'URGENT' ? 'destructive' : priority === 'HIGH' ? 'warning' : 'secondary'}>{priority}</Badge>
@@ -47,56 +47,56 @@ export function StepPreview() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.04] p-4">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <Package className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Products ({products.length})</span>
             </div>
             {products.map((p, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-white/[0.06] last:border-0">
-                <span className="text-sm text-white">{p.productName}</span>
-                <span className="text-sm text-white/60">{p.quantity} {p.unit}{p.targetPrice ? ` @ ₹${p.targetPrice}` : ''}</span>
+              <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <span className="text-sm text-text-primary">{p.productName}</span>
+                <span className="text-sm text-text-secondary">{p.quantity} {p.unit}{p.targetPrice ? ` @ ₹${p.targetPrice}` : ''}</span>
               </div>
             ))}
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.04] p-4">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <Store className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Suppliers ({selectedSuppliers.length})</span>
             </div>
             {selectedSuppliers.length === 0 ? (
-              <p className="text-sm text-white/40">Open to all suppliers</p>
+              <p className="text-sm text-text-tertiary">Open to all suppliers</p>
             ) : (
               selectedSuppliers.map((s) => (
-                <div key={s.companyId} className="flex items-center justify-between py-2 border-b border-white/[0.06] last:border-0">
-                  <span className="text-sm text-white">{s.companyName}</span>
+                <div key={s.companyId} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <span className="text-sm text-text-primary">{s.companyName}</span>
                   {s.matchScore && <Badge variant="success">{s.matchScore}%</Badge>}
                 </div>
               ))
             )}
           </div>
 
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.04] p-4">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <MapPin className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Delivery</span>
             </div>
-            {location.city && <p className="text-sm text-white">{location.city}, {location.state} {location.pincode}</p>}
-            {requiredDate && <p className="text-sm text-white/60 mt-1">Required by: {new Date(requiredDate).toLocaleDateString('en-IN')}</p>}
-            {paymentPreference && <p className="text-sm text-white/60 mt-1">Payment: {paymentPreference}</p>}
-            {terms && <p className="text-sm text-white/60 mt-1">{terms}</p>}
-            {!location.city && <p className="text-sm text-white/40">No delivery location set</p>}
+            {location.city && <p className="text-sm text-text-primary">{location.city}, {location.state} {location.pincode}</p>}
+            {requiredDate && <p className="text-sm text-text-secondary mt-1">Required by: {new Date(requiredDate).toLocaleDateString('en-IN')}</p>}
+            {paymentPreference && <p className="text-sm text-text-secondary mt-1">Payment: {paymentPreference}</p>}
+            {terms && <p className="text-sm text-text-secondary mt-1">{terms}</p>}
+            {!location.city && <p className="text-sm text-text-tertiary">No delivery location set</p>}
           </div>
 
           {attachments.length > 0 && (
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.04] p-4">
-              <span className="text-xs font-medium uppercase tracking-wider text-white/60">Attachments ({attachments.length})</span>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <span className="text-xs font-medium uppercase tracking-wider text-text-secondary">Attachments ({attachments.length})</span>
               <div className="mt-2 space-y-1">
                 {attachments.map((a, i) => (
-                  <p key={i} className="text-sm text-white/60">{a.name} <span className="text-white/40">({a.type})</span></p>
+                  <p key={i} className="text-sm text-text-secondary">{a.name} <span className="text-text-tertiary">({a.type})</span></p>
                 ))}
               </div>
             </div>

@@ -68,6 +68,7 @@ Provide a structured JSON response with analysis, recommendations, scores, and a
           description: rfq.description,
           productItems: rfq.productItems,
           categoryId: rfq.categoryId,
+          catalogCategoryId: rfq.catalogCategoryId,
           preferredLocation: rfq.preferredLocation,
           budgetMin: rfq.budgetMin,
           budgetMax: rfq.budgetMax,
@@ -123,7 +124,7 @@ Provide a structured JSON response with analysis, recommendations, scores, and a
     if (payload.quoteId) {
       quote = await this.prisma.quote.findFirst({
         where: { id: payload.quoteId },
-        include: { rfq: { select: { title: true, status: true, categoryId: true, budgetMin: true, budgetMax: true } } },
+        include: { rfq: { select: { title: true, status: true, categoryId: true, catalogCategoryId: true, budgetMin: true, budgetMax: true } } },
       })
       if (quote) {
         rfq = quote.rfq as any

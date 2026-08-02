@@ -60,7 +60,7 @@ describe('AuthController', () => {
     it('should call authService.refreshTokens', async () => {
       authService.refreshTokens.mockResolvedValue({ accessToken: 'new-token' });
 
-      const result = await controller.refresh('refresh-token');
+      const result = await controller.refresh({ refreshToken: 'refresh-token' });
       expect(authService.refreshTokens).toHaveBeenCalledWith('refresh-token');
       expect(result.accessToken).toBe('new-token');
     });

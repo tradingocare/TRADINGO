@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { QuoteService } from './quote.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
@@ -9,6 +11,7 @@ import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { ReviseQuoteDto } from './dto/revise-quote.dto';
 
 @ApiTags('QUOTE')
+@Throttle(RateLimits.QUOTE_CREATE)
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/rfq/:rfqId/quotes')
 export class QuoteController {

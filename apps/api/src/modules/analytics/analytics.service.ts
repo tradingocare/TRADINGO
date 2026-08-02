@@ -266,6 +266,89 @@ export class AnalyticsService {
     };
   }
 
+  // ── Revenue KPIs ─────────────────────────────────────
+  async getRevenueKpis() {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    const [currentMonthPayments, prevMonthPayments, activeSubscriptions, churnedLastMonth] = await Promise.all([
+      this.prisma.payment.aggregate({
+        where: { status: 'CAPTURED', paidAt: { gte: monthStart } },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.payment.aggregate({
+        where: { status: 'CAPTURED', paidAt: { gte: prevMonthStart, lte: prevMonthEnd } },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'ACTIVE' } }),
+      this.prisma.planHistory.count({
+        where: {
+          changeType: 'CANCEL',
+          createdAt: { gte: prevMonthStart, lte: prevMonthEnd },
+        },
+      }),
+    ]);
+
+    const mrr = Number(currentMonthPayments._sum.amount || 0) / 100;
+    const prevMrr = Number(prevMonthPayments._sum.amount || 0) / 100;
+    const mrrGrowth = prevMrr > 0 ? Math.round(((mrr - prevMrr) / prevMrr) * 10000) / 100 : 0;
+    const churnRate = activeSubscriptions > 0
+      ? Math.round((churnedLastMonth / (activeSubscriptions + churnedLastMonth)) * 10000) / 100
+      : 0;
+
+    return {
+      mrr: Math.round(mrr),
+      arr: Math.round(mrr * 12),
+      mrrGrowth,
+      churnRate,
+      churnedLastMonth,
+      activeSubscriptions,
+      currentMonthTransactions: currentMonthPayments._count,
+      prevMonthTransactions: prevMonthPayments._count,
+      currency: 'INR',
+    };
+  }
+
+  // ── Subscription Metrics ──────────────────────────────
+  async getSubscriptionMetrics() {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 86400000);
+
+    const [activeCount, trialCount, expiredCount, suspendedCount, cancelledCount, expiringSoon, recentActivations, recentChurns] = await Promise.all([
+      this.prisma.company.count({ where: { subscriptionStatus: 'ACTIVE' } }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'TRIAL' } }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'EXPIRED' } }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'SUSPENDED' } }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'CANCELLED' } }),
+      this.prisma.company.count({
+        where: {
+          subscriptionStatus: 'ACTIVE',
+          subscriptionExpiresAt: { gte: now, lte: thirtyDaysFromNow },
+        },
+      }),
+      this.prisma.planHistory.count({
+        where: { changeType: 'RENEWAL', createdAt: { gte: new Date(now.getTime() - 30 * 86400000) } },
+      }),
+      this.prisma.planHistory.count({
+        where: { changeType: 'CANCEL', createdAt: { gte: new Date(now.getTime() - 30 * 86400000) } },
+      }),
+    ]);
+
+    const statusBreakdown = { ACTIVE: activeCount, TRIAL: trialCount, EXPIRED: expiredCount, SUSPENDED: suspendedCount, CANCELLED: cancelledCount };
+
+    return {
+      statusBreakdown,
+      total: activeCount + trialCount + expiredCount + suspendedCount + cancelledCount,
+      expiringSoon,
+      recentActivations,
+      recentChurns,
+    };
+  }
+
   private getDateRange(query: DashboardQuery): { start: Date; end: Date } {
     const end = query.endDate ? new Date(query.endDate) : new Date();
     let start: Date;

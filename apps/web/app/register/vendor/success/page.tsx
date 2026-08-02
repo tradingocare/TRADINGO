@@ -5,7 +5,7 @@ import { CheckCircle2, Sparkles, ArrowRight } from 'lucide-react'
 
 export default function RegistrationSuccessPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background:'#1D0001' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background:'var(--bg-base)' }}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10"
           style={{ background:'radial-gradient(circle,#4ade8020,transparent 70%)', filter:'blur(80px)' }} />
@@ -25,7 +25,7 @@ export default function RegistrationSuccessPage() {
         <Link href="/plans/vendor">
           <motion.button whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
             className="flex items-center gap-2 mx-auto px-8 py-4 rounded-xl font-bold text-base"
-            style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', color:'#fff' }}>
+            style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff' }}>
             <Sparkles size={18} />
             Continue to Membership Plans
             <ArrowRight size={18} />

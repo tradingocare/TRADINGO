@@ -11,7 +11,10 @@ export class SavedSupplierService {
       where: { userId },
       include: {
         company: {
-          select: { id: true, name: true, slug: true, logo: true },
+          select: {
+            id: true, name: true, slug: true, logo: true,
+            locations: { take: 1, where: { isPrimary: true }, select: { city: true, state: true } },
+          },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -28,7 +31,10 @@ export class SavedSupplierService {
       data: { userId, companyId, notes, tags: tags ?? [] },
       include: {
         company: {
-          select: { id: true, name: true, slug: true, logo: true },
+          select: {
+            id: true, name: true, slug: true, logo: true,
+            locations: { take: 1, where: { isPrimary: true }, select: { city: true, state: true } },
+          },
         },
       },
     });

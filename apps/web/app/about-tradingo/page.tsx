@@ -42,7 +42,7 @@ export default function AboutTradingoPage() {
           <div className="mx-auto grid max-w-5xl gap-12 lg:grid-cols-2">
             <AnimatedSection>
               <div className="rounded-xl border border-border bg-surface p-8 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                   <Target className="h-6 w-6" />
                 </div>
                 <h2 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">Our Mission</h2>
@@ -72,7 +72,7 @@ export default function AboutTradingoPage() {
       <Separator />
 
       {/* Story */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <div className="mx-auto max-w-3xl text-center">
@@ -120,7 +120,7 @@ export default function AboutTradingoPage() {
         </div>
       </section>
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Meet Our Team"
@@ -180,7 +180,7 @@ export default function AboutTradingoPage() {
       <Separator />
 
       {/* Testimonials */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="What Our Traders Say"

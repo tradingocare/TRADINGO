@@ -1,10 +1,12 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { NearMeService } from './near-me.service';
 import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Near Me')
 @Controller('products/near-me')
+@Throttle({ default: { limit: 60, ttl: 60000 } })
 export class NearMeController {
   constructor(private readonly nearMeService: NearMeService) {}
 

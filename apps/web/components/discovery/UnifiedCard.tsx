@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, memo } from 'react'
 import Link              from 'next/link'
 import { motion }        from 'framer-motion'
 import {
@@ -17,7 +17,7 @@ import api                 from '../../lib/api/client'
 import SellerBadge, { resolveSellerInfo } from '../shared/SellerBadge'
 
 const GEO_COLORS: Record<number, string> = {
-  1: '#FF4D00', 2: '#FF7A3D', 3: '#F2C94C',
+  1: '#FF4D00', 2: '#FF4D00', 3: '#FF4D00',
   4: '#2DE0E0', 5: '#3D8BFF', 6: '#9B5DE5',
 }
 const GEO_LABELS: Record<number, string> = {
@@ -32,7 +32,7 @@ interface Props {
   inCompare?:   boolean
 }
 
-export default function UnifiedCard({
+const UnifiedCard = memo(function UnifiedCard({
   item, onCompare, inCompare,
 }: Props) {
   const [imgIdx] = useState(0)
@@ -69,18 +69,13 @@ export default function UnifiedCard({
   const href      = `/${isService ? 'services' : 'products'}/${item.slug}`
 
   return (
+    <div className="stacked-card-wrapper">
     <motion.div
       ref={ref}
       onMouseMove={handleMouseMove}
       whileHover={{ y: -3 }}
       transition={{ duration: 0.25 }}
-      className="relative rounded-2xl overflow-hidden flex flex-col"
-      style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(16px)',
-      }}
-    >
+      className="relative rounded-2xl overflow-hidden flex flex-col compact-stack-card ambient-backlight border border-border">
       <div className="absolute inset-0 pointer-events-none z-10 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-2xl"
         style={{
           background: `radial-gradient(200px circle at var(--mx,50%) var(--my,50%), ${geoColor}15, transparent 70%)`,
@@ -95,7 +90,7 @@ export default function UnifiedCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
-            style={{ background: `linear-gradient(135deg, ${geoColor}18, #1D000120)` }}>
+            style={{ background: `linear-gradient(135deg, ${geoColor}18, transparent)` }}>
             <span className="text-4xl opacity-40">
               {isService ? '\uD83D\uDEE0\uFE0F' : '\uD83D\uDCE6'}
             </span>
@@ -117,18 +112,15 @@ export default function UnifiedCard({
         </div>
 
         <button onClick={handleSave}
-          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all"
-          style={{ background: 'rgba(0,0,0,0.45)' }}>
+          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer bg-bg-elevated/80 border border-border">
           <Bookmark size={13}
-            className={saved ? 'fill-[#FF4D00] text-[#FF4D00]' : 'text-white'} />
+            className={saved ? 'fill-accent text-accent' : 'text-text-secondary'} />
         </button>
 
         {item.geoRing && (
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full"
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-bg-elevated/80 backdrop-blur-sm"
             style={{
-              background: 'rgba(0,0,0,0.55)',
-              backdropFilter: 'blur(8px)',
-              border: `1px solid ${geoColor}30`,
+              border: `1px solid ${geoColor}40`,
               color: geoColor,
             }}>
             <MapPin size={9} />
@@ -138,7 +130,7 @@ export default function UnifiedCard({
       </div>
 
       <div className="flex flex-col flex-1 p-3.5 gap-2.5">
-        <p className="text-white/30 text-[9px] truncate">
+        <p className="text-text-secondary text-[9px] truncate">
           {item.categoryName}{item.subCategory ? ` > ${item.subCategory}` : ''}
         </p>
 
@@ -152,25 +144,25 @@ export default function UnifiedCard({
         />
 
         <Link href={href}>
-          <h3 className="text-white font-semibold text-sm leading-tight line-clamp-2 hover:text-[#FF4D00] transition-colors cursor-pointer">
+          <h3 className="text-text-primary font-semibold text-sm leading-tight line-clamp-2 hover:text-accent transition-colors cursor-pointer">
             {item.name}
           </h3>
         </Link>
 
-        <div className="flex items-center gap-2 text-[10px] text-white/45">
+        <div className="flex items-center gap-2 text-[10px] text-text-secondary">
           <span suppressHydrationWarning className="flex items-center gap-0.5">
-            <Star size={10} className="text-yellow-400 fill-yellow-400" />
+             <Star size={10} className="text-accent fill-accent" />
             {item.rating?.toFixed(1) ?? '0.0'}
-            <span suppressHydrationWarning className="text-white/25">({item.reviewCount ?? 0})</span>
+            <span suppressHydrationWarning className="text-text-secondary">({item.reviewCount ?? 0})</span>
           </span>
-          <span className="w-px h-3 bg-white/15" />
+          <span className="w-px h-3 bg-border" />
           <span className="flex items-center gap-1">
             <Zap size={9} style={{ color: geoColor }} />
             {item.responseTime || '< 24 hrs'}
           </span>
           {item.trustScore >= 80 && (
             <>
-              <span className="w-px h-3 bg-white/15" />
+              <span className="w-px h-3 bg-border" />
               <span className="flex items-center gap-1 text-green-400">
                 <Shield size={9} />
                 {item.trustScore}
@@ -181,24 +173,24 @@ export default function UnifiedCard({
 
         {isService ? (
           <div>
-            <p suppressHydrationWarning className="text-white font-bold text-sm">
+            <p suppressHydrationWarning className="text-text-primary font-bold text-sm">
               {item.pricingModel === 'hourly' ? 'Custom Pricing'
                 : item.price ? `Rs ${item.price?.toLocaleString('en-IN')}` : 'Get Quote'}
             </p>
             {item.coverageArea && (
-              <p className="text-white/35 text-[10px] mt-0.5">{item.coverageArea}</p>
+              <p className="text-text-secondary text-[10px] mt-0.5">{item.coverageArea}</p>
             )}
           </div>
         ) : (
           <div>
             <div className="flex items-baseline gap-1.5">
-              <span suppressHydrationWarning className="text-white font-bold text-base">
+              <span suppressHydrationWarning className="text-text-primary font-bold text-base">
                 Rs {item.price?.toLocaleString('en-IN')}
               </span>
-              <span suppressHydrationWarning className="text-white/30 text-xs">/{item.unit}</span>
+              <span suppressHydrationWarning className="text-text-secondary text-xs">/{item.unit}</span>
             </div>
             {item.moq && (
-              <p className="text-white/35 text-[10px] mt-0.5">
+              <p className="text-text-secondary text-[10px] mt-0.5">
                 MOQ: {item.moq} {item.unit}
               </p>
             )}
@@ -209,14 +201,11 @@ export default function UnifiedCard({
           <div className="grid grid-cols-3 gap-1">
             {item.priceSlabs.slice(0, 3).map((s, i, arr) => (
               <div key={i}
-                className="text-center rounded-lg py-1"
-                style={{
-                  background: i===arr.length-1 ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
-                }}>
-                <p className="text-[8px] text-white/30">
+                className={`text-center rounded-lg py-1 ${i===arr.length-1 ? 'bg-green-500/15 border border-green-500/20' : 'bg-surface-secondary border border-border'}`}>
+                <p className="text-[8px] text-text-secondary">
                   {s.minQty}{s.maxQty ? `-${s.maxQty}` : '+'}
                 </p>
-                <p className={`text-[10px] font-bold ${i===arr.length-1 ? 'text-green-400' : 'text-white'}`}>
+                <p className={`text-[10px] font-bold ${i===arr.length-1 ? 'text-green-400' : 'text-text-primary'}`}>
                   Rs {s.price}
                 </p>
               </div>
@@ -225,7 +214,7 @@ export default function UnifiedCard({
         )}
 
         {!isService && item.deliveryEta && (
-          <div className="flex items-center gap-1.5 text-[10px] text-white/45">
+          <div className="flex items-center gap-1.5 text-[10px] text-text-secondary">
             <Truck size={10} />
             {item.deliveryEta}
             {item.inStock && (
@@ -255,7 +244,7 @@ export default function UnifiedCard({
               whileTap={{ scale: 0.97 }}
               className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-bold cursor-pointer"
               style={{
-                background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)',
+                background: 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #ff7a33))',
                 color: '#fff',
               }}>
               <ShoppingCart size={12} />
@@ -266,11 +255,11 @@ export default function UnifiedCard({
           <button
             onClick={() => requireAuth(() =>
               router.push(`/rfq/create?entityId=${item.id}`))}
-            className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+            className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'rgba(255,255,255,0.7)',
+              background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
+              color: 'var(--accent-light)',
             }}>
             <FileText size={12} /> RFQ
           </button>
@@ -278,29 +267,22 @@ export default function UnifiedCard({
           <button
             onClick={() => requireAuth(() =>
               router.push(`/messages?seller=${item.seller.id}&entity=${item.id}`))}
-            className="flex items-center justify-center px-3 py-2 rounded-xl text-xs transition-all"
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'rgba(255,255,255,0.7)',
-            }}>
+            className="flex items-center justify-center px-3 py-2 rounded-xl text-xs transition-all cursor-pointer bg-surface-secondary border border-border text-text-secondary">
             <MessageCircle size={12} />
           </button>
 
           {onCompare && (
             <button
               onClick={() => onCompare(item)}
-              className="flex items-center justify-center px-2.5 py-2 rounded-xl text-xs transition-all"
-              style={{
-                background: inCompare ? 'rgba(255,77,0,0.12)' : 'rgba(255,255,255,0.04)',
-                border: inCompare ? '1px solid rgba(255,77,0,0.35)' : '1px solid rgba(255,255,255,0.08)',
-                color: inCompare ? '#FF4D00' : 'rgba(255,255,255,0.5)',
-              }}>
+              className={`flex items-center justify-center px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer ${inCompare ? 'bg-accent/12 border border-accent/30 text-accent-light' : 'bg-surface-secondary border border-border text-text-secondary'}`}>
               <ArrowLeftRight size={12} />
             </button>
           )}
         </div>
       </div>
     </motion.div>
+    </div>
   )
-}
+})
+
+export default UnifiedCard

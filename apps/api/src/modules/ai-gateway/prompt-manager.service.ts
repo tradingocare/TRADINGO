@@ -83,6 +83,7 @@ export class PromptManagerService {
       where: { taskType },
       orderBy: { version: 'desc' },
       select: { id: true, version: true, name: true, isActive: true, createdAt: true, description: true },
+      take: 100,
     })
   }
 }

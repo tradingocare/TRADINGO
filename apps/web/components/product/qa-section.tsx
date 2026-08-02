@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
@@ -89,9 +90,7 @@ export function QaSection({ questions, productSlug }: QaSectionProps) {
             className="rounded-xl border border-border bg-surface p-5 dark:bg-dark-surface dark:border-dark-border"
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-500/10 text-primary-700 dark:text-primary-300">
-                <User className="h-4 w-4" />
-              </div>
+              <Avatar size="sm" className="bg-accent/10 text-accent" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
                   {qa.question}
@@ -108,8 +107,8 @@ export function QaSection({ questions, productSlug }: QaSectionProps) {
                 </div>
 
                 {qa.answer && (
-                  <div className="mt-3 rounded-lg bg-accent-500/5 p-3 dark:bg-accent-500/10">
-                    <p className="text-sm font-medium text-accent-700 dark:text-accent-300">
+                  <div className="mt-3 rounded-lg bg-accent/5 p-3">
+                    <p className="text-sm font-medium text-accent">
                       Seller Answer
                     </p>
                     <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
@@ -131,7 +130,7 @@ export function QaSection({ questions, productSlug }: QaSectionProps) {
                 {!qa.answer && answerForm !== qa.id && user?.role === 'SELLER' && (
                   <button
                     onClick={() => setAnswerForm(qa.id)}
-                    className="mt-2 text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                    className="mt-2 text-xs font-medium text-accent"
                   >
                     Answer this question
                   </button>

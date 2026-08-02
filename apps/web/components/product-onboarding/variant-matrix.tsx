@@ -5,6 +5,7 @@ import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import type { ProductDraftVariant, VariantType } from '@/lib/product-onboarding/types';
 import { VARIANT_TYPE_OPTIONS } from '@/data/master-data';
 
@@ -221,29 +222,23 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
 
       {combinations.length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-border dark:border-dark-border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-surface-secondary dark:border-dark-border dark:bg-dark-surface-secondary">
+          <Table>
+            <THead>
+              <TR className="border-b border-border bg-surface-secondary dark:border-dark-border dark:bg-dark-surface-secondary">
                 {groups.map((group) => (
-                  <th
+                  <TH
                     key={group.customName || group.type}
-                    className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-dark-text-secondary"
+                    className="whitespace-nowrap"
                   >
                     {groupLabel(group)}
-                  </th>
+                  </TH>
                 ))}
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
-                  SKU
-                </th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
-                  Price (INR)
-                </th>
-                <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
-                  Qty
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                <TH className="whitespace-nowrap">SKU</TH>
+                <TH className="whitespace-nowrap">Price (INR)</TH>
+                <TH className="whitespace-nowrap">Qty</TH>
+              </TR>
+            </THead>
+            <TBody>
               {combinations.map((combo, _idx) => {
                 const matchIndex = variants.findIndex((v) =>
                   Object.entries(combo).every(([k, val]) => {
@@ -255,21 +250,21 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
                 const rowKey = Object.values(combo).join('-');
 
                 return (
-                  <tr
+                  <TR
                     key={rowKey}
                     className={cn(
                       'border-b border-border transition-colors last:border-b-0 hover:bg-surface-secondary/50 dark:border-dark-border dark:hover:bg-dark-surface-secondary/50',
                     )}
                   >
                     {groups.map((group) => (
-                      <td
+                      <TD
                         key={group.customName || group.type}
-                        className="whitespace-nowrap px-4 py-3 text-sm text-text-primary dark:text-dark-text-primary"
+                        className="whitespace-nowrap"
                       >
                         {combo[group.customName || group.type]}
-                      </td>
+                      </TD>
                     ))}
-                    <td className="px-4 py-3">
+                    <TD>
                       <Input
                         type="text"
                         value={variant?.sku || ''}
@@ -281,8 +276,8 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
                         placeholder="SKU"
                         className="h-8 w-28 text-xs"
                       />
-                    </td>
-                    <td className="px-4 py-3">
+                    </TD>
+                    <TD>
                       <Input
                         type="number"
                         value={variant?.price ?? basePrice}
@@ -294,8 +289,8 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
                         placeholder={String(basePrice)}
                         className="h-8 w-24 text-xs"
                       />
-                    </td>
-                    <td className="px-4 py-3">
+                    </TD>
+                    <TD>
                       <Input
                         type="number"
                         value={variant?.quantity ?? 0}
@@ -307,12 +302,12 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
                         placeholder="0"
                         className="h-8 w-20 text-xs"
                       />
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 );
               })}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         </div>
       )}
 

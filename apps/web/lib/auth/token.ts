@@ -30,7 +30,10 @@ export async function verifyToken(token: string): Promise<TokenPayload | null> {
       });
       payload = result.payload as TokenPayload;
     } else {
-      const secret = new TextEncoder().encode(JWT_SECRET ?? '');
+      if (!JWT_SECRET || JWT_SECRET.length < 32) {
+        throw new Error('FATAL: JWT_SECRET must be at least 32 characters for HS256 verification');
+      }
+      const secret = new TextEncoder().encode(JWT_SECRET);
       const result = await jwtVerify(token, secret, {
         algorithms: ['HS256'],
       });

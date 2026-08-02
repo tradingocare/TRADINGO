@@ -10,6 +10,7 @@ import { useBuyerWalletSummary } from '@/hooks/use-wallet';
 import { Award, AlertCircle, ArrowLeft, Gift, ShoppingCart, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import { apiClient } from '@/lib/api/client';
 
 const formatINR = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
@@ -17,6 +18,7 @@ const formatINR = (amount: number) =>
 export default function BuyerGocashRedeemPage() {
   const { data: summary, isLoading } = useBuyerWalletSummary();
   const [redeemAmount, setRedeemAmount] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -38,7 +40,7 @@ export default function BuyerGocashRedeemPage() {
             <CardContent className="text-center">
               <p className="text-4xl font-bold text-white">{formatINR(summary.available)}</p>
               <p className="mt-1 text-sm text-white/40">Available for redemption</p>
-              <p className="mt-4 text-xs text-white/30">Total Balance: {formatINR(summary.balance)} · Locked: {formatINR(summary.locked)}</p>
+              <p className="mt-4 text-xs text-white/40">Total Balance: {formatINR(summary.balance)} · Locked: {formatINR(summary.locked)}</p>
             </CardContent>
           </Card>
 
@@ -52,13 +54,21 @@ export default function BuyerGocashRedeemPage() {
               {redeemAmount > summary.available && (
                 <p className="text-sm text-red-400">Amount exceeds available balance</p>
               )}
-              <Button className="w-full" disabled={!redeemAmount || redeemAmount > summary.available} onClick={() => {
-                toast({ title: 'Redemption request submitted', description: `Requested to redeem ${formatINR(redeemAmount)}. You will receive confirmation within 24-48 hours.` });
-                setRedeemAmount(0);
+              <Button className="w-full" disabled={!redeemAmount || redeemAmount > summary.available || submitting} onClick={async () => {
+                setSubmitting(true);
+                try {
+                  await apiClient.post(`/gocash/wallets/${summary.id}/redeem`, { amount: redeemAmount, redemptionType: 'MANUAL', notes: 'Wallet redemption' });
+                  toast({ title: 'Redemption request submitted', description: `Requested to redeem ${formatINR(redeemAmount)}. You will receive confirmation within 24-48 hours.` });
+                  setRedeemAmount(0);
+                } catch {
+                  toast({ title: 'Redemption failed', description: 'Please try again or contact support', variant: 'destructive' });
+                } finally {
+                  setSubmitting(false);
+                }
               }}>
-                Redeem GOCASH
+                {submitting ? 'Submitting...' : 'Redeem GOCASH'}
               </Button>
-              <p className="text-center text-xs text-white/30">Redemption requests are processed within 24-48 hours</p>
+              <p className="text-center text-xs text-white/40">Redemption requests are processed within 24-48 hours</p>
             </CardContent>
           </Card>
         </div>
@@ -72,24 +82,24 @@ export default function BuyerGocashRedeemPage() {
       )}
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <Link href="/buyer/campaigns" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-orange-500/10 to-transparent p-5 backdrop-blur-xl transition-all hover:border-orange-500/30">
+        <Link href="/buyer/campaigns" className="group rounded-2xl border border-border bg-gradient-to-br from-orange-500/10 to-transparent p-5 backdrop-blur-xl transition-all hover:border-orange-500/30">
           <div className="flex items-center gap-3">
-            <Gift className="h-8 w-8 text-[#FF4D00]" />
+            <Gift className="h-8 w-8 text-[#f59e0b]" />
             <div>
               <p className="text-sm font-medium text-white">Earn More GOCASH</p>
               <p className="text-xs text-white/40">Participate in campaigns and earn bonus rewards</p>
             </div>
-            <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+            <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
           </div>
         </Link>
-        <Link href="/buyer/referrals" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-blue-500/10 to-transparent p-5 backdrop-blur-xl transition-all hover:border-blue-500/30">
+        <Link href="/buyer/referrals" className="group rounded-2xl border border-border bg-gradient-to-br from-blue-500/10 to-transparent p-5 backdrop-blur-xl transition-all hover:border-blue-500/30">
           <div className="flex items-center gap-3">
             <Gift className="h-8 w-8 text-blue-400" />
             <div>
               <p className="text-sm font-medium text-white">Refer Friends</p>
               <p className="text-xs text-white/40">Invite your network and earn referral rewards</p>
             </div>
-            <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+            <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
           </div>
         </Link>
       </div>

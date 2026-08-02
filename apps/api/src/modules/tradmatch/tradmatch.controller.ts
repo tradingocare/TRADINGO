@@ -1,11 +1,14 @@
 import { Controller, Get, Post, Param, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TradmatchService } from './tradmatch.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('TRADMATCH')
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
+@Throttle(RateLimits.WRITE_GENERAL)
 @Controller('companies/:companyId/rfq/:rfqId/matches')
 export class TradmatchController {
   constructor(private readonly tradmatchService: TradmatchService) {}

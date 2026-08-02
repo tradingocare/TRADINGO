@@ -1,23 +1,27 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '@/lib/api/client'
 import { useAuthStore } from '@/store/auth-store'
 import { useCheckoutStore, usePrice } from '@/store/checkout-store'
 import type { Plan, CompanyInfo } from '@/store/checkout-store'
 import {
-  CheckCircle2, X, Zap, Crown, Star, Shield, ArrowRight, ArrowLeft,
+  CheckCircle2, X, Zap, Crown, Star, Shield, ArrowLeft,
   Building2, User, Mail, Phone, FileText, MapPin, Hash, Lock,
-  CreditCard, Smartphone, Landmark, Globe, Percent, Gift, RefreshCcw,
-  AlertCircle, Loader2, Info, ChevronRight,
+  CreditCard, Smartphone, Landmark, Globe, Percent, Gift,
+  AlertCircle, Info, ChevronRight, RefreshCcw, XCircle,
 } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { toast } from '@/components/ui/use-toast'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const PLANS_META: Record<string, { icon: any; badge?: string; color: string }> = {
   Trade_Start:   { icon: Star,   color: '#6b7280' },
   Trade_Smart:   { icon: Shield, color: '#3D8BFF' },
   Trade_Plus:    { icon: Shield, color: '#9B5DE5' },
-  Trade_Pro:     { icon: Crown,  color: '#FF4D00', badge: 'Recommended' },
+  Trade_Pro:     { icon: Crown,  color: '#f59e0b', badge: 'Recommended' },
   Trade_Premium: { icon: Crown,  color: '#F2C94C', badge: 'Premium' },
   Trade_Elite:   { icon: Zap,    color: '#4ade80', badge: 'Ultimate' },
 }
@@ -29,12 +33,12 @@ const TIER_OPTIONS = [
 ]
 
 const PAYMENT_METHODS = [
-  { id: 'RAZORPAY', label: 'Razorpay', icon: Shield, color: '#3D8BFF', disabled: true },
+  { id: 'RAZORPAY', label: 'Razorpay', icon: Shield, color: '#3D8BFF', disabled: false },
   { id: 'STRIPE', label: 'Stripe', icon: CreditCard, color: '#6772E5', disabled: true },
   { id: 'UPI', label: 'UPI', icon: Smartphone, color: '#4ade80', disabled: true },
   { id: 'CREDIT_CARD', label: 'Credit Card', icon: CreditCard, color: '#9B5DE5', disabled: true },
   { id: 'DEBIT_CARD', label: 'Debit Card', icon: CreditCard, color: '#F2C94C', disabled: true },
-  { id: 'NET_BANKING', label: 'Net Banking', icon: Landmark, color: '#FF4D00', disabled: true },
+  { id: 'NET_BANKING', label: 'Net Banking', icon: Landmark, color: '#f59e0b', disabled: true },
   { id: 'NEFT', label: 'NEFT', icon: Globe, color: '#6b7280', disabled: true },
 ]
 
@@ -67,17 +71,17 @@ function StepProgress({ current, total }: { current: number; total: number }) {
         return (
           <div key={i} className="flex items-center gap-1.5 flex-1">
             <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all ${
-              isDone ? 'bg-orange-500 text-white' :
-              isActive ? 'bg-orange-500 text-white ring-2 ring-orange-200' :
-              'bg-gray-100 text-gray-400'
+              isDone ? 'bg-orange-500/100 text-white' :
+              isActive ? 'bg-orange-500/100 text-white ring-2 ring-orange-200' :
+              'bg-surface/5 text-white/40'
             }`}>
               {isDone ? <CheckCircle2 size={14} /> : stepNum}
             </div>
             <span className={`text-[10px] font-medium hidden sm:block ${
-              isActive ? 'text-orange-600' : isDone ? 'text-orange-500' : 'text-gray-400'
+              isActive ? 'text-orange-600' : isDone ? 'text-orange-500' : 'text-white/40'
             }`}>{STEP_LABELS[i]}</span>
             {i < total - 1 && <div className={`flex-1 h-0.5 rounded-full ${
-              isDone ? 'bg-orange-500' : 'bg-gray-200'
+              isDone ? 'bg-orange-500/100' : 'bg-surface/10'
             }`} />}
           </div>
         )
@@ -101,23 +105,23 @@ function StepPlanSelection({ onNext }: { onNext: () => void }) {
         const found = fromUrl ? list.find((p: Plan) => p.planId === fromUrl) : list[3]
         setPlan(found || list[0])
       }
-    }).catch(() => {}).finally(() => setLoading(false))
+    }).catch(() => { toast.error('Failed to load plans'); }).finally(() => setLoading(false))
   }, [])
 
   if (loading) return (
-    <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-orange-500" /></div>
+    <div className="flex items-center justify-center py-12"><LoadingSpinner size="xl" /></div>
   )
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Choose Your Plan</h2>
-      <p className="text-sm text-gray-500 mb-4">Select a membership plan and pricing tier</p>
+      <h2 className="text-xl font-bold text-white mb-1">Choose Your Plan</h2>
+      <p className="text-sm text-white/50 mb-4">Select a membership plan and pricing tier</p>
 
       <div className="flex items-center gap-2 mb-6">
         {TIER_OPTIONS.map(t => (
           <button key={t.id} onClick={() => setTier(t.id)}
             className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all text-left flex-1 ${
-              tier === t.id ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+              tier === t.id ? 'bg-orange-500/10 border-orange-300 text-orange-700' : 'bg-surface border-border text-white/50 hover:border-border'
             } border`}>
             <div className="font-bold">{t.label}</div>
             <div className="text-[10px] opacity-60">{t.desc}</div>
@@ -134,26 +138,26 @@ function StepPlanSelection({ onNext }: { onNext: () => void }) {
           return (
             <button key={p.id} onClick={() => setPlan(p)}
               className={`relative rounded-xl p-4 text-left transition-all border ${
-                isSelected ? 'border-orange-400 ring-2 ring-orange-100 bg-orange-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
+                isSelected ? 'border-orange-400 ring-2 ring-orange-500/20 bg-orange-500/10/50' : 'border-border bg-surface hover:border-border'
               }`}>
               {meta.badge && (
-                <span className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-500 text-white">{meta.badge}</span>
+                <span className="absolute -top-2 left-3 px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-500/100 text-white">{meta.badge}</span>
               )}
               <Icon size={18} style={{ color: meta.color }} className="mb-1.5" />
-              <h3 className="font-bold text-gray-900 text-sm">{p.name}</h3>
+              <h3 className="font-bold text-white text-sm">{p.name}</h3>
               <div className="flex items-baseline gap-0.5 mt-1">
-                <span className="font-black text-lg text-gray-900">{formatPrice(price)}</span>
-                <span className="text-gray-400 text-[10px]">{TIER_OPTIONS.find(t => t.id === tier)?.suffix}</span>
+                <span className="font-black text-lg text-white">{formatPrice(price)}</span>
+                <span className="text-white/40 text-[10px]">{TIER_OPTIONS.find(t => t.id === tier)?.suffix}</span>
               </div>
               <ul className="mt-2 space-y-1">
                 {(p.features as string[]).slice(0, 3).map((f, fi) => (
-                  <li key={fi} className="flex items-center gap-1 text-gray-500 text-[10px]">
+                  <li key={fi} className="flex items-center gap-1 text-white/50 text-[10px]">
                     <CheckCircle2 size={8} className="text-green-500 shrink-0" />
                     {f}
                   </li>
                 ))}
                 {(p.features as string[]).length > 3 && (
-                  <li className="text-gray-400 text-[10px]">+{(p.features as string[]).length - 3} more</li>
+                  <li className="text-white/40 text-[10px]">+{(p.features as string[]).length - 3} more</li>
                 )}
               </ul>
             </button>
@@ -163,7 +167,7 @@ function StepPlanSelection({ onNext }: { onNext: () => void }) {
 
       <div className="flex justify-end">
         <button onClick={onNext} disabled={!plan}
-          className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+          className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500/100 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
           Continue <ChevronRight size={16} />
         </button>
       </div>
@@ -194,7 +198,7 @@ function StepCompanyInfo({ onNext, onPrev }: { onNext: () => void; onPrev: () =>
         })
         setCompanyInfo(d)
       }
-    }).catch(() => {}).finally(() => setLoading(false))
+    }).catch(() => { toast.error('Failed to load seller profile'); }).finally(() => setLoading(false))
   }, [])
 
   const validate = () => {
@@ -241,25 +245,25 @@ function StepCompanyInfo({ onNext, onPrev }: { onNext: () => void; onPrev: () =>
   ]
 
   if (loading) return (
-    <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-orange-500" /></div>
+    <div className="flex items-center justify-center py-12"><LoadingSpinner size="xl" /></div>
   )
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Company Information</h2>
-      <p className="text-sm text-gray-500 mb-6">Review and update your company details</p>
+      <h2 className="text-xl font-bold text-white mb-1">Company Information</h2>
+      <p className="text-sm text-white/50 mb-6">Review and update your company details</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {fields.map(f => (
           <div key={f.key}>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">
+            <label className="block text-xs font-semibold text-white/60 mb-1">
               {f.label} {f.required && <span className="text-red-500">*</span>}
             </label>
             <div className="relative">
-              <f.icon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <f.icon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
               <input type={f.key === 'email' ? 'email' : 'text'} value={(form as any)[f.key]}
                 onChange={e => update(f.key, e.target.value)} placeholder={(f as any).placeholder || `Enter ${f.label.toLowerCase()}`}
                 className={`w-full pl-9 pr-3 py-2.5 rounded-lg border text-sm ${
-                  errors[f.key] ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-orange-300'
+                  errors[f.key] ? 'border-red-300 bg-red-50' : 'border-border focus:border-orange-300'
                 } outline-none transition-colors`} />
             </div>
             {errors[f.key] && <p className="text-red-500 text-[10px] mt-0.5">{errors[f.key]}</p>}
@@ -267,10 +271,10 @@ function StepCompanyInfo({ onNext, onPrev }: { onNext: () => void; onPrev: () =>
         ))}
       </div>
       <div className="flex items-center justify-between">
-        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 transition-all">
+        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-white/60 hover:bg-surface/[0.06] transition-all">
           <ArrowLeft size={14} /> Back
         </button>
-        <button onClick={handleContinue} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 transition-all">
+        <button onClick={handleContinue} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500/100 text-white hover:bg-orange-600 transition-all">
           Continue <ChevronRight size={16} />
         </button>
       </div>
@@ -317,54 +321,54 @@ function StepBillingDetails({ onNext, onPrev }: { onNext: () => void; onPrev: ()
 
   const inputClass = (key: string) =>
     `w-full px-3 py-2.5 rounded-lg border text-sm outline-none transition-colors ${
-      errors[key] ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-orange-300'
+      errors[key] ? 'border-red-300 bg-red-50' : 'border-border focus:border-orange-300'
     }`
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Billing Details</h2>
-      <p className="text-sm text-gray-500 mb-6">Enter your billing address and invoice preferences</p>
+      <h2 className="text-xl font-bold text-white mb-1">Billing Details</h2>
+      <p className="text-sm text-white/50 mb-6">Enter your billing address and invoice preferences</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div className="sm:col-span-2">
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Billing Contact <span className="text-red-500">*</span></label>
+          <label className="block text-xs font-semibold text-white/60 mb-1">Billing Contact <span className="text-red-500">*</span></label>
           <input value={billing.contactName} onChange={e => setBilling({ contactName: e.target.value })} className={inputClass('contactName')} placeholder="Full name" />
           {errors.contactName && <p className="text-red-500 text-[10px] mt-0.5">{errors.contactName}</p>}
         </div>
         <div className="sm:col-span-2">
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Billing Address <span className="text-red-500">*</span></label>
+          <label className="block text-xs font-semibold text-white/60 mb-1">Billing Address <span className="text-red-500">*</span></label>
           <textarea value={billing.address} onChange={e => setBilling({ address: e.target.value })} className={inputClass('address')} rows={2} placeholder="Street, building, area" />
           {errors.address && <p className="text-red-500 text-[10px] mt-0.5">{errors.address}</p>}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">City <span className="text-red-500">*</span></label>
+          <label className="block text-xs font-semibold text-white/60 mb-1">City <span className="text-red-500">*</span></label>
           <input value={billing.city} onChange={e => setBilling({ city: e.target.value })} className={inputClass('city')} placeholder="City" />
           {errors.city && <p className="text-red-500 text-[10px] mt-0.5">{errors.city}</p>}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">State <span className="text-red-500">*</span></label>
-          <select value={billing.state} onChange={e => setBilling({ state: e.target.value })} className={inputClass('state')}>
+          <label className="block text-xs font-semibold text-white/60 mb-1">State <span className="text-red-500">*</span></label>
+          <Select value={billing.state} onChange={e => setBilling({ state: e.target.value })}>
             <option value="">Select state</option>
             {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          </Select>
           {errors.state && <p className="text-red-500 text-[10px] mt-0.5">{errors.state}</p>}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">PIN Code <span className="text-red-500">*</span></label>
+          <label className="block text-xs font-semibold text-white/60 mb-1">PIN Code <span className="text-red-500">*</span></label>
           <input value={billing.pincode} onChange={e => setBilling({ pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })} className={inputClass('pincode')} placeholder="6-digit PIN" />
           {errors.pincode && <p className="text-red-500 text-[10px] mt-0.5">{errors.pincode}</p>}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Country</label>
-          <input value={billing.country} disabled className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm bg-gray-50 text-gray-500" />
+          <label className="block text-xs font-semibold text-white/60 mb-1">Country</label>
+          <input value={billing.country} disabled className="w-full px-3 py-2.5 rounded-lg border border-border text-sm bg-surface/[0.03] text-white/50" />
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-gray-50 border border-gray-200">
+      <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-surface/[0.03] border border-border">
         <input type="checkbox" id="gstBilling" checked={billing.gstBilling}
           onChange={e => setBilling({ gstBilling: e.target.checked })}
-          className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400" />
-        <label htmlFor="gstBilling" className="text-sm font-medium text-gray-700 cursor-pointer">I have a GST number and want GST billing</label>
+          className="w-4 h-4 rounded border-border text-orange-500 focus:ring-orange-400" />
+        <label htmlFor="gstBilling" className="text-sm font-medium text-white/60 cursor-pointer">I have a GST number and want GST billing</label>
       </div>
 
       <AnimatePresence>
@@ -372,17 +376,17 @@ function StepBillingDetails({ onNext, onPrev }: { onNext: () => void; onPrev: ()
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
             className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 overflow-hidden">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Invoice Name <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold text-white/60 mb-1">Invoice Name <span className="text-red-500">*</span></label>
               <input value={billing.invoiceName} onChange={e => setBilling({ invoiceName: e.target.value })} className={inputClass('invoiceName')} />
               {errors.invoiceName && <p className="text-red-500 text-[10px] mt-0.5">{errors.invoiceName}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Invoice Email <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold text-white/60 mb-1">Invoice Email <span className="text-red-500">*</span></label>
               <input value={billing.invoiceEmail} onChange={e => setBilling({ invoiceEmail: e.target.value })} className={inputClass('invoiceEmail')} />
               {errors.invoiceEmail && <p className="text-red-500 text-[10px] mt-0.5">{errors.invoiceEmail}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Invoice Mobile <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold text-white/60 mb-1">Invoice Mobile <span className="text-red-500">*</span></label>
               <input value={billing.invoiceMobile} onChange={e => setBilling({ invoiceMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} className={inputClass('invoiceMobile')} />
               {errors.invoiceMobile && <p className="text-red-500 text-[10px] mt-0.5">{errors.invoiceMobile}</p>}
             </div>
@@ -391,10 +395,10 @@ function StepBillingDetails({ onNext, onPrev }: { onNext: () => void; onPrev: ()
       </AnimatePresence>
 
       <div className="flex items-center justify-between">
-        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 transition-all">
+        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-white/60 hover:bg-surface/[0.06] transition-all">
           <ArrowLeft size={14} /> Back
         </button>
-        <button onClick={() => { if (validate()) onNext() }} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 transition-all">
+        <button onClick={() => { if (validate()) onNext() }} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500/100 text-white hover:bg-orange-600 transition-all">
           Continue <ChevronRight size={16} />
         </button>
       </div>
@@ -422,24 +426,24 @@ function StepCoupon({ onNext, onPrev }: { onNext: () => void; onPrev: () => void
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Coupon Code</h2>
-      <p className="text-sm text-gray-500 mb-6">Have a discount coupon? Enter it below</p>
+      <h2 className="text-xl font-bold text-white mb-1">Coupon Code</h2>
+      <p className="text-sm text-white/50 mb-6">Have a discount coupon? Enter it below</p>
 
       <div className="max-w-md mb-6">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
             <input value={coupon.code} onChange={e => setCouponCode(e.target.value.toUpperCase())}
               placeholder="Enter coupon code"
-              className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-300 transition-colors" />
+              className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border text-sm outline-none focus:border-orange-300 transition-colors" />
           </div>
           <button onClick={handleValidate} disabled={!coupon.code.trim() || validating}
-            className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1">
-            {validating ? <Loader2 size={14} className="animate-spin" /> : null}
+            className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-orange-500/100 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1">
+            {validating ? <LoadingSpinner size="xs" /> : null}
             Apply
           </button>
           {coupon.validated && (
-            <button onClick={clearCoupon} className="px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-all">
+            <button onClick={clearCoupon} className="px-3 py-2.5 rounded-lg text-sm text-white/50 hover:bg-surface/[0.06] transition-all">
               <X size={14} />
             </button>
           )}
@@ -459,14 +463,14 @@ function StepCoupon({ onNext, onPrev }: { onNext: () => void; onPrev: () => void
           </div>
         )}
 
-        <p className="text-xs text-gray-400 mt-2">Coupon codes are case-insensitive</p>
+        <p className="text-xs text-white/40 mt-2">Coupon codes are case-insensitive</p>
       </div>
 
       <div className="flex items-center justify-between">
-        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 transition-all">
+        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-white/60 hover:bg-surface/[0.06] transition-all">
           <ArrowLeft size={14} /> Back
         </button>
-        <button onClick={onNext} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 transition-all">
+        <button onClick={onNext} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500/100 text-white hover:bg-orange-600 transition-all">
           Skip {coupon.validated ? '(Applied)' : ''} <ChevronRight size={16} />
         </button>
       </div>
@@ -494,25 +498,25 @@ function StepReferral({ onNext, onPrev }: { onNext: () => void; onPrev: () => vo
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Referral & Relationship Manager</h2>
-      <p className="text-sm text-gray-500 mb-6">Enter referral and RM codes if you have them</p>
+      <h2 className="text-xl font-bold text-white mb-1">Referral & Relationship Manager</h2>
+      <p className="text-sm text-white/50 mb-6">Enter referral and RM codes if you have them</p>
 
       <div className="max-w-md mb-6">
-        <label className="block text-xs font-semibold text-gray-600 mb-1">Referral Code</label>
+        <label className="block text-xs font-semibold text-white/60 mb-1">Referral Code</label>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Gift size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Gift size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
             <input value={referral.code} onChange={e => setReferralCode(e.target.value.toUpperCase())}
               placeholder="Enter referral code"
-              className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-300 transition-colors" />
+              className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border text-sm outline-none focus:border-orange-300 transition-colors" />
           </div>
           <button onClick={handleValidate} disabled={!referral.code.trim() || validating}
-            className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1">
-            {validating ? <Loader2 size={14} className="animate-spin" /> : null}
+            className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-orange-500/100 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1">
+            {validating ? <LoadingSpinner size="xs" /> : null}
             Apply
           </button>
           {referral.validated && (
-            <button onClick={clearReferral} className="px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-all">
+            <button onClick={clearReferral} className="px-3 py-2.5 rounded-lg text-sm text-white/50 hover:bg-surface/[0.06] transition-all">
               <X size={14} />
             </button>
           )}
@@ -532,20 +536,20 @@ function StepReferral({ onNext, onPrev }: { onNext: () => void; onPrev: () => vo
       </div>
 
       <div className="max-w-md mb-6">
-        <label className="block text-xs font-semibold text-gray-600 mb-1">Relationship Manager Code (Optional)</label>
+        <label className="block text-xs font-semibold text-white/60 mb-1">Relationship Manager Code (Optional)</label>
         <div className="relative">
-          <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input value={rmCode} onChange={e => setRmCode(e.target.value.toUpperCase())}
             placeholder="Enter RM code"
-            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-orange-300 transition-colors" />
+            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border text-sm outline-none focus:border-orange-300 transition-colors" />
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 transition-all">
+        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-white/60 hover:bg-surface/[0.06] transition-all">
           <ArrowLeft size={14} /> Back
         </button>
-        <button onClick={onNext} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 transition-all">
+        <button onClick={onNext} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500/100 text-white hover:bg-orange-600 transition-all">
           Continue <ChevronRight size={16} />
         </button>
       </div>
@@ -562,34 +566,34 @@ function StepOrderSummary({ onNext, onPrev }: { onNext: () => void; onPrev: () =
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Order Summary</h2>
-      <p className="text-sm text-gray-500 mb-6">Review your order before proceeding</p>
+      <h2 className="text-xl font-bold text-white mb-1">Order Summary</h2>
+      <p className="text-sm text-white/50 mb-6">Review your order before proceeding</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-4">
-          <div className="p-4 rounded-xl border border-gray-200 bg-white">
-            <h3 className="font-bold text-gray-900 text-sm mb-3">Plan Details</h3>
+          <div className="p-4 rounded-xl border border-border bg-surface">
+            <h3 className="font-bold text-white text-sm mb-3">Plan Details</h3>
             <div className="flex items-center gap-2 mb-2">
               {(() => {
                 const meta = PLANS_META[plan.name.replace(/\s/g, '_')] || PLANS_META.Trade_Start
                 const Icon = meta.icon
                 return <Icon size={16} style={{ color: meta.color }} />
               })()}
-              <span className="font-bold text-gray-900">{plan.name}</span>
+              <span className="font-bold text-white">{plan.name}</span>
               {tierLabel && <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">{tierLabel.label}</span>}
             </div>
-            <div className="text-sm text-gray-500 space-y-1">
+            <div className="text-sm text-white/50 space-y-1">
               <p>Duration: {tier === 'A' ? '1 Year' : tier === 'B' ? '2 Years' : '3 Years'}</p>
               <p>Auto-renews at the end of the term at the then-prevailing price</p>
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-gray-200 bg-white">
-            <h3 className="font-bold text-gray-900 text-sm mb-2">Included Features</h3>
-            <p className="text-xs text-gray-400 mb-2">{plan.features.length} features included</p>
+          <div className="p-4 rounded-xl border border-border bg-surface">
+            <h3 className="font-bold text-white text-sm mb-2">Included Features</h3>
+            <p className="text-xs text-white/40 mb-2">{plan.features.length} features included</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {(plan.features as string[]).map((f, fi) => (
-                <div key={fi} className="flex items-center gap-1.5 text-gray-600 text-xs">
+                <div key={fi} className="flex items-center gap-1.5 text-white/60 text-xs">
                   <CheckCircle2 size={10} className="text-green-500 shrink-0" /> {f}
                 </div>
               ))}
@@ -597,19 +601,19 @@ function StepOrderSummary({ onNext, onPrev }: { onNext: () => void; onPrev: () =
           </div>
 
           {billing.gstBilling && (
-            <div className="p-4 rounded-xl border border-gray-200 bg-white">
-              <h3 className="font-bold text-gray-900 text-sm mb-2">Billing Info</h3>
-              <p className="text-xs text-gray-600">{billing.invoiceName} | {billing.invoiceEmail} | {billing.invoiceMobile}</p>
-              <p className="text-xs text-gray-500 mt-1">{billing.address}, {billing.city}, {billing.state} - {billing.pincode}</p>
+            <div className="p-4 rounded-xl border border-border bg-surface">
+              <h3 className="font-bold text-white text-sm mb-2">Billing Info</h3>
+              <p className="text-xs text-white/60">{billing.invoiceName} | {billing.invoiceEmail} | {billing.invoiceMobile}</p>
+              <p className="text-xs text-white/50 mt-1">{billing.address}, {billing.city}, {billing.state} - {billing.pincode}</p>
             </div>
           )}
         </div>
 
         <div className="lg:col-span-2">
-          <div className="p-5 rounded-xl border border-gray-200 bg-white sticky top-4">
-            <h3 className="font-bold text-gray-900 text-sm mb-3">Price Breakdown</h3>
+          <div className="p-5 rounded-xl border border-border bg-surface sticky top-4">
+            <h3 className="font-bold text-white text-sm mb-3">Price Breakdown</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between text-gray-600">
+              <div className="flex items-center justify-between text-white/60">
                 <span>Plan Price ({tierLabel?.label})</span>
                 <span className="font-semibold">{formatPrice(price)}</span>
               </div>
@@ -626,13 +630,13 @@ function StepOrderSummary({ onNext, onPrev }: { onNext: () => void; onPrev: () =
                 </div>
               )}
               {billing.gstBilling && (
-                <div className="flex items-center justify-between text-gray-600">
+                <div className="flex items-center justify-between text-white/60">
                   <span>GST (18%)</span>
                   <span className="font-semibold">{formatPrice(gst)}</span>
                 </div>
               )}
-              <hr className="border-gray-200" />
-              <div className="flex items-center justify-between text-gray-900 font-bold text-base">
+              <hr className="border-border" />
+              <div className="flex items-center justify-between text-white font-bold text-base">
                 <span>Grand Total</span>
                 <span>{formatPrice(total)}</span>
               </div>
@@ -642,16 +646,16 @@ function StepOrderSummary({ onNext, onPrev }: { onNext: () => void; onPrev: () =
                   <span className="font-semibold">{formatPrice(savings)}</span>
                 </div>
               )}
-              <hr className="border-gray-200" />
-              <div className="flex items-center justify-between text-gray-400 text-xs">
+              <hr className="border-border" />
+              <div className="flex items-center justify-between text-white/40 text-xs">
                 <span>Renewal Amount</span>
                 <span>{formatPrice(renewalAmount)}/year</span>
               </div>
-              <div className="flex items-center justify-between text-gray-400 text-xs">
+              <div className="flex items-center justify-between text-white/40 text-xs">
                 <span>Membership Start</span>
                 <span>{new Date().toLocaleDateString('en-IN')}</span>
               </div>
-              <div className="flex items-center justify-between text-gray-400 text-xs">
+              <div className="flex items-center justify-between text-white/40 text-xs">
                 <span>Membership Expiry</span>
                 <span>{new Date(Date.now() + (tier === 'A' ? 365 : tier === 'B' ? 730 : 1095) * 86400000).toLocaleDateString('en-IN')}</span>
               </div>
@@ -661,10 +665,10 @@ function StepOrderSummary({ onNext, onPrev }: { onNext: () => void; onPrev: () =
       </div>
 
       <div className="flex items-center justify-between mt-6">
-        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 transition-all">
+        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-white/60 hover:bg-surface/[0.06] transition-all">
           <ArrowLeft size={14} /> Back
         </button>
-        <button onClick={onNext} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 transition-all">
+        <button onClick={onNext} className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500/100 text-white hover:bg-orange-600 transition-all">
           Continue to Terms <ChevronRight size={16} />
         </button>
       </div>
@@ -686,26 +690,26 @@ function StepTerms({ onNext, onPrev }: { onNext: () => void; onPrev: () => void 
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Terms & Agreements</h2>
-      <p className="text-sm text-gray-500 mb-6">Please accept the following to proceed</p>
+      <h2 className="text-xl font-bold text-white mb-1">Terms & Agreements</h2>
+      <p className="text-sm text-white/50 mb-6">Please accept the following to proceed</p>
 
       <div className="space-y-3 mb-6 max-w-lg">
         {items.map(item => (
-          <label key={item.key} className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 bg-white cursor-pointer hover:border-gray-300 transition-all">
+          <label key={item.key} className="flex items-center gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:border-border transition-all">
             <input type="checkbox" checked={terms[item.key]}
               onChange={e => setTerms({ [item.key]: e.target.checked })}
-              className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-400" />
-            <span className="text-sm text-gray-700 font-medium">{item.label}</span>
+              className="w-5 h-5 rounded border-border text-orange-500 focus:ring-orange-400" />
+            <span className="text-sm text-white/60 font-medium">{item.label}</span>
           </label>
         ))}
       </div>
 
       <div className="flex items-center justify-between">
-        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 transition-all">
+        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-white/60 hover:bg-surface/[0.06] transition-all">
           <ArrowLeft size={14} /> Back
         </button>
         <button onClick={onNext} disabled={!allChecked}
-          className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+          className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500/100 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
           Continue <ChevronRight size={16} />
         </button>
       </div>
@@ -718,8 +722,8 @@ function StepPayment({ onNext, onPrev }: { onNext: () => void; onPrev: () => voi
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Payment Method</h2>
-      <p className="text-sm text-gray-500 mb-6">Select your preferred payment method</p>
+      <h2 className="text-xl font-bold text-white mb-1">Payment Method</h2>
+      <p className="text-sm text-white/50 mb-6">Select your preferred payment method</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
         {PAYMENT_METHODS.map(method => {
@@ -728,18 +732,18 @@ function StepPayment({ onNext, onPrev }: { onNext: () => void; onPrev: () => voi
           return (
             <button key={method.id} onClick={() => setPaymentMethod(method.id)}
               className={`relative p-4 rounded-xl border text-left transition-all ${
-                selected ? 'border-orange-400 ring-2 ring-orange-100' : 'border-gray-200 bg-white hover:border-gray-300'
+                selected ? 'border-orange-400 ring-2 ring-orange-500/20' : 'border-border bg-surface hover:border-border'
               } ${method.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <Icon size={18} style={{ color: method.color }} />
-                <span className="font-semibold text-sm text-gray-900">{method.label}</span>
+                <span className="font-semibold text-sm text-white">{method.label}</span>
               </div>
               {method.disabled && (
-                <span className="inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-gray-100 text-gray-400 uppercase">Coming Soon</span>
+                <span className="inline-block px-2 py-0.5 rounded text-[9px] font-bold bg-bg-elevated text-text-tertiary uppercase">Coming Soon</span>
               )}
               {selected && (
-                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
-                  <CheckCircle2 size={12} className="text-white" />
+                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-orange-500/100 flex items-center justify-center">
+                  <CheckCircle2 size={12} className="text-text-primary" />
                 </div>
               )}
             </button>
@@ -747,20 +751,22 @@ function StepPayment({ onNext, onPrev }: { onNext: () => void; onPrev: () => voi
         })}
       </div>
 
-      <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3 mb-6">
-        <Info size={16} className="text-amber-500 mt-0.5 shrink-0" />
-        <div className="text-sm text-amber-800">
-          <p className="font-semibold mb-0.5">Payment Gateway — Coming Soon</p>
-          <p className="text-amber-700">Payment integration will be available in the next phase. For now, selecting a method is for preview purposes only.</p>
+      {paymentMethod === 'RAZORPAY' && (
+        <div className="p-4 rounded-xl flex items-start gap-3 mb-6" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}>
+          <Info size={16} className="text-amber-400 mt-0.5 shrink-0" />
+          <div className="text-sm text-amber-300/80">
+            <p className="font-semibold text-amber-300 mb-0.5">Secure Payment via Razorpay</p>
+            <p className="text-amber-200/60">Your payment is processed securely. We never store your card details.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex items-center justify-between">
-        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 transition-all">
+        <button onClick={onPrev} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-white/60 hover:bg-surface/[0.06] transition-all">
           <ArrowLeft size={14} /> Back
         </button>
         <button onClick={onNext} disabled={!paymentMethod}
-          className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+          className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500/100 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
           Continue <ChevronRight size={16} />
         </button>
       </div>
@@ -768,73 +774,188 @@ function StepPayment({ onNext, onPrev }: { onNext: () => void; onPrev: () => voi
   )
 }
 
+type PaymentStatus = 'idle' | 'creating' | 'processing' | 'success' | 'failed'
+
 function StepConfirmation({ onPrev }: { onPrev: () => void }) {
-  const { plan, tier, orderCreated, orderId, setOrderCreated, setLoading, loading } = useCheckoutStore()
+  const { plan, tier, paymentMethod, orderCreated, setOrderCreated, setLoading, loading } = useCheckoutStore()
   const { total } = usePrice()
   const router = useRouter()
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle')
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+  const paymentIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async = true
+    script.onerror = () => console.error('Failed to load Razorpay SDK')
+    document.body.appendChild(script)
+  }, [])
 
   const handleProceed = useCallback(async () => {
+    const method = paymentMethod || useCheckoutStore.getState().paymentMethod
+    if (method !== 'RAZORPAY') {
+      setPaymentStatus('failed')
+      setPaymentError('Please select Razorpay as payment method. Other methods coming soon.')
+      return
+    }
+
+    setPaymentStatus('creating')
     setLoading(true)
+    setPaymentError(null)
+
     try {
-      const res = await api.post('/membership/order', {
-        planId: plan?.planId, planTier: tier, duration: tier === 'A' ? 1 : tier === 'B' ? 2 : 3,
+      const res = await api.post('/payment/razorpay/order', {
+        planId: plan?.planId,
+        planTier: tier,
+        duration: tier === 'A' ? 1 : tier === 'B' ? 2 : 3,
+        gateway: 'RAZORPAY',
       })
       const order = res.data?.data || res.data || res
-      setOrderCreated(order.orderId || 'pending')
-      router.push(`/subscription/success?plan=${plan?.name || 'Plan'}&invoice=${order.orderId || ''}`)
-    } catch {
-      router.push(`/subscription/failed?reason=Failed to create order. Please try again.`)
+      paymentIdRef.current = order.id
+      setOrderCreated(order.id || 'pending')
+      setPaymentStatus('processing')
+
+      const rzp = new (window as any).Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: 'TRADINGO',
+        description: order.planName || 'Subscription',
+        order_id: order.gatewayOrderId,
+        handler: async (response: any) => {
+          try {
+            await api.post('/payment/razorpay/verify', {
+              paymentId: paymentIdRef.current,
+              gatewayPaymentId: response.razorpay_payment_id,
+              gatewaySignature: response.razorpay_signature,
+              gateway: 'RAZORPAY',
+            })
+            setPaymentStatus('success')
+            setOrderCreated(paymentIdRef.current || 'success')
+            setTimeout(() => {
+              router.push(`/subscription/success?plan=${plan?.name || 'Plan'}&invoice=${paymentIdRef.current || ''}`)
+            }, 1500)
+          } catch {
+            setPaymentStatus('failed')
+            setPaymentError('Payment verification failed. Your account may not be activated. Please contact support.')
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setPaymentStatus('idle')
+            setPaymentError('Payment cancelled. You can try again.')
+          },
+        },
+        theme: { color: '#f59e0b' },
+      })
+      rzp.on('payment.failed', (response: any) => {
+        setPaymentStatus('failed')
+        setPaymentError(response.error?.description || 'Payment failed. Please try again.')
+      })
+      rzp.open()
+    } catch (err: any) {
+      setPaymentStatus('failed')
+      setPaymentError(err?.response?.data?.message || err?.message || 'Failed to create payment order')
     } finally {
       setLoading(false)
     }
-  }, [plan, tier, router, setOrderCreated, setLoading])
+  }, [plan, tier, paymentMethod, router, setOrderCreated, setLoading])
+
+  const handleRetry = () => {
+    setPaymentStatus('idle')
+    setPaymentError(null)
+  }
+
+  const methodLabel = PAYMENT_METHODS.find(m => m.id === (paymentMethod || useCheckoutStore.getState().paymentMethod))?.label || '—'
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Confirm & Proceed</h2>
-      <p className="text-sm text-gray-500 mb-6">Review your selections one last time</p>
+      <h2 className="text-xl font-bold text-white mb-1">Confirm & Proceed</h2>
+      <p className="text-sm text-white/50 mb-6">Review your selections one last time</p>
 
       <div className="max-w-lg mx-auto space-y-3 mb-8">
-        <div className="p-4 rounded-xl border border-gray-200 bg-white flex items-center justify-between">
-          <span className="text-sm text-gray-600">Plan</span>
-          <span className="font-bold text-gray-900">{plan?.name} — {TIER_OPTIONS.find(t => t.id === tier)?.label}</span>
+        <div className="p-4 rounded-xl border border-border bg-surface flex items-center justify-between">
+          <span className="text-sm text-white/60">Plan</span>
+          <span className="font-bold text-white">{plan?.name} — {TIER_OPTIONS.find(t => t.id === tier)?.label}</span>
         </div>
-        <div className="p-4 rounded-xl border border-gray-200 bg-white flex items-center justify-between">
-          <span className="text-sm text-gray-600">Total Amount</span>
+        <div className="p-4 rounded-xl border border-border bg-surface flex items-center justify-between">
+          <span className="text-sm text-white/60">Total Amount</span>
           <span className="font-bold text-lg text-orange-600">{formatPrice(total)}</span>
         </div>
-        <div className="p-4 rounded-xl border border-gray-200 bg-white flex items-center justify-between">
-          <span className="text-sm text-gray-600">Payment Method</span>
-          <span className="font-semibold text-gray-900">{PAYMENT_METHODS.find(m => m.id === useCheckoutStore.getState().paymentMethod)?.label || '—'}</span>
-        </div>
-        <div className="p-4 rounded-xl border border-gray-200 bg-white">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <Lock size={14} className="text-gray-400" />
-            Your payment is processed securely. No payment will be charged until the gateway is active.
-          </label>
+        <div className="p-4 rounded-xl border border-border bg-surface flex items-center justify-between">
+          <span className="text-sm text-white/60">Payment Method</span>
+          <span className="font-semibold text-white">{methodLabel}</span>
         </div>
       </div>
 
-      {orderCreated && (
-        <div className="max-w-lg mx-auto mb-6 p-4 rounded-xl bg-green-50 border border-green-200 flex items-center gap-3">
-          <CheckCircle2 size={18} className="text-green-500 shrink-0" />
-          <div className="text-sm text-green-800">
-            <p className="font-semibold">Order Reserved</p>
-            <p className="text-green-700">Order ID: {orderId}</p>
-          </div>
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {paymentStatus === 'success' ? (
+          <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="max-w-lg mx-auto mb-6 p-4 rounded-xl" style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)' }}>
+            <div className="flex items-center gap-3">
+              <CheckCircle2 size={20} className="text-green-400 shrink-0" />
+              <div className="text-sm text-green-300">
+                <p className="font-semibold">Payment Successful!</p>
+                <p className="text-green-300/60">Redirecting to confirmation...</p>
+              </div>
+            </div>
+          </motion.div>
+        ) : paymentStatus === 'failed' ? (
+          <motion.div key="failed" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="max-w-lg mx-auto mb-6 p-4 rounded-xl" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <XCircle size={20} className="text-red-400 shrink-0" />
+              <div className="text-sm text-red-300">
+                <p className="font-semibold">Payment Failed</p>
+                <p className="text-red-300/60">{paymentError || 'Something went wrong.'}</p>
+              </div>
+            </div>
+            <button onClick={handleRetry}
+              className="px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 transition-all">
+              <RefreshCcw size={14} /> Try Again
+            </button>
+          </motion.div>
+        ) : paymentStatus === 'creating' ? (
+          <motion.div key="creating" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="max-w-lg mx-auto mb-6 flex items-center justify-center gap-2 p-4">
+            <LoadingSpinner size="sm" />
+            <span className="text-sm text-white/50">Creating payment order...</span>
+          </motion.div>
+        ) : paymentStatus === 'processing' ? (
+          <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="max-w-lg mx-auto mb-6 flex items-center justify-center gap-2 p-4">
+            <LoadingSpinner size="sm" />
+            <span className="text-sm text-white/50">Opening Razorpay checkout...</span>
+          </motion.div>
+        ) : orderCreated ? (
+          <motion.div key="created" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="max-w-lg mx-auto mb-6 p-4 rounded-xl" style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)' }}>
+            <div className="flex items-center gap-3">
+              <CheckCircle2 size={20} className="text-green-400 shrink-0" />
+              <div className="text-sm text-green-300">
+                <p className="font-semibold">Order Created</p>
+                <p className="text-green-300/60">Payment was processed successfully.</p>
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="flex items-center justify-center gap-3">
-        <button onClick={onPrev} disabled={loading}
-          className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-all">
-          <ArrowLeft size={14} /> Back
-        </button>
-        <button onClick={handleProceed} disabled={loading || orderCreated}
-          className="px-8 py-3 rounded-xl font-bold text-sm flex items-center gap-2 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
-          {orderCreated ? 'Order Placed' : 'Proceed to Payment'}
-        </button>
+        {(paymentStatus === 'idle' || paymentStatus === 'failed') && (
+          <>
+            <button onClick={onPrev} disabled={loading}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 text-white/60 hover:bg-surface/[0.06] disabled:opacity-40 transition-all">
+              <ArrowLeft size={14} /> Back
+            </button>
+            <button onClick={handleProceed} disabled={loading}
+              className="px-8 py-3 rounded-xl font-bold text-sm flex items-center gap-2 bg-orange-500/100 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+              {loading ? <LoadingSpinner size="xs" /> : <Lock size={16} />}
+              {paymentStatus === 'failed' ? 'Retry Payment' : 'Proceed to Payment'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -871,21 +992,22 @@ export default function PurchaseClient() {
   const stepProps = steps[currentStep - 1].props
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
+      <div className="pointer-events-none fixed inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -20%, rgba(245, 158, 11, 0.08), transparent)' }} />
+      <div className="relative max-w-5xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-gray-900">Subscription Purchase</h1>
-          <p className="text-sm text-gray-500">Step {currentStep} of 9 — {STEP_LABELS[currentStep - 1]}</p>
+          <h1 className="text-2xl font-black text-white">Subscription Purchase</h1>
+          <p className="text-sm text-white/50">Step {currentStep} of 9 — {STEP_LABELS[currentStep - 1]}</p>
         </div>
 
         <StepProgress current={currentStep} total={9} />
 
         <motion.div key={currentStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
-          className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200 shadow-sm">
+          className="rounded-2xl p-6 sm:p-8" style={{ background: 'var(--bg-elevated)', backdropFilter: 'blur(24px)', border: '1px solid var(--border-color)' }}>
           <StepComponent {...(stepProps as any)} />
         </motion.div>
 
-        <p className="text-center text-[10px] text-gray-400 mt-4">
+        <p className="text-center text-[10px] text-white/40 mt-4">
           By proceeding, you agree to our Terms of Service and Privacy Policy. All prices are in INR.
         </p>
       </div>

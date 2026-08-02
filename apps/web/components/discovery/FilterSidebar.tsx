@@ -1,6 +1,6 @@
 'use client'
 import { useState, ReactNode } from 'react'
-import { ChevronDown, ChevronUp, SlidersHorizontal, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, SlidersHorizontal, X, MapPin, Navigation } from 'lucide-react'
 import { SearchFilters } from '../../types/discovery'
 
 interface Props {
@@ -33,16 +33,16 @@ function FilterSection({
 }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="border-b py-3" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+    <div className="border-b py-3" style={{ borderColor: 'var(--border-color)' }}>
       <button
         onClick={() => setOpen(o => !o)}
         className="flex items-center justify-between w-full text-left mb-2">
-        <span className="text-xs font-bold uppercase tracking-widest text-white/50">
+        <span className="text-xs font-bold uppercase tracking-widest text-text-tertiary">
           {title}
         </span>
         {open
-          ? <ChevronUp size={13} className="text-white/30" />
-          : <ChevronDown size={13} className="text-white/30" />
+          ? <ChevronUp size={13} className="text-text-tertiary" />
+          : <ChevronDown size={13} className="text-text-tertiary" />
         }
       </button>
       {open && children}
@@ -62,29 +62,29 @@ export default function FilterSidebar({
 
       <aside
         className={`
-          fixed lg:static top-0 left-0 h-full lg:h-auto z-50 lg:z-auto
-          w-72 lg:w-56 xl:w-64 overflow-y-auto no-scrollbar
+          fixed top-0 left-0 h-full z-50
+          w-72 overflow-y-auto no-scrollbar
           transition-transform duration-300 ease-in-out
-          lg:translate-x-0 pt-4 lg:pt-0
+          pt-4
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         style={{
-          background: 'rgba(15, 5, 20, 0.95)',
+          background: 'var(--bg-elevated)',
           backdropFilter: 'blur(24px)',
-          borderRight: '1px solid rgba(255,255,255,0.08)',
+          borderRight: '1px solid var(--border-color)',
         }}>
         <div className="flex items-center justify-between px-4 py-3 border-b"
-          style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          style={{ borderColor: 'var(--border-color)' }}>
           <div className="flex items-center gap-2">
-            <SlidersHorizontal size={15} style={{ color: '#FF4D00' }} />
-            <span className="text-sm font-bold text-white">Filters</span>
+            <SlidersHorizontal size={15} className="text-accent" />
+            <span className="text-sm font-bold text-text-primary">Filters</span>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onReset}
-              className="text-[10px] text-white/35 hover:text-white/70">
+              className="text-[10px] text-text-tertiary hover:text-text-primary">
               Reset
             </button>
-            <button onClick={onClose} className="lg:hidden text-white/40 hover:text-white">
+            <button onClick={onClose} className="lg:hidden text-text-tertiary hover:text-primary">
               <X size={16} />
             </button>
           </div>
@@ -95,14 +95,14 @@ export default function FilterSidebar({
             <select
               value={filters.sortBy || 'relevance'}
               onChange={e => onChange({ sortBy: e.target.value as any })}
-              className="w-full rounded-xl px-3 py-2 text-xs text-white"
+              className="w-full rounded-xl px-3 py-2 text-xs text-text-primary"
               style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-color)',
               }}>
               {SORT_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}
-                  style={{ background: '#1D0001' }}>
+                  style={{ background: 'var(--bg-base)' }}>
                   {o.label}
                 </option>
               ))}
@@ -124,19 +124,75 @@ export default function FilterSidebar({
                     className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
                     style={{
                       background: filters[f.key]
-                        ? '#FF4D00' : 'rgba(255,255,255,0.08)',
+                        ? 'var(--accent)' : 'var(--bg-elevated)',
                       border: filters[f.key]
-                        ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                        ? 'none' : '1px solid var(--border-color)',
                     }}>
                     {filters[f.key] && (
-                      <span className="text-[8px] text-white font-black">&check;</span>
+                      <span className="text-[8px] text-text-primary font-black">&check;</span>
                     )}
                   </div>
-                  <span className="text-xs text-white/60 group-hover:text-white/80">
+                  <span className="text-xs text-text-secondary group-hover:text-text-primary">
                     {f.label}
                   </span>
                 </label>
               ))}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="Location" defaultOpen={!!filters.lat}>
+            <div className="space-y-2.5">
+              <button
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => onChange({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                      () => onChange({ lat: undefined, lng: undefined }),
+                    )
+                  }
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs transition-all"
+                style={{
+                  background: filters.lat ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'var(--bg-elevated)',
+                  border: `1px solid ${filters.lat ? 'color-mix(in srgb, var(--accent) 35%, transparent)' : 'var(--border-color)'}`,
+                  color: filters.lat ? 'var(--accent)' : 'rgba(255,255,255,0.65)',
+                }}>
+                <Navigation size={12} />
+                {filters.lat ? 'Using My Location' : 'Use My Location'}
+              </button>
+              <div className="flex gap-2">
+                <input
+                  type="text" placeholder="City"
+                  value={filters.city || ''}
+                  onChange={e => onChange({ city: e.target.value || undefined })}
+                  className="w-full rounded-xl px-3 py-2 text-xs text-text-primary placeholder-white/25 focus:outline-none"
+                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
+                />
+                <input
+                  type="text" placeholder="State"
+                  value={filters.state || ''}
+                  onChange={e => onChange({ state: e.target.value || undefined })}
+                  className="w-full rounded-xl px-3 py-2 text-xs text-text-primary placeholder-white/25 focus:outline-none"
+                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-text-tertiary mb-1 block">Radius: {filters.kmRadius ?? 50} km</label>
+                <input
+                  type="range" min={5} max={500} step={5}
+                  value={filters.kmRadius ?? 50}
+                  onChange={e => onChange({ kmRadius: Number(e.target.value) })}
+                  className="w-full accent-accent"
+                  style={{ accentColor: 'var(--accent)' }}
+                />
+              </div>
+              {filters.lat && (
+                <button
+                  onClick={() => onChange({ lat: undefined, lng: undefined, kmRadius: undefined })}
+                  className="text-[10px] text-text-tertiary hover:text-gray-600 underline">
+                  Clear location
+                </button>
+              )}
             </div>
           </FilterSection>
 
@@ -153,14 +209,14 @@ export default function FilterSidebar({
                   className="w-full text-left px-3 py-2 rounded-xl text-xs transition-all"
                   style={{
                     background: filters.sellerType === t.value
-                      ? 'rgba(255,77,0,0.12)'
-                      : 'rgba(255,255,255,0.04)',
+                      ? 'color-mix(in srgb, var(--accent) 12%, transparent)'
+                      : 'var(--bg-elevated)',
                     border: filters.sellerType === t.value
-                      ? '1px solid rgba(255,77,0,0.35)'
-                      : '1px solid transparent',
+                      ? '1px solid color-mix(in srgb, var(--accent) 35%, transparent)'
+                      : '1px solid var(--border-color)',
                     color: filters.sellerType === t.value
-                      ? '#FF7A3D'
-                      : 'rgba(255,255,255,0.55)',
+                      ? 'var(--accent)'
+                      : 'var(--text-secondary)',
                   }}>
                   {t.label}
                 </button>
@@ -175,16 +231,16 @@ export default function FilterSidebar({
                 placeholder="Min Rs"
                 value={filters.minPrice || ''}
                 onChange={e => onChange({ minPrice: Number(e.target.value) || undefined })}
-                className="w-full rounded-xl px-3 py-2 text-xs text-white placeholder-white/25 focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                className="w-full rounded-xl px-3 py-2 text-xs text-text-primary placeholder-white/25 focus:outline-none"
+                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
               />
               <input
                 type="number"
                 placeholder="Max Rs"
                 value={filters.maxPrice || ''}
                 onChange={e => onChange({ maxPrice: Number(e.target.value) || undefined })}
-                className="w-full rounded-xl px-3 py-2 text-xs text-white placeholder-white/25 focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                className="w-full rounded-xl px-3 py-2 text-xs text-text-primary placeholder-white/25 focus:outline-none"
+                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
               />
             </div>
           </FilterSection>
@@ -200,9 +256,9 @@ export default function FilterSidebar({
                   className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all"
                   style={{
                     background: filters.categoryId === c.id
-                      ? 'rgba(255,77,0,0.1)' : 'transparent',
+                      ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent',
                     color: filters.categoryId === c.id
-                      ? '#FF7A3D' : 'rgba(255,255,255,0.55)',
+                      ? 'var(--accent)' : 'var(--text-secondary)',
                   }}>
                   <span>{c.icon}</span>
                   {c.name}

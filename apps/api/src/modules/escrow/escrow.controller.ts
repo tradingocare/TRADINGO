@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { EscrowService } from './escrow.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 import { QueryEscrowDto } from './dto/escrow.dto';
 
 @ApiTags('Escrow')
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/escrow')
 export class EscrowController {
@@ -52,7 +56,9 @@ export class EscrowController {
   }
 
   @Post(':escrowId/freeze')
-  @ApiOperation({ summary: 'Freeze escrow' })
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Freeze escrow (admin only)' })
   async freeze(
     @Param('companyId') companyId: string,
     @Param('escrowId') escrowId: string,
@@ -62,7 +68,9 @@ export class EscrowController {
   }
 
   @Post(':escrowId/refund')
-  @ApiOperation({ summary: 'Refund escrow' })
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Refund escrow (admin only)' })
   async refund(
     @Param('companyId') companyId: string,
     @Param('escrowId') escrowId: string,
@@ -72,7 +80,9 @@ export class EscrowController {
   }
 
   @Post(':escrowId/reopen')
-  @ApiOperation({ summary: 'Reopen frozen escrow' })
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Reopen frozen escrow (admin only)' })
   async reopen(
     @Param('companyId') companyId: string,
     @Param('escrowId') escrowId: string,

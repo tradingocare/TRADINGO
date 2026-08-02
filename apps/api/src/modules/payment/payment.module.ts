@@ -9,10 +9,11 @@ import { RazorpayService } from './gateways/razorpay.service';
 import { StripeService } from './gateways/stripe.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { MembershipModule } from '../membership/membership.module';
+import { EscrowModule } from '../escrow/escrow.module';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 
 @Module({
-  imports: [AnalyticsModule, forwardRef(() => MembershipModule)],
+  imports: [AnalyticsModule, forwardRef(() => MembershipModule), EscrowModule],
   controllers: [PaymentController, PaymentSubscriptionController, PaymentWebhookController, PaymentAdminController],
   providers: [PaymentService, PaymentAnalyticsService, RazorpayService, StripeService, CompanyOwnerGuard],
   exports: [PaymentService, PaymentAnalyticsService, RazorpayService, StripeService],

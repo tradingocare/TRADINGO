@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { DashboardPageHeader, StatusBadge, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { useAdminShipmentAnalytics, useAdminShipments } from '@/hooks/use-smart-shipment';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Tabs } from '@/components/ui/tabs';
 import { Package, AlertCircle, Truck, TrendingUp, XCircle, Clock, CheckCircle, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
@@ -41,19 +43,7 @@ export default function AdminShipmentDashboard() {
         description="Monitor and manage all shipments across the platform"
       />
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
-        {(['overview', 'all', 'delayed'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'
-            }`}
-          >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={[{ value: 'overview', label: 'Overview' }, { value: 'all', label: 'All' }, { value: 'delayed', label: 'Delayed' }]} value={tab} onChange={(v) => setTab(v as 'overview' | 'all' | 'delayed')} className="surface-card p-1" />
 
       {tab === 'overview' && (
         <>
@@ -71,7 +61,7 @@ export default function AdminShipmentDashboard() {
             </div>
           )}
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="surface-card p-6 backdrop-blur-xl">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Status Distribution</h3>
             <div className="flex flex-wrap gap-2">
               {Object.entries(statusColor).map(([s, cls]) => (
@@ -82,12 +72,12 @@ export default function AdminShipmentDashboard() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="surface-card p-6 backdrop-blur-xl">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Recent Shipments</h3>
             {analyticsLoading ? <TableSkeleton rows={5} /> : (
               <div className="space-y-3">
                 {analytics?.recentShipments?.slice(0, 10).map((s: any) => (
-                  <div key={s.id} className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                  <div key={s.id} className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3">
                     <div className="flex items-center gap-3">
                       <StatusBadge status={s.status} />
                       <p className="font-mono text-sm text-white">{s.shipmentNumber}</p>
@@ -104,28 +94,17 @@ export default function AdminShipmentDashboard() {
 
       {tab === 'all' && (
         <>
-          <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
-            {statusTabs.map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatus(s)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap ${
-                  status === s ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'
-                }`}
-              >
-                {s === 'ALL' ? 'All' : s.split('_').map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
-              </button>
-            ))}
+          <div className="surface-card p-1">
+            <Tabs tabs={statusTabs.map(s => ({ value: s, label: s === 'ALL' ? 'All' : s.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ') }))} value={status} onChange={setStatus as (v: string) => void} />
           </div>
 
           {shipmentsLoading ? <TableSkeleton rows={8} /> : shipments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-              <Package className="h-12 w-12 text-white/30" />
-              <p className="mt-4 text-lg font-medium text-white">No shipments found</p>
+            <div className="surface-card p-12 backdrop-blur-xl">
+              <EmptyState icon={Package} title="No shipments found" />
             </div>
           ) : (
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-              <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
+            <div className="glass-card">
+              <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
                 <div className="col-span-2">Shipment</div>
                 <div className="col-span-2">Order</div>
                 <div className="col-span-2">Buyer</div>
@@ -134,7 +113,7 @@ export default function AdminShipmentDashboard() {
                 <div className="col-span-2">Date</div>
               </div>
               {shipments.map((s: any) => (
-                <div key={s.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
+                <div key={s.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
                   <p className="font-mono text-sm text-white sm:col-span-2">{s.shipmentNumber}</p>
                   <p className="text-sm text-white/70 sm:col-span-2">{s.order?.orderNumber ?? '—'}</p>
                   <p className="text-sm text-white/70 sm:col-span-2">{s.buyerCompany?.name ?? '—'}</p>
@@ -164,10 +143,8 @@ export default function AdminShipmentDashboard() {
                   <p className="text-xs text-white/50">{new Date(s.updatedAt).toLocaleDateString('en-IN')}</p>
                 </div>
               )) : (
-                <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-                  <CheckCircle className="h-12 w-12 text-emerald-500" />
-                  <p className="mt-4 text-lg font-medium text-white">No delayed shipments</p>
-                  <p className="mt-1 text-sm text-white/60">All shipments are on track.</p>
+                <div className="surface-card p-12 backdrop-blur-xl">
+                  <EmptyState icon={CheckCircle} title="No delayed shipments" description="All shipments are on track." />
                 </div>
               )}
             </div>

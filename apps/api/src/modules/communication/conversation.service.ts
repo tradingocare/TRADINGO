@@ -53,6 +53,7 @@ export class ConversationService {
         labels: { include: { label: true } },
       },
       orderBy: { updatedAt: 'desc' },
+      take: 100,
     });
 
     return conversations.map((c) => ({

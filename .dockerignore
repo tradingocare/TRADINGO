@@ -1,5 +1,7 @@
 node_modules
+**/node_modules
 .next
+**/.next
 .git
 .gitignore
 .env
@@ -9,11 +11,14 @@ test
 tests
 *.md
 dist
-.next
 .turbo
 *.tsbuildinfo
-pnpm-lock.yaml
 Dockerfile
 .dockerignore
 *.log
 .DS_Store
+deployment
+infrastructure
+load-tests
+monitoring
+tests

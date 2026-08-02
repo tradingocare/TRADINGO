@@ -54,7 +54,7 @@ export default function SellerPlansPage() {
       <Separator />
 
       {/* Feature Comparison Table */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Feature Comparison"

@@ -5,7 +5,8 @@ import { useRfqWizardStore, type WizardSupplier } from '@/store/rfq-wizard-store
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Store, UserPlus, Loader2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Search, Store, UserPlus } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 
 export function StepSuppliers() {
@@ -45,11 +46,11 @@ export function StepSuppliers() {
       <h2 className="text-lg font-semibold text-white">Suppliers</h2>
 
       {suppliers.length === 0 && !showSuggested ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-white/[0.06] p-8 text-center">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-8 text-center">
           <Store className="h-8 w-8 text-white/30" />
           <p className="mt-2 text-sm text-white/60">Suggested suppliers from Near To Far™ will appear here</p>
           <Button variant="accent" size="sm" className="mt-4" onClick={handleLoadSuggested} disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+            {loading ? <LoadingSpinner size="sm" className="mr-2" /> : <UserPlus className="mr-2 h-4 w-4" />}
             {loading ? 'Loading...' : 'Load Suggested Suppliers'}
           </Button>
         </div>
@@ -61,7 +62,7 @@ export function StepSuppliers() {
               placeholder="Search suppliers..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-white/[0.04] border-white/[0.06] text-white"
+              className="pl-10 bg-surface border-border text-text-primary"
             />
           </div>
 
@@ -74,11 +75,11 @@ export function StepSuppliers() {
                   key={s.companyId}
                   onClick={() => toggleSupplier(s.companyId)}
                   className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                    selected ? 'border-orange-500/40 bg-orange-500/10' : 'border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.06]'
+                    selected ? 'border-orange-500/40 bg-orange-500/10' : 'border-border bg-surface hover:bg-surface-secondary'
                   }`}
                 >
                   <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                    selected ? 'bg-orange-500 text-white' : 'bg-white/[0.06] text-white/60'
+                    selected ? 'bg-orange-500 text-text-primary' : 'bg-surface-secondary text-text-primary/60'
                   }`}>
                     {selected ? '✓' : s.companyName.charAt(0)}
                   </div>
@@ -94,7 +95,7 @@ export function StepSuppliers() {
                   </div>
                   {matchScore && (
                     <div className="flex items-center gap-1 text-xs text-white/40">
-                      <div className={`h-2 w-12 rounded-full bg-white/[0.06] overflow-hidden`}>
+                      <div className={`h-2 w-12 rounded-full bg-surface-secondary overflow-hidden`}>
                         <div
                           className={`h-full rounded-full ${matchScore >= 80 ? 'bg-green-500' : matchScore >= 60 ? 'bg-amber-500' : 'bg-orange-500'}`}
                           style={{ width: `${matchScore}%` }}

@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpCode, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TemplateService } from './template.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { UpdateTemplateDto, CreateTemplateDto } from './dto';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Communication Hub — Saved Templates')
 @UseGuards(JwtAuthGuard)
+@Throttle(RateLimits.ADMIN_WRITE)
 @Controller('communication/templates')
 export class TemplateController {
   constructor(private readonly service: TemplateService) {}
@@ -18,13 +22,13 @@ export class TemplateController {
 
   @Post()
   @ApiOperation({ summary: 'Create a template' })
-  create(@CurrentUser('companyId') companyId: string, @Body() body: { title: string; content: string; category?: string; isShared?: boolean }) {
-    return this.service.create(companyId, body);
+  create(@CurrentUser('companyId') companyId: string, @Body() dto: CreateTemplateDto) {
+    return this.service.create(companyId, dto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a template' })
-  update(@CurrentUser('companyId') companyId: string, @Param('id') id: string, @Body() body: any) {
+  update(@CurrentUser('companyId') companyId: string, @Param('id') id: string, @Body() body: UpdateTemplateDto) {
     return this.service.update(id, companyId, body);
   }
 

@@ -48,7 +48,7 @@ export function WalletTransactionFilters({ filters, onChange, onApply, onReset }
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="space-y-1">
-        <label className="text-xs font-medium text-white/60">Search</label>
+        <label className="text-xs font-medium text-text-secondary">Search</label>
         <Input
           className="h-9 w-44 text-xs"
           placeholder="Search by reason..."
@@ -57,9 +57,9 @@ export function WalletTransactionFilters({ filters, onChange, onApply, onReset }
         />
       </div>
       <div className="space-y-1">
-        <label className="text-xs font-medium text-white/60">Direction</label>
+        <label className="text-xs font-medium text-text-secondary">Direction</label>
         <select
-          className="h-9 rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 text-xs text-white backdrop-blur-xl"
+          className="h-9 rounded-lg border border-border bg-surface px-3 text-xs text-text-primary backdrop-blur-xl"
           value={filters.direction}
           onChange={(e) => onChange({ ...filters, direction: e.target.value })}
         >
@@ -69,9 +69,9 @@ export function WalletTransactionFilters({ filters, onChange, onApply, onReset }
         </select>
       </div>
       <div className="space-y-1">
-        <label className="text-xs font-medium text-white/60">Type</label>
+        <label className="text-xs font-medium text-text-secondary">Type</label>
         <select
-          className="h-9 max-w-[160px] rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 text-xs text-white backdrop-blur-xl"
+          className="h-9 max-w-[160px] rounded-lg border border-border bg-surface px-3 text-xs text-text-primary backdrop-blur-xl"
           value={filters.type}
           onChange={(e) => onChange({ ...filters, type: e.target.value })}
         >
@@ -82,7 +82,7 @@ export function WalletTransactionFilters({ filters, onChange, onApply, onReset }
         </select>
       </div>
       <div className="space-y-1">
-        <label className="text-xs font-medium text-white/60">From</label>
+        <label className="text-xs font-medium text-text-secondary">From</label>
         <Input
           type="date"
           className="h-9 w-36 text-xs"
@@ -91,7 +91,7 @@ export function WalletTransactionFilters({ filters, onChange, onApply, onReset }
         />
       </div>
       <div className="space-y-1">
-        <label className="text-xs font-medium text-white/60">To</label>
+        <label className="text-xs font-medium text-text-secondary">To</label>
         <Input
           type="date"
           className="h-9 w-36 text-xs"
@@ -110,7 +110,7 @@ export function WalletTransactionFilters({ filters, onChange, onApply, onReset }
           <button
             key={preset.label}
             onClick={() => applyPreset(preset.days)}
-            className="rounded-md border border-white/[0.06] px-2 py-1 text-[10px] text-white/50 hover:border-white/20 hover:text-white/80 transition-colors"
+            className="rounded-md border border-border px-2 py-1 text-[10px] text-text-secondary hover:border-border hover:text-text-primary transition-colors"
           >
             {preset.label}
           </button>

@@ -2,7 +2,9 @@
 
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
 import { useCompanies } from '@/hooks';
-import { Building2, AlertCircle } from 'lucide-react';
+import { Alert } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Building2 } from 'lucide-react';
 import type { Company } from '@/lib/api/types';
 
 export default function AdminCompaniesPage() {
@@ -13,11 +15,7 @@ export default function AdminCompaniesPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Companies" description="Manage registered companies" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load companies</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
-        </div>
+        <Alert variant="error" title="Failed to load companies">{error.message}</Alert>
       </div>
     );
   }
@@ -39,11 +37,7 @@ export default function AdminCompaniesPage() {
       />
 
       {companies.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <Building2 className="h-12 w-12 text-text-tertiary" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">No companies found</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Companies will appear here once users register their business.</p>
-        </div>
+        <EmptyState icon={Building2} title="No companies found" description="Companies will appear here once users register their business." />
       ) : (
         <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
           <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">

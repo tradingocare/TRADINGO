@@ -1,16 +1,18 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { DisputeService } from './dispute.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 import {
-  CreateDisputeDto, UpdateDisputeStatusDto, AddMessageDto, AddEvidenceDto,
+  CreateDisputeDto, CreateBookingDisputeDto, UpdateDisputeStatusDto, AddMessageDto, AddEvidenceDto,
   ResolveDisputeDto, AppealDisputeDto, ReviewAppealDto, QueryDisputeDto, EscalateDisputeDto,
 } from './dto/dispute.dto';
 
 @ApiTags('Disputes')
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/disputes')
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 export class DisputeController {
   constructor(private readonly disputeService: DisputeService) {}
 
@@ -22,6 +24,16 @@ export class DisputeController {
     @Body() dto: CreateDisputeDto,
   ) {
     return this.disputeService.create(companyId, req.user.sub, dto);
+  }
+
+  @Post('booking')
+  @ApiOperation({ summary: 'Create a new booking dispute' })
+  async createBookingDispute(
+    @Param('companyId') companyId: string,
+    @Req() req: any,
+    @Body() dto: CreateBookingDisputeDto,
+  ) {
+    return this.disputeService.createBookingDispute(companyId, req.user.sub, dto);
   }
 
   @Get()

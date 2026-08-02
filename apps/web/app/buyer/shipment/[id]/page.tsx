@@ -31,7 +31,7 @@ export default function BuyerShipmentDetailPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Shipment Detail" description="View shipment information" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 backdrop-blur-xl">
           <AlertCircle className="h-12 w-12 text-red-500" />
           <p className="mt-4 text-lg font-medium text-white">Failed to load shipment</p>
         </div>
@@ -68,7 +68,7 @@ export default function BuyerShipmentDetailPage() {
           </div>
           <div className="flex items-center gap-3">
             {shipment.courierProvider && (
-              <Badge variant="outline" className="border-white/[0.08] text-white/70">
+              <Badge variant="outline" className="border-border text-white/70">
                 {shipment.courierProvider.name}
               </Badge>
             )}
@@ -82,7 +82,7 @@ export default function BuyerShipmentDetailPage() {
       </div>
 
       {/* Status Progress */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+      <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Progress</h3>
         <div className="flex flex-wrap gap-2">
           {['PREPARING', 'PACKED', 'COURIER_ASSIGNED', 'DISPATCHED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'].map((s) => {
@@ -92,7 +92,7 @@ export default function BuyerShipmentDetailPage() {
               <div key={s} className={`rounded-lg px-3 py-1.5 text-xs font-medium border ${
                 isActive ? 'border-orange-500/40 bg-orange-500/10 text-orange-400' :
                 isPast ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' :
-                'border-white/[0.06] text-white/40'
+                'border-border text-white/40'
               }`}>
                 {s.split('_').map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
               </div>
@@ -104,7 +104,7 @@ export default function BuyerShipmentDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {/* Courier & Tracking */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Truck className="h-4 w-4" /> Courier & Tracking</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -127,12 +127,12 @@ export default function BuyerShipmentDetailPage() {
           </div>
 
           {/* Packages */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Box className="h-4 w-4" /> Packages ({shipment.packages?.length ?? 0})</h3>
             {shipment.packages?.length ? (
               <div className="space-y-2">
                 {shipment.packages.map((pkg: any) => (
-                  <div key={pkg.id} className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                  <div key={pkg.id} className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-white">{pkg.label ?? 'Package'}</p>
                       {pkg.contents && <p className="text-xs text-white/50">{pkg.contents}</p>}
@@ -150,7 +150,7 @@ export default function BuyerShipmentDetailPage() {
           </div>
 
           {/* Timeline */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Clock className="h-4 w-4" /> Timeline</h3>
             {(!timeline || timeline.length === 0) ? (
               <p className="text-sm text-white/50">No timeline events yet.</p>
@@ -159,8 +159,8 @@ export default function BuyerShipmentDetailPage() {
                 {[...timeline].reverse().map((event: any) => (
                   <div key={event.id} className="flex gap-4">
                     <div className="flex flex-col items-center">
-                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-white/20'}`} />
-                      <div className="mt-1 h-full w-px bg-white/[0.06]" />
+                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-surface-secondary'}`} />
+                      <div className="mt-1 h-full w-px bg-surface-secondary" />
                     </div>
                     <div className="pb-4">
                       <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function BuyerShipmentDetailPage() {
 
         <div className="space-y-6">
           {/* Info Card */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Package className="h-4 w-4" /> Shipment Info</h3>
             <div className="space-y-3">
               <div><p className="text-xs text-white/50">Status</p><StatusBadge status={shipment.status} /></div>
@@ -195,13 +195,13 @@ export default function BuyerShipmentDetailPage() {
           </div>
 
           {/* Documents */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><FileText className="h-4 w-4" /> Documents</h3>
             {shipment.documents?.length ? (
               <div className="space-y-2">
                 {shipment.documents.map((doc: any) => (
                   <a key={doc.id} href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm text-white/70 hover:text-orange-400 transition-colors">
+                    className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-secondary hover:text-orange-400 transition-colors">
                     <FileText className="h-4 w-4" />
                     <span>{doc.fileName}</span>
                   </a>
@@ -213,7 +213,7 @@ export default function BuyerShipmentDetailPage() {
           </div>
 
           {/* Actions */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Actions</h3>
             {canConfirmDelivery && (
               <Button variant="accent" className="w-full" onClick={() => updateStatus.mutate({ shipmentId: id, status: 'DELIVERED' })} disabled={updateStatus.isPending}>

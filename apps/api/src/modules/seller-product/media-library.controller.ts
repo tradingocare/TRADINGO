@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { MediaLibraryService } from './media-library.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -7,6 +9,7 @@ import { CreateMediaDto } from './dto/create-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 
 @ApiTags('Seller Media Library')
+@Throttle(RateLimits.FILE_UPLOAD)
 @UseGuards(JwtAuthGuard)
 @Controller('seller/media')
 export class MediaLibraryController {

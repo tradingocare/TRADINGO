@@ -63,7 +63,9 @@ export class ProviderHealthService {
         where: { name: providerName },
         data: { failureCount: 0, lastSuccessAt: new Date(), circuitOpen: false, circuitOpenUntil: null },
       })
-    } catch {}
+    } catch (err) {
+      this.logger.error(`Failed to record success for provider '${providerName}': ${(err as Error).message}`)
+    }
   }
 
   async recordFailure(providerName: string): Promise<void> {
@@ -85,7 +87,9 @@ export class ProviderHealthService {
       if (shouldOpenCircuit) {
         this.logger.warn(`Circuit breaker opened for provider '${providerName}' after ${newFailureCount} failures`)
       }
-    } catch {}
+    } catch (err) {
+      this.logger.error(`Failed to record failure for provider '${providerName}': ${(err as Error).message}`)
+    }
   }
 
   async isCircuitOpen(providerName: string): Promise<boolean> {
@@ -97,7 +101,8 @@ export class ProviderHealthService {
         return false
       }
       return true
-    } catch {
+    } catch (err) {
+      this.logger.warn(`Circuit breaker check failed for '${providerName}': ${(err as Error).message} — returning false (circuit not open)`)
       return false
     }
   }

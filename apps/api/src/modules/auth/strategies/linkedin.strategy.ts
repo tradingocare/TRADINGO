@@ -14,15 +14,25 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
     configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
+    const clientID = configService.get<string>('LINKEDIN_CLIENT_ID');
+    const clientSecret = configService.get<string>('LINKEDIN_CLIENT_SECRET');
+    const callbackURL = configService.get<string>('LINKEDIN_CALLBACK_URL');
+    if (!clientID || !clientSecret || !callbackURL) {
+      super({ clientID: 'DISABLED', clientSecret: 'DISABLED', callbackURL: '', scope: [] } as any);
+      Logger.warn('LinkedIn OAuth disabled: LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, or LINKEDIN_CALLBACK_URL not set');
+      return;
+    }
     super({
-      clientID: configService.get<string>('LINKEDIN_CLIENT_ID', ''),
-      clientSecret: configService.get<string>('LINKEDIN_CLIENT_SECRET', ''),
-      callbackURL: configService.get<string>('LINKEDIN_CALLBACK_URL', 'http://localhost:3001/api/v1/auth/linkedin/callback'),
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: ['email', 'profile', 'openid'],
-    });
+      state: true,
+    } as any);
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any, done: (err: any, user?: any) => void): Promise<any> {
+    const providerId = profile.id;
     const email = profile.emails?.[0]?.value;
     if (!email) {
       done(new Error('LinkedIn account must have an email address'), undefined);
@@ -30,7 +40,14 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
     }
 
     try {
-      let user = await this.prisma.user.findUnique({ where: { email } });
+      let user = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { provider: 'linkedin', providerId },
+            { email },
+          ],
+        },
+      });
 
       if (!user) {
         const passwordHash = await bcrypt.hash(uuid(), 12);
@@ -42,13 +59,18 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
             role: 'BUYER',
             isActive: true,
             emailVerifiedAt: new Date(),
+            provider: 'linkedin',
+            providerId,
           },
         });
         this.logger.log(`New user created via LinkedIn OAuth: ${email}`);
-      } else if (!user.emailVerifiedAt) {
+      } else {
+        const updateData: any = { emailVerifiedAt: user.emailVerifiedAt ?? new Date() };
+        if (!user.provider) updateData.provider = 'linkedin';
+        if (!user.providerId) updateData.providerId = providerId;
         await this.prisma.user.update({
           where: { id: user.id },
-          data: { emailVerifiedAt: new Date() },
+          data: updateData,
         });
       }
 

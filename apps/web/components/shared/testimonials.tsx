@@ -40,7 +40,7 @@ export function Testimonials({ testimonials, className }: TestimonialsProps) {
                   <CardContent className="p-8 text-center">
                     <div className="mb-4 flex justify-center gap-1">
                       {Array.from({ length: t.rating }).map((_, i) => (
-                        <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                        <Star key={i} className="h-5 w-5 fill-accent-500 text-accent-500" />
                       ))}
                     </div>
                     <blockquote className="text-lg leading-relaxed text-text-primary dark:text-dark-text-primary">

@@ -85,7 +85,7 @@ export default function BuyerChatPage() {
                       conv.id === selectedId ? 'bg-surface-secondary dark:bg-dark-surface-secondary' : ''
                     }`}
                   >
-                    <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                    <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                       <MessageSquare className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -95,7 +95,7 @@ export default function BuyerChatPage() {
                       </p>
                     </div>
                     {conv.unreadCount > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-600 px-1.5 text-[10px] font-medium text-white">
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-600 px-1.5 text-[10px] font-medium text-white">
                         {conv.unreadCount}
                       </span>
                     )}
@@ -152,7 +152,7 @@ export default function BuyerChatPage() {
                 onClick={() => setSelectedId(conv.id)}
                 className="flex w-full items-center gap-4 border-b border-border px-6 py-4 text-left transition-colors last:border-0 hover:bg-surface-secondary/50 dark:border-dark-border dark:hover:bg-dark-surface-secondary/50"
               >
-                <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                   <MessageSquare className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -169,7 +169,7 @@ export default function BuyerChatPage() {
                   </p>
                 </div>
                 {conv.unreadCount > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-600 px-1.5 text-[10px] font-medium text-white">
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-600 px-1.5 text-[10px] font-medium text-white">
                     {conv.unreadCount}
                   </span>
                 )}

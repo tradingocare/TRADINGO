@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { BrandService } from './brand.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -7,6 +9,7 @@ import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 
 @ApiTags('Seller Brands')
+@Throttle(RateLimits.WRITE_GENERAL)
 @UseGuards(JwtAuthGuard)
 @Controller('seller/brands')
 export class BrandController {

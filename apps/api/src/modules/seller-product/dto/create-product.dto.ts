@@ -1,7 +1,7 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsEnum, ValidateNested, Min, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, ValidateNested, Min, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class SpecificationDto {
+export class SpecificationDto {
   @IsString()
   key: string;
 
@@ -13,7 +13,7 @@ class SpecificationDto {
   sortOrder?: number;
 }
 
-class PriceSlabDto {
+export class PriceSlabDto {
   @IsNumber()
   @Min(0)
   minQty: number;
@@ -30,7 +30,7 @@ class PriceSlabDto {
   currency?: string;
 }
 
-class MediaDto {
+export class MediaDto {
   @IsOptional()
   @IsString()
   type?: string;
@@ -55,7 +55,7 @@ class MediaDto {
   sortOrder?: number;
 }
 
-class InventoryDto {
+export class InventoryDto {
   @IsOptional()
   @IsNumber()
   @Min(0)

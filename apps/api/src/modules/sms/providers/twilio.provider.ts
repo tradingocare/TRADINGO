@@ -1,20 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Twilio } from 'twilio';
 import type { SmsProvider, SmsResult } from '../sms-provider.interface';
 
 @Injectable()
 export class TwilioSmsProvider implements SmsProvider {
   private readonly logger = new Logger(TwilioSmsProvider.name);
-  private twilioClient: any;
+  private twilioClient: Twilio | null = null;
 
   constructor(private readonly configService: ConfigService) {
     const accountSid = configService.get<string>('TWILIO_ACCOUNT_SID');
     const authToken = configService.get<string>('TWILIO_AUTH_TOKEN');
     if (accountSid && authToken) {
       try {
-        this.twilioClient = require('twilio')(accountSid, authToken);
+        this.twilioClient = new Twilio(accountSid, authToken);
       } catch {
-        this.logger.warn('Twilio SDK not available, falling back to noop');
+        this.logger.warn('Twilio SDK initialization failed, falling back to noop');
       }
     }
   }
@@ -30,6 +31,7 @@ export class TwilioSmsProvider implements SmsProvider {
     }
     try {
       const from = this.configService.get<string>('TWILIO_PHONE_NUMBER');
+      if (!from) throw new Error('TWILIO_PHONE_NUMBER not configured');
       const result = await this.twilioClient.messages.create({ from, to: phoneNumber, body: message });
       this.logger.log(`[Twilio] Sent to ${phoneNumber}, SID: ${result.sid}`);
       return { success: true, messageId: result.sid, provider: 'twilio' };

@@ -2,7 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CreditCard, Eye, EyeOff, Upload, Shield, Loader2, CheckCircle } from 'lucide-react'
+import { CreditCard, Eye, EyeOff, Upload, Shield, CheckCircle } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
 import { lookupIfsc } from '@/lib/utils/india-lookup'
@@ -10,12 +11,12 @@ import type { BankDetailsForm } from '@/types/vendor-registration'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 interface Props {
   data: Partial<BankDetailsForm>
@@ -118,16 +119,16 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
 
   return (
     <StepCard
-      icon={<CreditCard size={20} style={{ color: '#FF4D00' }} />}
+      icon={<CreditCard size={20} style={{ color: '#f59e0b' }} />}
       title="Bank Details"
       subtitle="Your payment account information"
     >
       <div className="flex flex-col gap-5">
         <div
           className="rounded-xl p-4 flex items-start gap-3"
-          style={{ background: 'rgba(255,77,0,0.06)', border: '1px solid rgba(255,77,0,0.15)' }}
+          style={{ background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.15)' }}
         >
-          <Shield size={18} className="text-[#FF7A3D] mt-0.5 shrink-0" />
+          <Shield size={18} className="text-[#fbbf24] mt-0.5 shrink-0" />
           <p className="text-white/60 text-xs leading-relaxed">
             Your bank account is used for receiving payments via TRADINGO Escrow. 100% secure. ₹0 commission.
           </p>
@@ -201,11 +202,11 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
                 ...(ifscVerified
                   ? { background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.4)', color: '#4ade80' }
                   : ifscLoading
-                    ? { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }
-                    : { background: 'rgba(255,77,0,0.12)', border: '1px solid rgba(255,77,0,0.3)', color: '#FF7A3D' }),
+                    ? { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.4)' }
+                    : { background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24' }),
               }}
             >
-              {ifscLoading ? <Loader2 size={14} className="animate-spin" /> : ifscVerified ? 'Verified' : 'Verify IFSC'}
+              {ifscLoading ? <LoadingSpinner size="xs" /> : ifscVerified ? 'Verified' : 'Verify IFSC'}
             </button>
           </div>
         </FormField>
@@ -245,19 +246,19 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
                 onClick={() => set('accountType', opt.value)}
                 className="flex-1 rounded-xl p-4 text-left transition-all duration-200"
                 style={{
-                  background: form.accountType === opt.value ? 'rgba(255,77,0,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: form.accountType === opt.value ? '1px solid rgba(255,77,0,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                  background: form.accountType === opt.value ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg-elevated)',
+                  border: form.accountType === opt.value ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)',
                 }}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <div
                     className="w-4 h-4 rounded-full flex items-center justify-center"
                     style={{
-                      border: form.accountType === opt.value ? '2px solid #FF4D00' : '2px solid rgba(255,255,255,0.2)',
+                      border: form.accountType === opt.value ? '2px solid #f59e0b' : '2px solid rgba(255,255,255,0.2)',
                     }}
                   >
                     {form.accountType === opt.value && (
-                      <div className="w-2 h-2 rounded-full" style={{ background: '#FF4D00' }} />
+                      <div className="w-2 h-2 rounded-full" style={{ background: '#f59e0b' }} />
                     )}
                   </div>
                   <span className="text-white/80 text-sm font-medium">{opt.label}</span>
@@ -271,8 +272,8 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
         <FormField label="Cancelled Cheque" hint="Recommended">
           <div
             onClick={() => chequeRef.current?.click()}
-            className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-6 cursor-pointer transition-all duration-200 hover:border-[#FF4D00]/30"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)' }}
+            className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-6 cursor-pointer transition-all duration-200 hover:border-[#f59e0b]/30"
+            style={{ backgroundColor: 'var(--bg-elevated)', border: '1px dashed var(--border-color)' }}
           >
             {chequePreview ? (
               <img src={chequePreview} alt="Cancelled cheque" className="max-h-24 rounded-lg object-contain" />
@@ -288,7 +289,7 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
 
         <div
           className="rounded-xl p-4 flex items-start gap-3"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
         >
           <Shield size={16} className="text-white/20 mt-0.5 shrink-0" />
           <p className="text-white/35 text-[11px] leading-relaxed">

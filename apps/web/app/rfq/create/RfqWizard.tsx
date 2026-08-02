@@ -9,14 +9,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const btnPrimary = {
-  background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)',
+  background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
   color: '#fff',
-  boxShadow: '0 4px 16px rgba(255,77,0,0.3)'
+  boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)'
 }
 
 const btnSecondary = {
-  background: 'rgba(255,255,255,0.06)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-color)',
   color: 'rgba(255,255,255,0.8)'
 }
 
@@ -146,12 +146,11 @@ export default function RfqWizard() {
 const isNextDisabled = false
 
   return (
-    <div className="min-h-screen relative overflow-hidden"
-      style={{ background: '#1D0001' }}>
+    <div className="min-h-screen relative overflow-hidden bg-bg-base">
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-12">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Create New RFQ</h1>
-          <p className="text-white/40 text-sm">Request for Quotation - Multi-step wizard</p>
+          <h1 className="text-2xl font-bold text-text-primary mb-2">Create New RFQ</h1>
+          <p className="text-text-tertiary text-sm">Request for Quotation - Multi-step wizard</p>
         </div>
 
         <div className="mb-8">
@@ -168,9 +167,9 @@ const isNextDisabled = false
                       background: done
                         ? 'linear-gradient(135deg, #22c55e, #16a34a)'
                         : current
-                        ? 'linear-gradient(135deg, #FF4D00, #FF7A3D)'
-                        : 'rgba(255,255,255,0.06)',
-                      border: done || current ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                        ? 'linear-gradient(135deg, #f59e0b, #fbbf24)'
+                        : 'var(--bg-elevated)',
+                      border: done || current ? 'none' : '1px solid var(--border-color)',
                       color: done || current ? '#fff' : 'rgba(255,255,255,0.3)',
                     }}
                   >
@@ -183,7 +182,7 @@ const isNextDisabled = false
                     <div className="w-12 sm:w-20 h-[2px] mx-2 sm:mx-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
                       <motion.div
                         className="h-full rounded-full"
-                        style={{ background: 'linear-gradient(90deg, #FF4D00, #FF7A3D)' }}
+                        style={{ background: 'linear-gradient(90deg, #f59e0b, #fbbf24)' }}
                         initial={{ width: '0%' }}
                         animate={{ width: `${Math.max(0, ((step - 1) / 2) * 100 - (i * 50))}%` }}
                         transition={{ duration: 0.4 }}

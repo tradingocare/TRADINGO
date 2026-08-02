@@ -1,29 +1,41 @@
 'use client'
 import { useState } from 'react'
-import { Sparkles, Loader2, Search, Lightbulb, Package, Building2, BarChart3, UserCheck, TrendingUp, ShoppingBag, Sliders, Shuffle, LayoutDashboard } from 'lucide-react'
+import { Sparkles, Search, Lightbulb, Package, Building2, BarChart3, UserCheck, TrendingUp, ShoppingBag, Sliders, Shuffle, LayoutDashboard } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Input } from '@/components/ui/input'
+import { Tabs, type Tab } from '@/components/ui/tabs'
+
+interface AiCopilotResponse {
+  provider: string
+  model: string
+  cached?: boolean
+  latencyMs: number
+  cost: number
+  content: string | Record<string, unknown>
+}
 
 type CopilotTab = 'discover' | 'similar' | 'recommend' | 'rank'
 
 interface AiSearchCopilotProps {
   isGenerating: boolean
-  onSemanticSearch: (data: any) => Promise<any>
-  onSearchIntent: (data: any) => Promise<any>
-  onSimilarProducts: (data: any) => Promise<any>
-  onSimilarSuppliers: (data: any) => Promise<any>
-  onPersonalizedRanking: (data: any) => Promise<any>
-  onBuyerRecommendations: (data: any) => Promise<any>
-  onSellerRecommendations: (data: any) => Promise<any>
-  onSearchSummary: (data: any) => Promise<any>
-  onSmartFilters: (data: any) => Promise<any>
-  onCrossSellUpsell: (data: any) => Promise<any>
+  onSemanticSearch: (data: { query: string }) => Promise<unknown>
+  onSearchIntent: (data: { query: string }) => Promise<unknown>
+  onSimilarProducts: (data: Record<string, unknown>) => Promise<unknown>
+  onSimilarSuppliers: (data: Record<string, unknown>) => Promise<unknown>
+  onPersonalizedRanking: (data: { query?: string; results?: unknown; userContext?: unknown }) => Promise<unknown>
+  onBuyerRecommendations: (data: Record<string, unknown>) => Promise<unknown>
+  onSellerRecommendations: (data: Record<string, unknown>) => Promise<unknown>
+  onSearchSummary: (data: { query: string } & Record<string, unknown>) => Promise<unknown>
+  onSmartFilters: (data: { query: string } & Record<string, unknown>) => Promise<unknown>
+  onCrossSellUpsell: (data: Record<string, unknown>) => Promise<unknown>
   contextData?: Record<string, unknown>
 }
 
-const TABS: { key: CopilotTab; label: string; icon: typeof Search }[] = [
-  { key: 'discover', label: 'Discover', icon: Search },
-  { key: 'similar', label: 'Similar', icon: Shuffle },
-  { key: 'recommend', label: 'Recommend', icon: UserCheck },
-  { key: 'rank', label: 'Rank', icon: BarChart3 },
+const tabs: Tab[] = [
+  { value: 'discover', label: 'Discover', icon: <Search className="h-3.5 w-3.5" /> },
+  { value: 'similar', label: 'Similar', icon: <Shuffle className="h-3.5 w-3.5" /> },
+  { value: 'recommend', label: 'Recommend', icon: <UserCheck className="h-3.5 w-3.5" /> },
+  { value: 'rank', label: 'Rank', icon: <BarChart3 className="h-3.5 w-3.5" /> },
 ]
 
 export function AiSearchCopilot({
@@ -36,14 +48,15 @@ export function AiSearchCopilot({
 }: AiSearchCopilotProps) {
   const [activeTab, setActiveTab] = useState<CopilotTab>('discover')
   const [query, setQuery] = useState((contextData?.query as string) || '')
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<AiCopilotResponse | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
 
-  const handleAction = async (action: string, fn: (data: any) => Promise<any>, data: any) => {
+  const handleAction = async <T,>(action: string, fn: (data: T) => Promise<unknown>, data: T) => {
     setLoading(action)
     try {
       const res = await fn(data)
-      setResult(res?.data || res)
+      const unwrapped = (res as { data?: AiCopilotResponse })?.data ?? (res as AiCopilotResponse)
+      setResult(unwrapped)
     } finally {
       setLoading(null)
     }
@@ -51,53 +64,42 @@ export function AiSearchCopilot({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <Sparkles className="h-4 w-4 text-orange-400" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+        <Sparkles className="h-4 w-4 text-accent-500" />
         AI Search Copilot
       </div>
 
-      <div className="flex gap-1 border-b border-white/[0.06] text-xs overflow-x-auto">
-        {TABS.map(t => {
-          const Icon = t.icon
-          return (
-            <button key={t.key} onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-1 px-2 py-1.5 border-b-2 whitespace-nowrap transition-colors ${activeTab === t.key ? 'border-orange-400 text-orange-300' : 'border-transparent text-white/40 hover:text-white/60'}`}>
-              <Icon className="h-3 w-3" />
-              {t.label}
-            </button>
-          )
-        })}
-      </div>
+      <Tabs tabs={tabs} value={activeTab} onChange={v => setActiveTab(v as CopilotTab)} />
 
       {activeTab === 'discover' && (
         <div className="space-y-2">
-          <p className="text-[11px] text-white/40">Understand intent, summarize results, and generate smart filters</p>
-          <input type="text" value={query} onChange={e => setQuery(e.target.value)}
+          <p className="text-[11px] text-text-tertiary">Understand intent, summarize results, and generate smart filters</p>
+          <Input type="text" value={query} onChange={e => setQuery(e.target.value)}
             placeholder="Enter a search query..."
-            className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-orange-400/50" />
+            className="w-full bg-surface-secondary border border-border rounded px-2 py-1.5 text-xs text-text-primary placeholder-text-tertiary outline-none focus:border-accent-500/50" />
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => handleAction('intent', onSearchIntent, { query })}
               disabled={loading === 'intent' || !query}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'intent' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Lightbulb className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'intent' ? <LoadingSpinner size="xs" color="accent" /> : <Lightbulb className="h-3 w-3" />}
               Detect Intent
             </button>
             <button onClick={() => handleAction('semantic', onSemanticSearch, { query })}
               disabled={loading === 'semantic' || !query}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'semantic' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'semantic' ? <LoadingSpinner size="xs" color="accent" /> : <Search className="h-3 w-3" />}
               Semantic Search
             </button>
             <button onClick={() => handleAction('summary', onSearchSummary, { query, ...contextData })}
               disabled={loading === 'summary' || !query}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'summary' ? <Loader2 className="h-3 w-3 animate-spin" /> : <LayoutDashboard className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'summary' ? <LoadingSpinner size="xs" color="accent" /> : <LayoutDashboard className="h-3 w-3" />}
               Summary
             </button>
             <button onClick={() => handleAction('filters', onSmartFilters, { query, ...contextData })}
               disabled={loading === 'filters' || !query}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'filters' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sliders className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'filters' ? <LoadingSpinner size="xs" color="accent" /> : <Sliders className="h-3 w-3" />}
               Smart Filters
             </button>
           </div>
@@ -106,18 +108,18 @@ export function AiSearchCopilot({
 
       {activeTab === 'similar' && (
         <div className="space-y-2">
-          <p className="text-[11px] text-white/40">Find similar products or suppliers</p>
+          <p className="text-[11px] text-text-tertiary">Find similar products or suppliers</p>
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => handleAction('similar-products', onSimilarProducts, { ...contextData })}
               disabled={loading === 'similar-products'}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'similar-products' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Package className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'similar-products' ? <LoadingSpinner size="xs" color="accent" /> : <Package className="h-3 w-3" />}
               Similar Products
             </button>
             <button onClick={() => handleAction('similar-suppliers', onSimilarSuppliers, { ...contextData })}
               disabled={loading === 'similar-suppliers'}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'similar-suppliers' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Building2 className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'similar-suppliers' ? <LoadingSpinner size="xs" color="accent" /> : <Building2 className="h-3 w-3" />}
               Similar Suppliers
             </button>
           </div>
@@ -126,24 +128,24 @@ export function AiSearchCopilot({
 
       {activeTab === 'recommend' && (
         <div className="space-y-2">
-          <p className="text-[11px] text-white/40">Get personalized product, supplier, and cross-sell recommendations</p>
+          <p className="text-[11px] text-text-tertiary">Get personalized product, supplier, and cross-sell recommendations</p>
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => handleAction('buyer-recs', onBuyerRecommendations, { ...contextData })}
               disabled={loading === 'buyer-recs'}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'buyer-recs' ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingBag className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'buyer-recs' ? <LoadingSpinner size="xs" color="accent" /> : <ShoppingBag className="h-3 w-3" />}
               Buyer Recs
             </button>
             <button onClick={() => handleAction('seller-recs', onSellerRecommendations, { ...contextData })}
               disabled={loading === 'seller-recs'}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'seller-recs' ? <Loader2 className="h-3 w-3 animate-spin" /> : <TrendingUp className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'seller-recs' ? <LoadingSpinner size="xs" color="accent" /> : <TrendingUp className="h-3 w-3" />}
               Seller Recs
             </button>
             <button onClick={() => handleAction('cross-sell', onCrossSellUpsell, { ...contextData })}
               disabled={loading === 'cross-sell'}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'cross-sell' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shuffle className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'cross-sell' ? <LoadingSpinner size="xs" color="accent" /> : <Shuffle className="h-3 w-3" />}
               Cross-Sell/Upsell
             </button>
           </div>
@@ -152,18 +154,18 @@ export function AiSearchCopilot({
 
       {activeTab === 'rank' && (
         <div className="space-y-2">
-          <p className="text-[11px] text-white/40">Personalize ranking and get AI-powered search insights</p>
+          <p className="text-[11px] text-text-tertiary">Personalize ranking and get AI-powered search insights</p>
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => handleAction('ranking', onPersonalizedRanking, { query, results: contextData?.results, userContext: contextData?.userContext })}
               disabled={loading === 'ranking'}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'ranking' ? <Loader2 className="h-3 w-3 animate-spin" /> : <BarChart3 className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'ranking' ? <LoadingSpinner size="xs" color="accent" /> : <BarChart3 className="h-3 w-3" />}
               Personalize Ranking
             </button>
             <button onClick={() => handleAction('sidebar', onPersonalizedRanking, { query, ...contextData })}
               disabled={loading === 'sidebar'}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 disabled:opacity-40 transition-colors">
-              {loading === 'sidebar' ? <Loader2 className="h-3 w-3 animate-spin" /> : <LayoutDashboard className="h-3 w-3" />}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
+              {loading === 'sidebar' ? <LoadingSpinner size="xs" color="accent" /> : <LayoutDashboard className="h-3 w-3" />}
               AI Insights
             </button>
           </div>
@@ -171,20 +173,20 @@ export function AiSearchCopilot({
       )}
 
       {isGenerating && result === null && (
-        <div className="flex items-center gap-2 text-xs text-white/40 py-2">
-          <Loader2 className="h-3 w-3 animate-spin" />
+        <div className="flex items-center gap-2 text-xs text-text-tertiary py-2">
+          <LoadingSpinner size="xs" color="accent" />
           Processing...
         </div>
       )}
 
       {result && (
-        <div className="border border-white/[0.06] rounded bg-white/[0.02] p-2">
+        <div className="border border-border rounded bg-surface p-2">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-white/30 font-mono">
-              {result.provider}/{result.model} {result.cached && '(cached)'} · {result.latencyMs}ms · ${result.cost}
+            <span className="text-[10px] text-text-tertiary font-mono">
+              {result.provider}/{result.model} {result.cached && '(cached)'} Â· {result.latencyMs}ms Â· ${result.cost}
             </span>
           </div>
-          <pre className="text-[11px] text-white/70 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
+          <pre className="text-[11px] text-text-primary max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
             {typeof result.content === 'string' ? result.content : JSON.stringify(result.content, null, 2)}
           </pre>
         </div>

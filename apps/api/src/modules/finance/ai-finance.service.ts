@@ -6,6 +6,7 @@ import { CollectionsService } from './collections.service'
 import { FinanceDashboardService } from './finance-dashboard.service'
 import { PrismaService } from '../../prisma/prisma.service'
 import { TaskType } from '@prisma/client'
+import { gracefulCatch } from '../../common/utils/graceful-catch'
 
 @Injectable()
 export class AiFinanceService {
@@ -57,7 +58,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }
   }
 
-  async creditRiskAssessment(companyId: string, userId: string, payload: any) {
+  async creditRiskAssessment(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.creditData) context.creditData = payload.creditData
@@ -66,7 +67,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
 
     if (payload.companyData?.id) {
       try {
-        const credit = await this.creditService.getCredit(payload.companyData.id).catch(() => null)
+        const credit = await this.creditService.getCredit(payload.companyData.id).catch(gracefulCatch('aiFinance.creditRiskAssessment.creditProfile', null))
         if (credit) context.creditProfile = credit
       } catch { /* skip */ }
     }
@@ -77,7 +78,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async paymentDelayPrediction(companyId: string, userId: string, payload: any) {
+  async paymentDelayPrediction(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.invoiceAmount !== undefined) context.invoiceAmount = payload.invoiceAmount
@@ -91,7 +92,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
         select: { amount: true, status: true, createdAt: true, paidAt: true },
         orderBy: { createdAt: 'desc' },
         take: 20,
-      }).catch(() => [])
+      }).catch(gracefulCatch('aiFinance.paymentDelayPrediction.recentPayments', []))
       if (payments.length) context.recentPayments = payments
     }
 
@@ -101,7 +102,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async cashFlowForecast(companyId: string, userId: string, payload: any) {
+  async cashFlowForecast(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.currentInflow !== undefined) context.currentInflow = payload.currentInflow
     if (payload.currentOutflow !== undefined) context.currentOutflow = payload.currentOutflow
@@ -112,9 +113,9 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     if (payload.forecastPeriodDays !== undefined) context.forecastPeriodDays = payload.forecastPeriodDays
 
     try {
-      const dash = await this.dashboardService.getDashboard({ months: 3 }).catch(() => null)
+      const dash = await this.dashboardService.getDashboard({ months: 3 }).catch(gracefulCatch('aiFinance.cashFlowForecast.dashboardData', null))
       if (dash) context.dashboardData = dash
-      const cash = await this.dashboardService.getCashFlow({ months: 3 }).catch(() => null)
+      const cash = await this.dashboardService.getCashFlow({ months: 3 }).catch(gracefulCatch('aiFinance.cashFlowForecast.cashFlowData', null))
       if (cash) context.cashFlowData = cash
     } catch { /* skip */ }
 
@@ -124,7 +125,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async collectionStrategy(companyId: string, userId: string, payload: any) {
+  async collectionStrategy(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.totalOverdue !== undefined) context.totalOverdue = payload.totalOverdue
@@ -135,11 +136,11 @@ Provide a structured JSON response appropriate for the action. Include scores, c
 
     if (payload.companyData?.id) {
       try {
-        const summary = await this.collectionsService.getOutstandingSummary().catch(() => null)
+        const summary = await this.collectionsService.getOutstandingSummary().catch(gracefulCatch('aiFinance.collectionStrategy.collectionSummary', null))
         if (summary) context.collectionSummary = summary
-        const aging = await this.collectionsService.getAgingReport().catch(() => null)
+        const aging = await this.collectionsService.getAgingReport().catch(gracefulCatch('aiFinance.collectionStrategy.agingReport', null))
         if (aging) context.agingReport = aging
-        const notes = await this.collectionsService.listNotes(payload.companyData.id).catch(() => [])
+        const notes = await this.collectionsService.listNotes(payload.companyData.id).catch(gracefulCatch('aiFinance.collectionStrategy.collectionNotes', []))
         if (notes.length) context.collectionNotes = notes
       } catch { /* skip */ }
     }
@@ -150,7 +151,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async financialHealth(companyId: string, userId: string, payload: any) {
+  async financialHealth(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.creditData) context.creditData = payload.creditData
@@ -163,12 +164,12 @@ Provide a structured JSON response appropriate for the action. Include scores, c
         select: { amount: true, status: true, createdAt: true, paidAt: true },
         orderBy: { createdAt: 'desc' },
         take: 30,
-      }).catch(() => [])
+      }).catch(gracefulCatch('aiFinance.financialHealth.paymentHistory', []))
       if (payments.length) context.paymentHistory = payments
 
       const overdue = await this.prisma.invoice.count({
         where: { companyId: payload.companyData.id, status: 'OVERDUE' },
-      }).catch(() => 0)
+      }).catch(gracefulCatch('aiFinance.financialHealth.overdueInvoiceCount', 0))
       context.overdueInvoiceCount = overdue
     }
 
@@ -178,7 +179,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async creditLimitRecommendation(companyId: string, userId: string, payload: any) {
+  async creditLimitRecommendation(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.creditData) context.creditData = payload.creditData
@@ -189,7 +190,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
 
     if (payload.companyData?.id) {
       try {
-        const credit = await this.creditService.getCredit(payload.companyData.id).catch(() => null)
+        const credit = await this.creditService.getCredit(payload.companyData.id).catch(gracefulCatch('aiFinance.creditLimitRecommendation.creditProfile', null))
         if (credit) context.creditProfile = credit
       } catch { /* skip */ }
     }
@@ -200,7 +201,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async invoiceIntelligence(companyId: string, userId: string, payload: any) {
+  async invoiceIntelligence(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.invoiceData) context.invoiceData = payload.invoiceData
     if (payload.gstNumber) context.gstNumber = payload.gstNumber
@@ -214,7 +215,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async fraudSignals(companyId: string, userId: string, payload: any) {
+  async fraudSignals(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.recentPayments) context.recentPayments = payload.recentPayments
     if (payload.recentRefunds) context.recentRefunds = payload.recentRefunds
@@ -229,7 +230,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async collectionDraft(companyId: string, userId: string, payload: any) {
+  async collectionDraft(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       customerName: payload.customerName,
       outstandingAmount: payload.outstandingAmount || 0,
@@ -245,7 +246,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sidebar(companyId: string, userId: string, payload: any) {
+  async sidebar(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.creditData) context.creditData = payload.creditData
@@ -255,13 +256,13 @@ Provide a structured JSON response appropriate for the action. Include scores, c
 
     if (payload.companyData?.id) {
       try {
-        const credit = await this.creditService.getCredit(payload.companyData.id).catch(() => null)
+        const credit = await this.creditService.getCredit(payload.companyData.id).catch(gracefulCatch('aiFinance.sidebar.creditProfile', null))
         if (credit) context.creditProfile = credit
       } catch { /* skip */ }
     }
 
     try {
-      const dash = await this.dashboardService.getDashboard({ months: 1 }).catch(() => null)
+      const dash = await this.dashboardService.getDashboard({ months: 1 }).catch(gracefulCatch('aiFinance.sidebar.dashboardSnapshot', null))
       if (dash) context.dashboardSnapshot = dash
     } catch { /* skip */ }
 

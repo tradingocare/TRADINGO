@@ -28,7 +28,7 @@ export class OpenRouterProvider extends BaseAiProvider {
         TaskType.PRODUCT_DESCRIPTION, TaskType.SEO_GENERATION, TaskType.TRANSLATION,
         TaskType.SPEC_SUGGESTION, TaskType.IMAGE_SUGGESTION, TaskType.QUALITY_SCORING,
         TaskType.RFQ_ANALYSIS, TaskType.QUOTE_ANALYSIS, TaskType.NEGOTIATION,
-        TaskType.CRM_ANALYSIS, TaskType.FINANCE_ANALYSIS, TaskType.SEARCH_ANALYSIS, TaskType.ADMIN_INTELLIGENCE, TaskType.GENERAL_CHAT,
+        TaskType.CRM_ANALYSIS, TaskType.FINANCE_ANALYSIS, TaskType.SEARCH_ANALYSIS, TaskType.ADMIN_INTELLIGENCE, TaskType.GENERAL_CHAT, TaskType.COMMUNITY_ANALYSIS, TaskType.CATEGORY_SUGGESTION,
       ],
       supportedModels: ['openai/gpt-4o', 'openai/gpt-4o-mini', 'anthropic/claude-3.5-sonnet', 'google/gemini-2.0-flash'],
       defaultModel: this.defaultModel,
@@ -110,7 +110,9 @@ export class OpenRouterProvider extends BaseAiProvider {
             const parsed = JSON.parse(data)
             const content = parsed.choices?.[0]?.delta?.content || ''
             yield { content, done: false, model: parsed.model }
-          } catch {}
+          } catch {
+            this.logger.warn(`OpenRouter: failed to parse streaming chunk: ${data.substring(0, 100)}`)
+          }
         }
       }
     }

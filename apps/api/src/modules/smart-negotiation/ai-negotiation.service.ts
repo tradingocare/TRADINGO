@@ -58,7 +58,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }
   }
 
-  async generateStrategy(companyId: string, userId: string, payload: any) {
+  async generateStrategy(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.negotiationData) context.negotiationData = payload.negotiationData
     if (payload.quoteData) context.quoteData = payload.quoteData
@@ -73,7 +73,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async buyerBehaviorAnalysis(companyId: string, userId: string, payload: any) {
+  async buyerBehaviorAnalysis(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
 
     if (payload.buyerCompanyId) {
@@ -88,7 +88,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
 
       const rfqs = await this.prisma.rfq.findMany({
         where: { companyId: payload.buyerCompanyId, deletedAt: null },
-        select: { id: true, title: true, status: true, quoteCount: true },
+        select: { id: true, title: true, status: true, quoteCount: true, catalogCategoryId: true },
         take: 10,
         orderBy: { createdAt: 'desc' },
       })
@@ -105,7 +105,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sellerSuggestions(companyId: string, userId: string, payload: any) {
+  async sellerSuggestions(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.negotiationData) context.negotiationData = payload.negotiationData
     if (payload.currentOffer) context.currentOffer = payload.currentOffer
@@ -120,7 +120,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sentimentAnalysis(companyId: string, userId: string, payload: any) {
+  async sentimentAnalysis(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       chatMessages: payload.chatMessages ?? [],
       negotiationEvents: payload.negotiationEvents ?? [],
@@ -131,7 +131,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async dealProbability(companyId: string, userId: string, payload: any) {
+  async dealProbability(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.negotiationData) context.negotiationData = payload.negotiationData
     context.sellerTrustScore = payload.sellerTrustScore
@@ -148,7 +148,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async suggestedReplies(companyId: string, userId: string, payload: any) {
+  async suggestedReplies(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       role: payload.role ?? 'SELLER',
       tone: payload.tone ?? 'PROFESSIONAL',
@@ -161,7 +161,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async riskDetection(companyId: string, userId: string, payload: any) {
+  async riskDetection(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
     if (payload.negotiationData) context.negotiationData = payload.negotiationData
     if (payload.buyerCreditStatus) context.buyerCreditStatus = payload.buyerCreditStatus
@@ -175,7 +175,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async conversationSummary(companyId: string, userId: string, payload: any) {
+  async conversationSummary(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       chatMessages: payload.chatMessages ?? [],
       negotiationEvents: payload.negotiationEvents ?? [],
@@ -187,7 +187,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async translate(companyId: string, userId: string, payload: any) {
+  async translate(companyId: string, userId: string, payload: Record<string, any>) {
     const context = {
       text: payload.text,
       targetLanguage: payload.targetLanguage,
@@ -199,13 +199,13 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async aiMemory(companyId: string, userId: string, payload: any) {
+  async aiMemory(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
 
     if (payload.rfqId) {
       const rfq = await this.prisma.rfq.findFirst({
         where: { id: payload.rfqId, deletedAt: null },
-        select: { id: true, title: true, status: true, budgetMin: true, budgetMax: true, currency: true, createdAt: true },
+        select: { id: true, title: true, status: true, budgetMin: true, budgetMax: true, currency: true, createdAt: true, catalogCategoryId: true },
       })
       if (rfq) context.rfq = rfq
     }
@@ -255,7 +255,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async timeline(companyId: string, userId: string, payload: any) {
+  async timeline(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {
       versions: payload.versions ?? [],
       events: payload.events ?? [],
@@ -266,7 +266,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sidebar(companyId: string, userId: string, payload: any) {
+  async sidebar(companyId: string, userId: string, payload: Record<string, any>) {
     const context: Record<string, unknown> = {}
 
     if (payload.negotiationData) context.negotiationData = payload.negotiationData

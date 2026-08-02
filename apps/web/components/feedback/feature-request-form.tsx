@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Lightbulb } from 'lucide-react';
+import { Select } from '@/components/ui/select';
 
 interface FeatureRequestData {
   title: string;
@@ -53,15 +54,15 @@ export function FeatureRequestForm({ onSubmit }: FeatureRequestFormProps) {
       <div className="flex gap-2">
         <div className="flex-1">
           <Label>Category</Label>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary">
+          <Select value={category} onChange={(e) => setCategory(e.target.value)}>
             {categories.map((c) => <option key={c}>{c}</option>)}
-          </select>
+          </Select>
         </div>
         <div className="flex-1">
           <Label>Business Impact</Label>
-          <select value={businessImpact} onChange={(e) => setBusinessImpact(e.target.value)} className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary">
+          <Select value={businessImpact} onChange={(e) => setBusinessImpact(e.target.value)}>
             {impacts.map((i) => <option key={i}>{i}</option>)}
-          </select>
+          </Select>
         </div>
       </div>
       <Button type="submit" className="w-full" disabled={submitting}>

@@ -3,7 +3,8 @@
 import { useState, useRef, type DragEvent, type ChangeEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { Upload, FileText, X } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface FileUploadInputProps {
   onUpload: (file: File) => void;
@@ -80,7 +81,7 @@ export function FileUploadInput({ onUpload, uploading }: FileUploadInputProps) {
             </p>
           </div>
           {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-primary-600" />
+            <LoadingSpinner size="sm" color="default" />
           ) : (
             <div className="flex items-center gap-1">
               <Button size="sm" onClick={handleUpload}>Send</Button>

@@ -30,9 +30,10 @@ let cachedConfig: EnvConfig | null = null;
 export function getEnvConfig(): EnvConfig {
   if (cachedConfig) return cachedConfig;
 
+  const apiUrl = getEnvVar('NEXT_PUBLIC_API_URL');
   const config: EnvConfig = {
-    apiUrl: getEnvVar('NEXT_PUBLIC_API_URL'),
-    socketUrl: getEnvVar('NEXT_PUBLIC_SOCKET_URL'),
+    apiUrl,
+    socketUrl: getOptionalEnvVar('NEXT_PUBLIC_SOCKET_URL') || apiUrl,
     siteUrl: getEnvVar('NEXT_PUBLIC_SITE_URL'),
     appUrl: getOptionalEnvVar('NEXT_PUBLIC_APP_URL') || getEnvVar('NEXT_PUBLIC_SITE_URL'),
     sentryDsn: getOptionalEnvVar('NEXT_PUBLIC_SENTRY_DSN') || getOptionalEnvVar('SENTRY_DSN'),

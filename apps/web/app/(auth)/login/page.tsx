@@ -20,9 +20,9 @@ export default function LoginPage() {
 function LoginLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center"
-      style={{ background:'#1D0001' }}>
+      style={{ background:'var(--bg-base)' }}>
       <div className="w-10 h-10 rounded-full border-2
-                      border-t-[#FF4D00] border-white/10 animate-spin" />
+                      border-t-accent-500 border-border animate-spin" />
     </div>
   )
 }

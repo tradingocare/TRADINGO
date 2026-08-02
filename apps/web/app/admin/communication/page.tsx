@@ -5,7 +5,9 @@ import { useModerationReports, useModerationStats, useReviewReport, useDismissRe
 import { DashboardPageHeader } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, AlertTriangle, CheckCircle, XCircle, Loader2, MessageSquare } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Shield, AlertTriangle, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function AdminCommunicationPage() {
   const [status, setStatus] = useState<string | undefined>();
@@ -23,19 +25,19 @@ export default function AdminCommunicationPage() {
       {stats && (
         <div className="grid gap-4 sm:grid-cols-4">
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><MessageSquare className="h-5 w-5" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/15 text-blue-400"><MessageSquare className="h-5 w-5" /></div>
             <div><p className="text-2xl font-bold">{stats.total}</p><p className="text-xs text-text-secondary">Total Reports</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600"><AlertTriangle className="h-5 w-5" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400"><AlertTriangle className="h-5 w-5" /></div>
             <div><p className="text-2xl font-bold">{stats.pending}</p><p className="text-xs text-text-secondary">Pending</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600"><CheckCircle className="h-5 w-5" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/15 text-green-400"><CheckCircle className="h-5 w-5" /></div>
             <div><p className="text-2xl font-bold">{stats.reviewed}</p><p className="text-xs text-text-secondary">Reviewed</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600"><XCircle className="h-5 w-5" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/15 text-red-400"><XCircle className="h-5 w-5" /></div>
             <div><p className="text-2xl font-bold">{stats.dismissed}</p><p className="text-xs text-text-secondary">Dismissed</p></div>
           </CardContent></Card>
         </div>
@@ -44,20 +46,16 @@ export default function AdminCommunicationPage() {
       <div className="flex gap-2">
         {['', 'PENDING', 'REVIEWED', 'DISMISSED'].map((s) => (
           <button key={s} onClick={() => setStatus(s || undefined)}
-            className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${(status || '') === s ? 'bg-[#FF5A1F] text-white' : 'border border-border text-text-secondary hover:border-[#FF5A1F]/30'}`}>
+            className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${(status || '') === s ? 'bg-[#f97316] text-white' : 'border border-border text-text-secondary hover:border-[#f97316]/30'}`}>
             {s || 'All'}
           </button>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-text-tertiary" /></div>
+        <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" color="muted" /></div>
       ) : reports.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <Shield className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold">All Clear</h3>
-          <p className="mt-1 text-sm text-text-secondary">No reported messages to review.</p>
-        </div>
+        <EmptyState icon={Shield} title="All Clear" description="No reported messages to review." />
       ) : (
         <div className="space-y-3">
           {reports.map((report: any) => (
@@ -67,8 +65,8 @@ export default function AdminCommunicationPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        report.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
-                        report.status === 'REVIEWED' ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-600'
+                        report.status === 'PENDING' ? 'bg-amber-500/15 text-amber-400' :
+                        report.status === 'REVIEWED' ? 'bg-green-500/15 text-green-400' : 'bg-surface-secondary text-text-secondary'
                       }`}>{report.status}</span>
                       <span className="text-xs text-text-secondary">Reported by {report.reportedBy?.name || 'Unknown'}</span>
                       <span className="text-xs text-text-tertiary">{new Date(report.createdAt).toLocaleDateString('en-IN')}</span>

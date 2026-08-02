@@ -55,7 +55,7 @@ export default function ForBuyersPage() {
 
       <Separator />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Buyer Features"
@@ -81,7 +81,7 @@ export default function ForBuyersPage() {
 
       <Separator />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <div className="mx-auto max-w-4xl text-center">

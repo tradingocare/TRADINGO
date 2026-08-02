@@ -6,6 +6,7 @@ import { ProductMastersSeeder } from './product-masters.seed.ts';
 import { ServiceMastersSeeder } from './service-masters.seed.ts';
 import { CatalogImportSeeder, SeedMetadata } from './catalog-import.seed.ts';
 import { resolve } from 'path';
+import { slugify, BATCH_SIZE } from './seed.utils.ts';
 
 const CSV_PATH = resolve(process.cwd(), 'product service catalog.csv');
 
@@ -63,13 +64,124 @@ async function main() {
   const metaResult = await metaSeeder.run(meta);
   console.log(`Metadata: ${metaResult.status}`);
 
+  // 6. Master Catalog Categories
+  console.log('\n--- Seeding Master Catalog Categories ---');
+  let catCatalogCreated = 0;
+  const catSlugSet = new Set<string>();
+  for (const name of parsed.categories) {
+    const slug = slugify(name) || 'category';
+    try {
+      await prisma.catalogCategory.upsert({
+        where: { slug },
+        update: { name, isActive: true },
+        create: { name, slug, description: name, icon: 'default-category', isActive: true },
+      });
+      catSlugSet.add(slug);
+      catCatalogCreated++;
+    } catch (err) {
+      console.error(`  Error creating catalog category "${name}": ${err}`);
+    }
+  }
+  console.log(`  Catalog Categories: ${catCatalogCreated} created`);
+
+  // 7. Master Catalog Subcategories
+  console.log('\n--- Seeding Master Catalog Subcategories ---');
+  let subCatalogCreated = 0;
+  for (const [catName, subs] of parsed.subcategoryMap) {
+    const catSlug = slugify(catName) || 'category';
+    const catalogCat = await prisma.catalogCategory.findUnique({ where: { slug: catSlug } });
+    if (!catalogCat) continue;
+    for (const subName of subs) {
+      const subSlug = slugify(subName) || 'subcategory';
+      try {
+        await prisma.catalogSubcategory.upsert({
+          where: { categoryId_slug: { categoryId: catalogCat.id, slug: subSlug } },
+          update: { name: subName },
+          create: { name: subName, slug: subSlug, categoryId: catalogCat.id },
+        });
+        subCatalogCreated++;
+      } catch (err) {
+        if (!(err as any)?.message?.includes('Unique constraint')) {
+          console.error(`  Error creating catalog subcategory "${subName}": ${err}`);
+        }
+      }
+    }
+  }
+  console.log(`  Catalog Subcategories: ${subCatalogCreated} created`);
+
+  // 8. Master Catalog Items + CatalogUnit
+  console.log('\n--- Seeding Master Catalog Items ---');
+  let itemsCreated = 0;
+  const unitSet = new Set<string>();
+  for (let i = 0; i < parsed.rows.length; i += BATCH_SIZE) {
+    const batch = parsed.rows.slice(i, i + BATCH_SIZE);
+    for (const row of batch) {
+      if (row.unit) unitSet.add(row.unit.trim());
+      if (row.altUnits) unitSet.add(row.altUnits.trim());
+      try {
+        const catSlug = slugify(row.category) || 'category';
+        const catalogCat = await prisma.catalogCategory.findUnique({ where: { slug: catSlug } });
+        if (!catalogCat) continue;
+        const subSlug = slugify(row.subCategory) || 'subcategory';
+        const catalogSub = await prisma.catalogSubcategory.findUnique({
+          where: { categoryId_slug: { categoryId: catalogCat.id, slug: subSlug } },
+        });
+        if (!catalogSub) continue;
+        const slug = slugify(row.name) || `item-${row.serialNo}`;
+        const hsCode = row.type === 'Product' ? `HS-${row.serialNo}` : undefined;
+        const sacCode = row.type === 'Service' ? `SAC-${row.serialNo}` : undefined;
+        await prisma.catalogItem.upsert({
+          where: { slug },
+          update: { isActive: true },
+          create: {
+            name: row.name,
+            slug,
+            type: row.type === 'Product' ? 'Product' : 'Service',
+            subcategoryId: catalogSub.id,
+            isActive: true,
+            unit: row.unit || undefined,
+            hsCode,
+            sacCode,
+          },
+        });
+        itemsCreated++;
+      } catch (err) {
+        if (!(err as any)?.message?.includes('Unique constraint')) {
+          console.error(`  Error creating catalog item "${row.name}": ${err}`);
+        }
+      }
+    }
+  }
+  console.log(`  Catalog Items: ${itemsCreated} created`);
+
+  // 9. Catalog Units
+  console.log('\n--- Seeding Catalog Units ---');
+  let unitsCreated = 0;
+  for (const unit of [...unitSet].filter(Boolean)) {
+    try {
+      await prisma.catalogUnit.upsert({
+        where: { name: unit },
+        update: { symbol: unit },
+        create: { name: unit, symbol: unit, category: 'imported' },
+      });
+      unitsCreated++;
+    } catch (err) {
+      console.error(`  Error creating catalog unit "${unit}": ${err}`);
+    }
+  }
+  console.log(`  Catalog Units: ${unitsCreated} created`);
+
   // Summary
   console.log('\n=== Seed Complete ===');
-  console.log(`  Categories:     ${catResult.imported}`);
-  console.log(`  Subcategories:  ${subResult.imported}`);
-  console.log(`  ProductMasters: ${pmResult.imported}`);
-  console.log(`  ServiceMasters: ${smResult.imported}`);
-  console.log(`  Total:          ${catResult.imported + subResult.imported + pmResult.imported + smResult.imported}`);
+  console.log(`  Categories:          ${catResult.imported}`);
+  console.log(`  Subcategories:       ${subResult.imported}`);
+  console.log(`  ProductMasters:      ${pmResult.imported}`);
+  console.log(`  ServiceMasters:      ${smResult.imported}`);
+  console.log(`  Catalog Categories:  ${catCatalogCreated}`);
+  console.log(`  Catalog Subcategories: ${subCatalogCreated}`);
+  console.log(`  Catalog Items:       ${itemsCreated}`);
+  console.log(`  Catalog Units:       ${unitsCreated}`);
+  console.log(`  Total:               ${catResult.imported + subResult.imported + pmResult.imported + smResult.imported + itemsCreated + unitsCreated}`);
 
   await prisma.$disconnect();
 }

@@ -6,7 +6,8 @@ import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Star, Clock, Loader2, ArrowLeft, Check } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Star, Clock, ArrowLeft, Check } from 'lucide-react';
 import { smartRfqApi } from '@/lib/api/smart-rfq';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -44,7 +45,7 @@ function CompareQuotesContent() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Compare Quotes" />
-        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-orange-500" /></div>
+        <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
       </div>
     );
   }
@@ -122,9 +123,9 @@ function CompareQuotesContent() {
                     const score = q.company?.trustScore || 0;
                     const isBest = score === highestRating;
                     return (
-                      <td key={q.id} className={`px-4 py-3 ${isBest ? 'font-semibold text-amber-600' : 'text-text-secondary dark:text-dark-text-secondary'}`}>
+                      <td key={q.id} className={`px-4 py-3 ${isBest ? 'font-semibold text-accent-500' : 'text-text-secondary dark:text-dark-text-secondary'}`}>
                         {score}%
-                        {isBest && <span className="ml-1.5 text-xs text-amber-600">Top</span>}
+                        {isBest && <span className="ml-1.5 text-xs text-accent-500">Top</span>}
                       </td>
                     );
                   })}
@@ -177,7 +178,7 @@ function CompareQuotesContent() {
                 <div className="text-center">
                   <h3 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">{q.company?.name || 'Supplier'}</h3>
                   {q.company?.trustScore && (
-                    <div className="mt-1 flex items-center justify-center gap-1 text-sm text-amber-600">
+                    <div className="mt-1 flex items-center justify-center gap-1 text-sm text-accent-500">
                       <Star className="h-3.5 w-3.5 fill-current" />
                       {q.company.trustScore}%
                     </div>
@@ -203,7 +204,7 @@ function CompareQuotesContent() {
                   </div>
                 </div>
                 <Button className="mt-4 w-full" onClick={() => handleAccept(q.id)} disabled={acceptingId === q.id}>
-                  {acceptingId === q.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {acceptingId === q.id ? <LoadingSpinner size="sm" className="mr-2" /> : null}
                   {acceptingId === q.id ? 'Accepting...' : 'Accept Quote'}
                 </Button>
               </CardContent>
@@ -217,7 +218,7 @@ function CompareQuotesContent() {
 
 export default function CompareQuotesPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-orange-500" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>}>
       <CompareQuotesContent />
     </Suspense>
   );

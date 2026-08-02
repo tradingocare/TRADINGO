@@ -7,10 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useCollectionsSummary, useAgingReport, useOverdueCompanies, useCollectionNotes, useCreateCollectionNote, useCollectionTimeline } from '@/hooks/use-finance';
 import { toast } from '@/components/ui/use-toast';
-import { Clock, AlertTriangle, DollarSign, Phone, Mail, FileText, Activity, Sparkles, Loader2, Shield, FileEdit } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Clock, AlertTriangle, DollarSign, FileText, Activity, Sparkles, Shield, FileEdit } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAiFinanceCollectionStrategy, useAiFinanceCollectionDraft } from '@/hooks/use-ai-finance';
 
 const ACTION_LABELS: Record<string, string> = { CALL: 'Call', EMAIL: 'Email', VISIT: 'Visit', LETTER: 'Letter', PAYMENT_PLAN: 'Payment Plan', ESCALATION: 'Escalation', LEGAL: 'Legal' };
@@ -36,7 +39,7 @@ export default function AdminCollectionsPage() {
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCompany) return;
-    try { await createNoteMutation.mutateAsync({ companyId: selectedCompany, dto: noteForm }); toast({ title: 'Note added' }); setNoteForm({ actionType: 'CALL', content: '', contactedPerson: '', outcome: '', followUpAt: '' }); } catch { toast({ title: 'Failed', variant: 'destructive' }); }
+    try { await createNoteMutation.mutateAsync({ companyId: selectedCompany, dto: noteForm }); toast({ title: 'Note added' }); setNoteForm({ actionType: 'CALL', content: '', contactedPerson: '', outcome: '', followUpAt: '' }); } catch (e) { console.error('Add note failed:', e); toast({ title: 'Failed', variant: 'destructive' }); }
   };
 
   return (
@@ -58,12 +61,12 @@ export default function AdminCollectionsPage() {
         <Card>
           <CardHeader><CardTitle>Aging Report</CardTitle></CardHeader>
           <CardContent>
-            {aLoading ? <TableSkeleton rows={4} /> : !aging?.length ? <p className="text-sm text-gray-400">No data</p> : (
+            {aLoading ? <TableSkeleton rows={4} /> : !aging?.length ? <p className="text-sm text-text-tertiary">No data</p> : (
               <div className="space-y-3">
                 {aging.map((b: any) => (
-                  <div key={b.bucket} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
+                  <div key={b.bucket} className="flex justify-between items-center p-3 bg-surface/50 rounded-lg">
                     <span className="text-sm">{b.bucket}</span>
-                    <div className="text-right"><p className="text-sm font-medium">₹{(b.amount / 100).toLocaleString()}</p><p className="text-xs text-gray-400">{b.count} payments</p></div>
+                    <div className="text-right"><p className="text-sm font-medium">₹{(b.amount / 100).toLocaleString()}</p><p className="text-xs text-text-tertiary">{b.count} payments</p></div>
                   </div>
                 ))}
               </div>
@@ -74,12 +77,12 @@ export default function AdminCollectionsPage() {
         <Card>
           <CardHeader><CardTitle>Overdue Companies ({overdueData?.meta?.total || 0})</CardTitle></CardHeader>
           <CardContent className="max-h-[400px] overflow-y-auto p-0">
-            {oLoading ? <TableSkeleton rows={5} /> : !overdueData?.data?.length ? <div className="p-8 text-center text-gray-400">No overdue accounts</div> : (
+            {oLoading ? <TableSkeleton rows={5} /> : !overdueData?.data?.length ? <EmptyState title="No overdue accounts" /> : (
               <div>
                 {overdueData.data.map((c: any) => (
-                  <div key={c.companyId} className={`p-3 border-b border-gray-700/50 cursor-pointer hover:bg-gray-800/50 ${selectedCompany === c.companyId ? 'bg-gray-800' : ''}`} onClick={() => setSelectedCompany(selectedCompany === c.companyId ? null : c.companyId)}>
+                  <div key={c.companyId} className={`p-3 border-b border-border/50 cursor-pointer hover:bg-bg-elevated/50 ${selectedCompany === c.companyId ? 'bg-surface' : ''}`} onClick={() => setSelectedCompany(selectedCompany === c.companyId ? null : c.companyId)}>
                     <div className="flex justify-between items-start">
-                      <div><p className="text-sm font-medium">{c.company?.name || c.companyId}</p><p className="text-xs text-gray-400">{c.daysOverdue} days overdue • {c.paymentCount} payments</p></div>
+                      <div><p className="text-sm font-medium">{c.company?.name || c.companyId}</p><p className="text-xs text-text-tertiary">{c.daysOverdue} days overdue • {c.paymentCount} payments</p></div>
                       <p className="text-sm font-bold text-red-400">₹{(c.totalOverdue / 100).toLocaleString()}</p>
                     </div>
                   </div>
@@ -97,9 +100,9 @@ export default function AdminCollectionsPage() {
             <CardContent>
               <form onSubmit={handleAddNote} className="space-y-3">
                 <div><Label>Action Type</Label>
-                  <select className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm" value={noteForm.actionType} onChange={e => setNoteForm(p => ({ ...p, actionType: e.target.value }))}>
+                  <Select value={noteForm.actionType} onChange={e => setNoteForm(p => ({ ...p, actionType: e.target.value }))}>
                     {Object.entries(ACTION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div><Label>Content</Label><Textarea required value={noteForm.content} onChange={e => setNoteForm(p => ({ ...p, content: e.target.value }))} /></div>
                 <div><Label>Contacted Person</Label><Input value={noteForm.contactedPerson} onChange={e => setNoteForm(p => ({ ...p, contactedPerson: e.target.value }))} /></div>
@@ -114,15 +117,15 @@ export default function AdminCollectionsPage() {
             <Card>
               <CardHeader><CardTitle>Collection Notes ({notes?.length || 0})</CardTitle></CardHeader>
               <CardContent className="max-h-[300px] overflow-y-auto space-y-2">
-                {!notes?.length ? <p className="text-sm text-gray-400">No notes</p> : notes.map((n: any) => (
-                  <div key={n.id} className="p-3 bg-gray-800/50 rounded-lg">
+                {!notes?.length ? <p className="text-sm text-text-tertiary">No notes</p> : notes.map((n: any) => (
+                  <div key={n.id} className="p-3 bg-surface/50 rounded-lg">
                     <div className="flex justify-between items-start">
                       <Badge className="bg-blue-500/20 text-blue-400 text-xs">{ACTION_LABELS[n.actionType] || n.actionType}</Badge>
-                      <span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
+                      <span className="text-xs text-text-secondary">{new Date(n.createdAt).toLocaleString()}</span>
                     </div>
                     <p className="text-sm mt-1">{n.content}</p>
-                    {n.outcome && <p className="text-xs text-gray-400 mt-1">Outcome: {n.outcome}</p>}
-                    {n.contactedPerson && <p className="text-xs text-gray-500">Contact: {n.contactedPerson}</p>}
+                    {n.outcome && <p className="text-xs text-text-tertiary mt-1">Outcome: {n.outcome}</p>}
+                    {n.contactedPerson && <p className="text-xs text-text-secondary">Contact: {n.contactedPerson}</p>}
                   </div>
                 ))}
               </CardContent>
@@ -131,10 +134,10 @@ export default function AdminCollectionsPage() {
             <Card>
               <CardHeader><CardTitle>Timeline</CardTitle></CardHeader>
               <CardContent className="max-h-[300px] overflow-y-auto space-y-2">
-                {!timeline?.length ? <p className="text-sm text-gray-400">No events</p> : timeline.map((e: any) => (
+                {!timeline?.length ? <p className="text-sm text-text-tertiary">No events</p> : timeline.map((e: any) => (
                   <div key={e.id} className="flex gap-3 text-sm">
-                    <Activity className="h-4 w-4 mt-0.5 text-gray-500 shrink-0" />
-                    <div><p>{e.description}</p><p className="text-xs text-gray-500">{new Date(e.createdAt).toLocaleString()}</p></div>
+                    <Activity className="h-4 w-4 mt-0.5 text-text-tertiary shrink-0" />
+                    <div><p>{e.description}</p><p className="text-xs text-text-secondary">{new Date(e.createdAt).toLocaleString()}</p></div>
                   </div>
                 ))}
               </CardContent>
@@ -152,9 +155,9 @@ export default function AdminCollectionsPage() {
                 const firstOverdue = overdueData?.data?.[0];
                 const ctx = { companyData: firstOverdue ? { id: firstOverdue.companyId, name: firstOverdue.company?.name } : {}, totalOverdue: summary?.totalOverdue || 0, daysOverdue: firstOverdue?.daysOverdue || 30 };
                 const r = await aiCollectionStrategy.mutateAsync(ctx); setAiResult(r.data); toast({ title: 'Collection strategy ready' });
-              } catch { toast({ title: 'Failed', variant: 'destructive' }); } finally { setAiLoading(false); }
+              } catch (e) { console.error('Collection strategy failed:', e); toast({ title: 'Failed', variant: 'destructive' }); } finally { setAiLoading(false); }
             }}>
-              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />} Collection Strategy
+              {aiLoading ? <LoadingSpinner size="sm" /> : <Shield className="h-4 w-4" />} Collection Strategy
             </Button>
           </div>
           <div className="flex flex-wrap items-end gap-2 mt-3">
@@ -174,13 +177,13 @@ export default function AdminCollectionsPage() {
               setAiLoading(true); try {
                 const r = await aiCollectionDraft.mutateAsync({ customerName: draftName, outstandingAmount: Number(draftAmount) || 0, daysOverdue: Number(draftDays) || 0 });
                 setAiResult(r.data); toast({ title: 'Collection draft generated' });
-              } catch { toast({ title: 'Failed', variant: 'destructive' }); } finally { setAiLoading(false); }
+              } catch (e) { console.error('Collection draft failed:', e); toast({ title: 'Failed', variant: 'destructive' }); } finally { setAiLoading(false); }
             }}>
-              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileEdit className="h-4 w-4" />} Generate Draft
+              {aiLoading ? <LoadingSpinner size="sm" /> : <FileEdit className="h-4 w-4" />} Generate Draft
             </Button>
           </div>
           {aiResult && (
-            <pre className="mt-4 p-3 bg-gray-800/50 rounded-lg text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-60">{JSON.stringify(aiResult, null, 2)}</pre>
+            <pre className="mt-4 p-3 bg-surface/50 rounded-lg text-xs text-text-tertiary whitespace-pre-wrap overflow-auto max-h-60">{JSON.stringify(aiResult, null, 2)}</pre>
           )}
         </CardContent>
       </Card>

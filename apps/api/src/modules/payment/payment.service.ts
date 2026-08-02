@@ -1,9 +1,11 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RazorpayService } from './gateways/razorpay.service';
 import { StripeService } from './gateways/stripe.service';
 import { getGateway } from './gateways/index';
 import { MembershipService } from '../membership/membership.service';
+import { EscrowService } from '../escrow/escrow.service';
 import { CreatePaymentOrderDto, PaymentOrderType } from './dto/create-payment-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { CreateSubscriptionOrderDto, VerifySubscriptionPaymentDto } from './dto/subscription-order.dto';
@@ -11,7 +13,7 @@ import { CreateRefundDto } from './dto/create-refund.dto';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
-import { generateInvoiceNumber } from './utils/invoice';
+import { maskSensitiveData } from '../../common/utils/pii';
 
 @Injectable()
 export class PaymentService {
@@ -22,7 +24,9 @@ export class PaymentService {
     private readonly razorpayService: RazorpayService,
     private readonly stripeService: StripeService,
     private readonly membershipService: MembershipService,
+    private readonly escrowService: EscrowService,
     private readonly notificationService: NotificationService,
+    private readonly eventBus: EventEmitter2,
   ) {}
 
   async createPaymentOrder(companyId: string, dto: CreatePaymentOrderDto) {
@@ -36,12 +40,28 @@ export class PaymentService {
       if (!dto.orderId) throw new BadRequestException('orderId is required for ORDER_PAYMENT');
       const order = await this.prisma.order.findUnique({ where: { id: dto.orderId } });
       if (!order) throw new NotFoundException('Order not found');
+      const existing = await this.prisma.payment.findFirst({
+        where: { companyId, orderId: dto.orderId, status: 'PENDING' },
+        include: { refunds: true, order: { select: { orderNumber: true } } },
+      });
+      if (existing) {
+        this.logger.log(`Returning existing PENDING payment ${existing.id} for order ${dto.orderId}`);
+        return { id: existing.id, gatewayOrderId: existing.gatewayOrderId, amount: existing.amount, currency: existing.currency, keyId: this.razorpayService.getKeyId() };
+      }
     }
 
     if (dto.type === PaymentOrderType.CREDIT_PACK) {
       if (!dto.rfqCreditPackId) throw new BadRequestException('rfqCreditPackId is required for CREDIT_PACK_PURCHASE');
       const pack = await this.prisma.rfqCreditPack.findUnique({ where: { id: dto.rfqCreditPackId } });
       if (!pack) throw new NotFoundException('Credit pack not found');
+      const existing = await this.prisma.payment.findFirst({
+        where: { companyId, rfqCreditPackId: dto.rfqCreditPackId, status: 'PENDING' },
+        include: { refunds: true, order: { select: { orderNumber: true } } },
+      });
+      if (existing) {
+        this.logger.log(`Returning existing PENDING payment ${existing.id} for credit pack ${dto.rfqCreditPackId}`);
+        return { id: existing.id, gatewayOrderId: existing.gatewayOrderId, amount: existing.amount, currency: existing.currency, keyId: this.razorpayService.getKeyId() };
+      }
     }
 
     const receipt = `rcpt_${companyId.slice(0, 8)}_${Date.now()}`;
@@ -123,6 +143,17 @@ export class PaymentService {
   private async handlePaymentSuccess(payment: any) {
     if (payment.type === 'ORDER_PAYMENT' && payment.orderId) {
       this.logger.log(`Payment ${payment.id} completed for order ${payment.orderId}`);
+      await this.prisma.order.update({
+        where: { id: payment.orderId },
+        data: { status: 'CONFIRMED' },
+      });
+      try {
+        await this.escrowService.hold(payment.orderId, payment.companyId, 'system-auto-escrow');
+      } catch (err) {
+        this.logger.error(`Auto-escrow failed for order ${payment.orderId}: ${(err as Error).message}`);
+      }
+      await this.generateInvoice(payment);
+      return;
     }
 
     if (payment.type === 'SUBSCRIPTION') {
@@ -216,6 +247,49 @@ export class PaymentService {
     return payment;
   }
 
+  async retryPaymentOrder(companyId: string, paymentId: string) {
+    const existing = await this.prisma.payment.findFirst({
+      where: { id: paymentId, companyId },
+    });
+    if (!existing) throw new NotFoundException('Payment not found');
+    if (existing.status !== 'FAILED') throw new BadRequestException('Only FAILED payments can be retried');
+
+    const targetGateway = (existing.gateway || 'RAZORPAY') as string;
+    const gateway = getGateway(targetGateway, this.razorpayService, this.stripeService);
+
+    const receipt = `retry_${companyId.slice(0, 8)}_${Date.now()}`;
+    const gatewayOrder = await gateway.createOrder(
+      existing.amount,
+      existing.currency || 'INR',
+      receipt,
+      { companyId, retryOf: paymentId },
+    );
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        companyId,
+        type: existing.type,
+        gateway: targetGateway as any,
+        status: 'PENDING',
+        gatewayOrderId: gatewayOrder.gatewayOrderId || gatewayOrder.id,
+        amount: existing.amount,
+        currency: existing.currency,
+        description: existing.description,
+        orderId: existing.orderId,
+        rfqCreditPackId: existing.rfqCreditPackId,
+        notes: { retryOf: paymentId },
+      },
+    });
+
+    return {
+      id: payment.id,
+      gatewayOrderId: gatewayOrder.gatewayOrderId || gatewayOrder.id,
+      amount: gatewayOrder.amount,
+      currency: gatewayOrder.currency,
+      keyId: gateway.getKeyId(),
+    };
+  }
+
   async createRefund(companyId: string, paymentId: string, dto: CreateRefundDto) {
     const payment = await this.prisma.payment.findFirst({
       where: { id: paymentId, companyId },
@@ -271,6 +345,20 @@ export class PaymentService {
         },
       });
 
+      if (payment.orderId) {
+        await tx.order.update({
+          where: { id: payment.orderId },
+          data: { status: newTotalRefunded >= payment.amount ? 'RETURNED' : 'CANCELLED' },
+        });
+        const escrow = await tx.escrow.findUnique({ where: { orderId: payment.orderId } });
+        if (escrow && escrow.status !== 'REFUNDED') {
+          await tx.escrow.update({
+            where: { id: escrow.id },
+            data: { status: 'REFUNDED', refundedAt: new Date() },
+          });
+        }
+      }
+
       return r;
     });
 
@@ -292,6 +380,22 @@ export class PaymentService {
   async createSubscriptionGatewayOrder(companyId: string, userId: string, dto: CreateSubscriptionOrderDto, gatewayName: string) {
     const plan = await this.prisma.membershipPlan.findUnique({ where: { planId: dto.planId } });
     if (!plan) throw new NotFoundException('Plan not found');
+
+    const existingPending = await this.prisma.payment.findFirst({
+      where: { companyId, type: 'SUBSCRIPTION', status: 'PENDING' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (existingPending) {
+      const gateway = getGateway(gatewayName, this.razorpayService, this.stripeService);
+      return {
+        id: existingPending.id,
+        gatewayOrderId: existingPending.gatewayOrderId,
+        amount: existingPending.amount,
+        currency: existingPending.currency,
+        keyId: gateway.getKeyId(),
+        message: 'Existing pending subscription order found',
+      };
+    }
 
     const price = dto.planTier === 'B' ? plan.pricePlanB : dto.planTier === 'C' ? plan.pricePlanC : plan.pricePlanA;
     const totalAmount = price * dto.duration;
@@ -346,14 +450,14 @@ export class PaymentService {
     if (!payment) throw new NotFoundException('Payment record not found');
 
     const gateway = getGateway(gatewayName, this.razorpayService, this.stripeService);
-    const isValid = gateway.verifyPayment({
+    const isValid = await gateway.verifyPayment({
       gatewayOrderId: payment.gatewayOrderId!,
       gatewayPaymentId: dto.gatewayPaymentId,
       gatewaySignature: dto.gatewaySignature,
     });
     if (!isValid) throw new BadRequestException('Payment verification failed — signature mismatch');
 
-    const updated = await this.prisma.payment.update({
+    await this.prisma.payment.update({
       where: { id: payment.id },
       data: {
         status: 'CAPTURED',
@@ -444,6 +548,36 @@ export class PaymentService {
               });
               this.logger.log(`Credits ${pack.credits} added to company ${updatedPayment.companyId} from pack ${pack.id}`);
             }
+          } else if (updatedPayment.type === 'SUBSCRIPTION') {
+            const notes = updatedPayment.notes as Record<string, any> | null;
+            if (notes?.planId) {
+              try {
+                await this.membershipService.activateSubscription({
+                  companyId: updatedPayment.companyId,
+                  planId: notes.planId,
+                  planTier: notes.planTier || 'A',
+                  amount: updatedPayment.amount,
+                  paymentId: updatedPayment.id,
+                });
+                this.logger.log(`Subscription activated via webhook for company ${updatedPayment.companyId}`);
+              } catch (err) {
+                this.logger.error(`Failed to activate subscription via webhook: ${(err as Error).message}`);
+              }
+            }
+          } else if (updatedPayment.type === 'BOOKING_PAYMENT') {
+            const notes = updatedPayment.notes as Record<string, any> | null;
+            const bookingId = notes?.bookingId;
+            if (bookingId) {
+              try {
+                await tx.booking.update({
+                  where: { id: bookingId },
+                  data: { paymentStatus: 'PAID', status: 'CONFIRMED' },
+                });
+                this.logger.log(`Booking ${bookingId} confirmed via webhook for payment ${updatedPayment.id}`);
+              } catch (err) {
+                this.logger.warn(`Failed to update booking ${bookingId} via webhook: ${(err as Error).message}`);
+              }
+            }
           }
 
           const count = await tx.invoice.count();
@@ -462,6 +596,19 @@ export class PaymentService {
             },
           });
         });
+
+        // Emit event for booking payment webhook capture — orchestrator listens to create escrow
+        if (pendingPayment && pendingPayment.type === 'BOOKING_PAYMENT') {
+          const notes = pendingPayment.notes as Record<string, any> | null;
+          const bookingId = notes?.bookingId;
+          if (bookingId) {
+            this.eventBus.emit('booking.payment.webhook.captured', {
+              bookingId,
+              paymentId: pendingPayment.id,
+              companyId: pendingPayment.companyId,
+            });
+          }
+        }
       }
     }
 
@@ -507,7 +654,7 @@ export class PaymentService {
 
     if (eventId) {
       await this.prisma.processedWebhookEvent.create({
-        data: { eventId, gateway: 'RAZORPAY', payload },
+        data: { eventId, gateway: 'RAZORPAY', payload: maskSensitiveData(payload) as any },
       });
     }
   }

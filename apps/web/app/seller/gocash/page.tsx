@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { DashboardPageHeader, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { WalletTransactionFilters } from '@/components/wallet/wallet-transaction-filters';
@@ -11,10 +12,12 @@ import { WalletTimeline } from '@/components/wallet/wallet-timeline';
 import { WalletAnalyticsBar } from '@/components/wallet/wallet-analytics-bar';
 import {
   Award, ArrowUpRight, ArrowDownLeft, AlertCircle, Download, DollarSign, TrendingUp,
-  Users, Gift, Megaphone, ShoppingBag, FileText, Sparkles, BarChart3, ExternalLink
+  Users, Gift, Megaphone, ShoppingBag, Sparkles, BarChart3, ExternalLink
 } from 'lucide-react';
 import { useSellerWalletSummary, useSellerTransactions, useSellerAnalytics } from '@/hooks/use-wallet';
 import { toast } from '@/components/ui/use-toast';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 
 const formatINR = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
@@ -89,7 +92,7 @@ export default function SellerGocashPage() {
         actions={
           <div className="flex gap-2">
             <select
-              className="h-8 rounded-lg border border-white/[0.06] bg-white/[0.04] px-2 text-xs text-white backdrop-blur-xl"
+              className="h-8 rounded-lg border border-border bg-surface px-2 text-xs text-text-primary backdrop-blur-xl"
               value={statementPeriod}
               onChange={(e) => setStatementPeriod(e.target.value)}
             >
@@ -118,32 +121,32 @@ export default function SellerGocashPage() {
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-4">
-        <Link href="/seller/campaigns" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-orange-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-orange-500/30">
+        <Link href="/seller/campaigns" className="group rounded-2xl border border-border bg-gradient-to-br from-orange-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-orange-500/30">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-[#FF4D00]"><Megaphone className="h-5 w-5" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-accent-500"><Megaphone className="h-5 w-5" /></div>
             <div><p className="text-sm font-medium text-white">Campaigns</p><p className="text-xs text-white/50">Promote & earn</p></div>
-            <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+            <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
           </div>
         </Link>
-        <Link href="/seller/referrals" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-blue-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-blue-500/30">
+        <Link href="/seller/referrals" className="group rounded-2xl border border-border bg-gradient-to-br from-blue-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-blue-500/30">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400"><Users className="h-5 w-5" /></div>
             <div><p className="text-sm font-medium text-white">Referrals</p><p className="text-xs text-white/50">Refer partners</p></div>
-            <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+            <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
           </div>
         </Link>
-        <Link href="/seller/products" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-green-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-green-500/30">
+        <Link href="/seller/products" className="group rounded-2xl border border-border bg-gradient-to-br from-green-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-green-500/30">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/10 text-green-400"><ShoppingBag className="h-5 w-5" /></div>
             <div><p className="text-sm font-medium text-white">Products</p><p className="text-xs text-white/50">Manage listings</p></div>
-            <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+            <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
           </div>
         </Link>
-        <Link href="/seller/analytics" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-purple-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-purple-500/30">
+        <Link href="/seller/analytics" className="group rounded-2xl border border-border bg-gradient-to-br from-purple-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-purple-500/30">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400"><BarChart3 className="h-5 w-5" /></div>
             <div><p className="text-sm font-medium text-white">Analytics</p><p className="text-xs text-white/50">View insights</p></div>
-            <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+            <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
           </div>
         </Link>
       </div>
@@ -162,7 +165,7 @@ export default function SellerGocashPage() {
               <CardHeader><CardTitle><Award className="mr-2 inline h-4 w-4" /> Reward Breakdown</CardTitle></CardHeader>
               <CardContent>
                 {analyticsLoading ? (
-                  <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-8 animate-pulse rounded-lg bg-white/[0.04]" />)}</div>
+                  <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-8 animate-pulse rounded-lg bg-surface" />)}</div>
                 ) : (
                   <WalletAnalyticsBar items={rewardBreakdown} formatCurrency={formatINR} />
                 )}
@@ -183,24 +186,24 @@ export default function SellerGocashPage() {
             <CardHeader><CardTitle><Sparkles className="mr-2 inline h-4 w-4" /> Quick Stats</CardTitle></CardHeader>
             <CardContent>
               {analyticsLoading ? (
-                <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-10 animate-pulse rounded-lg bg-white/[0.04]" />)}</div>
+                <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-10 animate-pulse rounded-lg bg-surface" />)}</div>
               ) : analytics ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg border border-white/[0.06] p-3">
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-blue-400" />
-                      <span className="text-sm text-white/70">Membership</span>
+                      <span className="text-sm text-text-secondary">Membership</span>
                     </div>
-                    <span className="text-sm font-medium text-white">{formatINR(analytics.membershipRewards.total)} <span className="text-xs text-white/40">({analytics.membershipRewards.count})</span></span>
+                    <span className="text-sm font-medium text-text-primary">{formatINR(analytics.membershipRewards.total)} <span className="text-xs text-text-primary/40">({analytics.membershipRewards.count})</span></span>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg border border-white/[0.06] p-3">
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div className="flex items-center gap-2">
                       <Gift className="h-4 w-4 text-green-400" />
                       <span className="text-sm text-white/70">Referrals</span>
                     </div>
                     <span className="text-sm font-medium text-white">{formatINR(analytics.referralRewards.total)} <span className="text-xs text-white/40">({analytics.referralRewards.count})</span></span>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg border border-white/[0.06] p-3">
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div className="flex items-center gap-2">
                       <Megaphone className="h-4 w-4 text-orange-400" />
                       <span className="text-sm text-white/70">Campaigns</span>
@@ -243,57 +246,41 @@ export default function SellerGocashPage() {
             ) : txnsError ? (
               <p className="py-4 text-center text-sm text-red-400">Failed to load transactions.</p>
             ) : !txns.length ? (
-              <p className="py-4 text-center text-sm text-white/40">
-                {appliedFilters.direction || appliedFilters.type || appliedFilters.from || appliedFilters.search
-                  ? 'No transactions match your filters.'
-                  : 'No transactions yet.'}
-              </p>
+              <EmptyState title={appliedFilters.direction || appliedFilters.type || appliedFilters.from || appliedFilters.search ? 'No transactions match your filters.' : 'No transactions yet.'} />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/[0.06] text-left">
-                      <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Date</th>
-                      <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Type</th>
-                      <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Direction</th>
-                      <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Amount</th>
-                      <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Balance</th>
-                      <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Description</th>
-                      <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {txns.map((txn) => (
-                      <tr key={txn.id} className="border-b border-white/[0.06] last:border-0">
-                        <td className="py-3 text-white/50">{new Date(txn.createdAt).toLocaleDateString()}</td>
-                        <td className="py-3">
-                          <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-medium text-white/70">{txn.type.replace(/_/g, ' ')}</span>
-                        </td>
-                        <td className="py-3">
-                          {txn.direction === 'CREDIT' ? (
-                            <span className="flex items-center text-green-400"><ArrowUpRight className="mr-1 h-3 w-3" /> Earned</span>
-                          ) : (
-                            <span className="flex items-center text-red-400"><ArrowDownLeft className="mr-1 h-3 w-3" /> Spent</span>
-                          )}
-                        </td>
-                        <td className={`py-3 font-medium ${txn.direction === 'CREDIT' ? 'text-green-400' : 'text-red-400'}`}>
-                          {txn.direction === 'CREDIT' ? '+' : '-'}{formatINR(txn.amount)}
-                        </td>
-                        <td className="py-3 text-white/50">{formatINR(txn.balanceAfter)}</td>
-                        <td className="max-w-xs truncate py-3 text-white/50">{txn.reason}</td>
-                        <td className="py-3">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                            txn.status === 'SUCCESS' ? 'bg-green-500/10 text-green-400' :
-                            txn.status === 'FAILED' ? 'bg-red-500/10 text-red-400' :
-                            txn.status === 'REVERSED' ? 'bg-yellow-500/10 text-yellow-400' :
-                            'bg-white/5 text-white/40'
-                          }`}>{txn.status}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <THead><TR><TH>Date</TH><TH>Type</TH><TH>Direction</TH><TH>Amount</TH><TH>Balance</TH><TH>Description</TH><TH>Status</TH></TR></THead>
+                <TBody>
+                  {txns.map((txn) => (
+                    <TR key={txn.id}>
+                      <TD className="text-white/50">{new Date(txn.createdAt).toLocaleDateString()}</TD>
+                      <TD>
+                        <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-xs font-medium text-text-secondary">{txn.type.replace(/_/g, ' ')}</span>
+                      </TD>
+                      <TD>
+                        {txn.direction === 'CREDIT' ? (
+                          <span className="flex items-center text-green-400"><ArrowUpRight className="mr-1 h-3 w-3" /> Earned</span>
+                        ) : (
+                          <span className="flex items-center text-red-400"><ArrowDownLeft className="mr-1 h-3 w-3" /> Spent</span>
+                        )}
+                      </TD>
+                      <TD className={`py-3 font-medium ${txn.direction === 'CREDIT' ? 'text-green-400' : 'text-red-400'}`}>
+                        {txn.direction === 'CREDIT' ? '+' : '-'}{formatINR(txn.amount)}
+                      </TD>
+                      <TD className="text-white/50">{formatINR(txn.balanceAfter)}</TD>
+                      <TD className="max-w-xs truncate text-white/50">{txn.reason}</TD>
+                      <TD>
+                        <Badge className={
+                          txn.status === 'SUCCESS' ? 'bg-green-500/10 text-green-400' :
+                          txn.status === 'FAILED' ? 'bg-red-500/10 text-red-400' :
+                          txn.status === 'REVERSED' ? 'bg-yellow-500/10 text-yellow-400' :
+                          'bg-surface text-text-tertiary'
+                        }>{txn.status}</Badge>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
             )}
             {totalPages > 1 && (
               <div className="flex items-center justify-between">

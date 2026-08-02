@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreateCampaign } from '@/hooks/use-campaign';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -57,9 +58,9 @@ export default function NewCampaignPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="type">Campaign Type</Label>
-                <select id="type" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                <Select id="type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                   {CAMPAIGN_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
+                </Select>
               </div>
             </div>
 

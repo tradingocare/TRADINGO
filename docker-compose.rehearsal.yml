@@ -1,0 +1,67 @@
+# TRADINGO Production Rehearsal Override
+# Validates the production stack locally without colliding with dev containers
+# (dev postgres/redis already hold 5432/6379). Usage:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.rehearsal.yml config
+#   docker compose -f docker-compose.prod.yml -f docker-compose.rehearsal.yml up -d --build postgres redis api-migrate api web nginx
+name: tradingo-prod-rehearsal
+
+volumes:
+  postgres_data:
+    name: tradingo-rehearsal-postgres-data
+  redis_data:
+    name: tradingo-rehearsal-redis-data
+  prometheus_data:
+    name: tradingo-rehearsal-prometheus-data
+  grafana_data:
+    name: tradingo-rehearsal-grafana-data
+
+services:
+  postgres:
+    container_name: tradingo-rehearsal-postgres
+    ports: !override
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_USER: tradingo
+      POSTGRES_PASSWORD: rehearsal-secret
+      POSTGRES_DB: tradingo
+
+  redis:
+    container_name: tradingo-rehearsal-redis
+    ports: !override
+      - "127.0.0.1:6380:6379"
+    command: ["redis-server", "--requirepass", "rehearsal-redis-pass", "--appendonly", "yes"]
+
+  api:
+    container_name: tradingo-rehearsal-api
+    ports: !override
+      - "127.0.0.1:3001:3001"
+    env_file: !override
+      - .env.production.rehearsal
+
+  api-migrate:
+    container_name: tradingo-rehearsal-api-migrate
+    env_file: !override
+      - .env.production.rehearsal
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args: !override
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:8080}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:8080}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3001}
+        NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID:-rzp_test_xxxxxxxxxxxx}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+    container_name: tradingo-rehearsal-web
+    ports: !override
+      - "127.0.0.1:3000:3000"
+    env_file: !override
+      - .env.production.rehearsal
+
+  nginx:
+    container_name: tradingo-rehearsal-nginx
+    ports: !override
+      - "8080:80"
+      - "8443:443"

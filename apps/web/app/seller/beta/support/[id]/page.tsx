@@ -13,7 +13,8 @@ import {
   type SupportTicket,
   type SupportTicketMessage,
 } from '@/lib/api/beta';
-import { ArrowLeft, Send, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Send, AlertCircle } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const STATUS_BADGE_VARIANTS: Record<string, 'outline' | 'warning' | 'success' | 'secondary'> = {
   OPEN: 'outline',
@@ -99,7 +100,7 @@ export default function TicketDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-text-secondary" />
+        <LoadingSpinner size="default" />
         <span className="ml-3 text-text-secondary">Loading ticket...</span>
       </div>
     );
@@ -206,7 +207,7 @@ export default function TicketDetailPage() {
               disabled={sending || !newMessage.trim()}
             >
               {sending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LoadingSpinner size="sm" />
               ) : (
                 <Send className="mr-2 h-4 w-4" />
               )}

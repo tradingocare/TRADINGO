@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductClaimsService } from './product-claims.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -6,9 +7,11 @@ import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateProductClaimDto } from './dto/create-product-claim.dto';
 import { UpdateProductClaimDto } from './dto/update-product-claim.dto';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Product Claims')
 @UseGuards(JwtAuthGuard)
+@Throttle(RateLimits.WRITE_GENERAL)
 @Controller()
 export class ProductClaimsController {
   constructor(private readonly productClaimsService: ProductClaimsService) {}

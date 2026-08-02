@@ -12,6 +12,10 @@ export enum SearchSort {
   VERIFICATION = 'verification',
   LATEST = 'latest',
   POPULARITY = 'popularity',
+  RATING = 'rating',
+  PRICE_ASC = 'price_asc',
+  PRICE_DESC = 'price_desc',
+  NEWEST = 'newest',
 }
 
 export enum DistanceUnit {

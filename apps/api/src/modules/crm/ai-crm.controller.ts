@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { ApiTags, ApiOperation } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
 import { AiCrmService } from './ai-crm.service'
 import {
   AiCrmScoringDto,
@@ -21,6 +22,7 @@ import {
 
 @ApiTags('AI CRM')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 @Controller('crm')
 export class AiCrmController {
   constructor(private readonly aiCrmService: AiCrmService) {}

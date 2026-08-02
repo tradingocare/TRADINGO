@@ -70,6 +70,10 @@ export class NearToFarService {
     return scored.sort((a, b) => b.matchScore - a.matchScore);
   }
 
+  async findSuppliersForCompany(companyId: string) {
+    return [];
+  }
+
   async getMatchingStats() {
     const [totalSellers, verifiedSellers, activeSellers] = await Promise.all([
       this.prisma.company.count({ where: { status: 'ACTIVE' } }),

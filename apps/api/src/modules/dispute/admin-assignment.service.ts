@@ -30,7 +30,7 @@ export class AdminAssignmentService {
     return { adminId: admin.id, reason: admin.reason };
   }
 
-  async getAvailableAdmins(): Promise<any[]> {
+  async getAvailableAdmins(): Promise<Record<string, any>[]> {
     const activeDisputes = await this.prisma.dispute.groupBy({
       by: ['assignedAdminId'],
       where: {
@@ -67,7 +67,7 @@ export class AdminAssignmentService {
     }));
   }
 
-  async getLeastBusyAdmin(): Promise<any> {
+  async getLeastBusyAdmin(): Promise<Record<string, any> | null> {
     const admins = await this.getAvailableAdmins();
     if (admins.length === 0) return null;
     return this.getLeastBusyFromList(admins);
@@ -87,12 +87,12 @@ export class AdminAssignmentService {
     });
   }
 
-  private getLeastBusyFromList(admins: any[]): any {
+  private getLeastBusyFromList(admins: Record<string, any>[]): any {
     const sorted = [...admins].sort((a, b) => a.activeDisputeCount - b.activeDisputeCount);
     return { ...sorted[0], reason: 'least-active' };
   }
 
-  private getNextRoundRobin(admins: any[]): any {
+  private getNextRoundRobin(admins: Record<string, any>[]): any {
     const index = this.roundRobinIndex % admins.length;
     this.roundRobinIndex = (this.roundRobinIndex + 1) % admins.length;
     return { ...admins[index], reason: 'round-robin' };

@@ -79,10 +79,10 @@ export default function VendorRegistrationWizard() {
           <p className="text-white font-bold text-sm">Step {step} of {STEPS.length}</p>
           <p className="text-white/35 text-xs">{STEPS[step - 1].title} — {STEPS[step - 1].subtitle}</p>
         </div>
-        <div className="h-1.5 rounded-full overflow-hidden mb-5" style={{ background: 'rgba(255,255,255,0.08)' }}>
+        <div className="h-1.5 rounded-full overflow-hidden mb-5 bg-bg-elevated">
           <motion.div className="h-full rounded-full" animate={{ width: `${progressPct}%` }}
             transition={{ duration: 0.4 }}
-            style={{ background: 'linear-gradient(90deg,#FF4D00,#FF7A3D)' }} />
+            style={{ background: 'linear-gradient(90deg,#f59e0b,#fbbf24)' }} />
         </div>
         <div className="flex items-center justify-between">
           {STEPS.map((s) => {
@@ -92,13 +92,13 @@ export default function VendorRegistrationWizard() {
               <div key={s.number} className="flex flex-col items-center gap-1">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300"
                   style={{
-                    background: done ? 'rgba(74,222,128,0.2)' : current ? 'rgba(255,77,0,0.2)' : 'rgba(255,255,255,0.05)',
-                    border: done ? '1px solid rgba(74,222,128,0.5)' : current ? '1px solid rgba(255,77,0,0.5)' : '1px solid rgba(255,255,255,0.1)',
-                    color: done ? '#4ade80' : current ? '#FF4D00' : 'rgba(255,255,255,0.3)',
+                    background: done ? 'rgba(74,222,128,0.2)' : current ? 'rgba(245, 158, 11, 0.2)' : undefined,
+                    border: done ? '1px solid rgba(74,222,128,0.5)' : current ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
+                    color: done ? '#4ade80' : current ? '#f59e0b' : 'rgba(255,255,255,0.3)',
                   }}>
                   {done ? <CheckCircle2 size={14} /> : s.number}
                 </div>
-                <span className={`text-[8px] hidden sm:block transition-colors ${current ? 'text-[#FF4D00]' : done ? 'text-green-400/70' : 'text-white/25'}`}>
+                <span className={`text-[8px] hidden sm:block transition-colors ${current ? 'text-[#f59e0b]' : done ? 'text-green-400/70' : 'text-white/25'}`}>
                   {s.title}
                 </span>
               </div>

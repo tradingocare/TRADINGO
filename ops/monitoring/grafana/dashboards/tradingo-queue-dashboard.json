@@ -1,0 +1,64 @@
+{
+  "title": "TRADINGO — Queue Monitoring",
+  "uid": "tradingo-queue-dashboard",
+  "tags": ["tradingo", "queue"],
+  "schemaVersion": 37,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "panels": [
+    {
+      "title": "Active Jobs per Queue",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 4, "x": 0, "y": 0 },
+      "targets": [{ "expr": "sum(bull_queue_active)", "legendFormat": "Active" }],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 50 }, { "color": "red", "value": 200 }] } } }
+    },
+    {
+      "title": "Waiting Jobs",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 4, "x": 4, "y": 0 },
+      "targets": [{ "expr": "sum(bull_queue_waiting)", "legendFormat": "Waiting" }],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 100 }, { "color": "red", "value": 1000 }] } } }
+    },
+    {
+      "title": "Failed Jobs",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 4, "x": 8, "y": 0 },
+      "targets": [{ "expr": "sum(bull_queue_failed)", "legendFormat": "Failed" }],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 10 }, { "color": "red", "value": 100 }] } } }
+    },
+    {
+      "title": "Queue Depth by Queue",
+      "type": "barchart",
+      "gridPos": { "h": 12, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "bull_queue_waiting", "legendFormat": "Waiting — {{queue}}" },
+        { "expr": "bull_queue_active", "legendFormat": "Active — {{queue}}" },
+        { "expr": "bull_queue_failed", "legendFormat": "Failed — {{queue}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "title": "Queue Waiting Jobs (by queue)",
+      "type": "timeseries",
+      "gridPos": { "h": 12, "w": 12, "x": 12, "y": 8 },
+      "targets": [{ "expr": "bull_queue_waiting", "legendFormat": "{{queue}}" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "title": "Queue Completed Jobs",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 20 },
+      "targets": [{ "expr": "bull_queue_completed", "legendFormat": "{{queue}}" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "title": "Queue Delayed Jobs",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 20 },
+      "targets": [{ "expr": "bull_queue_delayed", "legendFormat": "{{queue}}" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    }
+  ]
+}

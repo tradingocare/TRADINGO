@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { ApprovalService } from './approval.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -7,6 +9,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Admin Product Approval')
+@Throttle(RateLimits.ADMIN_WRITE)
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/products/approval')
 export class ApprovalController {

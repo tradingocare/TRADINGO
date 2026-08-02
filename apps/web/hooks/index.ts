@@ -16,3 +16,4 @@ export * from './use-cursor-glow';
 export * from './use-buyer';
 export * from './use-communication';
 export * from './use-user-verification';
+export * from './use-marketplace-catalog-bridge';

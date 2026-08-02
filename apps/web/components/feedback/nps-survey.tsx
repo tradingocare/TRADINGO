@@ -53,7 +53,7 @@ export function NpsSurvey({ onSubmit }: NpsSurveyProps) {
             key={s}
             type="button"
             onClick={() => setScore(s)}
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white transition-all ${
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-gray-900 transition-all ${
               score === s ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : ''
             } ${getScoreColor(s)}`}
           >

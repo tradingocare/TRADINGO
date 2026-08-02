@@ -1,14 +1,16 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   ArrowLeft, Check, MessageSquare, Clock, Shield,
-  Star, TrendingUp, Handshake, Loader2,
+  Star, TrendingUp, Handshake,
 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { smartRfqApi } from '@/lib/api/smart-rfq';
 import { useStartNegotiation } from '@/hooks/use-smart-negotiation';
 import { useToast } from '@/components/ui/use-toast';
@@ -21,6 +23,7 @@ function QuoteComparePage() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
+  const [accepting, setAccepting] = useState(false);
 
   useEffect(() => {
     if (!rfqId) { setLoading(false); return; }
@@ -116,7 +119,7 @@ function QuoteComparePage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Compare Quotes" />
-        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-orange-500" /></div>
+        <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
       </div>
     );
   }
@@ -125,7 +128,7 @@ function QuoteComparePage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Compare Quotes" description="No quotes to compare" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 backdrop-blur-xl">
           <p className="text-white/60">No quotes available for this RFQ yet.</p>
           <Button variant="outline" className="mt-4" onClick={() => router.push('/buyer/rfq')}>Back to RFQs</Button>
         </div>
@@ -140,8 +143,22 @@ function QuoteComparePage() {
         description={`${quotes.length} quote(s) for RFQ: ${rfqId.slice(0, 8)}`}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="accent" disabled={selected.length === 0}>
-              <Check className="mr-2 h-4 w-4" />Accept Selected
+            <Button variant="accent" disabled={selected.length === 0 || accepting} onClick={async () => {
+              setAccepting(true);
+              try {
+                for (const qId of selected) {
+                  await smartRfqApi.acceptQuote(rfqId, qId);
+                }
+                toast({ title: `Accepted ${selected.length} quote(s) successfully` });
+                setSelected([]);
+                smartRfqApi.getQuotes(rfqId).then(setQuotes);
+              } catch {
+                toast({ title: 'Failed to accept one or more quotes', variant: 'destructive' });
+              } finally {
+                setAccepting(false);
+              }
+            }}>
+              <Check className="mr-2 h-4 w-4" />{accepting ? 'Accepting...' : 'Accept Selected'}
             </Button>
             <Button variant="ghost" onClick={() => router.push('/buyer/quote')}>
               <ArrowLeft className="mr-2 h-4 w-4" />Back
@@ -150,11 +167,11 @@ function QuoteComparePage() {
         }
       />
 
-      <div className="overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface backdrop-blur-xl">
         <table className="w-full min-w-[900px]">
           <thead>
-            <tr className="border-b border-white/[0.06]">
-              <th className="sticky left-0 z-10 bg-[#1D0001] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/40 min-w-[140px]">
+            <tr className="border-b border-border">
+              <th className="sticky left-0 z-10 bg-bg-base px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/40 min-w-[140px]">
                 Criteria
               </th>
               {quotes.map((q: any) => (
@@ -162,12 +179,7 @@ function QuoteComparePage() {
                   selected.includes(q.id) ? 'bg-orange-500/10' : ''
                 }`}>
                   <div className="flex items-center justify-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(q.id)}
-                      onChange={() => toggleSelect(q.id)}
-                      className="h-4 w-4 rounded border-white/20 bg-white/[0.04] text-orange-500 focus:ring-orange-500"
-                    />
+                    <Checkbox checked={selected.includes(q.id)} onChange={() => toggleSelect(q.id)} id={`quote-select-${q.id}`} />
                     <StatusBadge status={q.status} />
                   </div>
                 </th>
@@ -176,8 +188,8 @@ function QuoteComparePage() {
           </thead>
           <tbody>
             {columns.map((col) => (
-              <tr key={col.key} className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.02]">
-                <td className="sticky left-0 z-10 bg-[#1D0001] px-4 py-3 text-xs font-medium text-white/60">
+              <tr key={col.key} className="border-b border-border last:border-0 hover:bg-surface">
+                <td className="sticky left-0 z-10 bg-bg-base px-4 py-3 text-xs font-medium text-white/60">
                   {col.label}
                 </td>
                 {quotes.map((q: any) => (

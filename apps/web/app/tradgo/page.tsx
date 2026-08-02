@@ -20,42 +20,42 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
 };
 
 const BADGE_GRADIENTS = [
-  'from-amber-400 to-yellow-500',
-  'from-yellow-600 to-amber-700',
-  'from-rose-500 to-pink-500',
-  'from-blue-500 to-cyan-500',
-  'from-teal-400 to-cyan-500',
-  'from-amber-500 to-orange-500',
+  'from-accent to-accent/60',
+  'from-accent to-accent/50',
+  'from-accent to-accent/60',
+  'from-accent to-accent/50',
+  'from-accent to-accent/60',
+  'from-accent to-accent/50',
 ];
 
 const badges = TRADGO_BADGES.map((b, i) => ({
   icon: ICON_MAP[b.icon] || Zap,
   title: b.name,
   description: b.description,
-  color: BADGE_GRADIENTS[i] || 'from-blue-500 to-cyan-500',
+  color: BADGE_GRADIENTS[i] || 'from-accent to-accent/60',
 }));
 
 const PRIZE_ICONS = [Trophy, Medal, Medal];
 const PRIZE_RANK_LABELS = ['1st Place', '2nd Place', '3rd Place'];
-const PRIZE_TEXT_COLORS = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
+const PRIZE_TEXT_COLORS = ['text-accent', 'text-text-tertiary', 'text-accent'];
 const PRIZE_BG_COLORS = [
-  'bg-yellow-50 dark:bg-yellow-900/10',
-  'bg-gray-50 dark:bg-gray-900/10',
-  'bg-amber-50 dark:bg-amber-900/10',
+  'bg-accent/5',
+  'bg-surface',
+  'bg-accent/5',
 ];
 const PRIZE_BORDER_COLORS = [
-  'border-yellow-300 dark:border-yellow-700',
-  'border-gray-300 dark:border-gray-700',
-  'border-amber-200 dark:border-amber-800',
+  'border-accent/20',
+  'border-border',
+  'border-accent/20',
 ];
 
 const leaderboardPrizes = TRADGO_PRIZES.map((p, i) => ({
   rank: PRIZE_RANK_LABELS[i] || `${p.rank}th Place`,
   prize: p.prize,
   icon: PRIZE_ICONS[i] || Trophy,
-  color: PRIZE_TEXT_COLORS[i] || 'text-accent-500',
-  bg: PRIZE_BG_COLORS[i] || 'bg-accent-50 dark:bg-accent-900/10',
-  border: PRIZE_BORDER_COLORS[i] || 'border-accent-200 dark:border-accent-800',
+  color: PRIZE_TEXT_COLORS[i] || 'text-accent',
+  bg: PRIZE_BG_COLORS[i] || 'bg-accent/5',
+  border: PRIZE_BORDER_COLORS[i] || 'border-accent/20',
 }));
 
 const raceFeatures = TRADGO_RACE_FEATURES;
@@ -69,17 +69,17 @@ export default function TradgoPage() {
       />
 
       {/* Concept Section */}
-      <section className="py-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10">
+      <section className="py-20">
         <div className="container-main">
           <AnimatedSection>
             <div className="mx-auto max-w-4xl text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-xl">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-accent to-accent/70 text-btn-primary-text shadow-xl">
                 <Zap className="h-10 w-10" />
               </div>
-              <h2 className="mt-8 text-3xl font-bold sm:text-4xl dark:text-dark-text-primary">
+              <h2 className="mt-8 text-3xl font-bold sm:text-4xl">
                 What is TRADGO?
               </h2>
-              <p className="mt-4 text-lg text-text-secondary dark:text-dark-text-secondary">
+              <p className="mt-4 text-lg text-text-secondary">
                 TRADGO transforms the trading experience into an exciting, competitive sport. Instead of
                 just buying and selling, you participate in time-bound trading races, compete against other
                 traders, earn achievement badges, and climb the global leaderboard. Every trade you make
@@ -110,7 +110,7 @@ export default function TradgoPage() {
       <Separator />
 
       {/* Badges */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20">
         <div className="container-main">
           <SectionHeader
             title="Achievement Badges"
@@ -122,7 +122,7 @@ export default function TradgoPage() {
               return (
                 <Card key={badge.title} className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                   <CardHeader>
-                    <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-sm ${badge.color}`}>
+                    <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-btn-primary-text shadow-sm ${badge.color}`}>
                       <Icon className="h-7 w-7" />
                     </div>
                     <CardTitle className="text-lg">{badge.title}</CardTitle>
@@ -156,8 +156,8 @@ export default function TradgoPage() {
                     <Icon className="h-8 w-8" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-text-primary dark:text-dark-text-primary">{prize.rank}</h3>
-                    <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{prize.prize}</p>
+                    <h3 className="text-lg font-bold text-text-primary">{prize.rank}</h3>
+                    <p className="mt-1 text-sm text-text-secondary">{prize.prize}</p>
                   </div>
                 </div>
               );
@@ -169,7 +169,7 @@ export default function TradgoPage() {
       <Separator />
 
       {/* How to Join */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20">
         <div className="container-main">
           <AnimatedSection>
             <div className="mx-auto max-w-4xl text-center">
@@ -184,12 +184,12 @@ export default function TradgoPage() {
                   { step: '3', title: 'Trade', desc: 'Conduct trades as usual — points accrue automatically' },
                   { step: '4', title: 'Win', desc: 'Leaderboard updates in real-time. Top ranks win prizes' },
                 ].map((item) => (
-                  <div key={item.step} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-accent-100 text-sm font-bold text-accent-700 dark:bg-accent-900/30 dark:text-accent-400">
+                  <div key={item.step} className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 text-sm font-bold text-accent">
                       {item.step}
                     </div>
-                    <h3 className="mt-3 font-semibold text-text-primary dark:text-dark-text-primary">{item.title}</h3>
-                    <p className="mt-1 text-xs text-text-secondary dark:text-dark-text-secondary">{item.desc}</p>
+                    <h3 className="mt-3 font-semibold text-text-primary">{item.title}</h3>
+                    <p className="mt-1 text-xs text-text-secondary">{item.desc}</p>
                   </div>
                 ))}
               </div>
@@ -230,9 +230,9 @@ export default function TradgoPage() {
               },
             ].map((faq, i) => (
               <AnimatedSection key={faq.q} delay={i * 50}>
-                <div className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                  <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">{faq.q}</h3>
-                  <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">{faq.a}</p>
+                <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-text-primary">{faq.q}</h3>
+                  <p className="mt-2 text-text-secondary">{faq.a}</p>
                 </div>
               </AnimatedSection>
             ))}

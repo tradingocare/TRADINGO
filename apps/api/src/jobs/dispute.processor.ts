@@ -1,6 +1,7 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import { QueueNames, DisputeJobTypes } from './queues';
 import { DisputeService } from '../modules/dispute/dispute.service';
 
@@ -55,5 +56,6 @@ export class DisputeProcessor extends WorkerHost {
   @OnWorkerEvent('failed')
   onFailed(job: Job, err: Error) {
     this.logger.error(`Dispute job ${job.id} failed: ${err.message}`);
+    Sentry.captureException(err, { tags: { queue: 'dispute', jobId: String(job.id), type: String(job.data.type) }, extra: { data: job.data } });
   }
 }

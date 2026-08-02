@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useConversation, useConversationMessages, useCommSendMessage, useMarkConversationRead, useDeleteMessage, useReportMessage, useTemplates } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Send, Trash2, Flag, Paperclip, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Trash2, Flag, Paperclip } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function SellerConversationDetailPage() {
   const params = useParams();
@@ -35,7 +36,7 @@ export default function SellerConversationDetailPage() {
   };
 
   if (convLoading || msgsLoading) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-text-tertiary" /></div>;
+    return <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>;
   }
 
   const messages = messagesData?.items ?? [];
@@ -67,7 +68,7 @@ export default function SellerConversationDetailPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg: any) => (
           <div key={msg.id} className={`group flex ${msg.senderId === 'me' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`relative max-w-[75%] rounded-2xl px-4 py-2.5 ${msg.senderId === 'me' ? 'bg-[#FF5A1F] text-white' : 'bg-surface-secondary text-text-primary dark:bg-dark-surface-secondary'}`}>
+            <div className={`relative max-w-[75%] rounded-2xl px-4 py-2.5 ${msg.senderId === 'me' ? 'bg-[#f97316] text-text-primary' : 'bg-surface-secondary text-text-primary dark:bg-dark-surface-secondary'}`}>
               <p className="text-sm">{msg.content}</p>
               <div className="mt-1 flex items-center justify-end gap-2">
                 <span className="text-[10px] opacity-60">{new Date(msg.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>

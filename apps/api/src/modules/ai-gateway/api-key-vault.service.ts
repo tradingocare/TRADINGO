@@ -9,7 +9,10 @@ export class ApiKeyVaultService {
   private readonly key: Buffer
 
   constructor(private readonly configService: ConfigService) {
-    const secret = configService.get('AI_VAULT_MASTER_KEY') || 'tradingo-ai-vault-default-key-change-in-production!'
+    const secret = configService.get<string>('AI_VAULT_MASTER_KEY', '')
+    if (!secret || secret.startsWith('change-me') || secret === 'tradingo-ai-vault-default-key-change-in-production!') {
+      throw new Error('AI_VAULT_MASTER_KEY is not set or is using a placeholder. Set a strong 32+ char key in production.')
+    }
     this.key = scryptSync(secret, 'tradingo-vault-salt', 32)
   }
 

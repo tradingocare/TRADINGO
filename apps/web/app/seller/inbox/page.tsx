@@ -6,7 +6,8 @@ import { useCommConversations, useUnreadMessageCount, useTemplates, useCreateTem
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DashboardPageHeader } from '@/components/dashboard';
-import { MessageSquare, Search, Plus, Loader2, Save, ArrowRight } from 'lucide-react';
+import { MessageSquare, Search, Plus, Save, ArrowRight } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const sourceLabels: Record<string, string> = {
   PRODUCT: 'Product Enquiry', COMPANY: 'Company Enquiry', REQUIREMENT_LIST: 'Requirement Discussion',
@@ -34,15 +35,15 @@ export default function SellerInboxPage() {
       <DashboardPageHeader title="Inbox" description="Business conversations with buyers" />
 
       {unread?.total > 0 && (
-        <div className="rounded-xl bg-[#FF5A1F]/10 border border-[#FF5A1F]/20 px-4 py-3">
-          <p className="text-sm font-medium text-[#FF5A1F]">{unread.total} unread conversations</p>
+        <div className="rounded-xl bg-surface border border-border border-l-4 border-l-accent px-4 py-3">
+          <p className="text-sm font-medium text-accent">{unread.total} unread conversations</p>
         </div>
       )}
 
       <div className="flex gap-2">
         {(['all', 'unread', 'archived'] as const).map((f) => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${filter === f ? 'bg-[#FF5A1F] text-white' : 'border border-border text-text-secondary hover:border-[#FF5A1F]/30'}`}>
+            className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${filter === f ? 'bg-[#f97316] text-white' : 'border border-border text-text-secondary hover:border-[#f97316]/30'}`}>
             {f === 'all' ? 'All' : f === 'unread' ? `Unread (${unread?.total ?? 0})` : 'Archived'}
           </button>
         ))}
@@ -56,7 +57,7 @@ export default function SellerInboxPage() {
           </div>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-text-tertiary" /></div>
+            <div className="flex items-center justify-center py-12"><LoadingSpinner size="lg" /></div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
               <MessageSquare className="h-12 w-12 text-text-tertiary" />
@@ -72,8 +73,8 @@ export default function SellerInboxPage() {
 
                 return (
                   <Link key={conv.id} href={`/seller/inbox/${conv.id}`}
-                    className={`flex items-start gap-4 rounded-xl border p-4 transition-colors hover:border-[#FF5A1F]/30 ${isUnread ? 'border-[#FF5A1F]/20 bg-[#FF5A1F]/5' : 'border-border bg-surface dark:bg-dark-surface dark:border-dark-border'}`}>
-                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${isUnread ? 'bg-[#FF5A1F]/20 text-[#FF5A1F]' : 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary'}`}>
+                    className={`flex items-start gap-4 rounded-xl border p-4 transition-colors hover:border-accent/30 ${isUnread ? 'border-border bg-surface border-l-2 border-l-accent' : 'border-border bg-surface dark:bg-dark-surface dark:border-dark-border'}`}>
+                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${isUnread ? 'bg-accent/20 text-accent' : 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary'}`}>
                       <MessageSquare className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -86,7 +87,7 @@ export default function SellerInboxPage() {
                       <p className="mt-0.5 text-xs text-text-secondary">{sourceLabels[conv.source] || conv.source}</p>
                       {lastMsg && <p className="mt-1 truncate text-xs text-text-tertiary">{lastMsg.content}</p>}
                     </div>
-                    {isUnread && <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#FF5A1F]" />}
+                    {isUnread && <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#f97316]" />}
                   </Link>
                 );
               })}
@@ -98,7 +99,7 @@ export default function SellerInboxPage() {
           <div className="rounded-xl border border-border bg-surface p-4 dark:bg-dark-surface dark:border-dark-border">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-text-primary">Quick Replies</h3>
-              <button onClick={() => setShowTemplateForm(!showTemplateForm)} className="text-[#FF5A1F] hover:text-[#FF4D00]">
+              <button onClick={() => setShowTemplateForm(!showTemplateForm)} className="text-[#f97316] hover:text-accent-500">
                 <Plus className="h-4 w-4" />
               </button>
             </div>

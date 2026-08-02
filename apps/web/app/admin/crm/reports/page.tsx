@@ -5,6 +5,8 @@ import { DashboardPageHeader, StatCard, StatCardSkeleton, TableSkeleton } from '
 import { useLeadConversionReport, useWinRateReport, usePipelineValueReport, useFollowUpEfficiencyReport, useRmPerformanceReport } from '@/hooks/use-crm';
 import { useQuery } from '@tanstack/react-query';
 import * as crmApi from '@/lib/api/crm';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { TrendingUp, Target, XCircle, Layers, Activity, Users } from 'lucide-react';
 
 export default function AdminCrmReportsPage() {
@@ -29,14 +31,14 @@ export default function AdminCrmReportsPage() {
         <Card>
           <CardHeader><CardTitle>Pipeline Value by Stage</CardTitle></CardHeader>
           <CardContent>
-            {l4 ? <TableSkeleton rows={4} /> : !pipelineValue?.length ? <p className="text-sm text-gray-400">No data</p> : (
+            {l4 ? <TableSkeleton rows={4} /> : !pipelineValue?.length ? <p className="text-sm text-text-tertiary">No data</p> : (
               <div className="space-y-3">
                 {pipelineValue.map((s: any) => (
                   <div key={s.name} className="flex justify-between items-center">
                     <span className="text-sm">{s.name}</span>
                     <div className="text-right">
                       <p className="text-sm font-medium">₹{s.value.toLocaleString()}</p>
-                      <p className="text-xs text-gray-400">{s.count} leads</p>
+                      <p className="text-xs text-text-tertiary">{s.count} leads</p>
                     </div>
                   </div>
                 ))}
@@ -48,7 +50,7 @@ export default function AdminCrmReportsPage() {
         <Card>
           <CardHeader><CardTitle>Lost Reasons</CardTitle></CardHeader>
           <CardContent>
-            {l3 ? <TableSkeleton rows={4} /> : !lostReasons?.length ? <p className="text-sm text-gray-400">No lost leads</p> : (
+            {l3 ? <TableSkeleton rows={4} /> : !lostReasons?.length ? <p className="text-sm text-text-tertiary">No lost leads</p> : (
               <div className="space-y-3">
                 {lostReasons.map((r: any) => (
                   <div key={r.reason} className="flex justify-between items-center">
@@ -65,23 +67,21 @@ export default function AdminCrmReportsPage() {
       <Card>
         <CardHeader><CardTitle>RM Performance</CardTitle></CardHeader>
         <CardContent className="p-0">
-          {l6 ? <TableSkeleton rows={5} /> : !rmPerformance?.length ? <div className="p-8 text-center text-gray-400">No data</div> : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="border-b border-gray-700 text-left text-sm text-gray-400"><th className="p-4">RM</th><th className="p-4">Companies</th><th className="p-4">Leads</th><th className="p-4">Won</th><th className="p-4">Conversion</th></tr></thead>
-                <tbody>
-                  {rmPerformance.map((rm: any) => (
-                    <tr key={rm.rmId} className="border-b border-gray-700/50">
-                      <td className="p-4 text-sm">{rm.rmName}</td>
-                      <td className="p-4 text-sm">{rm.managedCompanies}</td>
-                      <td className="p-4 text-sm">{rm.totalLeads}</td>
-                      <td className="p-4 text-sm">{rm.wonLeads}</td>
-                      <td className="p-4 text-sm font-medium">{rm.conversionRate}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {l6 ? <TableSkeleton rows={5} /> : !rmPerformance?.length ? <EmptyState title="No data" /> : (
+            <Table>
+              <THead><TR><TH>RM</TH><TH>Companies</TH><TH>Leads</TH><TH>Won</TH><TH>Conversion</TH></TR></THead>
+              <TBody>
+                {rmPerformance.map((rm: any) => (
+                  <TR key={rm.rmId}>
+                    <TD>{rm.rmName}</TD>
+                    <TD>{rm.managedCompanies}</TD>
+                    <TD>{rm.totalLeads}</TD>
+                    <TD>{rm.wonLeads}</TD>
+                    <TD className="font-medium">{rm.conversionRate}%</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </CardContent>
       </Card>

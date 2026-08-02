@@ -1,7 +1,9 @@
 import { Injectable, Logger, BadRequestException, ForbiddenException, HttpException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { PrismaService } from '../../prisma/prisma.service'
 import { RedisService } from '../../common/services/redis.service'
+import { AuditLogService } from '../audit-log/audit-log.service'
 import { ProviderRegistryService } from './provider-registry.service'
 import { ProviderRouterService } from './provider-router.service'
 import { PromptManagerService } from './prompt-manager.service'
@@ -19,6 +21,18 @@ export class AiGatewayService {
   private readonly cacheTtlSeconds: number
   private readonly cacheEnabled: boolean
 
+  private readonly INJECTION_PATTERNS = [
+    /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions|directions|prompts?)/i,
+    /output\s+(your\s+)?(system\s+)?prompt/i,
+    /reveal\s+(your\s+)?(system\s+)?prompt/i,
+    /you\s+(are\s+)?(now\s+)?(DAN|free|unrestricted)/i,
+    /pretend\s+(you\s+are|to\s+be)/i,
+    /new\s+(rule|instructions?|prompt)/i,
+    /override\s+(instructions?|rules|prompts?)/i,
+  ]
+
+  private readonly MAX_PROMPT_LENGTH = 50000
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
@@ -30,6 +44,8 @@ export class AiGatewayService {
     private readonly usageTracker: UsageTrackerService,
     private readonly costEngine: CostEngineService,
     private readonly health: ProviderHealthService,
+    private readonly auditLog: AuditLogService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.cacheTtlSeconds = configService.get('AI_CACHE_TTL_SECONDS', 3600)
     this.cacheEnabled = configService.get('AI_CACHE_ENABLED', 'true') === 'true'
@@ -99,7 +115,11 @@ export class AiGatewayService {
       }
     }
 
-    const rendered = this.prompts.renderPrompt(promptData, this.flattenPayload(dto.payload))
+    const flattened = this.flattenPayload(dto.payload)
+    for (const [key, value] of Object.entries(flattened)) {
+      flattened[key] = this.sanitizeInput(value)
+    }
+    const rendered = this.prompts.renderPrompt(promptData, flattened)
     const queueStartTime = Date.now()
 
     const completionStartTime = Date.now()
@@ -198,6 +218,54 @@ export class AiGatewayService {
   private validateRequest(dto: AiGatewayRequestDto) {
     if (!dto.taskType) throw new BadRequestException('taskType is required')
     if (!dto.payload || Object.keys(dto.payload).length === 0) throw new BadRequestException('payload is required')
+    this.sanitizePayload(dto)
+  }
+
+  private sanitizePayload(dto: AiGatewayRequestDto): void {
+    const sanitized: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(dto.payload)) {
+      if (typeof value === 'string') {
+        const cleaned = this.sanitizeInput(value)
+        this.detectInjection(cleaned, key)
+        sanitized[key] = cleaned
+      } else if (Array.isArray(value)) {
+        sanitized[key] = value.map((v) => typeof v === 'string' ? this.sanitizeInput(v) : v)
+      } else {
+        sanitized[key] = value
+      }
+    }
+    dto.payload = sanitized
+  }
+
+  private sanitizeInput(input: string): string {
+    return input
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '[REMOVED]')
+      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '[REMOVED]')
+      .replace(/javascript\s*:/gi, '')
+      .trim()
+      .substring(0, this.MAX_PROMPT_LENGTH)
+  }
+
+  private detectInjection(input: string, fieldName: string): void {
+    for (const pattern of this.INJECTION_PATTERNS) {
+      if (pattern.test(input)) {
+        this.logger.warn(`Potential prompt injection detected in field '${fieldName}': ${input.substring(0, 100)}`)
+        const metadata = { field: fieldName, inputPreview: input.substring(0, 100), matchedPattern: pattern.source }
+        this.auditLog.create({
+          action: 'SECURITY_PROMPT_INJECTION',
+          resource: `ai-gateway/${fieldName}`,
+          metadata,
+        }).catch((err) => this.logger.error('Failed to record prompt injection audit log', err))
+        this.eventEmitter.emit('security.prompt.injection', {
+          action: 'SECURITY_PROMPT_INJECTION',
+          resource: `ai-gateway/${fieldName}`,
+          metadata,
+        })
+        throw new BadRequestException('Security: Potentially harmful content detected in request')
+      }
+    }
   }
 
   private buildCacheKey(dto: AiGatewayRequestDto): string {

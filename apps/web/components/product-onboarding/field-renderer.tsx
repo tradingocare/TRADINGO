@@ -3,8 +3,10 @@
 import { useId, useRef } from 'react';
 import { Info, X, Camera, Upload, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { TemplateField, TemplateFieldType } from '@/lib/product-onboarding/types';
 
@@ -131,7 +133,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
             value={value ?? ''}
             onChange={(e) => onChange(e.target.value)}
             className={cn(
-              'flex h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm ring-offset-surface placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+              'flex h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm ring-offset-surface placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
               !value && 'text-text-tertiary',
             )}
           >
@@ -157,7 +159,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
                   value={opt.value}
                   checked={value === opt.value}
                   onChange={() => onChange(opt.value)}
-                  className="h-4 w-4 border-border text-primary-600 focus:ring-primary-500"
+                  className="h-4 w-4 border-border text-accent focus:ring-accent"
                 />
                 <span className="text-sm text-text-primary">{opt.label}</span>
               </label>
@@ -167,18 +169,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
 
       case 'CHECKBOX':
         return (
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id={fieldId}
-              checked={!!value}
-              onChange={(e) => onChange(e.target.checked)}
-              className="h-4 w-4 rounded border-border text-primary-600 focus:ring-primary-500"
-            />
-            <Label htmlFor={fieldId} className="text-sm font-normal cursor-pointer">
-              {field.label}
-            </Label>
-          </div>
+          <Checkbox checked={!!value} onChange={(e) => onChange(e.target.checked)} label={field.label} />
         );
 
       case 'MULTI_SELECT':
@@ -188,15 +179,12 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
             {selected.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {selected.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary-500/10 px-2.5 py-0.5 text-xs font-medium text-primary-700"
-                  >
+                  <Badge key={tag} variant="default" className="gap-1">
                     {tag}
                     <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-0.5 rounded-full p-0.5 hover:bg-primary-500/20">
                       <X className="h-3 w-3" />
                     </button>
-                  </span>
+                  </Badge>
                 ))}
               </div>
             )}
@@ -208,7 +196,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
                     key={opt.value}
                     type="button"
                     onClick={() => handleToggle(opt.value)}
-                    className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-text-secondary transition-colors hover:border-primary-400 hover:text-primary-600"
+                    className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-text-secondary transition-colors hover:border-accent-400 hover:text-accent-600"
                   >
                     + {opt.label}
                   </button>
@@ -249,7 +237,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
           <div className="space-y-2">
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-surface-secondary p-6 transition-colors hover:border-primary-400 hover:bg-primary-50/50"
+              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-surface-secondary p-6 transition-colors hover:border-accent-400 hover:bg-accent-50/50"
             >
               {field.type === 'IMAGE' ? (
                 <Camera className="mb-2 h-8 w-8 text-text-tertiary" />

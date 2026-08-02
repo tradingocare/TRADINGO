@@ -36,19 +36,19 @@ export default function SellerQuotePage() {
 
       <div className="relative max-w-xs">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-        <Input placeholder="Search RFQs..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-white/[0.04] border-white/[0.06] text-white" />
+        <Input placeholder="Search RFQs..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-surface border-border text-white" />
       </div>
 
       {isLoading ? <TableSkeleton /> : rfqs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 backdrop-blur-xl">
           <FileText className="h-12 w-12 text-white/30" />
           <p className="mt-4 text-lg font-medium text-white">No active RFQs to quote on</p>
           <p className="mt-1 text-sm text-white/60">Check incoming RFQs to find matching opportunities.</p>
           <Button variant="accent" className="mt-4" onClick={() => router.push('/seller/rfq')}>View Incoming RFQs</Button>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
+        <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
             <div className="col-span-4">RFQ</div>
             <div className="col-span-2">Products</div>
             <div className="col-span-2">Budget</div>
@@ -56,7 +56,7 @@ export default function SellerQuotePage() {
             <div className="col-span-2">Action</div>
           </div>
           {rfqs.map((rfq: any) => (
-            <div key={rfq.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
+            <div key={rfq.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
               <div className="lg:col-span-4">
                 <p className="text-sm font-medium text-white">{rfq.title || 'RFQ'}</p>
                 <p className="text-xs text-white/40">{rfq.company?.name || 'Buyer'}</p>

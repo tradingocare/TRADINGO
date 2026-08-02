@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { DashboardPageHeader, StatusBadge, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { useAdminOrderAnalytics, useAdminOrders } from '@/hooks/use-smart-order';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Tabs } from '@/components/ui/tabs';
 import { Package, AlertCircle, ShoppingCart, TrendingUp, Eye, XCircle, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -45,19 +47,7 @@ export default function AdminOrderDashboard() {
         description="Monitor and manage all orders across the platform"
       />
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
-        {(['overview', 'all', 'flagged'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'
-            }`}
-          >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={[{ value: 'overview', label: 'Overview' }, { value: 'all', label: 'All' }, { value: 'flagged', label: 'Flagged' }]} value={tab} onChange={(v) => setTab(v as 'overview' | 'all' | 'flagged')} className="rounded-xl border border-border bg-surface p-1" />
 
       {tab === 'overview' && (
         <>
@@ -78,7 +68,7 @@ export default function AdminOrderDashboard() {
             </div>
           )}
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Status Distribution</h3>
             <div className="flex flex-wrap gap-2">
               {Object.entries(statusColor).map(([s, cls]) => (
@@ -89,14 +79,14 @@ export default function AdminOrderDashboard() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Recent Orders</h3>
             {ordersLoading ? (
               <TableSkeleton rows={5} />
             ) : (
               <div className="space-y-3">
                 {analytics?.recentOrders?.slice(0, 10).map((order: any) => (
-                  <div key={order.id} className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                  <div key={order.id} className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3">
                     <div className="flex items-center gap-3">
                       <StatusBadge status={order.status} />
                       <p className="font-mono text-sm text-white">{order.orderNumber}</p>
@@ -115,30 +105,15 @@ export default function AdminOrderDashboard() {
 
       {tab === 'all' && (
         <>
-          <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
-            {statusTabs.map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatus(s)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap ${
-                  status === s ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'
-                }`}
-              >
-                {s === 'ALL' ? 'All' : s.split('_').map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
-              </button>
-            ))}
-          </div>
+          <Tabs tabs={statusTabs.map(s => ({ value: s, label: s === 'ALL' ? 'All' : s.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ') }))} value={status} onChange={(v) => setStatus(v as string)} className="rounded-xl border border-border bg-surface p-1" />
 
           {ordersLoading ? (
             <TableSkeleton rows={8} />
           ) : orders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-              <Package className="h-12 w-12 text-white/30" />
-              <p className="mt-4 text-lg font-medium text-white">No orders found</p>
-            </div>
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl"><div className="p-8"><EmptyState icon={Package} title="No orders found" /></div></div>
           ) : (
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-              <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+              <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
                 <div className="col-span-2">Order</div>
                 <div className="col-span-2">Buyer</div>
                 <div className="col-span-2">Seller</div>
@@ -147,7 +122,7 @@ export default function AdminOrderDashboard() {
                 <div className="col-span-2">Date</div>
               </div>
               {orders.map((order: any) => (
-                <div key={order.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
+                <div key={order.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
                   <p className="font-mono text-sm text-white sm:col-span-2">{order.orderNumber}</p>
                   <p className="text-sm text-white/70 sm:col-span-2">{order.buyerCompany?.name ?? '—'}</p>
                   <p className="text-sm text-white/70 sm:col-span-2">{order.sellerCompany?.name ?? '—'}</p>
@@ -162,11 +137,7 @@ export default function AdminOrderDashboard() {
       )}
 
       {tab === 'flagged' && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <AlertCircle className="h-12 w-12 text-white/30" />
-          <p className="mt-4 text-lg font-medium text-white">No flagged orders</p>
-          <p className="mt-1 text-sm text-white/60">Flagged orders (disputed, delayed, or anomalous) will appear here.</p>
-        </div>
+        <EmptyState icon={AlertCircle} title="No flagged orders" description="Flagged orders (disputed, delayed, or anomalous) will appear here." />
       )}
     </div>
   );

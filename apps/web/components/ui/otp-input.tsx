@@ -59,8 +59,8 @@ export function OtpInput({ length = 6, value, onChange, disabled, className }: O
           onPaste={i === 0 ? handlePaste : undefined}
           disabled={disabled}
           className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-surface text-center text-lg font-semibold text-text-primary transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-dark-text-primary',
-            value[i] && 'border-primary-500 bg-primary-50 dark:bg-primary-900/20',
+            'flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-surface text-center text-lg font-semibold text-text-primary transition-all focus:border-accent focus:ring-2 focus:ring-accent focus:outline-none',
+            value[i] && 'border-accent bg-accent/10',
           )}
           aria-label={`OTP digit ${i + 1}`}
         />

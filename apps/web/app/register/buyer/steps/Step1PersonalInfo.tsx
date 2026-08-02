@@ -1,19 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle2, Mail, Phone } from 'lucide-react'
+import { CheckCircle2, Mail, Phone, AlertCircle } from 'lucide-react'
+import api from '@/lib/api/client'
 import type { PersonalInfoForm } from '@/types/buyer-registration'
 import StepCard from '../../vendor/components/StepCard'
 import FormField from '../../vendor/components/FormField'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 interface Props {
   data: Partial<PersonalInfoForm>
@@ -92,39 +93,53 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
 
   const markTouched = useCallback((field: string) => setTouched(prev => ({ ...prev, [field]: true })), [])
 
-  const sendEmailOtp = () => {
+  const sendEmailOtp = async () => {
     if (!isEmailValid) return
     setShowEmailOtp(true)
     setEmailCountdown(60)
     setEmailOtp('')
     setEmailOtpError('')
-  }
-
-  const verifyEmailOtp = () => {
-    if (emailOtp === '123456') {
-      setEmailVerified(true)
-      setShowEmailOtp(false)
-      setEmailOtp('')
-    } else {
-      setEmailOtpError('Invalid OTP. Please try 123456 for demo.')
+    try {
+      await api.post('/auth/send-otp', { type: 'email', value: email })
+    } catch {
+      setEmailOtpError('Failed to send OTP. Please try again.')
     }
   }
 
-  const sendMobileOtp = () => {
+  const verifyEmailOtp = async () => {
+    if (!emailOtp) return
+    try {
+      await api.post('/auth/verify-otp', { type: 'email', value: email, otp: emailOtp })
+      setEmailVerified(true)
+      setShowEmailOtp(false)
+      setEmailOtp('')
+    } catch {
+      setEmailOtpError('Invalid OTP. Please try again.')
+    }
+  }
+
+  const sendMobileOtp = async () => {
     if (!isMobileValid) return
     setShowMobileOtp(true)
     setMobileCountdown(60)
     setMobileOtp('')
     setMobileOtpError('')
+    try {
+      await api.post('/auth/send-otp', { type: 'mobile', value: mobile })
+    } catch {
+      setMobileOtpError('Failed to send OTP. Please try again.')
+    }
   }
 
-  const verifyMobileOtp = () => {
-    if (mobileOtp === '123456') {
+  const verifyMobileOtp = async () => {
+    if (!mobileOtp) return
+    try {
+      await api.post('/auth/verify-otp', { type: 'mobile', value: mobile, otp: mobileOtp })
       setMobileVerified(true)
       setShowMobileOtp(false)
       setMobileOtp('')
-    } else {
-      setMobileOtpError('Invalid OTP. Please try 123456 for demo.')
+    } catch {
+      setMobileOtpError('Invalid OTP. Please try again.')
     }
   }
 
@@ -198,7 +213,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
             </button>
           )}
           {showEmailOtp && !emailVerified && (
-            <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="mt-3 p-3 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
               <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to {email}</p>
               <div className="flex gap-2 items-center">
                 <input
@@ -231,7 +246,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
         <FormField label="Mobile Number" required error={touched.mobile ? errors.mobile : undefined}>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', marginLeft: '0', marginRight: '8px', height: '42px', width: '60px' }}>
+            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', marginLeft: '0', marginRight: '8px', height: '42px', width: '60px' }}>
               +91
             </div>
             <input
@@ -262,7 +277,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
             </button>
           )}
           {showMobileOtp && !mobileVerified && (
-            <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="mt-3 p-3 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
               <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to +91 {mobile}</p>
               <div className="flex gap-2 items-center">
                 <input

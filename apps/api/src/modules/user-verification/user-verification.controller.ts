@@ -1,13 +1,17 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UserVerificationService } from './user-verification.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SubmitUserVerificationDto } from './dto/submit-user-verification.dto';
 import { ReviewUserVerificationDto } from './dto/review-user-verification.dto';
 
 @ApiTags('User Verification')
 @Controller('user-verifications')
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class UserVerificationController {
   constructor(private readonly userVerificationService: UserVerificationService) {}
 
@@ -19,7 +23,8 @@ export class UserVerificationController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'List all user verification requests' })
   async findAll(@Query() query: { status?: string; cursor?: string; limit?: number }) {
     return this.userVerificationService.findAll(query);
@@ -40,7 +45,8 @@ export class UserVerificationController {
   }
 
   @Post(':id/review')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Review (approve/reject) a user verification' })
   async review(@Param('id') id: string, @Body() dto: ReviewUserVerificationDto, @CurrentUser('sub') userId: string) {
     return this.userVerificationService.review(id, dto, userId);

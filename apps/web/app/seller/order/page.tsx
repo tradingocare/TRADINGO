@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { DashboardPageHeader, StatusBadge, StatCard, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { useSellerOrders } from '@/hooks/use-smart-order';
 import { ShoppingCart, AlertCircle, Search, RefreshCw, Eye, Package, Clock } from 'lucide-react';
@@ -46,7 +47,7 @@ export default function SellerOrderDashboard() {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1">
           {statusTabs.map((tab) => (
             <button
               key={tab}
@@ -59,26 +60,18 @@ export default function SellerOrderDashboard() {
             </button>
           ))}
         </div>
-        <Button variant="ghost" size="icon"><RefreshCw className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" aria-label="Refresh orders"><RefreshCw className="h-4 w-4" /></Button>
       </div>
 
       {error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-white">Failed to load orders</p>
-          <p className="mt-1 text-sm text-white/60">{(error as any).message}</p>
-        </div>
+        <EmptyState icon={AlertCircle} variant="error" title="Failed to load orders" description={(error as any).message} />
       ) : isLoading ? (
         <TableSkeleton rows={5} />
       ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <ShoppingCart className="h-12 w-12 text-white/30" />
-          <p className="mt-4 text-lg font-medium text-white">No orders found</p>
-          <p className="mt-1 text-sm text-white/60">Orders from buyers will appear here once generated.</p>
-        </div>
+        <EmptyState icon={ShoppingCart} title="No orders found" description="Orders from buyers will appear here once generated." />
       ) : (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
+        <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
             <div className="col-span-2">Order</div>
             <div className="col-span-3">Buyer</div>
             <div className="col-span-2">Amount</div>
@@ -89,7 +82,7 @@ export default function SellerOrderDashboard() {
           {orders.map((order: any) => (
             <div
               key={order.id}
-              className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center"
+              className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center"
             >
               <div className="flex items-center gap-3 sm:col-span-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400">

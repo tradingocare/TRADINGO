@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface AddressSearchResult {
   displayName: string;
@@ -69,7 +70,7 @@ export function AddressSearchInput({ onSelectLocation, disabled }: AddressSearch
           className="w-full rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface px-9 py-2 text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary dark:placeholder:text-dark-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark disabled:opacity-50"
         />
         {searching ? (
-          <Loader2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary dark:text-dark-text-tertiary animate-spin" />
+          <LoadingSpinner size="sm" color="muted" className="absolute left-2.5 top-1/2 -translate-y-1/2" />
         ) : (
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary dark:text-dark-text-tertiary" />
         )}

@@ -1,0 +1,108 @@
+{
+  "Rules": [
+    {
+      "Id": "postgres-full-backup-transition",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "postgres/full/"
+      },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "STANDARD_IA"
+        },
+        {
+          "Days": 90,
+          "StorageClass": "GLACIER"
+        },
+        {
+          "Days": 365,
+          "StorageClass": "DEEP_ARCHIVE"
+        }
+      ],
+      "Expiration": {
+        "Days": 730
+      }
+    },
+    {
+      "Id": "postgres-wal-expiration",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "postgres/wal/"
+      },
+      "Transitions": [
+        {
+          "Days": 7,
+          "StorageClass": "DEEP_ARCHIVE"
+        }
+      ],
+      "Expiration": {
+        "Days": 90
+      }
+    },
+    {
+      "Id": "redis-backup-transition",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "redis/"
+      },
+      "Transitions": [
+        {
+          "Days": 14,
+          "StorageClass": "STANDARD_IA"
+        },
+        {
+          "Days": 60,
+          "StorageClass": "GLACIER"
+        },
+        {
+          "Days": 180,
+          "StorageClass": "DEEP_ARCHIVE"
+        }
+      ],
+      "Expiration": {
+        "Days": 365
+      }
+    },
+    {
+      "Id": "opensearch-snapshot-transition",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "opensearch/"
+      },
+      "Transitions": [
+        {
+          "Days": 14,
+          "StorageClass": "STANDARD_IA"
+        },
+        {
+          "Days": 90,
+          "StorageClass": "GLACIER"
+        }
+      ],
+      "Expiration": {
+        "Days": 365
+      }
+    },
+    {
+      "Id": "upload-bucket-cleanup",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "uploads/"
+      },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "GLACIER_IR"
+        },
+        {
+          "Days": 365,
+          "StorageClass": "DEEP_ARCHIVE"
+        }
+      ],
+      "Expiration": {
+        "Days": 730
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+# TRADINGO Prometheus Recording Rules
+groups:
+  - name: tradingo-api-slos
+    interval: 1m
+    rules:
+      - record: job:http_errors_total:rate5m
+        expr: rate(api_http_requests_total{status=~"5.."}[5m])
+
+      - record: job:http_request_duration_seconds:p95
+        expr: histogram_quantile(0.95, sum(rate(api_http_request_duration_seconds_bucket[5m])) by (le))
+
+      - record: job:http_request_duration_seconds:p99
+        expr: histogram_quantile(0.99, sum(rate(api_http_request_duration_seconds_bucket[5m])) by (le))
+
+      - record: job:http_requests_total:rate5m
+        expr: rate(api_http_requests_total[5m])
+
+      - record: job:error_budget_30d
+        expr: (1 - (sum(rate(api_http_requests_total{status=~"5.."}[30d])) / sum(rate(api_http_requests_total[30d])))) * 100
+
+  - name: tradingo-api-endpoints
+    interval: 1m
+    rules:
+      - record: endpoint:http_requests_total:rate5m
+        expr: rate(api_http_requests_total[5m])
+
+      - record: endpoint:http_request_duration_seconds:p50
+        expr: histogram_quantile(0.50, sum(rate(api_http_request_duration_seconds_bucket[5m])) by (le, path, method))
+
+      - record: endpoint:http_request_duration_seconds:p95
+        expr: histogram_quantile(0.95, sum(rate(api_http_request_duration_seconds_bucket[5m])) by (le, path, method))
+
+  - name: tradingo-business
+    interval: 5m
+    rules:
+      - record: business:active_users
+        expr: count(count by (user_id) (api_http_requests_total[1h]))
+
+      - record: business:api_requests_per_user:rate5m
+        expr: rate(api_http_requests_total[5m]) / on() group_left count(count by (user_id) (api_http_requests_total[5m]))

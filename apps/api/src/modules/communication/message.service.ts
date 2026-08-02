@@ -91,6 +91,7 @@ export class MessageService {
     const conversations = await this.prisma.conversation.findMany({
       where: { participants: { some: { userId } } },
       select: { id: true, participants: { where: { userId }, select: { lastReadAt: true } } },
+      take: 500,
     });
 
     let total = 0;

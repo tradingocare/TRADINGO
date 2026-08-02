@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TradTrustService } from './tradtrust.service';
 import { TradTrustController } from './tradtrust.controller';
 import { TradTrustWeightsService } from './tradtrust-weights.config';
@@ -11,7 +11,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
   imports: [
     SmartRfqModule,
     SmartShipmentModule,
-    SmartNegotiationModule,
+    forwardRef(() => SmartNegotiationModule),
     AnalyticsModule,
   ],
   controllers: [TradTrustController],

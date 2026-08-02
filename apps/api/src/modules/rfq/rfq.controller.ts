@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { RfqService } from './rfq.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
@@ -12,6 +14,7 @@ import { RfqQueryDto } from './dto/rfq-query.dto';
 import { RfqSearchDto } from './dto/rfq-search.dto';
 
 @ApiTags('RFQ')
+@Throttle(RateLimits.RFQ_CREATE)
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/rfq')
 export class RfqController {

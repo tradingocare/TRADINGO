@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { Loader2, Lock, CheckCircle } from 'lucide-react';
+import { Lock, CheckCircle } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { TradingoLogo } from '@/components/shared/tradingo-logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -145,7 +146,7 @@ export default function ResetPasswordPage() {
             <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <LoadingSpinner size="sm" />
                   Resetting...
                 </>
               ) : (

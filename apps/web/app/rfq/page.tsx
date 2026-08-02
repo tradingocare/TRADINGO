@@ -105,7 +105,7 @@ export default function RFQPage() {
 
       <Separator />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="RFQ Process Flow"
@@ -131,7 +131,7 @@ export default function RFQPage() {
 
       <Separator />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="RFQ Marketplace Stats"

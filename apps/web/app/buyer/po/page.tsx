@@ -14,7 +14,7 @@ export default function BuyerPoPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('');
-  const { data: pos, isLoading } = useMyPurchaseOrders(filter || undefined);
+  const { data: pos, isLoading, isError } = useMyPurchaseOrders(filter || undefined);
   const list = Array.isArray(pos) ? pos : [];
 
   const tabs = [
@@ -33,7 +33,7 @@ export default function BuyerPoPage() {
         {tabs.map((t) => (
           <button key={t.value} onClick={() => setFilter(t.value)}
             className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              filter === t.value ? 'bg-orange-500/20 text-orange-400' : 'bg-white/[0.04] text-white/60 hover:text-white/80'
+              filter === t.value ? 'bg-orange-500/20 text-orange-400' : 'bg-surface text-white/60 hover:text-white/80'
             }`}>{t.label}</button>
         ))}
       </div>
@@ -41,19 +41,26 @@ export default function BuyerPoPage() {
       <div className="relative max-w-xs">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
         <Input placeholder="Search POs..." value={search} onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-white/[0.04] border-white/[0.06] text-white" />
+          className="pl-10 bg-surface border-border text-white" />
       </div>
 
-      {isLoading ? <TableSkeleton /> : list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
+      {isLoading ? <TableSkeleton /> : isError ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 backdrop-blur-xl">
+          <AlertCircle className="h-12 w-12 text-red-400" />
+          <p className="mt-4 text-lg font-medium text-white">Failed to load purchase orders</p>
+          <p className="mt-1 text-sm text-white/60">Something went wrong. Please try again.</p>
+          <Button variant="accent" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      ) : list.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 backdrop-blur-xl">
           <FileText className="h-12 w-12 text-white/30" />
           <p className="mt-4 text-lg font-medium text-white">No purchase orders yet</p>
           <p className="mt-1 text-sm text-white/60">Generate a purchase order from an accepted negotiation.</p>
           <Button variant="accent" className="mt-4" onClick={() => router.push('/buyer/negotiation')}>View Negotiations</Button>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
+        <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
             <div className="col-span-2">PO Number</div>
             <div className="col-span-3">Seller</div>
             <div className="col-span-2">Status</div>
@@ -62,7 +69,7 @@ export default function BuyerPoPage() {
             <div className="col-span-2">Action</div>
           </div>
           {list.map((po: any) => (
-            <div key={po.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center hover:bg-white/[0.02] cursor-pointer"
+            <div key={po.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center hover:bg-surface cursor-pointer"
               onClick={() => router.push(`/buyer/po/${po.id}`)}>
               <p className="text-sm font-bold text-orange-400 lg:col-span-2">{po.poNumber}</p>
               <p className="text-sm text-white lg:col-span-3">{po.sellerCompany?.name || 'N/A'}</p>

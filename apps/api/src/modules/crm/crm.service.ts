@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TradTrustService } from '../tradtrust/tradtrust.service';
-import { CreateLeadDto, UpdateLeadDto, QueryLeadDto } from './dto';
+import { CreateLeadDto, UpdateLeadDto, QueryLeadDto, CreateCampaignDto, UpdateCampaignDto, CampaignQueryDto } from './dto';
 import { CrmLeadStatus, Prisma } from '@prisma/client';
 
 @Injectable()
@@ -209,6 +209,37 @@ export class CrmService {
     return this.prisma.crmLead.update({ where: { id }, data: { score } });
   }
 
+  async createPublicLead(dto: {
+    name: string;
+    email: string;
+    description: string;
+    source?: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    return this.prisma.crmLead.create({
+      data: {
+        name: dto.name,
+        email: dto.email,
+        description: dto.description,
+        source: (dto.source as any) || 'CONTACT_FORM',
+        status: CrmLeadStatus.NEW,
+        metadata: dto.metadata as any,
+        timeline: {
+          create: {
+            type: 'LEAD_CREATED',
+            description: `Public lead created: ${dto.name} <${dto.email}>`,
+            createdBy: 'SYSTEM',
+          },
+        },
+      },
+      include: {
+        company: { select: { id: true, name: true, slug: true, logo: true } },
+        owner: { select: { id: true, name: true, email: true } },
+        stage: true,
+      },
+    });
+  }
+
   async getSellerDashboard(companyId: string) {
     const [totalLeads, won, lost, active, followUps, tasks] = await Promise.all([
       this.prisma.crmLead.count({ where: { companyId } }),
@@ -239,5 +270,153 @@ export class CrmService {
       this.prisma.crmLead.aggregate({ _sum: { estimatedValue: true }, where: { status: { notIn: [CrmLeadStatus.WON, CrmLeadStatus.LOST] } } }),
     ]);
     return { totalLeads, byStatus: byStatus.map(s => ({ status: s.status, count: s._count })), bySource: bySource.map(s => ({ source: s.source, count: s._count })), pipelineValue: Number(pipelineValue._sum.estimatedValue || 0) };
+  }
+
+  // ─── Campaign Management ───────────────────────────────────
+
+  async createCampaign(dto: CreateCampaignDto, userId: string) {
+    return this.prisma.crmCampaign.create({
+      data: {
+        name: dto.name,
+        description: dto.description,
+        type: dto.type ?? 'OTHER' as any,
+        status: dto.status ?? 'DRAFT' as any,
+        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+        endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+        budget: dto.budget ? new Prisma.Decimal(dto.budget) : undefined,
+        targetLeads: dto.targetLeads ?? 0,
+        createdBy: userId,
+      },
+    });
+  }
+
+  async listCampaigns(query: CampaignQueryDto) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+    const where: Prisma.CrmCampaignWhereInput = {};
+
+    if (query.type) where.type = query.type as any;
+    if (query.status) where.status = query.status as any;
+    if (query.search) where.name = { contains: query.search, mode: 'insensitive' };
+
+    const [data, total] = await Promise.all([
+      this.prisma.crmCampaign.findMany({
+        where, skip, take: limit, orderBy: { createdAt: 'desc' },
+        include: { _count: { select: { leads: true } } },
+      }),
+      this.prisma.crmCampaign.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit), hasNext: page * limit < total, hasPrevious: page > 1 } };
+  }
+
+  async getCampaign(id: string) {
+    const campaign = await this.prisma.crmCampaign.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { leads: true } },
+        leads: {
+          take: 50, orderBy: { createdAt: 'desc' },
+          include: { company: { select: { id: true, name: true, slug: true, logo: true } }, owner: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+    return campaign;
+  }
+
+  async updateCampaign(id: string, dto: UpdateCampaignDto) {
+    const campaign = await this.prisma.crmCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.type !== undefined) data.type = dto.type;
+    if (dto.status !== undefined) data.status = dto.status;
+    if (dto.startDate !== undefined) data.startDate = new Date(dto.startDate);
+    if (dto.endDate !== undefined) data.endDate = new Date(dto.endDate);
+    if (dto.budget !== undefined) data.budget = new Prisma.Decimal(dto.budget);
+    if (dto.targetLeads !== undefined) data.targetLeads = dto.targetLeads;
+    if (dto.metadata !== undefined) data.metadata = dto.metadata as any;
+
+    return this.prisma.crmCampaign.update({ where: { id }, data });
+  }
+
+  async deleteCampaign(id: string) {
+    const campaign = await this.prisma.crmCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+    return this.prisma.crmCampaign.delete({ where: { id } });
+  }
+
+  async addLeadsToCampaign(campaignId: string, leadIds: string[]) {
+    const campaign = await this.prisma.crmCampaign.findUnique({ where: { id: campaignId } });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+
+    await this.prisma.crmLead.updateMany({
+      where: { id: { in: leadIds } },
+      data: { campaignId },
+    });
+
+    return this.prisma.crmCampaign.update({
+      where: { id: campaignId },
+      data: { reachedLeads: { increment: leadIds.length } },
+    });
+  }
+
+  async removeLeadsFromCampaign(campaignId: string, leadIds: string[]) {
+    await this.prisma.crmLead.updateMany({
+      where: { id: { in: leadIds }, campaignId },
+      data: { campaignId: null },
+    });
+    return { removed: leadIds.length };
+  }
+
+  async getCampaignAnalytics(id: string) {
+    const campaign = await this.prisma.crmCampaign.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { leads: true } },
+      },
+    });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+
+    const statusBreakdown = await this.prisma.crmLead.groupBy({
+      by: ['status'],
+      where: { campaignId: id },
+      _count: true,
+    });
+
+    const sourceBreakdown = await this.prisma.crmLead.groupBy({
+      by: ['source'],
+      where: { campaignId: id, source: { not: null } },
+      _count: true,
+    });
+
+    return {
+      campaignId: id,
+      totalLeads: campaign._count.leads,
+      targetLeads: campaign.targetLeads,
+      reachedLeads: campaign.reachedLeads,
+      convertedLeads: campaign.convertedLeads,
+      statusBreakdown: statusBreakdown.map(s => ({ status: s.status, count: s._count })),
+      sourceBreakdown: sourceBreakdown.map(s => ({ source: s.source, count: s._count })),
+    };
+  }
+
+  async getCampaignDashboard() {
+    const [total, active, byType, byStatus] = await Promise.all([
+      this.prisma.crmCampaign.count(),
+      this.prisma.crmCampaign.count({ where: { status: 'ACTIVE' as any } }),
+      this.prisma.crmCampaign.groupBy({ by: ['type'], _count: true }),
+      this.prisma.crmCampaign.groupBy({ by: ['status'], _count: true }),
+    ]);
+    return {
+      totalCampaigns: total,
+      activeCampaigns: active,
+      byType: byType.map(t => ({ type: t.type, count: t._count })),
+      byStatus: byStatus.map(s => ({ status: s.status, count: s._count })),
+    };
   }
 }

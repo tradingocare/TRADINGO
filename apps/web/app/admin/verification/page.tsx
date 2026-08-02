@@ -3,6 +3,8 @@
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { useKycSubmissions, useReviewKyc } from '@/hooks';
+import { Alert } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ShieldCheck, Eye, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { CompanyVerification } from '@/lib/api/kyc';
@@ -25,11 +27,7 @@ export default function AdminVerificationPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Verification Queue" description="Review and manage KYC and business verification submissions" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load verification submissions</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
-        </div>
+        <Alert variant="error" title="Failed to load verification submissions">{error.message}</Alert>
       </div>
     );
   }
@@ -51,13 +49,7 @@ export default function AdminVerificationPage() {
       />
 
       {verifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <ShieldCheck className="h-12 w-12 text-text-tertiary" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">No verification submissions found</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
-            KYC and business verification submissions from users will appear here.
-          </p>
-        </div>
+        <EmptyState icon={ShieldCheck} title="No verification submissions found" description="KYC and business verification submissions from users will appear here." />
       ) : (
         <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
           <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">

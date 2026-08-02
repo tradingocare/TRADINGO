@@ -12,6 +12,8 @@ export enum QueueNames {
   ANALYTICS = 'analytics',
   BESTSELLER = 'bestseller',
   AI = 'ai',
+  TRACKING = 'tracking',
+  PAYOUT = 'payout',
 }
 
 export enum AnalyticsJobTypes {
@@ -39,6 +41,7 @@ export interface EmailJobData {
   subject: string;
   template: string;
   context: Record<string, unknown>;
+  correlationId?: string;
 }
 
 export interface ExportJobData {
@@ -46,6 +49,7 @@ export interface ExportJobData {
   userId: string;
   resource: string;
   filters: Record<string, unknown>;
+  correlationId?: string;
 }
 
 export enum NotificationJobTypes {
@@ -70,6 +74,7 @@ export interface NotificationJobData {
   message: string;
   metadata?: Record<string, unknown>;
   attemptCount?: number;
+  correlationId?: string;
 }
 
 export enum CertificationJobTypes {
@@ -81,6 +86,7 @@ export interface CertificationJobData {
   type: CertificationJobTypes;
   companyId?: string;
   certificationId?: string;
+  correlationId?: string;
 }
 
 export enum SubscriptionJobTypes {
@@ -93,6 +99,7 @@ export interface SubscriptionJobData {
   type: SubscriptionJobTypes;
   companyId?: string;
   alertPeriod?: string;
+  correlationId?: string;
 }
 
 export enum RfqJobTypes {
@@ -105,6 +112,7 @@ export interface RfqJobData {
   type: RfqJobTypes;
   rfqId?: string;
   companyId?: string;
+  correlationId?: string;
 }
 
 export enum EscrowJobTypes {
@@ -115,16 +123,31 @@ export enum EscrowJobTypes {
 export interface EscrowJobData {
   type: EscrowJobTypes;
   escrowId?: string;
+  correlationId?: string;
 }
 
 export enum SettlementJobTypes {
   PROCESS_SETTLEMENTS = 'PROCESS_SETTLEMENTS',
   PROCESS_RETRIES = 'PROCESS_RETRIES',
+  PROCESS_PAYOUTS = 'PROCESS_PAYOUTS',
 }
 
 export interface SettlementJobData {
   type: SettlementJobTypes;
   settlementId?: string;
+  correlationId?: string;
+}
+
+export enum PayoutJobTypes {
+  PROCESS_PENDING = 'PROCESS_PENDING',
+  PROCESS_MANUAL = 'PROCESS_MANUAL',
+  VERIFY_STATUS = 'VERIFY_STATUS',
+}
+
+export interface PayoutJobData {
+  type: PayoutJobTypes;
+  payoutId?: string;
+  correlationId?: string;
 }
 
 export enum DisputeJobTypes {
@@ -140,6 +163,7 @@ export enum DisputeJobTypes {
 export interface DisputeJobData {
   type: DisputeJobTypes;
   disputeId?: string;
+  correlationId?: string;
 }
 
 export enum BestsellerJobTypes {
@@ -148,6 +172,7 @@ export enum BestsellerJobTypes {
 
 export interface BestsellerJobData {
   type: BestsellerJobTypes;
+  correlationId?: string;
 }
 
 export enum AiJobTypes {
@@ -159,6 +184,8 @@ export enum AiJobTypes {
   SUGGEST_IMAGES = 'SUGGEST_IMAGES',
   QUALITY_SCORE = 'QUALITY_SCORE',
   DUPLICATE_DETECT = 'DUPLICATE_DETECT',
+  PROCESS_WORKFLOW = 'PROCESS_WORKFLOW',
+  PROCESS_PARALLEL = 'PROCESS_PARALLEL',
 }
 
 export interface AiJobData {
@@ -166,5 +193,18 @@ export interface AiJobData {
   companyId: string;
   userId: string;
   productIds: string[];
-  options?: Record<string, unknown>;
+  correlationId?: string;
+  options?: {
+    taskId?: string;
+    taskType?: string;
+    actionId?: string;
+    payload?: Record<string, unknown>;
+    gatewayTaskType?: string;
+    workflowId?: string;
+    parentTaskId?: number;
+    dependsOn?: string[];
+    maxRetries?: number;
+    timeoutMs?: number;
+    [key: string]: unknown;
+  };
 }

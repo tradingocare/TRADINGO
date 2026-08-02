@@ -1,9 +1,10 @@
 import { Sidebar, buyerNavItems } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
+import { WelcomeTour } from '@/components/dashboard/welcome-tour';
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-surface-secondary dark:bg-dark-surface">
+    <div className="min-h-screen bg-bg-base dark:bg-dark-surface">
       <Topbar />
       <div className="flex">
         <Sidebar items={buyerNavItems} title="Buyer Menu" />
@@ -13,6 +14,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
           </div>
         </main>
       </div>
+      <WelcomeTour role="buyer" />
     </div>
   );
 }

@@ -114,6 +114,7 @@ export class ModelRegistryService {
       SEARCH_ANALYSIS: ['openai/gpt-4o-mini', 'google/gemini-2.0-flash'],
       ADMIN_INTELLIGENCE: ['openai/gpt-4o-mini', 'google/gemini-2.0-flash'],
       GENERAL_CHAT: ['llama3-8b-8192', 'gemma2-9b-it'],
+      CATEGORY_SUGGESTION: ['openai/gpt-4o-mini', 'google/gemini-2.0-flash'],
     }
 
     const preferredModels = taskModelMap[taskType]

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
 import { useCompanies } from '@/hooks';
 import { Eye, Edit2, Trash2, FileText, Package } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface ProductMasterRef {
   id: string;
@@ -88,19 +89,9 @@ export default function SellerProductClaimsPage() {
       {loading ? (
         <TableSkeleton />
       ) : error ? (
-        <div className="rounded-xl border border-border bg-surface p-10 text-center dark:bg-dark-surface dark:border-dark-border">
-          <p className="text-text-secondary dark:text-dark-text-secondary">Failed to load product claims. Please try again.</p>
-        </div>
+        <EmptyState variant="error" title="Failed to load product claims" description="Please try again." />
       ) : claims.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-10 text-center dark:bg-dark-surface dark:border-dark-border">
-          <Package className="mx-auto h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No claims yet</h3>
-          <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">Claim a product from the catalog to get started.</p>
-          <Button className="mt-4" onClick={() => router.push('/seller/products/claim')}>
-            <FileText className="mr-2 h-4 w-4" />
-            New Claim
-          </Button>
-        </div>
+        <EmptyState icon={Package} title="No claims yet" description="Claim a product from the catalog to get started." action={<Button onClick={() => router.push('/seller/products/claim')}><FileText className="mr-2 h-4 w-4" /> New Claim</Button>} />
       ) : (
         <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
           <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">

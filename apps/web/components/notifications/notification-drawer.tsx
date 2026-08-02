@@ -41,30 +41,30 @@ export function NotificationDrawer({ notifications, unreadCount, onMarkRead, onM
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div className="absolute right-0 top-full z-50 mt-2 w-96 rounded-xl border border-border bg-surface shadow-2xl animate-slide-down dark:bg-dark-surface dark:border-dark-border">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3 dark:border-dark-border">
-          <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-text-secondary" />
-            <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Notifications</h3>
-            {unreadCount > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-600 px-1.5 text-[10px] font-medium text-white">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            {unreadCount > 0 && (
-              <button
-                onClick={onMarkAllRead}
-                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
-              >
-                <CheckCheck className="h-3.5 w-3.5" /> Mark all read
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 dark:border-dark-border">
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-text-secondary" />
+              <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Notifications</h3>
+              {unreadCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-600 px-1.5 text-[10px] font-medium text-gray-900">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <button
+                  onClick={onMarkAllRead}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-accent-600 hover:bg-accent-50 dark:text-accent-400 dark:hover:bg-accent-900/20"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" /> Mark all read
+                </button>
+              )}
+              <button onClick={onClose} className="rounded-lg p-1 text-text-tertiary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary">
+                <X className="h-4 w-4" />
               </button>
-            )}
-            <button onClick={onClose} className="rounded-lg p-1 text-text-tertiary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary">
-              <X className="h-4 w-4" />
-            </button>
+            </div>
           </div>
-        </div>
 
         <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (
@@ -78,12 +78,12 @@ export function NotificationDrawer({ notifications, unreadCount, onMarkRead, onM
                 key={n.id}
                 className={cn(
                   'flex items-start gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 dark:border-dark-border',
-                  !n.read && 'bg-primary-50/50 dark:bg-primary-900/10',
+                  !n.read && 'bg-accent-50/50 dark:bg-accent-900/10',
                 )}
               >
                 <div className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-full',
-                  !n.read ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-surface-secondary text-text-tertiary dark:bg-dark-surface-secondary',
+                  !n.read ? 'bg-accent-100 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400' : 'bg-surface-secondary text-text-tertiary dark:bg-dark-surface-secondary',
                 )}>
                   {typeIcons[n.type] || <Bell className="h-4 w-4" />}
                 </div>
@@ -103,7 +103,7 @@ export function NotificationDrawer({ notifications, unreadCount, onMarkRead, onM
                     </button>
                   )}
                   {n.link && (
-                    <Link href={n.link} className="rounded-lg p-1 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20">
+                    <Link href={n.link} className="rounded-lg p-1 text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-900/20">
                       <ArrowRightIcon className="h-3.5 w-3.5" />
                     </Link>
                   )}

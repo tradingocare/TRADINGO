@@ -21,6 +21,7 @@ export class BuyerAnalyticsService {
     const orders = await this.prisma.order.findMany({
       where: { buyerCompany: { owners: { some: { userId } } } },
       select: { totalAmount: true, createdAt: true },
+      take: 1000,
     });
 
     const byMonth: Record<string, number> = {};
@@ -35,6 +36,7 @@ export class BuyerAnalyticsService {
     const items = await this.prisma.orderItem.findMany({
       where: { order: { buyerCompany: { owners: { some: { userId } } } } },
       select: { productName: true, quantity: true },
+      take: 1000,
     });
 
     const counts: Record<string, number> = {};

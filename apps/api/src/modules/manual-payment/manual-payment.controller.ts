@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ManualPaymentService } from './manual-payment.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -12,9 +13,11 @@ import {
   RejectManualPaymentProofDto,
   QueryManualPaymentProofDto,
 } from './dto/manual-payment.dto';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Manual Payments')
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
+@Throttle(RateLimits.WRITE_FINANCIAL)
 @Controller('companies/:companyId/manual-payments')
 export class ManualPaymentController {
   constructor(private readonly manualPaymentService: ManualPaymentService) {}
@@ -51,6 +54,7 @@ export class ManualPaymentController {
 @ApiTags('Admin - Manual Payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'SUPER_ADMIN')
+@Throttle(RateLimits.ADMIN_WRITE)
 @Controller('admin/manual-payments')
 export class AdminManualPaymentController {
   constructor(private readonly manualPaymentService: ManualPaymentService) {}

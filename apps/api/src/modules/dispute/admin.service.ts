@@ -7,7 +7,7 @@ export class AdminService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAvailableAdmins(): Promise<any[]> {
+  async getAvailableAdmins(): Promise<Record<string, any>[]> {
     const activeDisputes = await this.prisma.dispute.groupBy({
       by: ['assignedAdminId'],
       where: {
@@ -42,11 +42,53 @@ export class AdminService {
     }));
   }
 
-  async getLeastBusyAdmin(): Promise<any> {
+  async getLeastBusyAdmin(): Promise<Record<string, any> | null> {
     const admins = await this.getAvailableAdmins();
     if (admins.length === 0) return null;
 
     admins.sort((a, b) => a.activeDisputeCount - b.activeDisputeCount);
     return admins[0];
+  }
+
+  async listBookingDisputes(params: {
+    page?: number; limit?: number; status?: string; type?: string;
+  }) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(100, Math.max(1, params.limit ?? 20));
+    const where: any = { bookingId: { not: null } };
+    if (params.status) where.status = params.status;
+    if (params.type) where.type = params.type;
+
+    const [data, total] = await Promise.all([
+      this.prisma.dispute.findMany({
+        where,
+        include: {
+          booking: { select: { id: true, status: true, paymentStatus: true, amount: true } },
+          messages: { take: 1, orderBy: { createdAt: 'desc' } },
+          raisedByCompany: { select: { id: true, name: true } },
+          againstCompany: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.dispute.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit), hasNext: page * limit < total, hasPrevious: page > 1 },
+    };
+  }
+
+  async getBookingDisputesStats() {
+    const totalBookingDisputes = await this.prisma.dispute.count({ where: { bookingId: { not: null } } });
+    const openCount = await this.prisma.dispute.count({
+      where: { bookingId: { not: null }, status: { in: ['OPEN', 'UNDER_REVIEW', 'EVIDENCE_PENDING', 'NEGOTIATION'] } },
+    });
+    const resolvedCount = await this.prisma.dispute.count({
+      where: { bookingId: { not: null }, status: { in: ['RESOLVED', 'PARTIALLY_RESOLVED', 'REFUNDED'] } },
+    });
+    return { totalBookingDisputes, openCount, resolvedCount };
   }
 }

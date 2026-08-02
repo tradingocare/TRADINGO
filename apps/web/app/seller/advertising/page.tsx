@@ -9,6 +9,8 @@ import { useMyAds, useMyAdStats, usePauseAd, useResumeAd, useStopAd } from '@/ho
 import { Plus, Play, Pause, Square, Eye, TrendingUp, MousePointerClick, DollarSign, Megaphone } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useState } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 
 const AD_TYPE_LABELS: Record<string, string> = {
   SPONSORED_PRODUCT: 'Sponsored Product',
@@ -23,12 +25,12 @@ const AD_TYPE_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  DRAFT: 'bg-gray-500/20 text-gray-400',
+  DRAFT: 'bg-bg-elevated text-gray-400',
   PENDING_REVIEW: 'bg-yellow-500/20 text-yellow-400',
   ACTIVE: 'bg-green-500/20 text-green-400',
   PAUSED: 'bg-blue-500/20 text-blue-400',
   EXPIRED: 'bg-red-500/20 text-red-400',
-  CANCELLED: 'bg-gray-500/20 text-gray-400',
+  CANCELLED: 'bg-bg-elevated text-gray-400',
   REJECTED: 'bg-red-500/20 text-red-400',
   COMPLETED: 'bg-purple-500/20 text-purple-400',
 };
@@ -96,73 +98,55 @@ export default function SellerAdvertisingPage() {
           ) : error ? (
             <div className="text-center py-8 text-red-400">Failed to load campaigns</div>
           ) : !adsData?.data.length ? (
-            <div className="text-center py-8 text-gray-500">
-              <Megaphone className="mx-auto h-12 w-12 mb-3 opacity-50" />
-              <p className="text-lg font-medium">No advertising campaigns yet</p>
-              <p className="text-sm text-gray-500 mt-1">Create your first campaign to start promoting your business</p>
-              <Link href="/seller/advertising/new">
-                <Button className="mt-4"><Plus className="mr-2 h-4 w-4" /> Create Campaign</Button>
-              </Link>
-            </div>
+            <EmptyState icon={Megaphone} title="No advertising campaigns yet" description="Create your first campaign to start promoting your business" action={<Link href="/seller/advertising/new"><Button><Plus className="mr-2 h-4 w-4" /> Create Campaign</Button></Link>} />
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b border-gray-800 text-left text-gray-400">
-                    <th className="pb-3 pr-4">Title</th>
-                    <th className="pb-3 pr-4">Type</th>
-                    <th className="pb-3 pr-4">Status</th>
-                    <th className="pb-3 pr-4">Budget</th>
-                    <th className="pb-3 pr-4">Spent</th>
-                    <th className="pb-3 pr-4">Impressions</th>
-                    <th className="pb-3 pr-4">Clicks</th>
-                    <th className="pb-3 pr-4">Actions</th>
-                  </tr></thead>
-                  <tbody>
-                    {adsData.data.map(ad => (
-                      <tr key={ad.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-                        <td className="py-3 pr-4">
-                          <Link href={`/seller/advertising/${ad.id}`} className="text-blue-400 hover:underline">
-                            {ad.title || AD_TYPE_LABELS[ad.type] || ad.type}
+              <Table>
+                <THead><TR><TH>Title</TH><TH>Type</TH><TH>Status</TH><TH>Budget</TH><TH>Spent</TH><TH>Impressions</TH><TH>Clicks</TH><TH>Actions</TH></TR></THead>
+                <TBody>
+                  {adsData.data.map(ad => (
+                    <TR key={ad.id}>
+                      <TD>
+                        <Link href={`/seller/advertising/${ad.id}`} className="text-blue-400 hover:underline">
+                          {ad.title || AD_TYPE_LABELS[ad.type] || ad.type}
+                        </Link>
+                      </TD>
+                      <TD className="text-text-tertiary">{AD_TYPE_LABELS[ad.type] || ad.type}</TD>
+                      <TD><Badge className={STATUS_STYLES[ad.status]}>{ad.status.replace('_', ' ')}</Badge></TD>
+                      <TD>₹{Number(ad.totalBudget).toLocaleString()}</TD>
+                      <TD>₹{Number(ad.spentBudget).toLocaleString()}</TD>
+                      <TD>{ad.impressions.toLocaleString()}</TD>
+                      <TD>{ad.clicks.toLocaleString()}</TD>
+                      <TD>
+                        <div className="flex gap-1">
+                          {ad.status === 'ACTIVE' && (
+                            <button onClick={() => handlePause(ad.id)} disabled={actionId === ad.id} className="p-1.5 hover:bg-surface-secondary rounded" title="Pause">
+                              <Pause className="h-4 w-4" />
+                            </button>
+                          )}
+                          {ad.status === 'PAUSED' && (
+                            <button onClick={() => handleResume(ad.id)} disabled={actionId === ad.id} className="p-1.5 hover:bg-surface-secondary rounded" title="Resume">
+                              <Play className="h-4 w-4" />
+                            </button>
+                          )}
+                          {(ad.status === 'ACTIVE' || ad.status === 'PAUSED') && (
+                            <button onClick={() => handleStop(ad.id)} disabled={actionId === ad.id} className="p-1.5 hover:bg-surface-secondary rounded" title="Stop">
+                              <Square className="h-4 w-4" />
+                            </button>
+                          )}
+                          <Link href={`/seller/advertising/${ad.id}`} className="p-1.5 hover:bg-surface-secondary rounded" title="View">
+                            <Eye className="h-4 w-4" />
                           </Link>
-                        </td>
-                        <td className="py-3 pr-4 text-gray-300">{AD_TYPE_LABELS[ad.type] || ad.type}</td>
-                        <td className="py-3 pr-4"><Badge className={STATUS_STYLES[ad.status]}>{ad.status.replace('_', ' ')}</Badge></td>
-                        <td className="py-3 pr-4">₹{Number(ad.totalBudget).toLocaleString()}</td>
-                        <td className="py-3 pr-4">₹{Number(ad.spentBudget).toLocaleString()}</td>
-                        <td className="py-3 pr-4">{ad.impressions.toLocaleString()}</td>
-                        <td className="py-3 pr-4">{ad.clicks.toLocaleString()}</td>
-                        <td className="py-3 pr-4">
-                          <div className="flex gap-1">
-                            {ad.status === 'ACTIVE' && (
-                              <button onClick={() => handlePause(ad.id)} disabled={actionId === ad.id} className="p-1.5 hover:bg-gray-700 rounded" title="Pause">
-                                <Pause className="h-4 w-4" />
-                              </button>
-                            )}
-                            {ad.status === 'PAUSED' && (
-                              <button onClick={() => handleResume(ad.id)} disabled={actionId === ad.id} className="p-1.5 hover:bg-gray-700 rounded" title="Resume">
-                                <Play className="h-4 w-4" />
-                              </button>
-                            )}
-                            {(ad.status === 'ACTIVE' || ad.status === 'PAUSED') && (
-                              <button onClick={() => handleStop(ad.id)} disabled={actionId === ad.id} className="p-1.5 hover:bg-gray-700 rounded" title="Stop">
-                                <Square className="h-4 w-4" />
-                              </button>
-                            )}
-                            <Link href={`/seller/advertising/${ad.id}`} className="p-1.5 hover:bg-gray-700 rounded" title="View">
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
               {adsData.meta.totalPages > 1 && (
                 <div className="flex justify-center gap-2 mt-4">
                   <Button variant="outline" size="sm" disabled={!adsData.meta.hasPrevious} onClick={() => setPage(p => p - 1)}>Previous</Button>
-                  <span className="flex items-center text-sm text-gray-400">Page {adsData.meta.page} of {adsData.meta.totalPages}</span>
+                  <span className="flex items-center text-sm text-text-tertiary">Page {adsData.meta.page} of {adsData.meta.totalPages}</span>
                   <Button variant="outline" size="sm" disabled={!adsData.meta.hasNext} onClick={() => setPage(p => p + 1)}>Next</Button>
                 </div>
               )}

@@ -5,6 +5,9 @@ import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
+import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useNegotiationDetail, useNegotiationVersions, useNegotiationTimeline,
@@ -18,9 +21,9 @@ import {
   useAiRiskDetection, useAiConversationSummary, useAiNegotiationMemory,
   useAiNegotiationTimeline as useAiTimeline,
 } from '@/hooks/use-ai-negotiation';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
-  ArrowLeft, DollarSign, Clock, Shield, Package, FileText, Check, X, Send, Sparkles, History, Activity, Building2, Truck, Tag, FileCheck, CheckCircle, XCircle
+  ArrowLeft, DollarSign, Clock, FileText, Check, X, Send, Sparkles, History, Activity, Building2, FileCheck, CheckCircle, XCircle, AlertTriangle
 } from 'lucide-react';
 
 const formatStatus = (s: string) => s.replace(/_/g, ' ').toLowerCase();
@@ -73,6 +76,8 @@ export default function BuyerNegotiationDetailPage() {
   const [form, setForm] = useState<any>({});
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
+  const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const generatePoMutation = useGeneratePo();
@@ -92,7 +97,7 @@ export default function BuyerNegotiationDetailPage() {
   };
 
   const handleAccept = async () => {
-    if (!confirm('Accept the current offer? This will finalize the negotiation.')) return;
+    setShowAcceptConfirm(false);
     await acceptMutation.mutateAsync(id);
   };
 
@@ -101,7 +106,7 @@ export default function BuyerNegotiationDetailPage() {
       const po = await generatePoMutation.mutateAsync(id);
       router.push(`/buyer/po/${po.id}`);
     } catch (e: any) {
-      alert(e?.response?.data?.message || 'Failed to generate purchase order');
+      toast({ title: 'Failed to generate purchase order', description: e?.response?.data?.message || 'Please try again', variant: 'destructive' });
     }
   };
 
@@ -111,12 +116,12 @@ export default function BuyerNegotiationDetailPage() {
   };
 
   const handleCancel = async () => {
-    if (!confirm('Cancel this negotiation?')) return;
+    setShowCancelConfirm(false);
     await cancelMutation.mutateAsync({ negotiationId: id });
   };
 
-  if (isLoading) return <div className="p-8 text-white/60">Loading...</div>;
-  if (!n) return <div className="p-8 text-white/60">Negotiation not found.</div>;
+  if (isLoading) return <DashboardPageHeader title="Loading..." description="" />;
+  if (!n) return <div className="p-8 text-center text-white/60"><p>Negotiation not found.</p><Button className="mt-4" onClick={() => router.back()}>Go Back</Button></div>;
 
   const latestVersion = Array.isArray(versions) && versions.length > 0 ? versions[versions.length - 1] : null;
 
@@ -124,11 +129,11 @@ export default function BuyerNegotiationDetailPage() {
     <div className="space-y-6">
       <DashboardPageHeader
         title="Negotiation Detail"
-        description={`With ${n.sellerCompany?.name || 'N/A'} — ${n.rfq?.title || n.rfq?.rfqNumber || ''}`}
+        description={`With ${n.sellerCompany?.name || 'N/A'} â€” ${n.rfq?.title || n.rfq?.rfqNumber || ''}`}
         actions={
           <div className="flex items-center gap-2">
             {canAccept && (
-              <Button variant="accent" onClick={handleAccept} disabled={acceptMutation.isPending}>
+              <Button variant="accent" onClick={() => setShowAcceptConfirm(true)} disabled={acceptMutation.isPending}>
                 <Check className="mr-2 h-4 w-4" />Accept
               </Button>
             )}
@@ -148,11 +153,11 @@ export default function BuyerNegotiationDetailPage() {
               </Button>
             )}
             {canCounter && (
-              <Button variant="ghost" onClick={handleCancel} disabled={cancelMutation.isPending}>
+              <Button variant="ghost" onClick={() => setShowCancelConfirm(true)} disabled={cancelMutation.isPending}>
                 Cancel
               </Button>
             )}
-            <Button variant="ghost" onClick={() => setShowAi(!showAi)} className={showAi ? 'text-orange-400' : ''}>
+            <Button variant="ghost" onClick={() => setShowAi(!showAi)} className={showAi ? 'text-accent-500' : ''}>
               <Sparkles className="mr-2 h-4 w-4" />AI Copilot
             </Button>
             <Button variant="ghost" onClick={() => router.push('/buyer/negotiation')}>
@@ -165,9 +170,9 @@ export default function BuyerNegotiationDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {/* Current Offer Summary */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-white/60">
+              <div className="flex items-center gap-2 text-text-secondary">
                 <DollarSign className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Current Offer</span>
               </div>
@@ -175,29 +180,29 @@ export default function BuyerNegotiationDetailPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <p className="text-xs text-white/40">Price</p>
+                <p className="text-xs text-text-tertiary">Price</p>
                 <p className="text-lg font-bold text-white">
                   {n.quote?.currency || 'INR'} {n.quote?.totalAmount?.toLocaleString('en-IN') || '-'}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-white/40">Lead Time</p>
-                <p className="text-sm text-white/80 flex items-center gap-1">
+                <p className="text-sm text-white flex items-center gap-1">
                   <Clock className="h-3 w-3 text-white/40" />
                   {n.quote?.leadTimeDays ? `${n.quote.leadTimeDays}d` : '-'}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-white/40">Delivery Terms</p>
-                <p className="text-sm text-white/80">{n.quote?.deliveryTerms || '-'}</p>
+                <p className="text-sm text-white">{n.quote?.deliveryTerms || '-'}</p>
               </div>
               <div>
                 <p className="text-xs text-white/40">Payment Terms</p>
-                <p className="text-sm text-white/80">{n.quote?.paymentTerms?.replace(/_/g, ' ') || '-'}</p>
+                <p className="text-sm text-white">{n.quote?.paymentTerms?.replace(/_/g, ' ') || '-'}</p>
               </div>
               <div>
                 <p className="text-xs text-white/40">Valid Until</p>
-                <p className="text-sm text-white/80">
+                <p className="text-sm text-white">
                   {n.quote?.validityDate ? new Date(n.quote.validityDate).toLocaleDateString('en-IN') : '-'}
                 </p>
               </div>
@@ -205,14 +210,14 @@ export default function BuyerNegotiationDetailPage() {
                 <p className="text-xs text-white/40">Supplier</p>
                 <div className="flex items-center gap-1">
                   <Building2 className="h-3 w-3 text-white/40" />
-                  <span className="text-sm text-white/80">{n.sellerCompany?.name || 'N/A'}</span>
+                  <span className="text-sm text-white">{n.sellerCompany?.name || 'N/A'}</span>
                 </div>
               </div>
             </div>
             {n.notes && (
-              <div className="mt-3 rounded-lg bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">Notes</p>
-                <p className="text-sm text-white/70">{n.notes}</p>
+              <div className="mt-3 rounded-lg bg-surface p-3">
+                <p className="text-xs text-text-tertiary">Notes</p>
+                <p className="text-sm text-text-secondary">{n.notes}</p>
               </div>
             )}
           </div>
@@ -220,7 +225,7 @@ export default function BuyerNegotiationDetailPage() {
           {/* Counter Offer Form */}
           {counterForm && (
             <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-5 backdrop-blur-xl">
-              <div className="flex items-center gap-2 text-orange-400 mb-4">
+              <div className="flex items-center gap-2 text-accent-500 mb-4">
                 <Send className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Counter Offer</span>
               </div>
@@ -229,67 +234,65 @@ export default function BuyerNegotiationDetailPage() {
                   <Label className="text-xs text-white/60">Price ({n.quote?.currency || 'INR'})</Label>
                   <Input type="number" min={0} step={0.01} value={form.proposedPrice ?? ''}
                     onChange={(e) => setForm({ ...form, proposedPrice: parseFloat(e.target.value) || 0 })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">MOQ</Label>
+                  <Label className="text-xs text-text-secondary">MOQ</Label>
                   <Input type="number" min={1} value={form.proposedMoq ?? ''}
                     onChange={(e) => setForm({ ...form, proposedMoq: parseInt(e.target.value) || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">Lead Time (days)</Label>
+                  <Label className="text-xs text-text-secondary">Lead Time (days)</Label>
                   <Input type="number" min={1} value={form.proposedLeadTimeDays ?? ''}
                     onChange={(e) => setForm({ ...form, proposedLeadTimeDays: parseInt(e.target.value) || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">Delivery Terms</Label>
-                  <select value={form.proposedDeliveryTerms ?? ''}
-                    onChange={(e) => setForm({ ...form, proposedDeliveryTerms: e.target.value || undefined })}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50">
-                    <option value="" className="bg-gray-900 text-white/60">No change</option>
-                    {DELIVERY_TERMS.map((t) => <option key={t} value={t} className="bg-gray-900 text-white">{t.replace(/_/g, ' ')}</option>)}
-                  </select>
+                  <Label className="text-xs text-text-secondary">Delivery Terms</Label>
+                    <Select value={form.proposedDeliveryTerms ?? ''}
+                      onChange={(e) => setForm({ ...form, proposedDeliveryTerms: e.target.value || undefined })}>
+                      <option value="">No change</option>
+                      {DELIVERY_TERMS.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-white/60">Payment Terms</Label>
-                  <select value={form.proposedPaymentTerms ?? ''}
-                    onChange={(e) => setForm({ ...form, proposedPaymentTerms: e.target.value || undefined })}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50">
-                    <option value="" className="bg-gray-900 text-white/60">No change</option>
-                    {PAYMENT_TERMS_LIST.map((t) => <option key={t} value={t} className="bg-gray-900 text-white">{t.replace(/_/g, ' ')}</option>)}
-                  </select>
+                    <Select value={form.proposedPaymentTerms ?? ''}
+                      onChange={(e) => setForm({ ...form, proposedPaymentTerms: e.target.value || undefined })}>
+                      <option value="">No change</option>
+                      {PAYMENT_TERMS_LIST.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-white/60">Discount %</Label>
                   <Input type="number" min={0} max={100} step={0.01} value={form.proposedDiscountPercent ?? ''}
                     onChange={(e) => setForm({ ...form, proposedDiscountPercent: parseFloat(e.target.value) || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">Warranty</Label>
+                  <Label className="text-xs text-text-secondary">Warranty</Label>
                   <Input value={form.proposedWarranty ?? ''}
                     onChange={(e) => setForm({ ...form, proposedWarranty: e.target.value || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" placeholder="e.g. 12 months" />
+                    className="bg-surface border-border text-text-primary" placeholder="e.g. 12 months" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">Freight</Label>
+                  <Label className="text-xs text-text-secondary">Freight</Label>
                   <Input value={form.proposedFreight ?? ''}
                     onChange={(e) => setForm({ ...form, proposedFreight: e.target.value || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" placeholder="e.g. Included" />
+                    className="bg-surface border-border text-text-primary" placeholder="e.g. Included" />
                 </div>
                 <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-xs text-white/60">Validity Date</Label>
+                  <Label className="text-xs text-text-secondary">Validity Date</Label>
                   <Input type="date" value={form.proposedValidityDate ?? ''}
                     onChange={(e) => setForm({ ...form, proposedValidityDate: e.target.value || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-xs text-white/60">Notes</Label>
-                  <textarea value={form.notes ?? ''} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  <Label className="text-xs text-text-secondary">Notes</Label>
+                  <Textarea value={form.notes ?? ''} onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     rows={2}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/35 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                     placeholder="Explain your counter offer..."
                   />
                 </div>
@@ -307,9 +310,9 @@ export default function BuyerNegotiationDetailPage() {
           {showReject && (
             <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 backdrop-blur-xl">
               <p className="text-sm font-medium text-red-400 mb-2">Reject Negotiation</p>
-              <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
+              <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
                 rows={2} placeholder="Reason for rejection (optional)..."
-                className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/35 focus:outline-none focus:ring-2 focus:ring-red-500/50"
               />
               <div className="mt-2 flex gap-2">
                 <Button variant="destructive" size="sm" onClick={handleReject}>
@@ -324,22 +327,22 @@ export default function BuyerNegotiationDetailPage() {
         {/* Right sidebar */}
         <div className="space-y-4">
           {/* Version History */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <History className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Version History</span>
             </div>
             {Array.isArray(versions) && versions.length > 0 ? (
               <div className="space-y-2">
                 {[...versions].reverse().map((v: any) => (
-                  <div key={v.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
+                  <div key={v.id} className="rounded-lg border border-border bg-surface p-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-white">v{v.version}</span>
+                      <span className="text-xs font-medium text-text-primary">v{v.version}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                        v.proposedBy === 'BUYER' ? 'bg-blue-500/10 text-blue-400' : 'bg-amber-500/10 text-amber-400'
+                        v.proposedBy === 'BUYER' ? 'bg-blue-500/10 text-blue-400' : 'bg-amber-500/10 text-accent-500'
                       }`}>{v.proposedBy}</span>
                     </div>
-                    <p className="text-[10px] text-white/40 mt-1">
+                    <p className="text-[10px] text-text-tertiary mt-1">
                       {v.createdAt ? new Date(v.createdAt).toLocaleString('en-IN') : '-'}
                     </p>
                     {Array.isArray(v.changedFields) && v.changedFields.length > 0 && (
@@ -347,7 +350,7 @@ export default function BuyerNegotiationDetailPage() {
                         Changed: {v.changedFields.map((f: string) => f.replace('proposed', '')).join(', ')}
                       </p>
                     )}
-                    {v.proposedPrice && <p className="text-xs text-white/70 mt-1">₹{v.proposedPrice.toLocaleString('en-IN')}</p>}
+                    {v.proposedPrice && <p className="text-xs text-white/70 mt-1">â‚¹{v.proposedPrice.toLocaleString('en-IN')}</p>}
                   </div>
                 ))}
               </div>
@@ -357,17 +360,17 @@ export default function BuyerNegotiationDetailPage() {
           </div>
 
           {/* Timeline */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <Activity className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Timeline</span>
             </div>
             {Array.isArray(timeline) && timeline.length > 0 ? (
               <div className="space-y-2">
                 {[...timeline].reverse().map((e: any) => (
-                  <div key={e.id} className="flex items-start gap-2 border-l-2 border-white/[0.06] pl-3 pb-2">
+                  <div key={e.id} className="flex items-start gap-2 border-l-2 border-border pl-3 pb-2">
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-white capitalize">{e.eventType.replace(/_/g, ' ').toLowerCase()}</p>
+                      <p className="text-xs font-medium text-text-primary capitalize">{e.eventType.replace(/_/g, ' ').toLowerCase()}</p>
                       <p className="text-[10px] text-white/40">{new Date(e.createdAt).toLocaleString('en-IN')}</p>
                     </div>
                   </div>
@@ -381,7 +384,7 @@ export default function BuyerNegotiationDetailPage() {
           {/* AI Copilot / Quote Details */}
           {showAi ? (
             <>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+              <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
                 <AiNegotiationCopilot
                   negotiationId={id}
                   negotiationData={n || {}}
@@ -403,11 +406,11 @@ export default function BuyerNegotiationDetailPage() {
               {aiResult && (
                 <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 backdrop-blur-xl">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-orange-300">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-accent-500">
                       <CheckCircle className="h-3 w-3" />
                       {aiResult.type}
                     </div>
-                    <button onClick={() => setAiResult(null)} className="text-white/30 hover:text-white/60">
+                    <button onClick={() => setAiResult(null)} className="text-white/40 hover:text-white/60">
                       <XCircle className="h-3 w-3" />
                     </button>
                   </div>
@@ -418,8 +421,8 @@ export default function BuyerNegotiationDetailPage() {
               )}
 
               {isAiGenerating && (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-xl">
-                  <div className="flex items-center gap-2 text-sm text-white/50">
+                <div className="rounded-xl border border-border bg-surface p-4 backdrop-blur-xl">
+                  <div className="flex items-center gap-2 text-sm text-text-tertiary">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
                     AI is analysing...
                   </div>
@@ -427,16 +430,16 @@ export default function BuyerNegotiationDetailPage() {
               )}
             </>
           ) : (
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-              <div className="flex items-center gap-2 text-white/60 mb-3">
+            <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-text-secondary mb-3">
                 <FileText className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Quote Details</span>
               </div>
               {n.quote && (
                 <dl className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <dt className="text-white/40">Line Items</dt>
-                    <dd className="text-white">{n.quote.lineItems?.length || 0}</dd>
+                    <dt className="text-text-tertiary">Line Items</dt>
+                    <dd className="text-text-primary">{n.quote.lineItems?.length || 0}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-white/40">Total</dt>
@@ -452,6 +455,24 @@ export default function BuyerNegotiationDetailPage() {
           )}
         </div>
       </div>
+
+      <Modal open={showAcceptConfirm} onClose={() => setShowAcceptConfirm(false)} title="Accept Offer" description="This will finalize the negotiation.">
+        <div className="flex justify-end gap-3">
+          <Button variant="ghost" onClick={() => setShowAcceptConfirm(false)}>Cancel</Button>
+          <Button variant="accent" onClick={handleAccept} disabled={acceptMutation.isPending}>
+            {acceptMutation.isPending ? 'Accepting...' : 'Confirm Accept'}
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal open={showCancelConfirm} onClose={() => setShowCancelConfirm(false)} title="Cancel Negotiation" description="Are you sure you want to cancel this negotiation?">
+        <div className="flex justify-end gap-3">
+          <Button variant="ghost" onClick={() => setShowCancelConfirm(false)}>Keep</Button>
+          <Button variant="destructive" onClick={handleCancel} disabled={cancelMutation.isPending}>
+            {cancelMutation.isPending ? 'Cancelling...' : 'Yes, Cancel'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

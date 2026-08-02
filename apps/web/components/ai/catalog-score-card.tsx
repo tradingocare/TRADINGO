@@ -24,10 +24,10 @@ function ScoreBar({ label, value, max = 100 }: { label: string; value: number; m
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
-        <span className="text-gray-500">{label}</span>
+        <span className="text-text-secondary">{label}</span>
         <span className="font-medium">{Math.round(value)}%</span>
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-surface rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-300 ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -36,27 +36,27 @@ function ScoreBar({ label, value, max = 100 }: { label: string; value: number; m
 
 export function CatalogScoreCard({ score, loading, error, onRecalculate, calculating }: CatalogScoreCardProps) {
   if (loading) return (
-    <div className="rounded-lg border border-gray-200 p-4 space-y-3 animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-1/3" />
-      <div className="h-8 bg-gray-200 rounded w-1/4" />
-      {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-3 bg-gray-200 rounded w-full" />)}
+    <div className="rounded-lg border border-border p-4 space-y-3 animate-pulse">
+      <div className="h-4 bg-surface rounded w-1/3" />
+      <div className="h-8 bg-surface rounded w-1/4" />
+      {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-3 bg-surface rounded w-full" />)}
     </div>
   )
 
   if (error || !score) return (
-    <div className="rounded-lg border border-gray-200 p-4 text-center text-sm text-gray-400">
+    <div className="rounded-lg border border-border p-4 text-center text-sm text-text-tertiary">
       <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-gray-300" />
       <p>No quality score available</p>
       {onRecalculate && <button onClick={onRecalculate} disabled={calculating}
-        className="mt-2 text-orange-500 hover:text-orange-600 text-xs font-medium">{calculating ? 'Calculating...' : 'Calculate Now'}</button>}
+        className="mt-2 text-accent-500 hover:text-accent-500/80 text-xs font-medium">{calculating ? 'Calculating...' : 'Calculate Now'}</button>}
     </div>
   )
 
   return (
-    <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+    <div className="rounded-lg border border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
-          <TrendingUp className="h-4 w-4 text-orange-500" /> Catalog Quality
+        <span className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
+          <TrendingUp className="h-4 w-4 text-accent-500" /> Catalog Quality
         </span>
         <span className={`text-lg font-bold ${score.total >= 80 ? 'text-green-600' : score.total >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
           {Math.round(score.total)}%
@@ -70,10 +70,10 @@ export function CatalogScoreCard({ score, loading, error, onRecalculate, calcula
         <ScoreBar label="SEO" value={score.seoQuality} />
       </div>
       {score.recommendations.length > 0 && (
-        <div className="space-y-1 pt-2 border-t border-gray-100">
-          <span className="text-[10px] font-semibold text-gray-400 uppercase">Recommendations</span>
+        <div className="space-y-1 pt-2 border-t border-border">
+          <span className="text-[10px] font-semibold text-text-tertiary uppercase">Recommendations</span>
           {score.recommendations.slice(0, 3).map((r, i) => (
-            <div key={i} className="flex items-start gap-1.5 text-[11px] text-gray-600">
+            <div key={i} className="flex items-start gap-1.5 text-[11px] text-text-secondary">
               <AlertTriangle className="h-3 w-3 text-yellow-500 mt-0.5 shrink-0" />
               <span>{r}</span>
             </div>
@@ -82,7 +82,7 @@ export function CatalogScoreCard({ score, loading, error, onRecalculate, calcula
       )}
       {onRecalculate && (
         <button onClick={onRecalculate} disabled={calculating}
-          className="text-xs text-orange-500 hover:text-orange-600 font-medium">
+          className="text-xs text-accent-500 hover:text-accent-500/80 font-medium">
           {calculating ? 'Recalculating...' : 'Recalculate Score'}
         </button>
       )}

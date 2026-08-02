@@ -16,7 +16,7 @@ export default function FormField({ label, required, error, hint, children }: Fo
       <label className="text-white/70 text-xs font-semibold flex items-center gap-1">
         {label}
         {required
-          ? <span style={{ color: '#FF4D00' }}>*</span>
+          ? <span style={{ color: '#f59e0b' }}>*</span>
           : <span className="text-white/25 text-[9px] font-normal">(optional)</span>}
       </label>
       {children}

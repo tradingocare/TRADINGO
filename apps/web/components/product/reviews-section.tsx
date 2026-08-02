@@ -3,11 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Star, ThumbsUp, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Star, ThumbsUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
+import { Select } from '@/components/ui/select';
+import { Modal } from '@/components/ui/modal';
 import { useAuthStore } from '@/store/auth-store';
 import { createProductReview, markReviewHelpful } from '@/lib/api/products';
 import { type ProductDetailReview } from '@/types/product-detail';
@@ -45,7 +48,7 @@ function StarRating({ rating, size = 'sm', interactive, onChange }: { rating: nu
           <Star
             className={cn(cls, 'transition-colors',
               s <= display
-                ? 'fill-amber-400 text-amber-400'
+                ? 'fill-accent text-accent'
                 : 'fill-none text-border dark:text-dark-border',
             )}
           />
@@ -137,10 +140,10 @@ export function ReviewsSection({
                   <span className="w-8 text-right text-text-secondary dark:text-dark-text-secondary">
                     {star}
                   </span>
-                  <Star className="h-3.5 w-3.5 text-amber-400" />
+                  <Star className="h-3.5 w-3.5 text-accent" />
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
                     <div
-                      className="h-full rounded-full bg-amber-400 transition-all"
+                      className="h-full rounded-full bg-accent transition-all"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -157,15 +160,11 @@ export function ReviewsSection({
           <Button variant="outline" onClick={handleWriteReview}>
             Write a Review
           </Button>
-          <select
-            value={sortBy}
-            onChange={(e) => { setSortBy(e.target.value as typeof sortBy); setPage(1); }}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary"
-          >
+          <Select value={sortBy} onChange={(e) => { setSortBy(e.target.value as typeof sortBy); setPage(1); }}>
             <option value="recent">Most Recent</option>
             <option value="highest">Highest Rated</option>
             <option value="lowest">Lowest Rated</option>
-          </select>
+          </Select>
         </div>
 
         {paged.length === 0 && (
@@ -182,9 +181,7 @@ export function ReviewsSection({
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-500/10 text-sm font-semibold text-primary-700 dark:text-primary-300">
-                    {(review.userName || 'A').charAt(0).toUpperCase()}
-                  </div>
+                  <Avatar size="lg" fallback={(review.userName || 'A').charAt(0).toUpperCase()} className="bg-accent/10 text-accent" />
                   <div>
                     <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
                       {review.userName || 'Anonymous'}
@@ -216,7 +213,7 @@ export function ReviewsSection({
 
               <button
                 onClick={() => handleHelpful(review.id)}
-                className="mt-3 flex items-center gap-1.5 text-xs text-text-tertiary hover:text-primary-600 dark:text-dark-text-tertiary dark:hover:text-primary-400"
+                className="mt-3 flex items-center gap-1.5 text-xs text-text-tertiary hover:text-accent"
               >
                 <ThumbsUp className="h-3.5 w-3.5" />
                 Helpful ({review.helpfulCount})
@@ -258,38 +255,28 @@ export function ReviewsSection({
         )}
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-xl bg-surface p-6 shadow-2xl dark:bg-dark-surface">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Write a Review</h3>
-              <button onClick={() => setShowModal(false)} className="rounded-full p-1 hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Rating *</label>
-                <StarRating rating={newRating} size="lg" interactive onChange={setNewRating} />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Title (optional)</label>
-                <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Summary of your review" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Review (optional)</label>
-                <Textarea value={newBody} onChange={(e) => setNewBody(e.target.value)} placeholder="Share your experience with this product..." rows={4} />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
-                <Button onClick={handleSubmitReview} disabled={newRating === 0 || submitting}>
-                  {submitting ? 'Submitting...' : 'Submit Review'}
-                </Button>
-              </div>
-            </div>
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="Write a Review">
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Rating *</label>
+            <StarRating rating={newRating} size="lg" interactive onChange={setNewRating} />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Title (optional)</label>
+            <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Summary of your review" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Review (optional)</label>
+            <Textarea value={newBody} onChange={(e) => setNewBody(e.target.value)} placeholder="Share your experience with this product..." rows={4} />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button onClick={handleSubmitReview} disabled={newRating === 0 || submitting}>
+              {submitting ? 'Submitting...' : 'Submit Review'}
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </>
   );
 }

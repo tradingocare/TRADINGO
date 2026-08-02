@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { WalletTransactionFilters } from '@/components/wallet/wallet-transaction-filters';
 import { WalletTimeline } from '@/components/wallet/wallet-timeline';
 import { WalletAnalyticsBar } from '@/components/wallet/wallet-analytics-bar';
+import { Select } from '@/components/ui/select';
 import {
   Award, ArrowUpRight, ArrowDownLeft, AlertCircle, Download, DollarSign, Lock, TrendingUp,
   Gift, Megaphone, ShoppingCart, FileText, Sparkles, ExternalLink
@@ -91,33 +92,33 @@ export default function BuyerGocashPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-4">
-            <Link href="/buyer/campaigns" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-orange-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-orange-500/30">
+            <Link href="/buyer/campaigns" className="group rounded-2xl border border-border bg-gradient-to-br from-orange-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-orange-500/30">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-[#FF4D00]"><Megaphone className="h-5 w-5" /></div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-accent-500"><Megaphone className="h-5 w-5" /></div>
                 <div><p className="text-sm font-medium text-white">Campaigns</p><p className="text-xs text-white/50">Earn bonus rewards</p></div>
-                <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+                <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
               </div>
             </Link>
-            <Link href="/buyer/referrals" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-blue-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-blue-500/30">
+            <Link href="/buyer/referrals" className="group rounded-2xl border border-border bg-gradient-to-br from-blue-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-blue-500/30">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400"><Gift className="h-5 w-5" /></div>
                 <div><p className="text-sm font-medium text-white">Referrals</p><p className="text-xs text-white/50">Invite & earn</p></div>
-                <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+                <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
               </div>
             </Link>
-            <Link href="/buyer/gocash/redeem" className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-green-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-green-500/30">
+            <Link href="/buyer/gocash/redeem" className="group rounded-2xl border border-border bg-gradient-to-br from-green-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-green-500/30">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/10 text-green-400"><ShoppingCart className="h-5 w-5" /></div>
                 <div><p className="text-sm font-medium text-white">Redeem</p><p className="text-xs text-white/50">Use your GOCASH</p></div>
-                <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+                <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
               </div>
             </Link>
             <button onClick={handleDownloadStatement}
-              className="group rounded-2xl border border-white/[0.06] bg-gradient-to-br from-purple-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-purple-500/30 text-left">
+              className="group rounded-2xl border border-border bg-gradient-to-br from-purple-500/10 to-transparent p-4 backdrop-blur-xl transition-all hover:border-purple-500/30 text-left">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400"><FileText className="h-5 w-5" /></div>
                 <div><p className="text-sm font-medium text-white">Statement</p><p className="text-xs text-white/50">Download report</p></div>
-                <ExternalLink className="ml-auto h-4 w-4 text-white/30" />
+                <ExternalLink className="ml-auto h-4 w-4 text-white/40" />
               </div>
             </button>
           </div>
@@ -129,15 +130,11 @@ export default function BuyerGocashPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Transaction History</CardTitle>
             <div className="flex gap-2">
-              <select
-                className="h-8 rounded-lg border border-white/[0.06] bg-white/[0.04] px-2 text-xs text-white backdrop-blur-xl"
-                value={statementPeriod}
-                onChange={(e) => setStatementPeriod(e.target.value)}
-              >
+              <Select size="sm" value={statementPeriod} onChange={(e) => setStatementPeriod(e.target.value)}>
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
                 <option value="yearly">Yearly</option>
-              </select>
+              </Select>
               <Button variant="outline" size="sm" onClick={handleDownloadStatement}>
                 <Download className="mr-1 h-3 w-3" /> CSV
               </Button>
@@ -164,7 +161,7 @@ export default function BuyerGocashPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/[0.06] text-left">
+                    <tr className="border-b border-border text-left">
                       <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Date</th>
                       <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Type</th>
                       <th className="sticky top-0 bg-background pb-3 font-medium text-white/60">Direction</th>
@@ -176,10 +173,10 @@ export default function BuyerGocashPage() {
                   </thead>
                   <tbody>
                     {txns.map((txn) => (
-                      <tr key={txn.id} className="border-b border-white/[0.06] last:border-0">
+                      <tr key={txn.id} className="border-b border-border last:border-0">
                         <td className="py-3 text-white/50">{new Date(txn.createdAt).toLocaleDateString()}</td>
                         <td className="py-3">
-                          <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-medium text-white/70">{txn.type.replace(/_/g, ' ')}</span>
+                          <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-xs font-medium text-text-secondary">{txn.type.replace(/_/g, ' ')}</span>
                         </td>
                         <td className="py-3">
                           {txn.direction === 'CREDIT' ? (
@@ -198,7 +195,7 @@ export default function BuyerGocashPage() {
                             txn.status === 'SUCCESS' ? 'bg-green-500/10 text-green-400' :
                             txn.status === 'FAILED' ? 'bg-red-500/10 text-red-400' :
                             txn.status === 'REVERSED' ? 'bg-yellow-500/10 text-yellow-400' :
-                            'bg-white/5 text-white/40'
+                            'bg-surface text-text-tertiary'
                           }`}>{txn.status}</span>
                         </td>
                       </tr>

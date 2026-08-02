@@ -55,9 +55,9 @@ describe('AdminService', () => {
         { id: 'a2', name: 'Free Admin', email: 'free@test.com' },
       ]);
 
-      const admin = await service.getLeastBusyAdmin();
+      const admin = await service.getLeastBusyAdmin()!;
       expect(admin).toBeDefined();
-      expect(admin.activeDisputeCount).toBe(0);
+      expect(admin!.activeDisputeCount).toBe(0);
     });
 
     it('should return null if no admins', async () => {

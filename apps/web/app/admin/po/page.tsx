@@ -1,28 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { DashboardPageHeader, StatusBadge, StatCard } from '@/components/dashboard';
+import { DashboardPageHeader, StatusBadge, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import {
   useAdminPoOverview, useAdminPos, useAdminFlaggedPos, useAdminPoAudit,
 } from '@/hooks/use-smart-po';
+import { Table, THead, TR, TH, TBody, TD } from '@/components/ui/table';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Tabs } from '@/components/ui/tabs';
 import { FileText, CheckCircle, XCircle, Clock, AlertTriangle, Activity } from 'lucide-react';
 
 const TABS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'orders', label: 'All POs' },
-  { key: 'flagged', label: 'Flagged' },
-  { key: 'audit', label: 'Audit' },
-] as const;
-
-type Tab = typeof TABS[number]['key'];
-
-function StatCardSkeleton() { return <div className="h-24 animate-pulse rounded-xl bg-white/[0.04]" />; }
-function TableSkeleton() { return <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-white/[0.04]" />)}</div>; }
+  { value: 'overview', label: 'Overview' },
+  { value: 'orders', label: 'All POs' },
+  { value: 'flagged', label: 'Flagged' },
+  { value: 'audit', label: 'Audit' },
+];
 
 const fmtStatus = (s: string) => s.replace(/_/g, ' ').toLowerCase();
 
 export default function AdminPoPage() {
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab, setTab] = useState<string>('overview');
   const { data: overview, isLoading: overviewLoading } = useAdminPoOverview();
   const { data: ordersData, isLoading: ordersLoading } = useAdminPos();
   const { data: flaggedData, isLoading: flaggedLoading } = useAdminFlaggedPos();
@@ -35,14 +33,7 @@ export default function AdminPoPage() {
     <div className="space-y-6">
       <DashboardPageHeader title="Purchase Order Monitoring" description="Admin oversight for all purchase orders" />
 
-      <div className="flex items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.04] p-1 backdrop-blur-xl">
-        {TABS.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t.key ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'
-            }`}>{t.label}</button>
-        ))}
-      </div>
+      <Tabs tabs={TABS} value={tab} onChange={setTab} className="rounded-xl border border-border bg-surface p-1 backdrop-blur-xl" />
 
       {tab === 'overview' && (
         <div className="space-y-6">
@@ -67,98 +58,85 @@ export default function AdminPoPage() {
       )}
 
       {tab === 'orders' && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          {ordersLoading ? <TableSkeleton /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px]">
-                <thead><tr className="border-b border-white/[0.06]">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">PO Number</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Buyer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Seller</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Amount</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Items</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Created</th>
-                </tr></thead>
-                <tbody>
-                  {ordersData?.data?.length === 0 ? (
-                    <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-white/40">No purchase orders found</td></tr>
-                  ) : ordersData?.data?.map((po: any) => (
-                    <tr key={po.id} className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.02]">
-                      <td className="px-4 py-3 text-sm font-bold text-orange-400">{po.poNumber}</td>
-                      <td className="px-4 py-3 text-sm text-white">{po.buyerCompany?.name || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-white">{po.sellerCompany?.name || '-'}</td>
-                      <td className="px-4 py-3"><StatusBadge status={fmtStatus(po.status)} /></td>
-                      <td className="px-4 py-3 text-sm text-white/80">{po.currency || 'INR'} {(po.totalAmount || 0).toLocaleString('en-IN')}</td>
-                      <td className="px-4 py-3 text-sm text-white/60">{po._count?.lineItems || 0}</td>
-                      <td className="px-4 py-3 text-sm text-white/60">{po.createdAt ? new Date(po.createdAt).toLocaleDateString('en-IN') : '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <>
+          {ordersLoading ? (
+            <div className="rounded-xl border border-border bg-surface p-8 backdrop-blur-xl"><TableSkeleton /></div>
+          ) : ordersData?.data?.length === 0 ? (
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl"><div className="p-8"><EmptyState variant="empty" title="No purchase orders found" /></div></div>
+          ) : (
+            <Table className="min-w-[700px]">
+              <THead>
+                <TR><TH>PO Number</TH><TH>Buyer</TH><TH>Seller</TH><TH>Status</TH><TH>Amount</TH><TH>Items</TH><TH>Created</TH></TR>
+              </THead>
+              <TBody>
+                {ordersData?.data?.map((po: any) => (
+                  <TR key={po.id}>
+                    <TD className="font-bold text-orange-400">{po.poNumber}</TD>
+                    <TD className="text-white">{po.buyerCompany?.name || '-'}</TD>
+                    <TD className="text-white">{po.sellerCompany?.name || '-'}</TD>
+                    <TD><StatusBadge status={fmtStatus(po.status)} /></TD>
+                    <TD className="text-white/80">{po.currency || 'INR'} {(po.totalAmount || 0).toLocaleString('en-IN')}</TD>
+                    <TD className="text-white/60">{po._count?.lineItems || 0}</TD>
+                    <TD className="text-white/60">{po.createdAt ? new Date(po.createdAt).toLocaleDateString('en-IN') : '-'}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
-        </div>
+        </>
       )}
 
       {tab === 'flagged' && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          {flaggedLoading ? <TableSkeleton /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead><tr className="border-b border-white/[0.06]">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">PO</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Buyer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Seller</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Updated</th>
-                </tr></thead>
-                <tbody>
-                  {flaggedData?.data?.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-white/40">No flagged POs</td></tr>
-                  ) : flaggedData?.data?.map((po: any) => (
-                    <tr key={po.id} className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.02]">
-                      <td className="px-4 py-3 text-sm font-bold text-orange-400">{po.poNumber}</td>
-                      <td className="px-4 py-3 text-sm text-white">{po.buyerCompany?.name || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-white">{po.sellerCompany?.name || '-'}</td>
-                      <td className="px-4 py-3"><StatusBadge status={fmtStatus(po.status)} /></td>
-                      <td className="px-4 py-3 text-sm text-white/60">{po.updatedAt ? new Date(po.updatedAt).toLocaleDateString('en-IN') : '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <>
+          {flaggedLoading ? (
+            <div className="rounded-xl border border-border bg-surface p-8 backdrop-blur-xl"><TableSkeleton /></div>
+          ) : flaggedData?.data?.length === 0 ? (
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl"><div className="p-8"><EmptyState variant="empty" title="No flagged POs" /></div></div>
+          ) : (
+            <Table className="min-w-[600px]">
+              <THead>
+                <TR><TH>PO</TH><TH>Buyer</TH><TH>Seller</TH><TH>Status</TH><TH>Updated</TH></TR>
+              </THead>
+              <TBody>
+                {flaggedData?.data?.map((po: any) => (
+                  <TR key={po.id}>
+                    <TD className="font-bold text-orange-400">{po.poNumber}</TD>
+                    <TD className="text-white">{po.buyerCompany?.name || '-'}</TD>
+                    <TD className="text-white">{po.sellerCompany?.name || '-'}</TD>
+                    <TD><StatusBadge status={fmtStatus(po.status)} /></TD>
+                    <TD className="text-white/60">{po.updatedAt ? new Date(po.updatedAt).toLocaleDateString('en-IN') : '-'}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
-        </div>
+        </>
       )}
 
       {tab === 'audit' && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          {auditLoading ? <TableSkeleton /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead><tr className="border-b border-white/[0.06]">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Event</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">PO</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Actor</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Date</th>
-                </tr></thead>
-                <tbody>
-                  {auditData?.data?.length === 0 ? (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-white/40">No audit events</td></tr>
-                  ) : auditData?.data?.map((e: any) => (
-                    <tr key={e.id} className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.02]">
-                      <td className="px-4 py-3 text-sm text-white capitalize">{e.eventType?.replace(/_/g, ' ').toLowerCase()}</td>
-                      <td className="px-4 py-3 text-sm text-white/60">{e.purchaseOrder?.poNumber || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-white/60">{e.actorRole || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-white/60">{e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN') : '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <>
+          {auditLoading ? (
+            <div className="rounded-xl border border-border bg-surface p-8 backdrop-blur-xl"><TableSkeleton /></div>
+          ) : auditData?.data?.length === 0 ? (
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl"><div className="p-8"><EmptyState variant="empty" title="No audit events" /></div></div>
+          ) : (
+            <Table className="min-w-[600px]">
+              <THead>
+                <TR><TH>Event</TH><TH>PO</TH><TH>Actor</TH><TH>Date</TH></TR>
+              </THead>
+              <TBody>
+                {auditData?.data?.map((e: any) => (
+                  <TR key={e.id}>
+                    <TD className="text-white capitalize">{e.eventType?.replace(/_/g, ' ').toLowerCase()}</TD>
+                    <TD className="text-white/60">{e.purchaseOrder?.poNumber || '-'}</TD>
+                    <TD className="text-white/60">{e.actorRole || '-'}</TD>
+                    <TD className="text-white/60">{e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN') : '-'}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
-        </div>
+        </>
       )}
     </div>
   );

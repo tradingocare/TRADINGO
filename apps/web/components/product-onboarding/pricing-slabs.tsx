@@ -5,6 +5,8 @@ import { Plus, Trash2, IndianRupee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert } from '@/components/ui/alert';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import type { ProductDraftPriceSlab } from '@/lib/product-onboarding/types';
 
 interface PricingSlabsProps {
@@ -114,36 +116,28 @@ export function PricingSlabs({
       </div>
 
       {validationError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+        <Alert variant="error">
           {validationError}
-        </div>
+        </Alert>
       )}
 
       <div className="overflow-x-auto rounded-lg border border-border dark:border-dark-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface-secondary dark:border-dark-border dark:bg-dark-surface-secondary">
-              <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
-                Min Qty
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
-                Max Qty
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
-                Price (INR)
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <THead>
+            <TR className="border-b border-border bg-surface-secondary dark:border-dark-border dark:bg-dark-surface-secondary">
+              <TH>Min Qty</TH>
+              <TH>Max Qty</TH>
+              <TH>Price (INR)</TH>
+              <TH className="text-right">Action</TH>
+            </TR>
+          </THead>
+          <TBody>
             {slabs.map((slab, index) => (
-              <tr
+              <TR
                 key={slab.id || index}
                 className="border-b border-border transition-colors hover:bg-surface-secondary/50 last:border-b-0 dark:border-dark-border dark:hover:bg-dark-surface-secondary/50"
               >
-                <td className="px-4 py-2.5">
+                <TD>
                   <Input
                     type="number"
                     min={1}
@@ -151,8 +145,8 @@ export function PricingSlabs({
                     onChange={(e) => updateSlab(index, 'minQty', Number(e.target.value))}
                     className="h-8 w-20 text-xs"
                   />
-                </td>
-                <td className="px-4 py-2.5">
+                </TD>
+                <TD>
                   <Input
                     type="number"
                     min={slab.minQty + 1 || 1}
@@ -163,8 +157,8 @@ export function PricingSlabs({
                     placeholder="∞"
                     className="h-8 w-20 text-xs"
                   />
-                </td>
-                <td className="px-4 py-2.5">
+                </TD>
+                <TD>
                   <div className="relative">
                     <IndianRupee className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-tertiary" />
                     <Input
@@ -176,8 +170,8 @@ export function PricingSlabs({
                       className="h-8 w-28 pl-7 text-xs"
                     />
                   </div>
-                </td>
-                <td className="px-4 py-2.5 text-right">
+                </TD>
+                <TD className="text-right">
                   <button
                     type="button"
                     onClick={() => removeSlab(index)}
@@ -185,18 +179,16 @@ export function PricingSlabs({
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
-                </td>
-              </tr>
+                </TD>
+              </TR>
             ))}
             {slabs.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-text-tertiary">
-                  No pricing slabs defined.
-                </td>
-              </tr>
+              <TR>
+                <TD colSpan={4} className="text-center text-sm text-text-tertiary">No pricing slabs defined.</TD>
+              </TR>
             )}
-          </tbody>
-        </table>
+          </TBody>
+        </Table>
       </div>
 
       <Button type="button" variant="outline" size="sm" onClick={addSlab}>

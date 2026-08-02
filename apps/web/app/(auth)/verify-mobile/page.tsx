@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, CheckCircle, Smartphone } from 'lucide-react';
+import { CheckCircle, Smartphone } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { TradingoLogo } from '@/components/shared/tradingo-logo';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -117,7 +118,7 @@ export default function VerifyMobilePage() {
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LoadingSpinner size="sm" />
                 Verifying...
               </>
             ) : (

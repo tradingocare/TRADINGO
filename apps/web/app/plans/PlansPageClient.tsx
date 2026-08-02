@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import api from '../../lib/api/client'
 import { useAuthStore } from '../../store/auth-store'
-import { CheckCircle2, X, Zap, Crown, Star, Sparkles, ArrowRight, Info, Rocket, Shield } from 'lucide-react'
+import { CheckCircle2, X, Sparkles, ArrowRight, Info, Shield, Rocket } from 'lucide-react'
 
 interface Plan {
   id: string; planId: string; name: string; description: string
@@ -15,7 +15,7 @@ interface Plan {
 
 const PLANS_META: Record<string, { icon: any; badge?: string; color: string }> = {
   'TRAD UP™':   { icon: Rocket, color: '#3D8BFF', badge: 'Launch Offer' },
-  'Trade Smart™': { icon: Shield, color: '#FF4D00', badge: 'Best Value' },
+  'Trade Smart™': { icon: Shield, color: '#f59e0b', badge: 'Best Value' },
 }
 
 const FEATURE_COMPARISON = [
@@ -70,18 +70,18 @@ export default function PlansPageClient() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background:'#0A0A0F' }}>
-      <div className="w-12 h-12 rounded-full border-2 border-t-[#FF4D00] border-white/10 animate-spin" />
+    <div className="min-h-screen flex items-center justify-center" style={{ background:'var(--bg-base)' }}>
+      <div className="w-12 h-12 rounded-full border-2 border-t-[#f59e0b] border-border animate-spin" />
     </div>
   )
 
   return (
-    <div className="min-h-screen" style={{ background:'#0A0A0F' }}>
+    <div className="min-h-screen" style={{ background:'var(--bg-base)' }}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full opacity-10"
           style={{ background:'radial-gradient(circle,#3D8BFF20,transparent 70%)', filter:'blur(80px)' }} />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-8"
-          style={{ background:'radial-gradient(circle,#FF4D0018,transparent 70%)', filter:'blur(80px)' }} />
+          style={{ background:'radial-gradient(circle,#f59e0b18,transparent 70%)', filter:'blur(80px)' }} />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 py-12">
@@ -89,7 +89,7 @@ export default function PlansPageClient() {
         <div className="flex justify-center mb-6">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase"
             style={{
-              background: 'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+              background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
               color: '#fff',
             }}>
             <Sparkles size={14} /> Launch Offer — Limited Time
@@ -99,7 +99,7 @@ export default function PlansPageClient() {
         <div className="text-center mb-10">
           <motion.h1 initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
             className="text-white font-black text-3xl sm:text-5xl mb-3">
-            Start Your <span style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>TRADINGO</span> Journey
+            Start Your <span style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>TRADINGO</span> Journey
           </motion.h1>
           <p className="text-white/40 text-sm max-w-2xl mx-auto">
             Join India&apos;s fastest growing B2B marketplace. Choose from two launch plans designed to help your business grow.
@@ -155,15 +155,15 @@ export default function PlansPageClient() {
             <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1 }}
               className="relative rounded-2xl p-6 transition-all duration-300 flex flex-col border"
               style={{
-                background: 'linear-gradient(135deg,rgba(255,77,0,0.08),rgba(255,77,0,0.02))',
-                borderColor: 'rgba(255,77,0,0.3)',
-                boxShadow: '0 0 40px rgba(255,77,0,0.12)',
+                background: 'linear-gradient(135deg,rgba(245, 158, 11, 0.08),rgba(245, 158, 11, 0.02))',
+                borderColor: 'rgba(245, 158, 11, 0.3)',
+                boxShadow: '0 0 40px rgba(245, 158, 11, 0.12)',
               }}>
               <div className="absolute -top-3 left-4 px-3 py-0.5 rounded-full text-[10px] font-bold text-white"
-                style={{ background: 'linear-gradient(135deg,#FF4D00,#FF7A3D)' }}>
+                style={{ background: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}>
                 Best Value
               </div>
-              <Shield size={28} style={{ color: '#FF4D00' }} className="mb-3" />
+              <Shield size={28} style={{ color: '#f59e0b' }} className="mb-3" />
               <h3 className="text-white font-bold text-xl mb-1">Trade Smart™</h3>
               <p className="text-white/40 text-xs mb-4">Everything in TRAD UP™ plus premium features</p>
               <div className="flex items-baseline gap-1 mb-1">
@@ -183,7 +183,7 @@ export default function PlansPageClient() {
                 onClick={() => handleChoose('trade-smart-launch')}
                 className="w-full py-3.5 rounded-xl font-bold text-sm"
                 style={{
-                  background: 'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+                  background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
                   color: '#fff',
                 }}>
                 Choose Trade Smart <ArrowRight size={14} className="inline ml-1" />
@@ -194,32 +194,32 @@ export default function PlansPageClient() {
 
         {/* Feature Comparison Table */}
         {tradUpPlan && tradeSmartPlan && (
-          <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/[0.02] max-w-4xl mx-auto">
-            <div className="p-6 border-b border-white/10 flex items-center gap-2">
-              <Info size={16} className="text-white/30" />
-              <h2 className="text-white font-bold text-lg">Feature Comparison</h2>
+          <div className="rounded-2xl overflow-hidden border border-border bg-surface max-w-4xl mx-auto">
+            <div className="p-6 border-b border-border flex items-center gap-2">
+              <Info size={16} className="text-text-tertiary" />
+              <h2 className="text-text-primary font-bold text-lg">Feature Comparison</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left px-6 py-4 text-white/50 text-xs font-semibold w-1/2">Feature</th>
+                  <tr className="border-b border-border">
+                    <th className="text-left px-6 py-4 text-text-tertiary text-xs font-semibold w-1/2">Feature</th>
                     <th className="px-4 py-4 text-blue-400 text-xs font-bold text-center">TRAD UP™</th>
                     <th className="px-4 py-4 text-orange-400 text-xs font-bold text-center">Trade Smart™</th>
                   </tr>
                 </thead>
                 <tbody>
                   {FEATURE_COMPARISON.map((f, i) => (
-                    <tr key={i} className="border-b border-white/5">
-                      <td className="px-6 py-3 text-white/60 text-xs">{f.label}</td>
+                    <tr key={i} className="border-b border-border">
+                      <td className="px-6 py-3 text-text-secondary text-xs">{f.label}</td>
                       <td className="px-4 py-3 text-center">
                         {f.tradUp === true ? <CheckCircle2 size={14} className="mx-auto text-blue-400" />
-                          : f.tradUp === false ? <X size={14} className="mx-auto text-white/15" />
-                          : <span className="text-white/30 text-[10px]">{f.tradUp}</span>}
+                          : f.tradUp === false ? <X size={14} className="mx-auto text-text-tertiary" />
+                          : <span className="text-text-tertiary text-[10px]">{f.tradUp}</span>}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {f.tradeSmart === true ? <CheckCircle2 size={14} className="mx-auto text-green-400" />
-                          : <X size={14} className="mx-auto text-white/15" />}
+                          : <X size={14} className="mx-auto text-text-tertiary" />}
                       </td>
                     </tr>
                   ))}
@@ -230,18 +230,18 @@ export default function PlansPageClient() {
         )}
 
         {/* Coming Soon Banner */}
-        <div className="text-center mt-10 p-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] max-w-4xl mx-auto">
-          <p className="text-white/30 text-sm">
-            More plans coming soon — <span className="text-white/50 font-semibold">Trade Plus</span>,{' '}
-            <span className="text-white/50 font-semibold">Trade Pro</span>,{' '}
-            <span className="text-white/50 font-semibold">Trade Premium</span> &amp;{' '}
-            <span className="text-white/50 font-semibold">Trade Elite</span>
+        <div className="text-center mt-10 p-6 rounded-2xl border border-dashed border-border bg-surface max-w-4xl mx-auto">
+          <p className="text-text-tertiary text-sm">
+            More plans coming soon — <span className="text-text-primary font-semibold">Trade Plus</span>,{' '}
+            <span className="text-text-primary font-semibold">Trade Pro</span>,{' '}
+            <span className="text-text-primary font-semibold">Trade Premium</span> &amp;{' '}
+            <span className="text-text-primary font-semibold">Trade Elite</span>
           </p>
-          <p className="text-white/20 text-xs mt-1">Future plans will be enabled by Super Admin when ready</p>
+          <p className="text-text-tertiary text-xs mt-1">Future plans will be enabled by Super Admin when ready</p>
         </div>
 
         <div className="text-center mt-6">
-          <p className="text-white/20 text-xs">
+          <p className="text-text-tertiary text-xs">
             All plans include GST invoice. Prices are in INR. TRAD UP™ auto-expires after 6 months.
           </p>
         </div>

@@ -22,7 +22,19 @@ let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'statusCode' in response.data &&
+      'message' in response.data &&
+      'data' in response.data &&
+      'timestamp' in response.data
+    ) {
+      response.data = (response.data as any).data;
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
@@ -66,15 +78,19 @@ apiClient.interceptors.response.use(
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return false;
-
-    const res = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+    const res = await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
     setAccessToken(res.data.accessToken);
-    localStorage.setItem('refreshToken', res.data.refreshToken || refreshToken);
     return true;
   } catch {
-    return false;
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return false;
+    try {
+      const res = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+      setAccessToken(res.data.accessToken);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

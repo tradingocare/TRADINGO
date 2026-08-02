@@ -1,10 +1,13 @@
 import { Controller, Get, Patch, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { BuyerNotificationService } from './buyer-notification.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Buyer — Notifications')
+@Throttle(RateLimits.WRITE_GENERAL)
 @UseGuards(JwtAuthGuard)
 @Controller('buyer/notifications')
 export class BuyerNotificationController {

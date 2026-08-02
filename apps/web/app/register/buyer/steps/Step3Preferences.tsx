@@ -7,12 +7,12 @@ import FormField from '../components/FormField'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 import { CATALOG_CATEGORIES } from '@/data/catalog-data'
 
@@ -73,7 +73,7 @@ export default function Step3Preferences({
       type="button"
       onClick={onToggle}
       className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200"
-      style={{ background: checked ? '#FF4D00' : 'rgba(255,255,255,0.15)' }}
+      style={{ background: checked ? '#f59e0b' : 'rgba(255,255,255,0.15)' }}
     >
       <span
         className="inline-block h-4 w-4 rounded-full bg-white transition-transform duration-200"
@@ -100,11 +100,11 @@ export default function Step3Preferences({
                   onClick={() => toggleCategory(cat)}
                   className="rounded-xl px-3 py-2.5 text-xs text-left transition-all duration-200"
                   style={{
-                    background: selected ? 'rgba(255,77,0,0.1)' : 'rgba(255,255,255,0.04)',
-                    border: selected ? '1px solid rgba(255,77,0,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                    background: selected ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-elevated)',
+                    border: selected ? '1px solid rgba(245, 158, 11, 0.6)' : '1px solid var(--border-color)',
                   }}
                 >
-                  <span className={selected ? 'text-[#FF7A3D]' : 'text-white/60'}>{cat}</span>
+                  <span className={selected ? 'text-[#fbbf24]' : 'text-white/60'}>{cat}</span>
                 </button>
               );
             })}
@@ -124,11 +124,11 @@ export default function Step3Preferences({
                   onClick={() => setPreferredSuppliers(opt.value)}
                   className="rounded-xl px-4 py-3 text-left transition-all duration-200"
                   style={{
-                    background: selected ? 'rgba(255,77,0,0.1)' : 'rgba(255,255,255,0.04)',
-                    border: selected ? '1px solid rgba(255,77,0,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                    background: selected ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-elevated)',
+                    border: selected ? '1px solid rgba(245, 158, 11, 0.6)' : '1px solid var(--border-color)',
                   }}
                 >
-                  <p className={`text-sm font-medium ${selected ? 'text-[#FF7A3D]' : 'text-white/80'}`}>{opt.label}</p>
+                  <p className={`text-sm font-medium ${selected ? 'text-[#fbbf24]' : 'text-white/80'}`}>{opt.label}</p>
                   <p className="text-xs text-white/40 mt-0.5">{opt.desc}</p>
                 </button>
               );
@@ -138,15 +138,15 @@ export default function Step3Preferences({
 
         <div className="space-y-4">
           <p className="text-white/90 text-sm font-medium">Notification Settings</p>
-          <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
             <span className="text-sm text-white/70">Email notifications for RFQ updates</span>
             <Toggle checked={notificationEmail} onToggle={() => setNotificationEmail(p => !p)} />
           </div>
-          <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
             <span className="text-sm text-white/70">SMS alerts for urgent orders</span>
             <Toggle checked={notificationSms} onToggle={() => setNotificationSms(p => !p)} />
           </div>
-          <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
             <span className="text-sm text-white/70">Subscribe to TRADINGO marketplace newsletter</span>
             <Toggle checked={newsletter} onToggle={() => setNewsletter(p => !p)} />
           </div>

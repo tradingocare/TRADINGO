@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { OrderService } from '../order/order.service';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType, OrderStatus, OrderSource, OrderType } from '@prisma/client';
+import { UpdateOrderDto, CancelOrderDto, CreateReturnDto } from './dto/smart-order.dto';
 
 @Injectable()
 export class SmartOrderService {
@@ -108,7 +109,7 @@ export class SmartOrderService {
     return prefix;
   }
 
-  private async notifyOrderCreation(po: any, order: any, userId: string) {
+  private async notifyOrderCreation(po: Record<string, any>, order: Record<string, any>, userId: string) {
     try {
       await this.notificationService.createWithTemplate(
         po.buyerCompanyId,
@@ -151,17 +152,17 @@ export class SmartOrderService {
     return this.orderService.updateStatus(orderId, company.id, userId, newStatus as OrderStatus, note);
   }
 
-  async updateOrder(userId: string, orderId: string, dto: any) {
+  async updateOrder(userId: string, orderId: string, dto: UpdateOrderDto) {
     const company = await this.getUserCompany(userId);
     return this.orderService.updateOrder(orderId, company.id, userId, dto);
   }
 
-  async cancelOrder(userId: string, orderId: string, dto: any) {
+  async cancelOrder(userId: string, orderId: string, dto: CancelOrderDto) {
     const company = await this.getUserCompany(userId);
     return this.orderService.cancelOrder(orderId, company.id, userId, dto);
   }
 
-  async requestReturn(userId: string, orderId: string, dto: any) {
+  async requestReturn(userId: string, orderId: string, dto: CreateReturnDto) {
     const company = await this.getUserCompany(userId);
     return this.orderService.requestReturn(orderId, company.id, userId, dto);
   }

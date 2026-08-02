@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString, IsUUID, IsObject } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { NotificationChannel, NotificationPriority, NotificationType } from '@prisma/client';
 
 export class CreateNotificationDto {
@@ -57,16 +57,20 @@ export class CreateNotificationDto {
 
 export class CreateBulkNotificationDto {
   @IsUUID('4', { each: true })
+  @ApiProperty({ description: 'User IDs to notify' })
   userIds: string[];
 
   @IsOptional()
   @IsEnum(NotificationType)
+  @ApiPropertyOptional({ description: 'Notification type' })
   type?: NotificationType;
 
   @IsString()
+  @ApiProperty({ description: 'Notification title' })
   title: string;
 
   @IsString()
+  @ApiProperty({ description: 'Notification body' })
   body: string;
 
   @ApiPropertyOptional()

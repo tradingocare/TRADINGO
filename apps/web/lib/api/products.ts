@@ -6,6 +6,8 @@ export interface GetProductsParams {
   page?: number;
   limit?: number;
   category?: string;
+  categoryId?: string;
+  industryId?: string;
   status?: string;
   search?: string;
 }
@@ -94,6 +96,10 @@ export interface WishlistItem {
     reviewCount: number;
     monthlyOrders?: number;
     deliveryEta?: string;
+    freeDeliveryAbove?: number;
+    returnPolicy?: string;
+    warrantyPeriod?: string;
+    certifications?: string[];
     seller: {
       id: string;
       name: string;

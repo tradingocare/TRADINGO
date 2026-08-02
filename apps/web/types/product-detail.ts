@@ -3,6 +3,7 @@ export interface ProductDetailMedia {
   type: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   url: string;
   title?: string;
+  fileSize?: number | string;
 }
 
 export interface ProductDetailSpec {
@@ -81,6 +82,12 @@ export interface ProductAttributesDisplay {
   flattened: Record<string, any>;
 }
 
+export interface ProductDetailCertification {
+  id: string;
+  type: string;
+  documentNumber?: string;
+}
+
 export interface ProductDetailSeller {
   id: string;
   name: string;
@@ -97,6 +104,7 @@ export interface ProductDetailSeller {
   ordersFulfilled?: number;
   isGstRegistered?: boolean;
   isTradgoElite?: boolean;
+  certifications?: ProductDetailCertification[];
   createdAt: string;
 }
 
@@ -119,6 +127,7 @@ export interface ProductDetail {
   slug: string;
   shortDescription?: string;
   description?: string;
+  industry?: { id: string; name: string; slug?: string };
   brand?: string;
   model?: string;
   sku?: string;
@@ -139,6 +148,7 @@ export interface ProductDetail {
   gstInvoiceAvailable?: boolean;
   tradeCreditEligible?: boolean;
   returnPolicy?: string;
+  warrantyPeriod?: string;
   trustScoreSnapshot: number;
   latitude?: number;
   longitude?: number;

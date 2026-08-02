@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac } from 'crypto';
 import { IPaymentGateway, PaymentGatewayOrder, PaymentGatewayVerifyParams, PaymentGatewayRefundParams, PaymentGatewayRefundResult } from './gateway.interface';
 
 @Injectable()
@@ -18,9 +17,10 @@ export class StripeService implements IPaymentGateway {
       this.logger.warn('Stripe credentials not configured — payment operations will fail');
     }
     try {
-      this.stripe = require('stripe')(this.secretKey);
-    } catch {
-      this.logger.warn('Stripe SDK not available — install with: pnpm add stripe');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      this.stripe = new (require('stripe'))(this.secretKey);
+    } catch (err) {
+      this.logger.warn(`Stripe SDK initialization failed: ${(err as Error).message}`);
     }
   }
 
@@ -47,8 +47,19 @@ export class StripeService implements IPaymentGateway {
     return { id: session.id, gatewayOrderId: session.id, amount, currency, keyId: this.getKeyId() };
   }
 
-  verifyPayment(params: PaymentGatewayVerifyParams): boolean {
-    return true;
+  async verifyPayment(params: PaymentGatewayVerifyParams): Promise<boolean> {
+    if (!this.stripe) return false;
+    try {
+      const session = await this.stripe.checkout.sessions.retrieve(params.gatewayOrderId);
+      const isPaid = session.payment_status === 'paid';
+      if (!isPaid) {
+        this.logger.warn(`Stripe payment not paid: ${params.gatewayOrderId} (status: ${session.payment_status})`);
+      }
+      return isPaid;
+    } catch (err) {
+      this.logger.warn(`Stripe payment verification failed: ${(err as Error).message}`);
+      return false;
+    }
   }
 
   verifyWebhookSignature(rawBody: string, signature: string): boolean {
@@ -56,7 +67,8 @@ export class StripeService implements IPaymentGateway {
     try {
       this.stripe.webhooks.constructEvent(rawBody, signature, this.webhookSecret);
       return true;
-    } catch {
+    } catch (err) {
+      this.logger.warn(`Stripe webhook signature verification failed: ${(err as Error).message}`);
       return false;
     }
   }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Copy, Check, ExternalLink, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import type { ProductAttributeField } from '@/types/product-detail';
 
 interface AttributeValueProps {
@@ -49,9 +50,9 @@ export function AttributeValue({ field, className }: AttributeValueProps) {
       return (
         <div className={cn('flex flex-wrap gap-1.5', className)}>
           {items.map((item: string, i: number) => (
-            <span key={i} className="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
+            <Badge key={i} variant="default">
               {item}
-            </span>
+            </Badge>
           ))}
         </div>
       );

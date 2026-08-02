@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { DashboardPageHeader, StatusBadge, StatCard } from '@/components/dashboard';
+import { DashboardPageHeader, StatusBadge, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
+import { Table, THead, TR, TH, TBody, TD } from '@/components/ui/table';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Tabs } from '@/components/ui/tabs';
 import {
   useAdminNegotiationOverview, useAdminNegotiations, useAdminFlaggedNegotiations, useAdminNegotiationAudit,
 } from '@/hooks/use-smart-negotiation';
@@ -11,32 +14,16 @@ import {
 } from 'lucide-react';
 
 const TABS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'negotiations', label: 'All Negotiations' },
-  { key: 'flagged', label: 'Flagged' },
-  { key: 'audit', label: 'Audit' },
-] as const;
-
-type Tab = typeof TABS[number]['key'];
-
-function StatCardSkeleton() {
-  return <div className="h-24 animate-pulse rounded-xl bg-white/[0.04]" />;
-}
-
-function TableSkeleton() {
-  return (
-    <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="h-12 animate-pulse rounded-lg bg-white/[0.04]" />
-      ))}
-    </div>
-  );
-}
+  { value: 'overview', label: 'Overview' },
+  { value: 'negotiations', label: 'All Negotiations' },
+  { value: 'flagged', label: 'Flagged' },
+  { value: 'audit', label: 'Audit' },
+];
 
 const formatStatus = (s: string) => s.replace(/_/g, ' ').toLowerCase();
 
 export default function AdminNegotiationPage() {
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab, setTab] = useState<string>('overview');
 
   const { data: overview, isLoading: overviewLoading } = useAdminNegotiationOverview();
   const { data: negotiationsData, isLoading: negotiationsLoading } = useAdminNegotiations();
@@ -53,20 +40,7 @@ export default function AdminNegotiationPage() {
         description="Admin oversight for all active and completed negotiations"
       />
 
-      {/* Tab Bar */}
-      <div className="flex items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.04] p-1 backdrop-blur-xl">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t.key ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={TABS} value={tab} onChange={setTab} className="rounded-xl border border-border bg-surface p-1 backdrop-blur-xl" />
 
       {/* Overview Tab */}
       {tab === 'overview' && (
@@ -100,122 +74,116 @@ export default function AdminNegotiationPage() {
 
       {/* All Negotiations Tab */}
       {tab === 'negotiations' && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          {negotiationsLoading ? <TableSkeleton /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Buyer</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Seller</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Amount</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Versions</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {negotiationsData?.data?.length === 0 ? (
-                    <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-white/40">No negotiations found</td></tr>
-                  ) : (
-                    negotiationsData?.data?.map((n: any) => (
-                      <tr key={n.id} className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.02]">
-                        <td className="px-4 py-3 text-sm text-white">{n.buyerCompany?.name || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-white">{n.sellerCompany?.name || '-'}</td>
-                        <td className="px-4 py-3"><StatusBadge status={formatStatus(n.status)} /></td>
-                        <td className="px-4 py-3 text-sm text-white/80">
-                          {n.quote?.currency || 'INR'} {n.quote?.totalAmount?.toLocaleString('en-IN') || '-'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-white/60">{n._count?.versions || 0}</td>
-                        <td className="px-4 py-3 text-sm text-white/60">
-                          {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN') : '-'}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+        <>
+          {negotiationsLoading ? (
+            <div className="rounded-xl border border-border bg-surface p-8 backdrop-blur-xl"><TableSkeleton /></div>
+          ) : negotiationsData?.data?.length === 0 ? (
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl"><div className="p-8"><EmptyState variant="empty" title="No negotiations found" /></div></div>
+          ) : (
+            <Table className="min-w-[600px]">
+              <THead>
+                <TR>
+                  <TH>Buyer</TH>
+                  <TH>Seller</TH>
+                  <TH>Status</TH>
+                  <TH>Amount</TH>
+                  <TH>Versions</TH>
+                  <TH>Created</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {negotiationsData?.data?.map((n: any) => (
+                  <TR key={n.id}>
+                    <TD className="text-white">{n.buyerCompany?.name || '-'}</TD>
+                    <TD className="text-white">{n.sellerCompany?.name || '-'}</TD>
+                    <TD><StatusBadge status={formatStatus(n.status)} /></TD>
+                    <TD className="text-white/80">
+                      {n.quote?.currency || 'INR'} {n.quote?.totalAmount?.toLocaleString('en-IN') || '-'}
+                    </TD>
+                    <TD className="text-white/60">{n._count?.versions || 0}</TD>
+                    <TD className="text-white/60">
+                      {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN') : '-'}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
-        </div>
+        </>
       )}
 
       {/* Flagged Tab */}
       {tab === 'flagged' && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          {flaggedLoading ? <TableSkeleton /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Buyer</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Seller</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">RFQ</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Updated</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {flaggedData?.data?.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-white/40">No flagged negotiations</td></tr>
-                  ) : (
-                    flaggedData?.data?.map((n: any) => (
-                      <tr key={n.id} className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.02]">
-                        <td className="px-4 py-3 text-sm text-white">{n.buyerCompany?.name || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-white">{n.sellerCompany?.name || '-'}</td>
-                        <td className="px-4 py-3"><StatusBadge status={formatStatus(n.status)} /></td>
-                        <td className="px-4 py-3 text-sm text-white/60 truncate max-w-[200px]">{n.rfq?.title || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-white/60">
-                          {n.updatedAt ? new Date(n.updatedAt).toLocaleDateString('en-IN') : '-'}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+        <>
+          {flaggedLoading ? (
+            <div className="rounded-xl border border-border bg-surface p-8 backdrop-blur-xl"><TableSkeleton /></div>
+          ) : flaggedData?.data?.length === 0 ? (
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl"><div className="p-8"><EmptyState variant="empty" title="No flagged negotiations" /></div></div>
+          ) : (
+            <Table className="min-w-[600px]">
+              <THead>
+                <TR>
+                  <TH>Buyer</TH>
+                  <TH>Seller</TH>
+                  <TH>Status</TH>
+                  <TH>RFQ</TH>
+                  <TH>Updated</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {flaggedData?.data?.map((n: any) => (
+                  <TR key={n.id}>
+                    <TD className="text-white">{n.buyerCompany?.name || '-'}</TD>
+                    <TD className="text-white">{n.sellerCompany?.name || '-'}</TD>
+                    <TD><StatusBadge status={formatStatus(n.status)} /></TD>
+                    <TD className="text-white/60 truncate max-w-[200px]">{n.rfq?.title || '-'}</TD>
+                    <TD className="text-white/60">
+                      {n.updatedAt ? new Date(n.updatedAt).toLocaleDateString('en-IN') : '-'}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
-        </div>
+        </>
       )}
 
       {/* Audit Tab */}
       {tab === 'audit' && (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          {auditLoading ? <TableSkeleton /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Event</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Actor Role</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-white/40">Metadata</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {auditData?.data?.length === 0 ? (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-white/40">No audit events</td></tr>
-                  ) : (
-                    auditData?.data?.map((e: any) => (
-                      <tr key={e.id} className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.02]">
-                        <td className="px-4 py-3 text-sm text-white capitalize">
-                          {e.eventType?.replace(/_/g, ' ').toLowerCase()}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-white/60">{e.actorRole || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-white/60">
-                          {e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN') : '-'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-white/40 truncate max-w-[200px]">
-                          {e.metadata ? JSON.stringify(e.metadata) : '-'}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+        <>
+          {auditLoading ? (
+            <div className="rounded-xl border border-border bg-surface p-8 backdrop-blur-xl"><TableSkeleton /></div>
+          ) : auditData?.data?.length === 0 ? (
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl"><div className="p-8"><EmptyState variant="empty" title="No audit events" /></div></div>
+          ) : (
+            <Table className="min-w-[600px]">
+              <THead>
+                <TR>
+                  <TH>Event</TH>
+                  <TH>Actor Role</TH>
+                  <TH>Date</TH>
+                  <TH>Metadata</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {auditData?.data?.map((e: any) => (
+                  <TR key={e.id}>
+                    <TD className="text-white capitalize">
+                      {e.eventType?.replace(/_/g, ' ').toLowerCase()}
+                    </TD>
+                    <TD className="text-white/60">{e.actorRole || '-'}</TD>
+                    <TD className="text-white/60">
+                      {e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN') : '-'}
+                    </TD>
+                    <TD className="text-white/40 truncate max-w-[200px]">
+                      {e.metadata ? JSON.stringify(e.metadata) : '-'}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
-        </div>
+        </>
       )}
     </div>
   );

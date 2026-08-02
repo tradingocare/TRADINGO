@@ -2,6 +2,7 @@
 
 import { DashboardPageHeader, StatCard } from '@/components/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ShieldAlert, Users, Scale, AlertTriangle, Ban, TrendingUp, Activity } from 'lucide-react';
 import { useFraudSummary } from '@/hooks/use-wallet';
 
@@ -108,10 +109,7 @@ export default function FraudDashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center py-8 text-text-secondary dark:text-dark-text-secondary">
-              <ShieldAlert className="h-8 w-8" />
-              <p className="mt-2 text-sm">No active fraud alerts. Platform is running normally.</p>
-            </div>
+            <EmptyState icon={ShieldAlert} title="No active fraud alerts" description="Platform is running normally." />
           )}
         </CardContent>
       </Card>

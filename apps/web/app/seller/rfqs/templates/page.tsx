@@ -1,11 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { toast } from '@/components/ui/use-toast';
+import { apiClient } from '@/lib/api/client';
 import { Plus, FileText, Copy, Edit2, Trash2, Clock } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface RfqTemplate {
   id: string;
@@ -16,19 +21,74 @@ interface RfqTemplate {
   status: string;
 }
 
-const initialTemplates: RfqTemplate[] = [
-  { id: '1', name: 'Standard Electronics RFQ', product: 'Circuit Boards', category: 'Electronics', lastUsed: '2026-06-10', status: 'active' },
-  { id: '2', name: 'Textile Bulk Order', product: 'Cotton Fabric', category: 'Textiles', lastUsed: '2026-06-08', status: 'active' },
-  { id: '3', name: 'Food Grade Packaging', product: 'Plastic Containers', category: 'Packaging', lastUsed: '2026-05-28', status: 'draft' },
-  { id: '4', name: 'Industrial Chemicals', product: 'Sodium Hydroxide', category: 'Chemicals', lastUsed: '2026-05-15', status: 'active' },
-];
-
 export default function RfqTemplatesPage() {
-  const [templates, setTemplates] = useState(initialTemplates);
+  const router = useRouter();
+  const [templates, setTemplates] = useState<RfqTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  const handleDelete = (id: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+  const fetchTemplates = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res: any = await apiClient.get('/seller/rfq-templates');
+      const list = res.data?.data || res.data || [];
+      setTemplates(Array.isArray(list) ? list : []);
+    } catch {
+      setError('Failed to load RFQ templates');
+      setTemplates([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => { fetchTemplates(); }, []);
+
+  const handleDelete = async (id: string) => {
+    setDeleting(id);
+    try {
+      await apiClient.delete(`/seller/rfq-templates/${id}`);
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      toast({ title: 'Template deleted' });
+    } catch {
+      toast({ title: 'Failed to delete template', variant: 'destructive' });
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleUse = (template: RfqTemplate) => {
+    router.push(`/seller/rfq/new?templateId=${template.id}`);
+  };
+
+  const handleCreate = () => {
+    router.push('/seller/rfq/new?createTemplate=true');
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <DashboardPageHeader title="RFQ Templates" description="Manage your saved RFQ templates for quick responses" />
+        <div className="flex items-center justify-center py-20">
+          <LoadingSpinner size="lg" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <DashboardPageHeader
+          title="RFQ Templates"
+          description="Manage your saved RFQ templates for quick responses"
+          actions={<Button onClick={fetchTemplates}><Plus className="mr-2 h-4 w-4" /> Retry</Button>}
+        />
+        <EmptyState icon={FileText} variant="error" title="Failed to load templates" description={error} action={<Button onClick={fetchTemplates}>Try Again</Button>} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -36,7 +96,7 @@ export default function RfqTemplatesPage() {
         title="RFQ Templates"
         description="Manage your saved RFQ templates for quick responses"
         actions={
-          <Button>
+          <Button onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
             Create Template
           </Button>
@@ -44,17 +104,7 @@ export default function RfqTemplatesPage() {
       />
 
       {templates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <FileText className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No templates yet</h3>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
-            Create your first RFQ template to respond to buyer requests faster.
-          </p>
-          <Button className="mt-4">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Template
-          </Button>
-        </div>
+        <EmptyState icon={FileText} title="No templates yet" description="Create your first RFQ template to respond to buyer requests faster." action={<Button onClick={handleCreate}><Plus className="mr-2 h-4 w-4" /> Create Template</Button>} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {templates.map((template) => (
@@ -80,15 +130,15 @@ export default function RfqTemplatesPage() {
                 </div>
               </CardContent>
               <CardFooter className="gap-2 border-t border-border pt-4 dark:border-dark-border">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleUse(template)}>
                   <Copy className="mr-1.5 h-3.5 w-3.5" />
                   Use
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => router.push(`/seller/rfq/new?editTemplateId=${template.id}`)}>
                   <Edit2 className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(template.id)}>
-                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(template.id)} disabled={deleting === template.id}>
+                  {deleting === template.id ? <LoadingSpinner size="xs" /> : <Trash2 className="h-3.5 w-3.5 text-red-500" />}
                 </Button>
               </CardFooter>
             </Card>

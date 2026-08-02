@@ -3,7 +3,7 @@ import { useState, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import UploadZone from '../../../../components/shared/UploadZone'
 import type { SectionProps } from '../../../../types/vendor-onboarding'
-import { Download, Upload, FileText, Sparkles, Table } from 'lucide-react'
+import { Download, Upload, FileText, Sparkles, Table as TableIcon } from 'lucide-react'
 
 export default function Section5Catalog({ vendor, onSave, onNext, onBack }: SectionProps) {
   const [catalogUrl, setCatalogUrl] = useState('')
@@ -79,13 +79,13 @@ export default function Section5Catalog({ vendor, onSave, onNext, onBack }: Sect
         </div>
 
         {catalogUrl && (
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="p-4 rounded-xl bg-surface border border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <FileText size={20} className="text-[#FF4D00]" />
+                <FileText size={20} className="text-[#f59e0b]" />
                 <div>
-                  <p className="text-white text-sm font-medium">Catalog uploaded</p>
-                  <p className="text-white/30 text-xs">PDF file</p>
+                  <p className="text-text-primary text-sm font-medium">Catalog uploaded</p>
+                  <p className="text-text-tertiary text-xs">PDF file</p>
                 </div>
               </div>
               {extracted.length === 0 && (
@@ -101,7 +101,7 @@ export default function Section5Catalog({ vendor, onSave, onNext, onBack }: Sect
 
             {extracting && (
               <div className="mt-3 flex items-center gap-2 text-white/40 text-xs">
-                <div className="w-4 h-4 rounded-full border-2 border-t-[#FF4D00] border-white/10 animate-spin" />
+                <div className="w-4 h-4 rounded-full border-2 border-t-[#f59e0b] border-border animate-spin" />
                 AI is extracting products from your catalog...
               </div>
             )}
@@ -109,19 +109,19 @@ export default function Section5Catalog({ vendor, onSave, onNext, onBack }: Sect
             {extracted.length > 0 && (
               <div className="mt-4">
                 <p className="text-green-400 text-xs font-semibold mb-2">✓ {extracted.length} products extracted</p>
-                <div className="rounded-xl overflow-hidden border border-white/10">
+                <div className="rounded-xl overflow-hidden border border-border">
                   <table className="w-full text-xs">
-                    <thead><tr className="bg-white/5">
-                      <th className="text-left px-3 py-2 text-white/50">Name</th>
-                      <th className="text-left px-3 py-2 text-white/50">Price</th>
-                      <th className="text-left px-3 py-2 text-white/50">Unit</th>
-                      <th className="text-left px-3 py-2 text-white/50">MOQ</th>
+                    <thead><tr className="bg-surface">
+                      <th className="text-left px-3 py-2 text-text-tertiary">Name</th>
+                      <th className="text-left px-3 py-2 text-text-tertiary">Price</th>
+                      <th className="text-left px-3 py-2 text-text-tertiary">Unit</th>
+                      <th className="text-left px-3 py-2 text-text-tertiary">MOQ</th>
                     </tr></thead>
                     <tbody>
                       {extracted.map((p, i) => (
-                        <tr key={i} className="border-t border-white/5">
-                          <td className="px-3 py-2 text-white/80">{p.name}</td>
-                          <td className="px-3 py-2 text-white/60">₹{p.price}</td>
+                        <tr key={i} className="border-t border-border">
+                          <td className="px-3 py-2 text-text-secondary">{p.name}</td>
+                          <td className="px-3 py-2 text-text-secondary">₹{p.price}</td>
                           <td className="px-3 py-2 text-white/60">{p.unit}</td>
                           <td className="px-3 py-2 text-white/60">{p.moq}</td>
                         </tr>
@@ -150,16 +150,16 @@ export default function Section5Catalog({ vendor, onSave, onNext, onBack }: Sect
 
         <div>
           <label className="text-white/70 text-xs font-semibold mb-2 block">Import via CSV</label>
-          <div className="p-6 rounded-xl bg-white/5 border border-dashed border-white/10 text-center">
-            <Table size={24} className="mx-auto mb-2 text-white/20" />
-            <p className="text-white/50 text-xs mb-3">Download template, fill, and upload</p>
-            <button className="flex items-center gap-1.5 mx-auto px-4 py-2 rounded-xl text-xs font-semibold bg-white/10 text-white/60 hover:bg-white/15 transition-all">
+          <div className="p-6 rounded-xl bg-surface border border-dashed border-border text-center">
+            <TableIcon size={24} className="mx-auto mb-2 text-text-tertiary" />
+            <p className="text-text-tertiary text-xs mb-3">Download template, fill, and upload</p>
+            <button className="flex items-center gap-1.5 mx-auto px-4 py-2 rounded-xl text-xs font-semibold bg-surface-secondary text-text-secondary hover:bg-surface-secondary transition-all">
               <Download size={12} /> Download CSV Template
             </button>
             <div className="mt-3">
               <button onClick={() => csvInputRef.current?.click()}
                 className="flex items-center gap-1.5 mx-auto px-4 py-2 rounded-xl text-xs font-semibold"
-                style={{ background:'rgba(255,77,0,0.1)', color:'#FF4D00' }}>
+                style={{ background:'rgba(245, 158, 11, 0.1)', color:'#f59e0b' }}>
                 <Upload size={12} /> Upload CSV
               </button>
               <input ref={csvInputRef} type="file" accept=".csv" className="hidden" onChange={handleCSV} />
@@ -176,7 +176,7 @@ export default function Section5Catalog({ vendor, onSave, onNext, onBack }: Sect
         <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
           onClick={save} disabled={saving}
           className="px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-40"
-          style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', color:'#fff' }}>
+          style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff' }}>
           {saving ? 'Saving...' : 'Save & Continue'}
         </motion.button>
       </div>

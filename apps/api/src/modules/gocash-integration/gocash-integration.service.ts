@@ -188,10 +188,47 @@ export class GocashIntegrationService {
     });
   }
 
+  async awardBookingCompleted(bookingId: string, userId: string, companyId: string) {
+    return this.awardReward({
+      userId, companyId,
+      amount: GOCASH_REWARDS.TRADESERV.BOOKING_COMPLETED,
+      transactionType: 'BUYER_CASHBACK',
+      reason: 'Booking completed! GOCASH earned.',
+      referenceId: bookingId,
+      referenceType: 'BOOKING_COMPLETED',
+      notificationType: 'GOCASH_EARNED',
+    });
+  }
+
+  async awardReviewSubmitted(reviewId: string, userId: string, companyId: string) {
+    return this.awardReward({
+      userId, companyId,
+      amount: GOCASH_REWARDS.TRADESERV.REVIEW_SUBMITTED,
+      transactionType: 'BUYER_CASHBACK',
+      reason: 'Review submitted! GOCASH earned.',
+      referenceId: reviewId,
+      referenceType: 'REVIEW_SUBMITTED',
+      notificationType: 'GOCASH_EARNED',
+    });
+  }
+
+  async awardProfessionalSignup(userId: string, companyId: string) {
+    return this.awardReward({
+      userId, companyId,
+      amount: GOCASH_REWARDS.TRADESERV.PROFESSIONAL_SIGNUP,
+      transactionType: 'SELLER_CASHBACK',
+      reason: 'Welcome to TradeServ! Professional signup GOCASH credited.',
+      referenceId: companyId,
+      referenceType: 'PROFESSIONAL_SIGNUP',
+      notificationType: 'GOCASH_REWARD',
+    });
+  }
+
   async getIntegrationSummary(userId: string) {
     const txns = await this.prisma.gOCASH_Transaction.findMany({
       where: { actorId: userId, sourceSystem: INTEGRATION_SOURCE },
       orderBy: { createdAt: 'desc' },
+      take: 1000,
     });
     const breakdown: Record<string, { count: number; total: number }> = {};
     for (const txn of txns) {

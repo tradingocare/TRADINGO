@@ -3,9 +3,12 @@ import { useState } from 'react'
 import { DashboardPageHeader, TableSkeleton } from '@/components/dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/input'
 import { useCreditSummary, useCompanyCreditDetail, useResetCompanyCredits } from '@/hooks/use-ai-credits'
 import { useToast } from '@/components/ui/use-toast'
-import { Coins, RefreshCw, RotateCcw, Search, Loader2 } from 'lucide-react'
+import { Coins, RefreshCw, RotateCcw, Search } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function AdminAiCreditsPage() {
   const { toast } = useToast()
@@ -32,28 +35,28 @@ export default function AdminAiCreditsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardContent className="pt-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/20 text-orange-400"><Coins className="h-5 w-5" /></div>
+            <div className="p-2 rounded-lg bg-accent/20 text-accent"><Coins className="h-5 w-5" /></div>
             <div>
-              <p className="text-xs text-gray-400">Total Used (This Month)</p>
-              <p className="text-lg font-bold text-white">{summary?.totalUsed ?? 0}</p>
+              <p className="text-xs text-text-tertiary">Total Used (This Month)</p>
+              <p className="text-lg font-bold text-text-primary">{summary?.totalUsed ?? 0}</p>
             </div>
           </div>
         </CardContent></Card>
         <Card><CardContent className="pt-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400"><RefreshCw className="h-5 w-5" /></div>
+            <div className="p-2 rounded-lg bg-status-info/20 text-status-info"><RefreshCw className="h-5 w-5" /></div>
             <div>
-              <p className="text-xs text-gray-400">Companies Using AI</p>
-              <p className="text-lg font-bold text-white">{summary?.topConsumers?.length ?? 0}</p>
+              <p className="text-xs text-text-tertiary">Companies Using AI</p>
+              <p className="text-lg font-bold text-text-primary">{summary?.topConsumers?.length ?? 0}</p>
             </div>
           </div>
         </CardContent></Card>
         <Card><CardContent className="pt-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400"><RotateCcw className="h-5 w-5" /></div>
+            <div className="p-2 rounded-lg bg-status-success/20 text-status-success"><RotateCcw className="h-5 w-5" /></div>
             <div>
-              <p className="text-xs text-gray-400">Top Consumer Usage</p>
-              <p className="text-lg font-bold text-white">{summary?.topConsumers?.[0]?.used ?? 0}</p>
+              <p className="text-xs text-text-tertiary">Top Consumer Usage</p>
+              <p className="text-lg font-bold text-text-primary">{summary?.topConsumers?.[0]?.used ?? 0}</p>
             </div>
           </div>
         </CardContent></Card>
@@ -65,12 +68,12 @@ export default function AdminAiCreditsPage() {
             <div className="flex items-center justify-between">
               <CardTitle>Top AI Consumers</CardTitle>
               <div className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5 text-gray-400" />
-                <input
+                <Search className="h-3.5 w-3.5 text-text-tertiary" />
+                <Input
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search company..."
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 outline-none focus:border-orange-400 w-40"
+                  className="w-40"
                 />
               </div>
             </div>
@@ -79,10 +82,7 @@ export default function AdminAiCreditsPage() {
             {summaryLoading ? (
               <TableSkeleton rows={5} />
             ) : !summary?.topConsumers?.length ? (
-              <div className="text-center py-8 text-gray-500">
-                <Coins className="mx-auto h-10 w-10 mb-2 opacity-50" />
-                <p className="text-sm">No AI usage this month</p>
-              </div>
+              <EmptyState icon={Coins} title="No AI usage this month" />
             ) : (
               <div className="space-y-2">
                 {summary.topConsumers
@@ -93,13 +93,13 @@ export default function AdminAiCreditsPage() {
                       onClick={() => setSelectedCompany(consumer.companyId)}
                       className={`w-full flex items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors ${
                         selectedCompany === consumer.companyId
-                          ? 'border-orange-500/30 bg-orange-500/10'
-                          : 'border-white/10 hover:border-white/20'
+                          ? 'border-accent/30 bg-accent/10'
+                          : 'border-border hover:border-border/20'
                       }`}
                     >
-                      <span className="text-white/80">{consumer.companyName}</span>
+                      <span className="text-text-secondary">{consumer.companyName}</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-white/60">{consumer.used} used</span>
+                        <span className="font-mono text-xs text-text-tertiary">{consumer.used} used</span>
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleReset(consumer.companyId) }} disabled={resetMutation.isPending}>
                           <RotateCcw className="h-3 w-3" />
                         </Button>
@@ -107,7 +107,7 @@ export default function AdminAiCreditsPage() {
                     </button>
                   ))}
                 {summary.topConsumers.filter(c => !searchQuery || c.companyName.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                  <p className="text-center text-sm text-gray-500 py-4">No companies match your search</p>
+                  <p className="text-center text-sm text-text-tertiary py-4">No companies match your search</p>
                 )}
               </div>
             )}
@@ -120,8 +120,8 @@ export default function AdminAiCreditsPage() {
           </CardHeader>
           <CardContent>
             {!selectedCompany ? (
-              <div className="text-center py-12 text-gray-500">
-                <Search className="mx-auto h-10 w-10 mb-2 opacity-50" />
+              <div className="text-center py-12 text-text-tertiary">
+                <Search className="mx-auto h-10 w-10 mb-2 opacity-50 text-text-tertiary" />
                 <p className="text-sm">Select a company from the list to view credit details</p>
               </div>
             ) : detailLoading ? (
@@ -129,33 +129,33 @@ export default function AdminAiCreditsPage() {
             ) : companyDetail ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-lg border border-white/10 p-3 text-center">
-                    <p className="text-xs text-gray-400">Total</p>
-                    <p className="text-lg font-bold text-emerald-400">{companyDetail.total}</p>
+                  <div className="rounded-lg border border-border p-3 text-center">
+                    <p className="text-xs text-text-tertiary">Total</p>
+                    <p className="text-lg font-bold text-status-success">{companyDetail.total}</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 p-3 text-center">
-                    <p className="text-xs text-gray-400">Used</p>
-                    <p className="text-lg font-bold text-orange-400">{companyDetail.used}</p>
+                  <div className="rounded-lg border border-border p-3 text-center">
+                    <p className="text-xs text-text-tertiary">Used</p>
+                    <p className="text-lg font-bold text-accent">{companyDetail.used}</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 p-3 text-center">
-                    <p className="text-xs text-gray-400">Remaining</p>
-                    <p className="text-lg font-bold text-white">{companyDetail.remaining}</p>
+                  <div className="rounded-lg border border-border p-3 text-center">
+                    <p className="text-xs text-text-tertiary">Remaining</p>
+                    <p className="text-lg font-bold text-text-primary">{companyDetail.remaining}</p>
                   </div>
                 </div>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-text-tertiary">
                   <p>Plan: {companyDetail.planName}</p>
                   <p>Period: {new Date(companyDetail.periodStart).toLocaleDateString()} — {new Date(companyDetail.periodEnd).toLocaleDateString()}</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => handleReset(selectedCompany)} disabled={resetMutation.isPending}>
-                  {resetMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RotateCcw className="mr-1 h-3 w-3" />}
+                  {resetMutation.isPending ? <LoadingSpinner size="xs" /> : <RotateCcw className="mr-1 h-3 w-3" />}
                   Reset Credits
                 </Button>
                 {companyDetail.monthlyHistory?.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Monthly History</h4>
+                    <h4 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Monthly History</h4>
                     <div className="space-y-1">
                       {companyDetail.monthlyHistory.map(h => (
-                        <div key={h.periodStart} className="flex justify-between text-xs text-white/50">
+                        <div key={h.periodStart} className="flex justify-between text-xs text-text-tertiary">
                           <span>{new Date(h.periodStart).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                           <span className="font-mono">{h.used} credits</span>
                         </div>

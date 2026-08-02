@@ -1,0 +1,3 @@
+module.exports=[808396,a=>{"use strict";var b=a.i(201494),c=a.i(324107);a.s(["default",0,function(){return(0,b.jsx)(c.NotFoundState,{title:"Page not found",message:"The buyer page you are looking for does not exist or has been moved.",showHome:!0,showDashboard:!0,dashboardHref:"/buyer/dashboard"})}])},344488,a=>{a.n(a.i(808396))}];
+
+//# sourceMappingURL=apps_web_app_buyer_not-found_tsx_0xikn7u._.js.map

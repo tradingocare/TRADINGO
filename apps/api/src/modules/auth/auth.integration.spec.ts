@@ -150,7 +150,7 @@ describe('Auth Flow Integration', () => {
       mockPrisma.session.delete.mockResolvedValue({});
       mockPrisma.session.create.mockResolvedValue({ id: 'session-2' });
 
-      const result = await controller.refresh('valid-refresh-token');
+      const result = await controller.refresh({ refreshToken: 'valid-refresh-token' });
 
       expect(result.accessToken).toBe('mock-access-token');
       expect(mockPrisma.session.delete).toHaveBeenCalledWith({ where: { id: 'session-1' } });
@@ -164,7 +164,7 @@ describe('Auth Flow Integration', () => {
         user: { id: 'user-1', email: 'test@example.com', role: 'USER', permissions: [] },
       });
 
-      await expect(controller.refresh('expired-token')).rejects.toThrow('Session expired or not found');
+      await expect(controller.refresh({ refreshToken: 'expired-token' })).rejects.toThrow('Session expired or not found');
     });
   });
 

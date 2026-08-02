@@ -1,151 +1,54 @@
-'use client'
+﻿'use client'
 import {
-  useState, useEffect, useCallback,
+  useState, useCallback, useMemo,
 } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { motion, AnimatePresence }    from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  SlidersHorizontal, Grid, List,
-  Sparkles,
+  SlidersHorizontal, ChevronRight, ArrowUpDown,
+  Sparkles, AlertTriangle, RefreshCw, IndianRupee, Star,
 } from 'lucide-react'
+import Link from 'next/link'
 import SearchBar       from './SearchBar'
 import FilterSidebar   from './FilterSidebar'
+import QuickFilterBar  from './QuickFilterBar'
 import NearToFarBanner from './NearToFarBanner'
 import EngineBar       from './EngineBar'
 import UnifiedCard     from './UnifiedCard'
-import ProductCard from '@/components/product/product-card'
-import CompactProductCard from '@/components/product/compact-product-card'
-import type { ProductCardData } from '@/components/product/product-card'
+import { ProductFullCard, ProductFullCardSkeleton } from '@/components/product/product-full-card'
+import { fromDiscoveryResult } from '@/components/product/card-converters'
 import { useCompareStore } from '@/store/compare-store'
-import type { CompareProduct } from '@/store/compare-store'
 import {
-  SearchFilters, DiscoveryResult, DiscoveryResponse,
+  SearchFilters, DiscoveryResult,
   GeoScope,
 } from '@/types/discovery'
+import { toast } from '@/components/ui/use-toast'
+import { useProductSearch } from '@/hooks/use-discovery'
 import api from '@/lib/api/client'
-import { toast }         from '@/components/ui/use-toast'
-import { CATALOG_CATEGORIES } from '@/data/catalog-data'
-import {
-  MASTER_PRODUCTS, MASTER_SERVICES,
-} from '@/data/master-data'
-
-const REAL_CATEGORIES = CATALOG_CATEGORIES.map(c => ({
-  id: c.id, name: c.name, icon: c.icon,
-}))
-
-function toProductCardData(dr: DiscoveryResult): ProductCardData {
-  return {
-    _id: dr.id,
-    id: dr.id,
-    slug: dr.slug,
-    title: dr.name,
-    images: dr.images?.length ? dr.images : ['/placeholder-product.jpg'],
-    categoryName: dr.categoryName,
-    subCategory: dr.subCategory ?? '',
-    price: dr.price ?? 0,
-    originalPrice: dr.originalPrice,
-    unit: dr.unit ?? 'unit',
-    rating: dr.rating,
-    reviewCount: dr.reviewCount,
-    deliveryEta: dr.deliveryEta,
-    moq: dr.moq ?? 1,
-    stockQty: dr.stockQty,
-    inStock: dr.inStock ?? true,
-    priceSlabs: dr.priceSlabs,
-    seller: {
-      _id: dr.seller.id,
-      id: dr.seller.id,
-      slug: dr.seller.slug,
-      businessName: dr.seller.name,
-      isVerified: dr.isVerified,
-      isTradgoElite: dr.seller.isTradgoElite,
-      trustScore: dr.trustScore,
-      avgResponseTime: dr.responseTime,
-      city: dr.city,
-      distanceKm: dr.distanceKm,
-    },
-  }
-}
-
-function toCompareProduct(dr: DiscoveryResult): CompareProduct {
-  return {
-    _id: dr.id,
-    slug: dr.slug,
-    title: dr.name,
-    images: dr.images?.length ? dr.images : ['/placeholder-product.jpg'],
-    price: dr.price ?? 0,
-    unit: dr.unit ?? 'unit',
-    rating: dr.rating,
-    reviewCount: dr.reviewCount,
-    moq: dr.moq ?? 1,
-    inStock: dr.inStock ?? true,
-    seller: {
-      businessName: dr.seller.name,
-      slug: dr.seller.slug,
-      isVerified: dr.isVerified,
-      trustScore: dr.trustScore,
-      city: dr.city,
-    },
-    deliveryEta: dr.deliveryEta,
-    stockQty: dr.stockQty,
-  }
-}
-
-let _cachedResults: DiscoveryResult[] | null = null
-function buildResults(): DiscoveryResult[] {
-  if (_cachedResults) return _cachedResults
-  const results: DiscoveryResult[] = [
-    ...MASTER_PRODUCTS.map(p => ({
-      id: p.id, type: 'product' as const, name: p.name, slug: p.slug,
-      description: p.description, images: [p.image],
-      categoryName: p.categoryName, subCategory: p.subCategory,
-      isVerified: p.seller.isVerified, trustScore: p.seller.trustScore,
-      rating: parseFloat((3.5 + Math.random() * 1.5).toFixed(1)), reviewCount: Math.floor(Math.random() * 900) + 100,
-      responseTime: ['< 1 hr', '< 2 hrs', '< 4 hrs', '< 24 hrs'][Math.floor(Math.random() * 4)],
-      geoRing: p.geoRing, city: p.city, state: p.state,
-      distanceKm: Math.floor(Math.random() * 500) + 10,
-      seller: { id: p.seller.id, name: p.seller.name, isVerified: p.seller.isVerified, trustScore: p.seller.trustScore, isTradgoElite: p.seller.isTradgoElite },
-      price: p.minPrice, originalPrice: Math.floor(p.maxPrice * 1.15),
-      unit: p.unit, moq: p.moq, inStock: p.inStock,
-      deliveryEta: `${15 + Math.floor(Math.random() * 20)}-${30 + Math.floor(Math.random() * 20)} days`,
-      gocashEarn: Math.floor(p.minPrice * 0.01),
-    })),
-    ...MASTER_SERVICES.map(s => ({
-      id: s.id, type: 'service' as const, name: s.name, slug: s.slug,
-      description: s.description, images: [s.image],
-      categoryName: s.categoryName, subCategory: s.subCategory,
-      isVerified: s.seller.isVerified, trustScore: s.seller.trustScore,
-      rating: parseFloat((4.0 + Math.random() * 1.0).toFixed(1)), reviewCount: Math.floor(Math.random() * 600) + 50,
-      responseTime: ['< 15 min', '< 30 min', '< 1 hr'][Math.floor(Math.random() * 3)],
-      geoRing: s.geoRing, city: s.city, state: s.state,
-      seller: { id: s.seller.id, name: s.seller.name, isVerified: s.seller.isVerified, trustScore: s.seller.trustScore, isTradgoElite: s.seller.isTradgoElite },
-      pricingModel: s.pricingModel, price: s.price, unit: s.unit,
-      coverageArea: s.coverageArea,
-      gocashEarn: s.price > 5000 ? Math.floor(s.price * 0.02) : undefined,
-    })),
-  ]
-  _cachedResults = results
-  return results
-}
 
 const DEFAULT_FILTERS: SearchFilters = {
   q: '', mode: 'all', geoScope: 'pan_india',
   sortBy: 'relevance', page: 1, limit: 24,
 }
 
-function ResultSkeleton() {
+const SORT_OPTIONS = [
+  { value: 'relevance',   label: 'Most Relevant'  },
+  { value: 'rating',      label: 'Top Rated'      },
+  { value: 'price_asc',   label: 'Price: Low to High' },
+  { value: 'price_desc',  label: 'Price: High to Low' },
+  { value: 'newest',      label: 'Newest First'   },
+]
+
+function BreadcrumbNav() {
   return (
-    <div className="rounded-2xl overflow-hidden animate-pulse"
-      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-      <div className="aspect-[4/3] bg-white/5" />
-      <div className="p-4 space-y-2.5">
-        <div className="h-2 bg-white/5 rounded w-1/3" />
-        <div className="h-3 bg-white/5 rounded w-5/6" />
-        <div className="h-3 bg-white/5 rounded w-2/3" />
-        <div className="h-7 bg-white/5 rounded w-1/2" />
-        <div className="h-8 bg-white/5 rounded" />
-      </div>
-    </div>
+    <nav className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/80 px-3.5 py-2 text-xs backdrop-blur-md" aria-label="Breadcrumb">
+      <Link href="/" className="text-text-secondary transition-colors hover:text-accent">
+        Home
+      </Link>
+      <ChevronRight size={12} className="text-text-tertiary" />
+      <span className="font-semibold text-text-primary">Products &amp; Services</span>
+    </nav>
   )
 }
 
@@ -153,128 +56,55 @@ export default function ProductDiscoveryClient() {
   const searchParams  = useSearchParams()
   const router        = useRouter()
 
-  const [filters, setFilters]       = useState<SearchFilters>(() => ({
+  const [filters, setFilters] = useState<SearchFilters>(() => ({
     ...DEFAULT_FILTERS,
     q:          searchParams.get('q')        || '',
     mode:       (searchParams.get('mode') as any) || 'all',
     categoryId: searchParams.get('category') || undefined,
+    sortBy:     (searchParams.get('sort') as any) || 'relevance',
+    page:       Number(searchParams.get('page')) || 1,
   }))
 
-  const [data, setData]             = useState<DiscoveryResponse | null>(() => {
-    const results = buildResults()
-    return {
-      results,
-      total: results.length,
-      page: 1,
-      pages: 1,
-      geoBreakdown: [
-        { ring: 1, label: 'My Area', count: results.filter(r => r.geoRing <= 2).length },
-        { ring: 2, label: 'City', count: results.filter(r => r.geoRing === 3).length },
-        { ring: 3, label: 'District', count: results.filter(r => r.geoRing === 3).length },
-        { ring: 4, label: 'State', count: results.filter(r => r.geoRing === 4).length },
-        { ring: 5, label: 'Pan India', count: results.filter(r => r.geoRing === 5).length },
-        { ring: 6, label: 'Global', count: results.filter(r => r.geoRing === 6).length },
-      ],
-      meta: { query: '', language: 'en', corrected: '', fromCache: false, responseMs: 0 },
-    } as DiscoveryResponse
-  })
-  const [loading, setLoading]       = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
-  const [viewMode, setViewMode]     = useState<'grid'|'list'>('list')
-  const [categories, setCategories] = useState<any[]>(REAL_CATEGORIES)
   const [geoScope, setGeoScope]     = useState<GeoScope>('pan_india')
 
   const { items: compareItems, toggle: toggleCompare, clear: clearCompare } = useCompareStore()
 
-  useEffect(() => {
-    api.get('/v1/categories?limit=160')
-      .then((r: any) => setCategories(r.data?.categories || r.data || REAL_CATEGORIES))
-      .catch(() => { /* using REAL_CATEGORIES */ })
-  }, [])
+  const { data, isLoading, isError, refetch, isRefetching } = useProductSearch(filters)
 
-  const doSearch = useCallback(async (f: SearchFilters) => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (f.q) params.set('q', f.q)
-      if (f.categoryId) params.set('categoryId', f.categoryId)
-      if (f.minPrice !== undefined) params.set('minPrice', String(f.minPrice))
-      if (f.maxPrice !== undefined) params.set('maxPrice', String(f.maxPrice))
-      if (f.sortBy === 'price_asc') params.set('sort', 'price_asc')
-      else if (f.sortBy === 'price_desc') params.set('sort', 'price_desc')
-      else if (f.sortBy === 'newest') params.set('sort', 'newest')
-      params.set('page', String(f.page || 1))
-      params.set('limit', String(f.limit || 24))
+  const { data: categories = [] } = useQuery({
+    queryKey: ['discovery-categories'],
+    queryFn: async () => {
+      const res: any = await api.get('/categories?limit=160')
+      return (res.data?.categories || res.data || []).map((c: any) => ({
+        id: c.id, name: c.name, icon: c.icon || '',
+      }))
+    },
+    staleTime: 300_000,
+  })
 
-      const res: any = await api.get(`/search/products?${params}`)
-      const body = res.data || res
-      const hits: any[] = body.hits || body.data || []
-      setData({
-        results: hits.map((h: any) => ({
-          id: h.id || h._id,
-          type: 'product',
-          name: h.name || '',
-          slug: h.slug || '',
-          images: h.media?.[0]?.url ? [h.media[0].url] : h.images || [],
-          description: h.shortDescription || h.description,
-          categoryName: h.categoryName || h.category?.name || '',
-          subCategory: h.subCategory || '',
-          isVerified: h.company?.verificationLevel !== 'LEVEL_0' || false,
-          trustScore: h.trustScoreSnapshot || h.company?.trustScore || 0,
-          rating: h.rating || 0,
-          reviewCount: h.reviewCount || 0,
-          responseTime: h.deliveryEta ? `< ${h.deliveryEta}` : '',
-          geoRing: 5,
-          city: h.city || '',
-          state: h.state || '',
-          seller: {
-            id: h.companyId || h.company?.id || '',
-            name: h.company?.name || '',
-            slug: h.company?.slug || '',
-            isVerified: h.company?.verificationLevel !== 'LEVEL_0' || false,
-            trustScore: h.trustScoreSnapshot || h.company?.trustScore || 0,
-          },
-          price: h.originalPrice ? Number(h.originalPrice) : undefined,
-          unit: h.unit || '',
-          moq: h.moq || 1,
-          inStock: h.status === 'ACTIVE' || true,
-          deliveryEta: h.deliveryEta || '',
-        })),
-        total: body.total || hits.length,
-        page: body.page || 1,
-        pages: body.totalPages || Math.ceil((body.total || hits.length) / (f.limit || 24)) || 1,
-        geoBreakdown: [],
-        meta: { query: f.q || '', language: 'en', corrected: '', fromCache: false, responseMs: 0 },
-      } as DiscoveryResponse)
-    } catch {
-      setData(prev => prev || {
-        results: [],
-        total: 0, page: 1, pages: 1,
-        geoBreakdown: [],
-        meta: { query: f.q, language: 'en', corrected: '', fromCache: false, responseMs: 0 },
-      } as DiscoveryResponse)
-      toast({ title: 'Search API unavailable — using offline catalog', variant: 'destructive' })
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    doSearch(filters)
-  }, [
-    filters.q, filters.mode, filters.geoScope, filters.categoryId,
-    filters.sortBy, filters.page, filters.verified, filters.topRated,
-    filters.inStock, filters.fastResponse, filters.sellerType,
-    filters.minPrice, filters.maxPrice,
-  ])
+  const syncUrl = useCallback((f: SearchFilters) => {
+    const params = new URLSearchParams()
+    if (f.q) params.set('q', f.q)
+    if (f.mode && f.mode !== 'all') params.set('mode', f.mode)
+    if (f.categoryId) params.set('category', f.categoryId)
+    if (f.sortBy && f.sortBy !== 'relevance') params.set('sort', f.sortBy)
+    if (f.page && f.page > 1) params.set('page', String(f.page))
+    const qs = params.toString()
+    router.replace(`/products${qs ? `?${qs}` : ''}`, { scroll: false })
+  }, [router])
 
   const updateFilters = useCallback((partial: Partial<SearchFilters>) => {
-    setFilters(prev => ({ ...prev, ...partial, page: partial.page ?? 1 }))
-  }, [])
+    const next = { ...filters, ...partial, page: partial.page ?? 1 }
+    setFilters(next)
+    syncUrl(next)
+  }, [filters, syncUrl])
 
   const resetFilters = () => {
-    setFilters({ ...DEFAULT_FILTERS })
+    const defaults = { ...DEFAULT_FILTERS }
+    setFilters(defaults)
     setGeoScope('pan_india')
+    syncUrl(defaults)
   }
 
   const handleCompareToggle = useCallback((item: DiscoveryResult) => {
@@ -282,11 +112,37 @@ export default function ProductDiscoveryClient() {
       toast({ title: 'Max 4 items to compare', variant: 'destructive' })
       return
     }
-    toggleCompare(toCompareProduct(item))
+    const model = fromDiscoveryResult(item)
+    toggleCompare({
+      _id: model.id,
+      slug: model.slug,
+      title: model.title,
+      images: model.images?.length ? model.images : ['/placeholder-product.jpg'],
+      price: model.price,
+      unit: model.unit,
+      rating: model.rating,
+      reviewCount: model.reviewCount,
+      moq: model.moq,
+      inStock: model.inStock,
+      seller: { businessName: model.seller.name, slug: model.seller.slug, isVerified: model.seller.isVerified, trustScore: model.seller.trustScore, city: model.seller.city || '' },
+      deliveryEta: model.deliveryEta,
+    })
   }, [compareItems, toggleCompare])
 
   const results = data?.results ?? []
   const total   = data?.total ?? 0
+
+  const geoCounts = useMemo(() => {
+    if (!data?.geoBreakdown) return {}
+    return data.geoBreakdown.reduce((acc, g) => {
+      const labels: Record<number,string> = {
+        1:'near_me',2:'city',3:'district',
+        4:'state',5:'pan_india',6:'global',
+      }
+      acc[labels[g.ring]] = g.count
+      return acc
+    }, {} as Record<string,number>)
+  }, [data?.geoBreakdown])
 
   return (
     <>
@@ -297,148 +153,221 @@ export default function ProductDiscoveryClient() {
           style={{ background: 'radial-gradient(circle, #3D8BFF18, transparent 70%)', filter: 'blur(80px)' }} />
       </div>
 
-      <div className="fixed left-0 right-0 z-40 py-4 px-4"
+      <div className="fixed left-0 right-0 z-40 py-4 px-4 bg-surface border-b border-border"
         style={{
           top: '100px',
-          background: 'rgba(31,3,24,0.85)',
           backdropFilter: 'blur(24px)',
-          borderBottom: '1px solid rgba(255,255,255,0.07)',
         }}>
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
           <div className="relative">
             <SearchBar
               initialFilters={filters}
               onSearch={updateFilters}
-              isLoading={loading}
+              isLoading={isLoading}
+              geoBanner={
+                <div className="mt-2.5 flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <NearToFarBanner
+                      activeScope={geoScope}
+                      counts={geoCounts}
+                      onScopeChange={s => {
+                        setGeoScope(s)
+                        updateFilters({ geoScope: s })
+                      }}
+                    />
+                  </div>
+                  <div className="hidden lg:flex flex-shrink-0">
+                    <QuickFilterBar
+                      filters={filters}
+                      categories={categories}
+                      onChange={updateFilters}
+                      onReset={resetFilters}
+                    />
+                  </div>
+                  <div className="hidden 2xl:block flex-shrink-0">
+                    <BreadcrumbNav />
+                  </div>
+                </div>
+              }
             />
           </div>
         </div>
       </div>
 
-      <div className="min-h-screen" style={{ paddingTop: '180px', background: '#1D0001' }}>
-        <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="min-h-screen" style={{ paddingTop: '250px' }}>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 py-3">
 
-        <div className="mb-5">
+        <div className="mb-2 rounded-2xl border border-border px-4 py-2.5"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0.04), transparent 55%), radial-gradient(circle at 0% 0%, rgba(255,77,0,0.07), transparent 30%), var(--bg-elevated)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+          }}>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-accent">
+              <Sparkles size={11} className="flex-shrink-0" />
+              Discovery Engine
+            </span>
+
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-medium text-text-tertiary whitespace-nowrap"
+              style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+              <Sparkles size={10} className="text-accent flex-shrink-0" />
+              Powered by AI — supports Hindi, English, Hinglish
+            </span>
+
+            <div className="ml-auto flex items-center gap-2.5 flex-wrap">
+              <div className="hidden md:flex gap-1 p-1 rounded-full"
+                style={{ background: 'var(--bg-base)', border: '1px solid var(--border-color)' }}>
+                {(['all','products','services','companies'] as const).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => updateFilters({ mode: m })}
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize transition-all duration-200 ${
+                      filters.mode===m
+                        ? 'bg-gradient-to-r from-accent to-accent-amber text-btn-primary-text shadow-lg'
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                    style={filters.mode===m ? { boxShadow: '0 4px 14px rgba(255,77,0,0.35)' } : undefined}>
+                    {m === 'all' ? 'All Results' : m.charAt(0).toUpperCase()+m.slice(1)}
+                  </button>
+                ))}
+              </div>
+
+              {total > 0 && !isLoading && (
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full"
+                  style={{ background: 'color-mix(in srgb, var(--accent) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 22%, transparent)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                  <p className="text-text-secondary text-xs whitespace-nowrap">
+                    <strong className="text-accent font-black">{total.toLocaleString()}</strong>{' '}
+                    results
+                    {data?.meta?.corrected && (
+                      <span className="text-text-tertiary"> · <strong>{data.meta.corrected}</strong></span>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-border transition-all"
+                style={filters.sortBy && filters.sortBy !== 'relevance' ? { borderColor: 'color-mix(in srgb, var(--accent) 40%, transparent)' } : undefined}>
+                <ArrowUpDown size={12} className="text-accent flex-shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary hidden xl:inline">Sort</span>
+                <select
+                  value={filters.sortBy || 'relevance'}
+                  onChange={e => updateFilters({ sortBy: e.target.value as any })}
+                  className="bg-transparent text-text-secondary text-xs font-semibold focus:outline-none cursor-pointer appearance-none"
+                  style={{ direction: 'rtl' }}>
+                  {SORT_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}
+                      style={{ background: 'var(--bg-base)' }}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-border transition-all"
+                style={filters.minPrice || filters.maxPrice ? { borderColor: 'color-mix(in srgb, var(--accent) 40%, transparent)' } : undefined}>
+                <IndianRupee size={12} className="text-accent flex-shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary hidden xl:inline">Price</span>
+                <select
+                  value={`${filters.minPrice ?? ''}-${filters.maxPrice ?? ''}`}
+                  onChange={e => {
+                    const [min, max] = e.target.value.split('-')
+                    updateFilters({
+                      minPrice: min ? Number(min) : undefined,
+                      maxPrice: max ? Number(max) : undefined,
+                    })
+                  }}
+                  className="bg-transparent text-text-secondary text-xs font-semibold focus:outline-none cursor-pointer appearance-none"
+                  style={{ direction: 'rtl' }}>
+                  <option value="-" style={{ background: 'var(--bg-base)' }}>Any Price</option>
+                  <option value="-1000" style={{ background: 'var(--bg-base)' }}>Under ₹1K</option>
+                  <option value="1000-10000" style={{ background: 'var(--bg-base)' }}>₹1K – ₹10K</option>
+                  <option value="10000-50000" style={{ background: 'var(--bg-base)' }}>₹10K – ₹50K</option>
+                  <option value="50000-" style={{ background: 'var(--bg-base)' }}>₹50K +</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-border transition-all"
+                style={filters.topRated ? { borderColor: 'color-mix(in srgb, var(--accent) 40%, transparent)' } : undefined}>
+                <Star size={12} className="text-accent flex-shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary hidden xl:inline">Rating</span>
+                <select
+                  value={filters.topRated ? '4.5' : ''}
+                  onChange={e => updateFilters({ topRated: e.target.value === '4.5' || undefined })}
+                  className="bg-transparent text-text-secondary text-xs font-semibold focus:outline-none cursor-pointer appearance-none"
+                  style={{ direction: 'rtl' }}>
+                  <option value="" style={{ background: 'var(--bg-base)' }}>Any Rating</option>
+                  <option value="4.5" style={{ background: 'var(--bg-base)' }}>4.5★ &amp; above</option>
+                </select>
+              </div>
+
+              <button onClick={() => setFilterOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all lg:hidden bg-surface border-border text-text-primary">
+                <SlidersHorizontal size={13} />
+                Filters
+              </button>
+            </div>
+          </div>
+          <div className="mt-2 h-[3px] w-14 rounded-full bg-gradient-to-r from-accent via-accent-amber to-transparent" />
+        </div>
+
+        <div className="mb-2">
           <EngineBar />
         </div>
 
-        <div className="mb-5">
-          <NearToFarBanner
-            activeScope={geoScope}
-            counts={data?.geoBreakdown?.reduce((acc, g) => {
-              const labels: Record<number,string> = {
-                1:'near_me',2:'city',3:'district',
-                4:'state',5:'pan_india',6:'global',
-              }
-              acc[labels[g.ring]] = g.count
-              return acc
-            }, {} as Record<string,number>)}
-            onScopeChange={s => {
-              setGeoScope(s)
-              updateFilters({ geoScope: s })
-            }}
-          />
-        </div>
+        <FilterSidebar
+          filters={filters}
+          categories={categories}
+          onChange={updateFilters}
+          onReset={resetFilters}
+          isOpen={filterOpen}
+          onClose={() => setFilterOpen(false)}
+        />
 
-        <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
-          <div className="flex gap-1 p-1 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            {(['all','products','services','companies'] as const).map(m => (
-              <button
-                key={m}
-                onClick={() => updateFilters({ mode: m })}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all"
-                style={{
-                  background: filters.mode===m ? 'rgba(255,77,0,0.15)' : 'transparent',
-                  color: filters.mode===m ? '#FF4D00' : 'rgba(255,255,255,0.5)',
-                  border: filters.mode===m ? '1px solid rgba(255,77,0,0.3)' : '1px solid transparent',
-                }}>
-                {m === 'all' ? 'All Results' : m.charAt(0).toUpperCase()+m.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3">
-            {total > 0 && !loading && (
-              <p className="text-white/35 text-xs">
-                {total.toLocaleString()} results
-                {filters.q && <span> for <strong className="text-white/60">&quot;{filters.q}&quot;</strong></span>}
-                {data?.meta?.corrected && (
-                  <span className="text-white/40"> Showing <strong>{data.meta.corrected}</strong></span>
-                )}
-              </p>
+        <div>
+          {isError && (
+              <div className="mb-4 px-4 py-3 rounded-xl flex items-center gap-3 text-sm bg-status-error/10 border border-status-error/25">
+                <AlertTriangle size={16} className="text-status-error flex-shrink-0" />
+                <span className="text-text-secondary">
+                  We couldn&apos;t load results. Please try again.
+                </span>
+                <button onClick={() => refetch()}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface border-border text-text-primary transition-all hover:border-accent/30 flex-shrink-0">
+                  <RefreshCw size={12} className={isRefetching ? 'animate-spin' : ''} />
+                  Retry
+                </button>
+              </div>
             )}
 
-            <div className="flex gap-1">
-              {(['grid','list'] as const).map(v => (
-                <button key={v} onClick={() => setViewMode(v)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                  style={{
-                    background: viewMode===v ? 'rgba(255,77,0,0.15)' : 'rgba(255,255,255,0.05)',
-                    color: viewMode===v ? '#FF4D00' : 'rgba(255,255,255,0.4)',
-                  }}>
-                  {v==='grid' ? <Grid size={14}/> : <List size={14}/>}
-                </button>
-              ))}
-            </div>
-
-            <button onClick={() => setFilterOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all lg:hidden"
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.7)',
-              }}>
-              <SlidersHorizontal size={13} />
-              Filters
-            </button>
-          </div>
-        </div>
-
-        <div className="flex gap-6">
-          <FilterSidebar
-            filters={filters}
-            categories={categories}
-            onChange={updateFilters}
-            onReset={resetFilters}
-            isOpen={filterOpen}
-            onClose={() => setFilterOpen(false)}
-          />
-
-          <div className="flex-1 min-w-0">
             {data?.meta?.corrected && (
               <div className="mb-4 px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm"
-                style={{ background: 'rgba(255,77,0,0.08)', border: '1px solid rgba(255,77,0,0.2)' }}>
-                <Sparkles size={14} style={{ color: '#FF4D00' }} />
-                <span className="text-white/60">
+                style={{ background: 'var(--accent-08)', border: '1px solid var(--accent-25)' }}>
+                <Sparkles size={14} style={{ color: 'var(--accent)' }} />
+                <span className="text-text-secondary">
                   Showing results for
-                  <strong className="text-white mx-1">&quot;{data.meta.corrected}&quot;</strong>
+                  <strong className="text-text-primary mx-1">&quot;{data.meta.corrected}&quot;</strong>
                 </span>
               </div>
             )}
 
-            {!loading && data && results.length === 0 && (
+            {!isLoading && data && results.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="text-5xl mb-4">{'\uD83D\uDD0D'}</div>
-                <h3 className="text-white font-bold text-xl mb-2">No results found</h3>
-                <p className="text-white/40 text-sm max-w-sm">
+                <h3 className="text-text-primary font-bold text-xl mb-2">No results found</h3>
+                <p className="text-text-tertiary text-sm max-w-sm">
                   Try different keywords, remove filters, or expand the geo scope to Pan India.
                 </p>
                 <button onClick={resetFilters}
-                  className="mt-5 px-5 py-2.5 rounded-full text-sm font-semibold"
-                  style={{ background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff' }}>
+                  className="mt-5 px-5 py-2.5 rounded-full text-sm font-semibold bg-accent text-btn-primary-text">
                   Clear All Filters
                 </button>
               </div>
             )}
 
-            <div className={`
-              ${viewMode === 'grid'
-                ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4'
-                : 'flex flex-col gap-3'}
-            `}>
-              {loading
-                ? Array.from({ length: 12 }).map((_, i) => <ResultSkeleton key={i} />)
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              {isLoading
+                ? Array.from({ length: 3 }).map((_, i) => <ProductFullCardSkeleton key={i} />)
                 : results.map((item) => (
                     <motion.div
                       key={item.id}
@@ -447,11 +376,7 @@ export default function ProductDiscoveryClient() {
                       transition={{ duration: 0.3 }}
                     >
                       {item.type === 'product' ? (
-                        viewMode === 'grid' ? (
-                          <CompactProductCard product={toProductCardData(item)} />
-                        ) : (
-                          <ProductCard product={toProductCardData(item)} />
-                        )
+                        <ProductFullCard product={fromDiscoveryResult(item)} />
                       ) : (
                         <UnifiedCard
                           item={item}
@@ -469,24 +394,21 @@ export default function ProductDiscoveryClient() {
                 <button
                   onClick={() => updateFilters({ page: (filters.page||1) - 1 })}
                   disabled={(filters.page||1) <= 1}
-                  className="px-5 py-2 rounded-full text-sm font-semibold transition-all disabled:opacity-30"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
+                  className="px-5 py-2 rounded-full text-sm font-semibold transition-all disabled:opacity-30 bg-surface border-border text-text-primary">
                   Previous
                 </button>
-                <span className="text-white/40 text-sm">
+                <span className="text-text-tertiary text-sm">
                   Page {filters.page||1} of {data.pages}
                 </span>
                 <button
                   onClick={() => updateFilters({ page: (filters.page||1) + 1 })}
                   disabled={(filters.page||1) >= data.pages}
-                  className="px-5 py-2 rounded-full text-sm font-semibold transition-all disabled:opacity-30"
-                  style={{ background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff' }}>
+                  className="px-5 py-2 rounded-full text-sm font-semibold transition-all disabled:opacity-30 bg-accent text-btn-primary-text">
                   Next
                 </button>
               </div>
             )}
           </div>
-        </div>
       </div>
 
       <AnimatePresence>
@@ -495,32 +417,26 @@ export default function ProductDiscoveryClient() {
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-50 py-3 px-4"
-            style={{
-              background: 'rgba(15,5,20,0.96)',
-              backdropFilter: 'blur(20px)',
-              borderTop: '1px solid rgba(255,77,0,0.2)',
-            }}>
-            <div className="max-w-7xl mx-auto flex items-center gap-4 overflow-x-auto no-scrollbar">
-              <span className="text-xs font-bold text-white/50 flex-shrink-0">
+            className="fixed bottom-0 left-0 right-0 z-50 py-3 px-4 bg-surface border-t border-border"
+            style={{ backdropFilter: 'blur(20px)' }}>
+            <div className="max-w-[1600px] mx-auto flex items-center gap-4 overflow-x-auto no-scrollbar">
+              <span className="text-xs font-bold text-text-tertiary flex-shrink-0">
                 Compare ({compareItems.length}/4)
               </span>
               {compareItems.map(item => (
                 <div key={item._id}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <span className="text-white text-xs">{item.title}</span>
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full flex-shrink-0 bg-surface border-border">
+                  <span className="text-text-primary text-xs">{item.title}</span>
                   <button onClick={() => toggleCompare(item)}
-                    className="text-white/30 hover:text-white ml-1">X</button>
+                    className="text-text-tertiary hover:text-primary ml-1">X</button>
                 </div>
               ))}
               <div className="ml-auto flex gap-2 flex-shrink-0">
                 <button onClick={() => clearCompare()}
-                  className="text-xs text-white/35 hover:text-white/60">Clear</button>
+                  className="text-xs text-text-tertiary hover:text-text-secondary">Clear</button>
                 <button
                   onClick={() => router.push(`/compare?ids=${compareItems.map(i=>i._id).join(',')}`)}
-                  className="px-4 py-1.5 rounded-full text-xs font-bold"
-                  style={{ background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff' }}>
+                  className="px-4 py-1.5 rounded-full text-xs font-bold bg-accent text-btn-primary-text">
                   Compare Now
                 </button>
               </div>

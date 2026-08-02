@@ -1,0 +1,12 @@
+<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="0" time="18.229366000000002">
+<testsuite name="listing-card.spec.ts" timestamp="2026-08-01T05:02:10.418Z" hostname="chromium" tests="4" failures="0" skipped="0" time="17.275" errors="0">
+<testcase name="Product Listing Card — 8-Group Upgrade › default card renders pricing, badges, trust and social proof" classname="listing-card.spec.ts" time="10.878">
+</testcase>
+<testcase name="Product Listing Card — 8-Group Upgrade › qty tier pills are selectable and Buy passes the selected qty" classname="listing-card.spec.ts" time="2.365">
+</testcase>
+<testcase name="Product Listing Card — 8-Group Upgrade › cards without tier data still render actions and info link" classname="listing-card.spec.ts" time="2.557">
+</testcase>
+<testcase name="Product Listing Card — 8-Group Upgrade › product detail page still renders from the same data chain" classname="listing-card.spec.ts" time="1.475">
+</testcase>
+</testsuite>
+</testsuites>

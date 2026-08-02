@@ -7,12 +7,12 @@ import FormField from '../components/FormField'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 const GST_REGEX = /^\d{2}[A-Z]{5}\d{4}[A-Z]\d[Z][A-Z\d]$/
 
@@ -108,7 +108,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
   return (
     <StepCard icon={<span className="text-lg">📋</span>} title="GST Verification" subtitle="Tax compliance details">
       <div className="space-y-5">
-        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ background: 'rgba(255,77,0,0.05)', border: '1px solid rgba(255,77,0,0.1)' }}>
+        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
           <p className="font-semibold text-white/60 mb-1">Why GST matters:</p>
           <p>✓ B2B buyers require GST invoices</p>
           <p>✓ GST-verified badge</p>
@@ -149,7 +149,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
             </FormField>
 
             {gstVerified && (
-              <div className="p-4 rounded-xl space-y-3" style={{ background: 'rgba(255,77,0,0.05)', border: '1px solid rgba(255,77,0,0.1)' }}>
+              <div className="p-4 rounded-xl space-y-3" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
                 <div>
                   <p className="text-white/40 text-[10px] uppercase tracking-wider mb-0.5">Business Name</p>
                   <p className="text-white text-sm font-semibold">{gstBusinessName}</p>
@@ -168,11 +168,11 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
             <FormField label="GST Certificate" error={uploadError || undefined} hint="JPG, PNG or PDF, max 5MB">
               <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={handleFileChange} />
               {gstCertificateImage ? (
-                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
                   {gstCertPreview ? (
                     <img src={gstCertPreview} alt="GST preview" className="w-16 h-16 rounded-lg object-cover" />
                   ) : (
-                    <div className="w-16 h-16 rounded-lg flex items-center justify-center text-white/40 text-xs" style={{ background: 'rgba(255,255,255,0.05)' }}>PDF</div>
+                    <div className="w-16 h-16 rounded-lg flex items-center justify-center text-white/40 text-xs" style={{ backgroundColor: 'var(--bg-elevated)' }}>PDF</div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-xs truncate">{gstCertificateImage.name}</p>
@@ -184,7 +184,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
               ) : (
                 <button type="button" onClick={() => fileRef.current?.click()}
                   className="w-full py-6 rounded-xl border border-dashed text-white/30 text-xs hover:text-white/50 transition-colors"
-                  style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                  style={{ borderColor: 'var(--border-color)' }}>
                   Click to upload GST certificate
                 </button>
               )}
@@ -200,13 +200,13 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
                     <button key={r.value} type="button" onClick={() => { setGstExemptReason(r.value); setTouched(p => ({ ...p, gstExemptReason: true })) }}
                       className="w-full text-left p-3 rounded-xl transition-all duration-200"
                       style={{
-                        background: selected ? 'rgba(255,77,0,0.1)' : 'rgba(255,255,255,0.03)',
-                        border: selected ? '1px solid rgba(255,77,0,0.5)' : '1px solid rgba(255,255,255,0.07)',
+                        background: selected ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-elevated)',
+                        border: selected ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
                       }}>
                       <div className="flex items-center gap-3">
                         <div className="w-4 h-4 rounded-full border flex items-center justify-center"
-                          style={{ borderColor: selected ? '#FF4D00' : 'rgba(255,255,255,0.2)' }}>
-                          {selected && <div className="w-2 h-2 rounded-full" style={{ background: '#FF4D00' }} />}
+                          style={{ borderColor: selected ? '#f59e0b' : 'rgba(255,255,255,0.2)' }}>
+                          {selected && <div className="w-2 h-2 rounded-full" style={{ background: '#f59e0b' }} />}
                         </div>
                         <span className="text-white text-xs">{r.label}</span>
                       </div>
@@ -216,7 +216,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
               </div>
             </FormField>
 
-            <div className="p-3 rounded-xl text-white/50 text-xs" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="p-3 rounded-xl text-white/50 text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
               Even without GST, you can sell on TRADINGO. Buyers will see <span className="text-white/70">GST Not Applicable</span>. You can add GST later.
             </div>
           </>

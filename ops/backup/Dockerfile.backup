@@ -1,0 +1,46 @@
+# TRADINGO Backup Agent Dockerfile
+# Purpose: Backup automation sidecar with pg_dump, redis-cli, aws-cli, cron
+# Base: Debian slim (needs libpq for pg_dump compatibility)
+
+FROM debian:bookworm-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  postgresql-client-15 \
+  redis-tools \
+  awscli \
+  curl \
+  ca-certificates \
+  gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  postgresql-client-15 \
+  redis-tools \
+  awscli \
+  gzip \
+  ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy backup scripts
+COPY ops/backup/postgres-full-backup.sh /usr/local/bin/
+COPY ops/backup/postgres-wal-archive.sh /usr/local/bin/
+COPY ops/backup/redis-backup.sh /usr/local/bin/
+COPY ops/backup/restore-pitr.sh /usr/local/bin/
+COPY ops/backup/cron-backup.sh /usr/local/bin/
+COPY ops/backup/restore-test.sh /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/*.sh \
+  && mkdir -p /backups /var/log/tradingo/backups /var/spool/cron/crontabs
+
+# Setup cron schedule
+RUN echo "0 2 * * * root /usr/local/bin/cron-backup.sh daily >> /var/log/tradingo/backups/cron.log 2>&1" > /etc/cron.d/tradingo-backup \
+  && echo "0 * * * * root /usr/local/bin/cron-backup.sh hourly >> /var/log/tradingo/backups/cron.log 2>&1" >> /etc/cron.d/tradingo-backup \
+  && echo "0 3 * * 0 root /usr/local/bin/cron-backup.sh weekly >> /var/log/tradingo/backups/cron.log 2>&1" >> /etc/cron.d/tradingo-backup \
+  && chmod 0644 /etc/cron.d/tradingo-backup
+
+# Healthcheck marker (updated by backup scripts on success)
+RUN echo "init" > /backups/.healthy
+
+CMD ["cron", "-f", "-L", "15"]

@@ -5,11 +5,16 @@ import Link from 'next/link';
 import { DashboardPageHeader, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Modal } from '@/components/ui/modal';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAdminCrmDashboard, useLeads, usePipelineStages, useDeletePipelineStage, useCreatePipelineStage } from '@/hooks/use-crm';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { toast } from '@/components/ui/use-toast';
-import { Users, TrendingUp, Target, XCircle, Layers, Plus, Trash2, Settings, BarChart3, Sparkles, Loader2, Activity } from 'lucide-react';
+import { Users, TrendingUp, Target, XCircle, Layers, Plus, Trash2, Settings, BarChart3, Sparkles, Activity } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAiCrmPipelineHealth, useAiCrmForecast } from '@/hooks/use-ai-crm';
 import { Label } from '@/components/ui/label';
 
@@ -17,7 +22,7 @@ const STATUS_STYLES: Record<string, string> = {
   NEW: 'bg-blue-500/20 text-blue-400', CONTACTED: 'bg-yellow-500/20 text-yellow-400',
   QUALIFIED: 'bg-purple-500/20 text-purple-400', PROPOSAL: 'bg-indigo-500/20 text-indigo-400',
   NEGOTIATION: 'bg-orange-500/20 text-orange-400', WON: 'bg-green-500/20 text-green-400',
-  LOST: 'bg-red-500/20 text-red-400', DISQUALIFIED: 'bg-gray-500/20 text-gray-400',
+  LOST: 'bg-red-500/20 text-red-400', DISQUALIFIED: 'bg-bg-elevated text-gray-400',
 };
 
 export default function AdminCrmPage() {
@@ -47,22 +52,20 @@ export default function AdminCrmPage() {
         </div>
       } />
 
-      {showStageForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowStageForm(false)}>
-          <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-gray-700" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4">Create Pipeline Stage</h2>
-            <form onSubmit={handleCreateStage} className="space-y-4">
-              <div><Label>Name *</Label><Input required value={stageForm.name} onChange={e => setStageForm(p => ({ ...p, name: e.target.value }))} /></div>
-              <div><Label>Color</Label><Input type="color" value={stageForm.color} onChange={e => setStageForm(p => ({ ...p, color: e.target.value }))} /></div>
-              <div className="flex gap-4"><Label className="flex items-center gap-2"><input type="checkbox" checked={stageForm.isWon} onChange={e => setStageForm(p => ({ ...p, isWon: e.target.checked }))} /> Is Won</Label><Label className="flex items-center gap-2"><input type="checkbox" checked={stageForm.isLost} onChange={e => setStageForm(p => ({ ...p, isLost: e.target.checked }))} /> Is Lost</Label></div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowStageForm(false)}>Cancel</Button>
-                <Button type="submit">Create Stage</Button>
-              </div>
-            </form>
+      <Modal open={showStageForm} onClose={() => setShowStageForm(false)} title="Create Pipeline Stage">
+        <form onSubmit={handleCreateStage} className="space-y-4">
+          <div><Label>Name *</Label><Input required value={stageForm.name} onChange={e => setStageForm(p => ({ ...p, name: e.target.value }))} /></div>
+          <div><Label>Color</Label><Input type="color" value={stageForm.color} onChange={e => setStageForm(p => ({ ...p, color: e.target.value }))} /></div>
+          <div className="flex gap-4">
+            <Checkbox checked={stageForm.isWon} onChange={e => setStageForm(p => ({ ...p, isWon: e.target.checked }))} label="Is Won" />
+            <Checkbox checked={stageForm.isLost} onChange={e => setStageForm(p => ({ ...p, isLost: e.target.checked }))} label="Is Lost" />
           </div>
-        </div>
-      )}
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setShowStageForm(false)}>Cancel</Button>
+            <Button type="submit">Create Stage</Button>
+          </div>
+        </form>
+      </Modal>
 
       {dashLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}</div>
@@ -78,11 +81,11 @@ export default function AdminCrmPage() {
         <Card>
           <CardHeader><CardTitle>Pipeline Stages</CardTitle></CardHeader>
           <CardContent>
-            {stagesLoading ? <TableSkeleton rows={3} /> : !stages || stages.length === 0 ? <p className="text-sm text-gray-400">No stages configured</p> : (
+            {stagesLoading ? <TableSkeleton rows={3} /> : !stages || stages.length === 0 ? <EmptyState title="No stages configured" /> : (
               <div className="space-y-2">
                 {stages.map((s: any) => (
-                  <div key={s.id} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg" style={{ borderLeft: `4px solid ${s.color}` }}>
-                    <div><p className="text-sm font-medium">{s.name}</p><p className="text-xs text-gray-400">Order: {s.order} • Leads: {s._count?.leads || 0}{s.isWon ? ' • Won' : ''}{s.isLost ? ' • Lost' : ''}</p></div>
+                  <div key={s.id} className="flex justify-between items-center p-3 bg-bg-elevated/50 rounded-lg" style={{ borderLeft: `4px solid ${s.color}` }}>
+                    <div><p className="text-sm font-medium">{s.name}</p><p className="text-xs text-text-tertiary">Order: {s.order} • Leads: {s._count?.leads || 0}{s.isWon ? ' • Won' : ''}{s.isLost ? ' • Lost' : ''}</p></div>
                     <Button size="sm" variant="ghost" onClick={async () => { try { await deleteStageMutation.mutateAsync(s.id); toast({ title: 'Stage deleted' }); } catch (e: any) { toast({ title: e?.response?.data?.message || 'Failed', variant: 'destructive' }); } }}><Trash2 className="h-4 w-4 text-red-400" /></Button>
                   </div>
                 ))}
@@ -94,22 +97,20 @@ export default function AdminCrmPage() {
         <Card>
           <CardHeader><CardTitle>Recent Leads</CardTitle></CardHeader>
           <CardContent className="p-0">
-            {isLoading ? <TableSkeleton rows={5} /> : !leadsData?.data?.length ? <div className="p-8 text-center text-gray-400">No leads yet</div> : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead><tr className="border-b border-gray-700 text-left text-sm text-gray-400"><th className="p-3">Name</th><th className="p-3">Status</th><th className="p-3">Source</th><th className="p-3"></th></tr></thead>
-                  <tbody>
-                    {leadsData.data.slice(0, 8).map((lead: any) => (
-                      <tr key={lead.id} className="border-b border-gray-700/50">
-                        <td className="p-3 text-sm">{lead.name}</td>
-                        <td className="p-3"><Badge className={STATUS_STYLES[lead.status] || ''}>{lead.status}</Badge></td>
-                        <td className="p-3 text-sm text-gray-400">{lead.source || '-'}</td>
-                        <td className="p-3"><Link href={`/seller/crm/${lead.id}`}><Button variant="ghost" size="sm">View</Button></Link></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            {isLoading ? <TableSkeleton rows={5} /> : !leadsData?.data?.length ? <EmptyState title="No leads yet" /> : (
+              <Table>
+                <THead><TR><TH>Name</TH><TH>Status</TH><TH>Source</TH><TH></TH></TR></THead>
+                <TBody>
+                  {leadsData.data.slice(0, 8).map((lead: any) => (
+                    <TR key={lead.id}>
+                      <TD>{lead.name}</TD>
+                      <TD><Badge className={STATUS_STYLES[lead.status] || ''}>{lead.status}</Badge></TD>
+                      <TD className="text-text-tertiary">{lead.source || '-'}</TD>
+                      <TD><Link href={`/seller/crm/${lead.id}`}><Button variant="ghost" size="sm">View</Button></Link></TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
             )}
           </CardContent>
         </Card>
@@ -118,12 +119,12 @@ export default function AdminCrmPage() {
       <Card>
         <CardHeader><CardTitle>Leads by Source</CardTitle></CardHeader>
         <CardContent>
-          {!dashboard?.bySource?.length ? <p className="text-sm text-gray-400">No data</p> : (
+          {!dashboard?.bySource?.length ? <p className="text-sm text-text-tertiary">No data</p> : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {dashboard.bySource.map((s: any) => (
-                <div key={s.source} className="p-4 bg-gray-800/50 rounded-lg text-center">
+                <div key={s.source} className="p-4 bg-bg-elevated/50 rounded-lg text-center">
                   <p className="text-2xl font-bold">{s.count}</p>
-                  <p className="text-xs text-gray-400">{s.source}</p>
+                  <p className="text-xs text-text-tertiary">{s.source}</p>
                 </div>
               ))}
             </div>
@@ -142,7 +143,7 @@ export default function AdminCrmPage() {
                 setAiResult(r.data); toast({ title: 'Pipeline health assessment ready' });
               } catch { toast({ title: 'Pipeline health failed', variant: 'destructive' }); } finally { setAiLoading(false); }
             }}>
-              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />} Pipeline Health
+              {aiLoading ? <LoadingSpinner size="sm" /> : <Activity className="h-4 w-4" />} Pipeline Health
             </Button>
             <Button size="sm" variant="outline" disabled={aiLoading} onClick={async () => {
               setAiLoading(true); try {
@@ -152,11 +153,11 @@ export default function AdminCrmPage() {
                 setAiResult(r.data); toast({ title: 'Forecast ready' });
               } catch { toast({ title: 'Forecast failed', variant: 'destructive' }); } finally { setAiLoading(false); }
             }}>
-              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />} Forecast
+              {aiLoading ? <LoadingSpinner size="sm" /> : <TrendingUp className="h-4 w-4" />} Forecast
             </Button>
           </div>
           {aiResult && (
-            <pre className="mt-4 p-3 bg-gray-800/50 rounded-lg text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-60">{JSON.stringify(aiResult, null, 2)}</pre>
+            <pre className="mt-4 p-3 bg-bg-elevated/50 rounded-lg text-xs text-text-tertiary whitespace-pre-wrap overflow-auto max-h-60">{JSON.stringify(aiResult, null, 2)}</pre>
           )}
         </CardContent>
       </Card>

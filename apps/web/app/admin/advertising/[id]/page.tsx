@@ -6,6 +6,7 @@ import { DashboardPageHeader, TableSkeleton } from '@/components/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { useAdminAd, useAdAnalytics, useApproveAd, useRejectAd, useAdminPauseAd, useAdminResumeAd } from '@/hooks/use-advertising';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, CheckCircle, XCircle, Play, Pause, Eye, MousePointerClick, TrendingUp, DollarSign } from 'lucide-react';
@@ -23,12 +24,12 @@ const AD_TYPE_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  DRAFT: 'bg-gray-500/20 text-gray-400',
+  DRAFT: 'bg-bg-elevated text-gray-400',
   PENDING_REVIEW: 'bg-yellow-500/20 text-yellow-400',
   ACTIVE: 'bg-green-500/20 text-green-400',
   PAUSED: 'bg-blue-500/20 text-blue-400',
   EXPIRED: 'bg-red-500/20 text-red-400',
-  CANCELLED: 'bg-gray-500/20 text-gray-400',
+  CANCELLED: 'bg-bg-elevated text-gray-400',
   REJECTED: 'bg-red-500/20 text-red-400',
   COMPLETED: 'bg-purple-500/20 text-purple-400',
 };
@@ -82,15 +83,15 @@ export default function AdminAdDetailPage() {
       } />
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Status</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Status</CardTitle></CardHeader>
           <CardContent><Badge className={STATUS_STYLES[ad.status]}>{ad.status.replace('_', ' ')}</Badge></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Company</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Company</CardTitle></CardHeader>
           <CardContent className="font-medium">{ad.company?.name || 'N/A'}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Type</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Type</CardTitle></CardHeader>
           <CardContent className="font-medium">{AD_TYPE_LABELS[ad.type] || ad.type}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Pricing</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Pricing</CardTitle></CardHeader>
           <CardContent className="font-medium">{ad.pricingModel}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400">Budget</CardTitle></CardHeader>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary">Budget</CardTitle></CardHeader>
           <CardContent className="font-medium">₹{Number(ad.spentBudget).toLocaleString()} / ₹{Number(ad.totalBudget).toLocaleString()}</CardContent></Card>
       </div>
 
@@ -117,15 +118,15 @@ export default function AdminAdDetailPage() {
 
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><Eye className="h-3 w-3" /> Impressions</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><Eye className="h-3 w-3" /> Impressions</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">{summary.impressions.toLocaleString()}</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><MousePointerClick className="h-3 w-3" /> Clicks</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><MousePointerClick className="h-3 w-3" /> Clicks</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">{summary.clicks.toLocaleString()}</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> CTR</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><TrendingUp className="h-3 w-3" /> CTR</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">{summary.ctr}%</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><DollarSign className="h-3 w-3" /> CPC</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><DollarSign className="h-3 w-3" /> CPC</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">₹{summary.cpc}</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-400 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> ROI</CardTitle></CardHeader>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-text-tertiary flex items-center gap-1"><TrendingUp className="h-3 w-3" /> ROI</CardTitle></CardHeader>
             <CardContent className="text-lg font-bold">{summary.roi}%</CardContent></Card>
         </div>
       )}
@@ -134,26 +135,26 @@ export default function AdminAdDetailPage() {
         <Card>
           <CardHeader><CardTitle>Details</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
-            {ad.title && <div className="flex justify-between"><span className="text-gray-400">Title</span><span>{ad.title}</span></div>}
-            {ad.description && <div className="flex justify-between"><span className="text-gray-400">Description</span><span className="text-right max-w-xs">{ad.description}</span></div>}
-            {ad.targetUrl && <div className="flex justify-between"><span className="text-gray-400">Target URL</span><span className="text-right max-w-xs truncate">{ad.targetUrl}</span></div>}
-            <div className="flex justify-between"><span className="text-gray-400">Start</span><span>{new Date(ad.startDate).toLocaleDateString()}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">End</span><span>{new Date(ad.endDate).toLocaleDateString()}</span></div>
-            {ad.keyword && <div className="flex justify-between"><span className="text-gray-400">Keyword</span><span>{ad.keyword}</span></div>}
-            {ad.city && <div className="flex justify-between"><span className="text-gray-400">City</span><span>{ad.city}</span></div>}
-            <div className="flex justify-between"><span className="text-gray-400">Priority</span><span>{ad.priority}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">Auto Pause/Resume/Stop</span><span>{[ad.autoPause && 'Pause', ad.autoResume && 'Resume', ad.autoStop && 'Stop'].filter(Boolean).join(', ') || 'None'}</span></div>
+            {ad.title && <div className="flex justify-between"><span className="text-text-tertiary">Title</span><span>{ad.title}</span></div>}
+            {ad.description && <div className="flex justify-between"><span className="text-text-tertiary">Description</span><span className="text-right max-w-xs">{ad.description}</span></div>}
+            {ad.targetUrl && <div className="flex justify-between"><span className="text-text-tertiary">Target URL</span><span className="text-right max-w-xs truncate">{ad.targetUrl}</span></div>}
+            <div className="flex justify-between"><span className="text-text-tertiary">Start</span><span>{new Date(ad.startDate).toLocaleDateString()}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">End</span><span>{new Date(ad.endDate).toLocaleDateString()}</span></div>
+            {ad.keyword && <div className="flex justify-between"><span className="text-text-tertiary">Keyword</span><span>{ad.keyword}</span></div>}
+            {ad.city && <div className="flex justify-between"><span className="text-text-tertiary">City</span><span>{ad.city}</span></div>}
+            <div className="flex justify-between"><span className="text-text-tertiary">Priority</span><span>{ad.priority}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">Auto Pause/Resume/Stop</span><span>{[ad.autoPause && 'Pause', ad.autoResume && 'Resume', ad.autoStop && 'Stop'].filter(Boolean).join(', ') || 'None'}</span></div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Approval Info</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-gray-400">Created</span><span>{new Date(ad.createdAt).toLocaleString()}</span></div>
-            {ad.approvedBy && <div className="flex justify-between"><span className="text-gray-400">Approved By</span><span>{ad.approvedBy}</span></div>}
-            {ad.approvedAt && <div className="flex justify-between"><span className="text-gray-400">Approved At</span><span>{new Date(ad.approvedAt).toLocaleString()}</span></div>}
-            {ad.rejectedReason && <div className="flex justify-between"><span className="text-gray-400">Rejection Reason</span><span className="text-red-400">{ad.rejectedReason}</span></div>}
-            <div className="flex justify-between"><span className="text-gray-400">Total Impressions</span><span>{ad.impressions.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">Total Clicks</span><span>{ad.clicks.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">Created</span><span>{new Date(ad.createdAt).toLocaleString()}</span></div>
+            {ad.approvedBy && <div className="flex justify-between"><span className="text-text-tertiary">Approved By</span><span>{ad.approvedBy}</span></div>}
+            {ad.approvedAt && <div className="flex justify-between"><span className="text-text-tertiary">Approved At</span><span>{new Date(ad.approvedAt).toLocaleString()}</span></div>}
+            {ad.rejectedReason && <div className="flex justify-between"><span className="text-text-tertiary">Rejection Reason</span><span className="text-red-400">{ad.rejectedReason}</span></div>}
+            <div className="flex justify-between"><span className="text-text-tertiary">Total Impressions</span><span>{ad.impressions.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-text-tertiary">Total Clicks</span><span>{ad.clicks.toLocaleString()}</span></div>
           </CardContent>
         </Card>
       </div>
@@ -164,7 +165,7 @@ export default function AdminAdDetailPage() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {ad.targets.map(t => (
-                <Badge key={t.id} className="bg-gray-800 text-gray-300">{t.targetType}: {t.targetValue}</Badge>
+                <Badge key={t.id} variant="secondary">{t.targetType}: {t.targetValue}</Badge>
               ))}
             </div>
           </CardContent>
@@ -175,28 +176,26 @@ export default function AdminAdDetailPage() {
         <Card>
           <CardHeader><CardTitle>Daily Analytics</CardTitle></CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-gray-800 text-left text-gray-400">
-                  <th className="pb-3 pr-4">Date</th>
-                  <th className="pb-3 pr-4">Impressions</th>
-                  <th className="pb-3 pr-4">Clicks</th>
-                  <th className="pb-3 pr-4">Spend</th>
-                  <th className="pb-3 pr-4">Conversions</th>
-                </tr></thead>
-                <tbody>
-                  {analytics.daily.map(d => (
-                    <tr key={d.id} className="border-b border-gray-800/50">
-                      <td className="py-3 pr-4">{new Date(d.date).toLocaleDateString()}</td>
-                      <td className="py-3 pr-4">{d.impressions.toLocaleString()}</td>
-                      <td className="py-3 pr-4">{d.clicks.toLocaleString()}</td>
-                      <td className="py-3 pr-4">₹{Number(d.spend).toLocaleString()}</td>
-                      <td className="py-3 pr-4">{d.conversions}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <THead><TR>
+                <TH>Date</TH>
+                <TH>Impressions</TH>
+                <TH>Clicks</TH>
+                <TH>Spend</TH>
+                <TH>Conversions</TH>
+              </TR></THead>
+              <TBody>
+                {analytics.daily.map(d => (
+                  <TR key={d.id}>
+                    <TD>{new Date(d.date).toLocaleDateString()}</TD>
+                    <TD>{d.impressions.toLocaleString()}</TD>
+                    <TD>{d.clicks.toLocaleString()}</TD>
+                    <TD>₹{Number(d.spend).toLocaleString()}</TD>
+                    <TD>{d.conversions}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           </CardContent>
         </Card>
       )}

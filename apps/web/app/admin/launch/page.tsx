@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { getLaunchDashboard, type LaunchDashboard } from '@/lib/api/launch';
 import { DashboardPageHeader, StatCard, DashboardSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Rocket,
@@ -75,14 +77,9 @@ export default function LaunchDashboardPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Launch Dashboard" description="Phase 7E public launch readiness" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <AlertTriangle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load launch dashboard</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
-          <Button onClick={fetchData} className="mt-4">
-            Retry
-          </Button>
-        </div>
+        <Alert variant="error" title="Failed to load launch dashboard">{error.message}
+          <div className="mt-3"><Button onClick={fetchData}>Retry</Button></div>
+        </Alert>
       </div>
     );
   }
@@ -151,12 +148,7 @@ export default function LaunchDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">{readinessPercent}%</div>
-            <div className="mt-2 h-2 w-full rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
-              <div
-                className="h-2 rounded-full bg-accent-500"
-                style={{ width: `${readinessPercent}%` }}
-              />
-            </div>
+            <Progress value={readinessPercent} size="lg" className="mt-2" />
           </CardContent>
         </Card>
       </div>

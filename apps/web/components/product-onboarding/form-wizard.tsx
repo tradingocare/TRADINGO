@@ -32,7 +32,7 @@ export function FormWizard({
   const isLast = currentStep === steps[totalSteps - 1]?.id;
 
   const saveIndicator = useMemo(() => {
-    if (isSaving) return { text: 'Saving...', icon: Clock, className: 'text-amber-500' };
+    if (isSaving) return { text: 'Saving...', icon: Clock, className: 'text-accent-500' };
     if (lastAutoSavedAt) {
       const seconds = Math.floor((Date.now() - new Date(lastAutoSavedAt).getTime()) / 1000);
       if (seconds < 10) return { text: 'Auto-saved just now', icon: CheckCircle2, className: 'text-accent-500' };
@@ -85,7 +85,7 @@ export function FormWizard({
                     <div
                       className={cn(
                         'h-px w-8 sm:w-12',
-                        isCompleted ? 'bg-primary-500' : 'bg-border dark:bg-dark-border',
+                        isCompleted ? 'bg-accent-500' : 'bg-border dark:bg-dark-border',
                       )}
                     />
                   )}
@@ -102,8 +102,8 @@ export function FormWizard({
                     <div
                       className={cn(
                         'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all',
-                        isActive && 'border-primary-600 bg-primary-600 text-white shadow-md',
-                        isCompleted && 'border-primary-500 bg-primary-500/10 text-primary-600 dark:text-primary-400',
+                        isActive && 'border-accent-600 bg-accent-600 text-gray-900 shadow-md',
+                          isCompleted && 'border-accent-500 bg-accent-500/10 text-accent-600 dark:text-accent-400',
                         !isActive && !isCompleted && 'border-border bg-surface-secondary text-text-tertiary dark:border-dark-border dark:bg-dark-surface-secondary',
                       )}
                     >
@@ -126,11 +126,11 @@ export function FormWizard({
                         <div className="mt-0.5 flex items-center gap-1.5">
                           <div className="h-1 w-12 overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
                             <div
-                              className={cn(
-                                'h-full rounded-full transition-all',
-                                score >= 80 ? 'bg-accent-500' : score >= 40 ? 'bg-amber-500' : 'bg-red-500',
-                              )}
-                              style={{ width: `${score}%` }}
+                               className={cn(
+                                 'h-full rounded-full transition-all',
+                                 score >= 80 ? 'bg-accent-500' : score >= 40 ? 'bg-accent-500' : 'bg-red-500',
+                               )}
+                               style={{ width: `${score}%` }}
                             />
                           </div>
                           <span className="text-[10px] text-text-tertiary">{score}%</span>

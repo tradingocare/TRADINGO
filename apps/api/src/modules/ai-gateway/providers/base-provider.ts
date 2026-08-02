@@ -78,7 +78,9 @@ export abstract class BaseAiProvider implements AiProvider {
       if (provider === 'groq' && response?.usage) {
         return { promptTokens: response.usage.prompt_tokens || 0, completionTokens: response.usage.completion_tokens || 0, totalTokens: response.usage.total_tokens || 0 }
       }
-    } catch {}
+    } catch (err) {
+      this.logger.warn(`Failed to parse token count for ${provider}: ${(err as Error).message}`)
+    }
     return { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
   }
 }

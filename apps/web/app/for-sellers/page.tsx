@@ -124,7 +124,7 @@ export default function ForSellersPage() {
                   const Icon = item.icon;
                   return (
                     <div key={item.title} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                         <Icon className="h-5 w-5" />
                       </div>
                       <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">{item.title}</h3>

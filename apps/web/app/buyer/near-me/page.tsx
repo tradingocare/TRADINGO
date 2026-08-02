@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, MapPin, Crosshair, AlertCircle, Map, List, X } from 'lucide-react';
+import { Search, MapPin, Crosshair, AlertCircle, Map, List, X, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardPageHeader } from '@/components/dashboard';
@@ -10,7 +10,9 @@ import { RadiusSelector } from '@/components/near-me/radius-selector';
 import { FilterDrawer } from '@/components/near-me/filter-drawer';
 import type { FilterState } from '@/components/near-me/filter-drawer';
 import { SortDropdown } from '@/components/near-me/sort-dropdown';
-import { NearMeProductCard } from '@/components/near-me/near-me-product-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ProductCard } from '@/components/product/product-card';
+import { fromNearMeProduct } from '@/components/product/card-converters';
 import { NearMeSkeleton } from '@/components/near-me/near-me-skeleton';
 import { NearMeMap } from '@/components/near-me/near-me-map';
 import { searchProducts, getRadiusBreakdown } from '@/lib/api/near-me';
@@ -117,7 +119,7 @@ function NearMeContent() {
       const counts: Record<number, number> = {};
       breakdown.forEach((b) => { counts[b.radius] = b.count; });
       setRadiusCounts(counts);
-    } catch {}
+    } catch { console.error('Failed to load radius counts'); }
   }, [center.lat, center.lng]);
 
   useEffect(() => {
@@ -349,15 +351,7 @@ function renderProductList(opts: {
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface p-12 dark:border-dark-border dark:bg-dark-surface">
-        <MapPin className="h-12 w-12 text-text-tertiary" />
-        <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No products found</h3>
-        <p className="mt-1 text-sm text-text-tertiary dark:text-dark-text-tertiary text-center max-w-sm">
-          {geoStatus === 'error'
-            ? 'Enable location access or enter a location manually.'
-            : 'Try increasing the radius or adjusting filters.'}
-        </p>
-      </div>
+      <EmptyState icon={Package} title="No products found" description={geoStatus === 'error' ? 'Enable location access or enter a location manually.' : 'Try increasing the radius or adjusting filters.'} />
     );
   }
 
@@ -370,7 +364,7 @@ function renderProductList(opts: {
       </div>
       <div className="space-y-3">
         {products.map((product) => (
-          <NearMeProductCard key={product.productId} product={product} />
+          <ProductCard key={product.productId} product={fromNearMeProduct(product)} variant="compact" features={{ showLocation: true, showDelivery: true, showCompare: false, showWishlist: false }} />
         ))}
       </div>
       <div ref={loaderRef} className="py-4">

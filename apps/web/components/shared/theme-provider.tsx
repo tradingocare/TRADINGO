@@ -12,7 +12,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children, defaultTheme = 'light' }: { children: ReactNode; defaultTheme?: Theme }) {
+export function ThemeProvider({ children, defaultTheme = 'dark' }: { children: ReactNode; defaultTheme?: Theme }) {
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [, setMounted] = useState(false);
 
@@ -22,11 +22,12 @@ export function ThemeProvider({ children, defaultTheme = 'light' }: { children: 
     if (stored) {
       setThemeState(stored);
       document.documentElement.classList.toggle('dark', stored === 'dark');
+      document.documentElement.setAttribute('data-theme', stored);
     } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const initial = prefersDark ? 'dark' : 'light';
-      setThemeState(initial);
-      document.documentElement.classList.toggle('dark', initial === 'dark');
+      // Default to dark theme for Tradingo premium dark design
+      setThemeState('dark');
+      document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
     }
   }, []);
 
@@ -34,6 +35,7 @@ export function ThemeProvider({ children, defaultTheme = 'light' }: { children: 
     setThemeState(newTheme);
     localStorage.setItem('tradingo-theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    document.documentElement.setAttribute('data-theme', newTheme);
   };
 
   const toggleTheme = () => {

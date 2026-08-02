@@ -1,6 +1,7 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import * as Sentry from '@sentry/nestjs';
 import { QueueNames, RfqJobTypes, RfqJobData } from './queues';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../modules/notification/notification.service';
@@ -140,6 +141,7 @@ export class RfqProcessor extends WorkerHost {
   @OnWorkerEvent('failed')
   onFailed(job: Job<RfqJobData>, error: Error) {
     this.logger.error(`RFQ job ${job.id} failed: ${error.message}`);
+    Sentry.captureException(error, { tags: { queue: 'rfq', jobId: String(job.id), type: String(job.data.type) }, extra: { data: job.data } });
   }
 
   @OnWorkerEvent('completed')

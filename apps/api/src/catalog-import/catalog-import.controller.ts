@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Param, Body, Query, UseGuards, HttpCode, HttpStatus, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CatalogImportService } from './catalog-import.service';
 import { CsvParserService } from './services/csv-parser.service';
@@ -8,16 +9,43 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ImportJobType, ImportJobStatus } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RateLimits } from '../common/constants/rate-limits.const';
+
+const ALLOWED_IMPORT_MIME = [
+  'text/csv',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/plain',
+  'application/json',
+];
+
+const ALLOWED_IMPORT_EXTS = ['.csv', '.xlsx', '.xls', '.txt', '.json'];
+const MAX_IMPORT_SIZE = 50 * 1024 * 1024;
 
 @Controller('catalog-import')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN', 'ADMIN')
+@Throttle(RateLimits.ADMIN_WRITE)
 export class CatalogImportController {
   constructor(
     private readonly catalogImportService: CatalogImportService,
     private readonly csvParserService: CsvParserService,
     private readonly importOrchestratorService: ImportOrchestratorService,
   ) {}
+
+  private validateImportFile(file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('File is required');
+    const ext = file.originalname?.toLowerCase().split('.').pop();
+    if (!ext || !ALLOWED_IMPORT_EXTS.includes(`.${ext}`)) {
+      throw new BadRequestException(`Unsupported file extension: .${ext}`);
+    }
+    if (!ALLOWED_IMPORT_MIME.includes(file.mimetype) && file.mimetype !== 'application/octet-stream') {
+      throw new BadRequestException(`Unsupported file type: ${file.mimetype}`);
+    }
+    if (file.size > MAX_IMPORT_SIZE) {
+      throw new BadRequestException(`File exceeds maximum size of 50MB`);
+    }
+  }
 
   @Post('import')
   async startImport(
@@ -40,14 +68,33 @@ export class CatalogImportController {
     @Body('companyId') companyId: string | undefined,
     @CurrentUser() user: any,
   ) {
-    if (!file) {
-      throw new BadRequestException('CSV file is required');
-    }
+    this.validateImportFile(file);
     const effectiveCompanyId = companyId || user?.companyId;
     if (!effectiveCompanyId) {
       throw new BadRequestException('companyId is required');
     }
     return this.importOrchestratorService.runFullImport(file.buffer, effectiveCompanyId);
+  }
+
+  @Post('file-import')
+  @UseInterceptors(FileInterceptor('file'))
+  async importFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('companyId') companyId: string | undefined,
+    @CurrentUser() user: any,
+  ) {
+    this.validateImportFile(file);
+    const effectiveCompanyId = companyId || user?.companyId;
+    if (!effectiveCompanyId) {
+      throw new BadRequestException('companyId is required');
+    }
+
+    const isXlsx = file.originalname?.endsWith('.xlsx')
+      || file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      || (file.buffer[0] === 0x50 && file.buffer[1] === 0x4b);
+
+    const format = isXlsx ? 'xlsx' as const : 'csv' as const;
+    return this.importOrchestratorService.runFullImport(file.buffer, effectiveCompanyId, undefined, format);
   }
 
   @Post('csv-import/:jobId/resume')
@@ -68,9 +115,7 @@ export class CatalogImportController {
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   async previewCsv(@UploadedFile() file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('CSV file is required');
-    }
+    this.validateImportFile(file);
     const result = this.csvParserService.parse(file.buffer);
     return {
       totalRows: result.totalRows,
@@ -153,6 +198,7 @@ export class CatalogImportController {
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    this.validateImportFile(file);
     return this.catalogImportService.uploadFile(file);
   }
 

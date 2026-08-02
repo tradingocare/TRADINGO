@@ -1,11 +1,14 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { SellerAnalyticsService } from './seller-analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
 
 @ApiTags('Seller Analytics')
+@Throttle(RateLimits.ADMIN_ANALYTICS)
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/analytics')
 export class SellerAnalyticsController {

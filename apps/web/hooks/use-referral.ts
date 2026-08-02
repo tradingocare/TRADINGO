@@ -47,6 +47,17 @@ export function useValidateReferral() {
   });
 }
 
+export function useApplyReferral() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: referralApi.applyReferral,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['referral', 'history'] });
+      queryClient.invalidateQueries({ queryKey: ['referral', 'statistics'] });
+    },
+  });
+}
+
 export function useAdminReferralDashboard() {
   return useQuery({
     queryKey: ['referral', 'admin', 'dashboard'],

@@ -29,7 +29,7 @@ export function StepProducts() {
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-white">Products</h2>
 
-      <div className="rounded-lg border border-white/[0.06] bg-white/[0.04] p-4">
+      <div className="rounded-lg border border-border bg-surface p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="space-y-1 lg:col-span-2">
             <Label className="text-xs text-white/60">Product Name *</Label>
@@ -37,7 +37,7 @@ export function StepProducts() {
               placeholder="Search product or type name..."
               value={newProduct.productName}
               onChange={(e) => setNewProduct({ ...newProduct, productName: e.target.value })}
-              className="bg-white/[0.04] border-white/[0.06] text-white"
+              className="bg-surface border-border text-white"
             />
           </div>
           <div className="space-y-1">
@@ -46,7 +46,7 @@ export function StepProducts() {
               type="number" min={1}
               value={newProduct.quantity}
               onChange={(e) => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value) || 1 })}
-              className="bg-white/[0.04] border-white/[0.06] text-white"
+              className="bg-surface border-border text-white"
             />
           </div>
           <div className="space-y-1">
@@ -54,10 +54,10 @@ export function StepProducts() {
             <select
               value={newProduct.unit}
               onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
-              className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
             >
               {['pcs', 'kg', 'ton', 'm', 'L', 'box', 'set', 'pair', 'dozen'].map((u) => (
-                <option key={u} value={u} className="bg-gray-900 text-white">{u}</option>
+                <option key={u} value={u} className="bg-bg-base text-white">{u}</option>
               ))}
             </select>
           </div>
@@ -67,7 +67,7 @@ export function StepProducts() {
               type="number" min={0}
               value={newProduct.targetPrice || ''}
               onChange={(e) => setNewProduct({ ...newProduct, targetPrice: parseFloat(e.target.value) || 0 })}
-              className="bg-white/[0.04] border-white/[0.06] text-white"
+              className="bg-surface border-border text-white"
             />
           </div>
         </div>
@@ -77,14 +77,14 @@ export function StepProducts() {
       </div>
 
       {products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-white/[0.06] p-8 text-center">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-8 text-center">
           <Package className="h-8 w-8 text-white/30" />
           <p className="mt-2 text-sm text-white/60">No products added yet</p>
         </div>
       ) : (
         <div className="space-y-2">
           {products.map((p, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.04] p-3">
+            <div key={i} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400">
                 <Package className="h-4 w-4" />
               </div>

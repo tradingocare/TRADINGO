@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { ApiTags, ApiOperation } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
 import { AiFinanceService } from './ai-finance.service'
 import {
   AiFinanceCreditRiskDto,
@@ -19,6 +20,7 @@ import {
 
 @ApiTags('AI FINANCE')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 @Controller('finance/ai')
 export class AiFinanceController {
   constructor(private readonly aiFinanceService: AiFinanceService) {}

@@ -1,0 +1,39 @@
+region = "ap-south-1"
+
+environment = "production"
+
+project_name = "tradingo"
+
+vpc_cidr = "10.0.0.0/16"
+
+availability_zones = ["ap-south-1a", "ap-south-1b"]
+
+public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
+
+database_subnet_cidrs = ["10.0.20.0/24", "10.0.21.0/24"]
+
+api_container_cpu    = 512
+api_container_memory = 1024
+web_container_cpu    = 256
+web_container_memory = 512
+
+api_desired_count = 2
+web_desired_count = 2
+
+log_retention_days = 30
+
+domain_name = "tradingo.in"
+
+certificate_arn = "arn:aws:acm:ap-south-1:123456789012:certificate/xxxxx-xxxx-xxxx-xxxx-xxxxxxxxx"
+
+enable_nat_gateway  = true
+single_nat_gateway  = true
+enable_flow_logs    = false
+
+tags = {
+  Project     = "tradingo"
+  Environment = "production"
+  ManagedBy   = "terraform"
+}

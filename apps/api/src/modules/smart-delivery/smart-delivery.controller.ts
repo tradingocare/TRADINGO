@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { SmartDeliveryService } from './smart-delivery.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,6 +10,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateDeliveryDto, ConfirmDeliveryDto, RejectDeliveryDto, UpdateDeliveryStatusDto, AddDeliveryDocumentDto } from './dto/smart-delivery.dto';
 
 @ApiTags('Smart Delivery & Proof of Delivery')
+@Throttle(RateLimits.WRITE_GENERAL)
 @UseGuards(JwtAuthGuard)
 @Controller('smart-delivery')
 export class SmartDeliveryController {

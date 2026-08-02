@@ -2,17 +2,30 @@
 
 import { DashboardPageHeader } from '@/components/dashboard';
 import { useBuyerAnalyticsOverview, useBuyerAnalyticsSpending, useBuyerAnalyticsTopProducts } from '@/hooks';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Store, ClipboardList, FileText, ShoppingCart, Loader2, TrendingUp, Package } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Heart, Store, ClipboardList, FileText, ShoppingCart, TrendingUp, Package, AlertCircle } from 'lucide-react';
 
 export default function BuyerAnalyticsPage() {
-  const { data: overview, isLoading: ovLoading } = useBuyerAnalyticsOverview();
-  const { data: spending, isLoading: spLoading } = useBuyerAnalyticsSpending();
-  const { data: categories, isLoading: catLoading } = useBuyerAnalyticsTopProducts();
+  const { data: overview, isLoading: ovLoading, isError: ovError } = useBuyerAnalyticsOverview();
+  const { data: spending, isLoading: spLoading, isError: spError } = useBuyerAnalyticsSpending();
+  const { data: categories, isLoading: catLoading, isError: catError } = useBuyerAnalyticsTopProducts();
 
   if (ovLoading || spLoading || catLoading) {
     return (
-      <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-text-tertiary" /></div>
+      <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
+    );
+  }
+
+  if (ovError || spError || catError) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <AlertCircle className="h-12 w-12 text-red-500" />
+        <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">Failed to load analytics</h3>
+        <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Something went wrong. Please try again.</p>
+        <Button variant="accent" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
+      </div>
     );
   }
 
@@ -52,7 +65,7 @@ export default function BuyerAnalyticsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><TrendingUp className="h-4 w-4 text-[#FF5A1F]" /> Monthly Spending</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><TrendingUp className="h-4 w-4 text-[#f97316]" /> Monthly Spending</CardTitle>
           </CardHeader>
           <CardContent>
             {(!spending || spending.length === 0) ? (
@@ -72,7 +85,7 @@ export default function BuyerAnalyticsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Package className="h-4 w-4 text-[#FF5A1F]" /> Top Purchased Products</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><Package className="h-4 w-4 text-[#f97316]" /> Top Purchased Products</CardTitle>
           </CardHeader>
           <CardContent>
             {(!categories || categories.length === 0) ? (

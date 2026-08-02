@@ -1,13 +1,16 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ProductOnboardingService } from './product-onboarding.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateDraftDto } from './dto/create-draft.dto';
 import { UpdateDraftDto } from './dto/update-draft.dto';
 import { DraftStatus } from '@prisma/client';
+import { RateLimits } from '../common/constants/rate-limits.const';
 
 @Controller('product-onboarding')
 @UseGuards(JwtAuthGuard)
+@Throttle(RateLimits.WRITE_GENERAL)
 export class ProductOnboardingController {
   constructor(private readonly onboardingService: ProductOnboardingService) {}
 

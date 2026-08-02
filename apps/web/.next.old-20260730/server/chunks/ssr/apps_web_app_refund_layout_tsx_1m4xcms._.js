@@ -1,0 +1,3 @@
+module.exports=[314049,a=>{"use strict";a.s(["default",0,function({children:a}){return a},"metadata",0,{title:"Refund Policy | TRADINGO",description:"TRADINGO refund and cancellation policy for membership plans, advertising credits, and platform services.",openGraph:{title:"Refund Policy | TRADINGO",description:"TRADINGO refund and cancellation policy for membership plans, advertising credits, and platform services."}}])},513175,a=>{a.n(a.i(314049))}];
+
+//# sourceMappingURL=apps_web_app_refund_layout_tsx_1m4xcms._.js.map

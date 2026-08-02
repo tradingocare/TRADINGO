@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { SmartRfqService } from './smart-rfq.service';
 import { AiRfqService } from './ai-rfq.service';
 import { NearToFarService } from './near-to-far.service';
@@ -18,6 +20,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Smart RFQ Engine')
+@Throttle(RateLimits.RFQ_CREATE)
 @UseGuards(JwtAuthGuard)
 @Controller('smart-rfq')
 export class SmartRfqController {
@@ -83,6 +86,12 @@ export class SmartRfqController {
     return this.nearToFar.findSuppliers(id);
   }
 
+  @Get('suppliers/suggested')
+  @ApiOperation({ summary: 'Get suggested suppliers without RFQ ID'})
+  getSuggestedSuppliers(@CurrentUser('sub') userId: string) {
+    return this.rfqService.getUserCompany(userId).then((c) => this.nearToFar.findSuppliersForCompany(c.id));
+  }
+
   @Get('near-to-far/stats')
   @ApiOperation({ summary: 'Near To Far™ matching stats' })
   getMatchingStats() {
@@ -125,6 +134,22 @@ export class SmartRfqController {
   @ApiOperation({ summary: 'Quote performance metrics (acceptance rate, avg value)' })
   getQuotePerformance(@CurrentUser('sub') userId: string, @Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
     return this.rfqService.getUserCompany(userId).then((c) => this.rfqService.getQuotePerformanceMetrics(c.id, startDate, endDate));
+  }
+
+  @Post('bulk-migrate-categories')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Bulk migrate legacy categoryId → catalogCategoryId for all RFQs' })
+  bulkMigrateCategories() {
+    return this.rfqService.bulkMigrateCategories();
+  }
+
+  @Post('bulk-migrate-product-items')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Bulk migrate RfqProductItem product names → catalogItemId + catalogSubcategoryId + catalogCategoryId' })
+  bulkMigrateProductItems() {
+    return this.rfqService.bulkMigrateProductItems();
   }
 
   @Get('admin/overview')

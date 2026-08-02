@@ -61,8 +61,8 @@ describe('AdminAssignmentService', () => {
       prisma.dispute.groupBy.mockResolvedValue([]);
       prisma.user.findMany.mockResolvedValue(mockAdmins);
 
-      const result = await service.getLeastBusyAdmin();
-      expect(result.id).toBe('a1');
+      const result = await service.getLeastBusyAdmin()!;
+      expect(result!.id).toBe('a1');
     });
 
     it('should return null when no admins exist', async () => {

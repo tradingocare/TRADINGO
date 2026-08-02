@@ -146,6 +146,10 @@ export class CreateRfqDto {
 
   @IsOptional()
   @IsString()
+  catalogCategoryId?: string;
+
+  @IsOptional()
+  @IsString()
   industryId?: string;
 
   @IsOptional()

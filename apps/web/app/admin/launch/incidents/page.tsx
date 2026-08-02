@@ -8,10 +8,14 @@ import {
   type Incident,
 } from '@/lib/api/launch';
 import { DashboardPageHeader, StatCard, DashboardSkeleton } from '@/components/dashboard';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Modal } from '@/components/ui/modal';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertTriangle, Plus, Search, Loader2 } from 'lucide-react';
 
@@ -106,12 +110,9 @@ export default function IncidentsPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Incident Management" description="Track and manage launch incidents" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <AlertTriangle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load incidents</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
-          <Button onClick={fetchData} className="mt-4">Retry</Button>
-        </div>
+        <Alert variant="error" title="Failed to load incidents">{error.message}
+          <div className="mt-3"><Button onClick={fetchData}>Retry</Button></div>
+        </Alert>
       </div>
     );
   }
@@ -139,8 +140,7 @@ export default function IncidentsPage() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <Search className="h-4 w-4 text-text-tertiary" />
-          <select
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-surface dark:border-dark-border dark:text-dark-text-primary"
+          <Select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
           >
@@ -150,10 +150,9 @@ export default function IncidentsPage() {
             <option value="IDENTIFIED">Identified</option>
             <option value="MONITORING">Monitoring</option>
             <option value="RESOLVED">Resolved</option>
-          </select>
+          </Select>
         </div>
-        <select
-          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-surface dark:border-dark-border dark:text-dark-text-primary"
+        <Select
           value={filterSeverity}
           onChange={(e) => setFilterSeverity(e.target.value)}
         >
@@ -162,17 +161,11 @@ export default function IncidentsPage() {
           <option value="HIGH">High</option>
           <option value="MEDIUM">Medium</option>
           <option value="LOW">Low</option>
-        </select>
+        </Select>
       </div>
 
       {incidents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <Search className="h-12 w-12 text-text-tertiary" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">No incidents found</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
-            {filterStatus || filterSeverity ? 'Try changing your filters' : 'No incidents have been reported yet'}
-          </p>
-        </div>
+        <EmptyState icon={Search} title="No incidents found" description={filterStatus || filterSeverity ? 'Try changing your filters' : 'No incidents have been reported yet'} />
       ) : (
         <div className="space-y-3">
           {incidents.map((incident) => (
@@ -211,61 +204,55 @@ export default function IncidentsPage() {
         </div>
       )}
 
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-xl dark:bg-dark-surface dark:border-dark-border">
-            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Report Incident</h2>
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Title</label>
-                <Input
-                  placeholder="Issue title"
-                  value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Description</label>
-                <Textarea
-                  placeholder="Describe the incident..."
-                  value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Severity</label>
-                <select
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-surface dark:border-dark-border dark:text-dark-text-primary"
-                  value={form.severity}
-                  onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value }))}
-                >
-                  <option value="CRITICAL">Critical</option>
-                  <option value="HIGH">High</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="LOW">Low</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                  Impacted Services <span className="text-text-tertiary">(comma-separated)</span>
-                </label>
-                <Input
-                  placeholder="e.g. API, Database, Web"
-                  value={form.impactedServices}
-                  onChange={(e) => setForm((f) => ({ ...f, impactedServices: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
-              <Button disabled={creating || !form.title.trim() || !form.description.trim()} onClick={handleCreate}>
-                {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                Report Incident
-              </Button>
-            </div>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Report Incident">
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Title</label>
+            <Input
+              placeholder="Issue title"
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Description</label>
+            <Textarea
+              placeholder="Describe the incident..."
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Severity</label>
+            <Select
+              value={form.severity}
+              onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value }))}
+            >
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+              Impacted Services <span className="text-text-tertiary">(comma-separated)</span>
+            </label>
+            <Input
+              placeholder="e.g. API, Database, Web"
+              value={form.impactedServices}
+              onChange={(e) => setForm((f) => ({ ...f, impactedServices: e.target.value }))}
+            />
           </div>
         </div>
-      )}
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
+          <Button disabled={creating || !form.title.trim() || !form.description.trim()} onClick={handleCreate}>
+            {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            Report Incident
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

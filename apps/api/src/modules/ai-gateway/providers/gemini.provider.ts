@@ -43,7 +43,8 @@ export class GeminiProvider extends BaseAiProvider {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: `${req.systemPrompt}\n\n${req.userPrompt}` }] }],
+        systemInstruction: { parts: [{ text: req.systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: req.userPrompt }] }],
         generationConfig: { temperature: req.temperature ?? 0.7, maxOutputTokens: req.maxTokens ?? 2048 },
       }),
       timeout: 30000,

@@ -1,6 +1,7 @@
 import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../../modules/search/search.service';
+import { buildProductIndexDoc } from '../../modules/products/product-index.doc';
 import { CsvParserService, CsvRow, CsvParseResult } from './csv-parser.service';
 import { ImportJobStatus, ProductType } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
@@ -26,6 +27,11 @@ export interface ImportResult {
   serviceMastersCreated: number;
   productsCreated: number;
   searchIndexed: number;
+  // Master Catalog counts
+  catalogCategoriesCreated: number;
+  catalogSubcategoriesCreated: number;
+  catalogItemsCreated: number;
+  catalogUnitsCreated: number;
   errors: string[];
   summary: Record<string, unknown>;
 }
@@ -46,8 +52,11 @@ export class ImportOrchestratorService {
     csvContent: Buffer,
     companyId: string,
     existingJobId?: string,
+    format?: 'csv' | 'xlsx',
   ): Promise<ImportResult> {
-    const parseResult = this.csvParser.parse(csvContent);
+    const parseResult = format === 'xlsx'
+      ? this.csvParser.parseXlsx(csvContent)
+      : this.csvParser.parse(csvContent);
     if (parseResult.validRows === 0) {
       return {
         jobId: '',
@@ -58,6 +67,10 @@ export class ImportOrchestratorService {
         serviceMastersCreated: 0,
         productsCreated: 0,
         searchIndexed: 0,
+        catalogCategoriesCreated: 0,
+        catalogSubcategoriesCreated: 0,
+        catalogItemsCreated: 0,
+        catalogUnitsCreated: 0,
         errors: parseResult.errors.map((e) => `Row ${e.row}: ${e.message}`),
         summary: { parseErrors: parseResult.errors.length },
       };
@@ -83,7 +96,6 @@ export class ImportOrchestratorService {
     if (existingJobId && job && job.status === 'COMPLETED') {
       throw new ConflictException(`Job ${jobId} is already completed`);
     }
-
     const errors: string[] = [];
     let categoriesCreated = 0;
     let subcategoriesCreated = 0;
@@ -91,6 +103,10 @@ export class ImportOrchestratorService {
     let serviceMastersCreated = 0;
     let productsCreated = 0;
     let searchIndexed = 0;
+    let catalogCategoriesCreated = 0;
+    let catalogSubcategoriesCreated = 0;
+    let catalogItemsCreated = 0;
+    let catalogUnitsCreated = 0;
 
     try {
       const catResult = await this.importCategories(parseResult, jobId);
@@ -98,6 +114,23 @@ export class ImportOrchestratorService {
 
       const subcatResult = await this.importSubcategories(parseResult, jobId);
       subcategoriesCreated = subcatResult.created;
+
+      // Master Catalog import (parallel to existing pipeline)
+      const catalogCatResult = await this.importCatalogCategories(parseResult, jobId);
+      catalogCategoriesCreated = catalogCatResult.created;
+      errors.push(...catalogCatResult.errors);
+
+      const catalogSubcatResult = await this.importCatalogSubcategories(parseResult, jobId);
+      catalogSubcategoriesCreated = catalogSubcatResult.created;
+      errors.push(...catalogSubcatResult.errors);
+
+      const catalogItemResult = await this.importCatalogItems(parseResult, jobId);
+      catalogItemsCreated = catalogItemResult.created;
+      errors.push(...catalogItemResult.errors);
+
+      const unitResult = await this.importCatalogUnits(parseResult, jobId);
+      catalogUnitsCreated = unitResult.created;
+      errors.push(...unitResult.errors);
 
       const pmResult = await this.importProductMasters(parseResult, jobId);
       productMastersCreated = pmResult.created;
@@ -133,6 +166,10 @@ export class ImportOrchestratorService {
             serviceMastersCreated,
             productsCreated,
             searchIndexed,
+            catalogCategoriesCreated,
+            catalogSubcategoriesCreated,
+            catalogItemsCreated,
+            catalogUnitsCreated,
             totalErrors: errors.length,
           },
         },
@@ -149,6 +186,10 @@ export class ImportOrchestratorService {
         serviceMastersCreated,
         productsCreated,
         searchIndexed,
+        catalogCategoriesCreated,
+        catalogSubcategoriesCreated,
+        catalogItemsCreated,
+        catalogUnitsCreated,
         errors,
         summary: {
           categoriesCreated,
@@ -157,6 +198,10 @@ export class ImportOrchestratorService {
           serviceMastersCreated,
           productsCreated,
           searchIndexed,
+          catalogCategoriesCreated,
+          catalogSubcategoriesCreated,
+          catalogItemsCreated,
+          catalogUnitsCreated,
           totalRows: parseResult.validRows,
         },
       };
@@ -178,6 +223,10 @@ export class ImportOrchestratorService {
         serviceMastersCreated,
         productsCreated,
         searchIndexed,
+        catalogCategoriesCreated,
+        catalogSubcategoriesCreated,
+        catalogItemsCreated,
+        catalogUnitsCreated,
         errors: [errorMsg, ...errors],
         summary: { error: errorMsg },
       };
@@ -309,6 +358,7 @@ export class ImportOrchestratorService {
               categoryId: category?.id || null,
               subcategoryId: subcategory?.id || null,
               unit: row.unit || null,
+              hsCode: `HS-${row.serialNo}`,
               searchKeywords: keywords,
               synonyms: generateKeywords(row.altUnits),
               tags: keywords,
@@ -322,6 +372,7 @@ export class ImportOrchestratorService {
               categoryId: category?.id || null,
               subcategoryId: subcategory?.id || null,
               unit: row.unit || null,
+              hsCode: `HS-${row.serialNo}`,
               searchKeywords: keywords,
               synonyms: generateKeywords(row.altUnits),
               tags: keywords,
@@ -373,6 +424,7 @@ export class ImportOrchestratorService {
               categoryId: category?.id || null,
               subcategoryId: subcategory?.id || null,
               unit: row.unit || null,
+              sacCode: `SAC-${row.serialNo}`,
               searchKeywords: keywords,
               synonyms: generateKeywords(row.altUnits),
               tags: keywords,
@@ -386,6 +438,7 @@ export class ImportOrchestratorService {
               categoryId: category?.id || null,
               subcategoryId: subcategory?.id || null,
               unit: row.unit || null,
+              sacCode: `SAC-${row.serialNo}`,
               searchKeywords: keywords,
               synonyms: generateKeywords(row.altUnits),
               tags: keywords,
@@ -484,32 +537,37 @@ export class ImportOrchestratorService {
         try {
           const product = await this.prisma.product.findUnique({
             where: { id },
-            include: { media: true, category: true, specifications: true, inventory: true, company: true },
+            include: {
+              media: { select: { url: true, type: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
+              category: { select: { id: true, name: true, slug: true } },
+              industry: { select: { id: true, name: true, slug: true } },
+              specifications: { select: { key: true, value: true } },
+              inventory: { select: { availableQuantity: true, stockStatus: true } },
+              company: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  trustScore: true,
+                  verificationLevel: true,
+                  businessType: true,
+                  establishedYear: true,
+                  gstNumber: true,
+                  certifications: true,
+                  locations: {
+                    select: { city: true, state: true, country: true, isPrimary: true },
+                    where: { deletedAt: null },
+                  },
+                },
+              },
+              priceSlabs: { select: { minQty: true, maxQty: true, price: true, currency: true }, orderBy: { minQty: 'asc' } },
+              catalogItem: { select: { id: true, slug: true, subcategory: { select: { name: true } } } },
+            },
           });
 
           if (!product) return;
 
-          await this.searchService.indexDocument(this.PRODUCT_INDEX, product.id, {
-            id: product.id,
-            name: product.name,
-            slug: product.slug,
-            description: product.shortDescription,
-            categoryId: product.categoryId,
-            categoryName: product.category?.name || null,
-            companyId: product.companyId,
-            companyName: product.company?.name || null,
-            productType: product.productType,
-            status: product.status,
-            unit: product.unit,
-            price: product.originalPrice ? Number(product.originalPrice) : null,
-            createdAt: product.createdAt.toISOString(),
-            specifications: product.specifications.map((s) => ({ key: s.key, value: s.value })),
-            images: product.media.filter((m) => m.type === 'IMAGE').map((m) => m.url),
-            latitude: product.latitude,
-            longitude: product.longitude,
-            visibilityRadius: product.visibilityRadius,
-            searchText: `${product.name} ${product.shortDescription || ''} ${product.category?.name || ''}`,
-          });
+          await this.searchService.indexDocument(this.PRODUCT_INDEX, product.id, buildProductIndexDoc(product as any));
           indexed++;
         } catch (err) {
           this.logger.warn(`Failed to index product ${id}: ${err}`);
@@ -518,6 +576,224 @@ export class ImportOrchestratorService {
     }
 
     return indexed;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // MASTER CATALOG IMPORT METHODS
+  // Immutable — no manual CRUD. CSV is the only source of truth.
+  // Uses deterministic slugs (no UUID suffix) for idempotent re-import.
+  // ═══════════════════════════════════════════════════════════════
+
+  private async importCatalogCategories(
+    parseResult: CsvParseResult,
+    _jobId: string,
+  ): Promise<{ created: number; errors: string[] }> {
+    let created = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < parseResult.categories.length; i += this.BATCH_SIZE) {
+      const batch = parseResult.categories.slice(i, i + this.BATCH_SIZE);
+      await Promise.all(batch.map(async (catName) => {
+        try {
+          const slug = slugify(catName);
+          await this.prisma.catalogCategory.upsert({
+            where: { slug },
+            update: {
+              name: catName,
+              description: `${catName} - Master Catalog category`,
+              seoTitle: catName,
+              seoDescription: `${catName} - Browse products and services on TRADINGO`,
+              isActive: true,
+            },
+            create: {
+              name: catName,
+              slug,
+              description: `${catName} - Master Catalog category`,
+              seoTitle: catName,
+              seoDescription: `${catName} - Browse products and services on TRADINGO`,
+              isActive: true,
+            },
+          });
+          created++;
+        } catch (err) {
+          errors.push(`CatalogCategory "${catName}": ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }));
+    }
+
+    return { created, errors };
+  }
+
+  private async importCatalogSubcategories(
+    parseResult: CsvParseResult,
+    _jobId: string,
+  ): Promise<{ created: number; errors: string[] }> {
+    let created = 0;
+    const errors: string[] = [];
+    const allSubs: { category: string; subCategory: string }[] = [];
+
+    for (const [cat, subs] of parseResult.subcategories) {
+      for (const sub of subs) {
+        allSubs.push({ category: cat, subCategory: sub });
+      }
+    }
+
+    for (let i = 0; i < allSubs.length; i += this.BATCH_SIZE) {
+      const batch = allSubs.slice(i, i + this.BATCH_SIZE);
+      await Promise.all(batch.map(async ({ category, subCategory }) => {
+        try {
+          const parentSlug = slugify(category);
+          const parent = await this.prisma.catalogCategory.findUnique({
+            where: { slug: parentSlug },
+            select: { id: true },
+          });
+
+          if (!parent) {
+            errors.push(`CatalogSubcategory "${subCategory}": parent catalog category "${category}" not found`);
+            return;
+          }
+
+          const slug = slugify(subCategory);
+          await this.prisma.catalogSubcategory.upsert({
+            where: { categoryId_slug: { categoryId: parent.id, slug } },
+            update: {
+              name: subCategory,
+              seoTitle: subCategory,
+              seoDescription: `Explore ${subCategory} in ${category} on TRADINGO`,
+            },
+            create: {
+              categoryId: parent.id,
+              name: subCategory,
+              slug,
+              seoTitle: subCategory,
+              seoDescription: `Explore ${subCategory} in ${category} on TRADINGO`,
+            },
+          });
+          created++;
+        } catch (err) {
+          errors.push(`CatalogSubcategory "${subCategory}": ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }));
+    }
+
+    return { created, errors };
+  }
+
+  private async importCatalogItems(
+    parseResult: CsvParseResult,
+    _jobId: string,
+  ): Promise<{ created: number; errors: string[] }> {
+    let created = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < parseResult.rows.length; i += this.BATCH_SIZE) {
+      const batch = parseResult.rows.slice(i, i + this.BATCH_SIZE);
+      await Promise.all(batch.map(async (row) => {
+        try {
+          const catSlug = slugify(row.category);
+          const category = await this.prisma.catalogCategory.findUnique({
+            where: { slug: catSlug },
+            select: { id: true },
+          });
+
+          if (!category) {
+            errors.push(`CatalogItem "${row.name}": parent category "${row.category}" not found`);
+            return;
+          }
+
+          const subcatSlug = slugify(row.subCategory);
+          const subcategory = await this.prisma.catalogSubcategory.findUnique({
+            where: { categoryId_slug: { categoryId: category.id, slug: subcatSlug } },
+            select: { id: true },
+          });
+
+          if (!subcategory) {
+            errors.push(`CatalogItem "${row.name}": parent subcategory "${row.subCategory}" not found`);
+            return;
+          }
+
+          const slug = slugify(row.name);
+          const keywords = [
+            ...generateKeywords(row.name),
+            ...generateKeywords(row.category),
+            ...generateKeywords(row.subCategory),
+          ];
+
+          await this.prisma.catalogItem.upsert({
+            where: { slug },
+            update: {
+              name: row.name,
+              type: row.type === 'Service' ? 'Service' : 'Product',
+              unit: row.unit || null,
+              altUnits: row.altUnits || null,
+              quantityParams: row.quantityParams || null,
+              hsCode: row.type === 'Product' ? undefined : undefined,
+              sacCode: row.type === 'Service' ? undefined : undefined,
+              keywords,
+              synonyms: generateKeywords(row.altUnits),
+              seoTitle: row.name,
+              seoDescription: `${row.name} - ${row.category} / ${row.subCategory} on TRADINGO`,
+              isActive: true,
+              sourceData: row as any,
+            },
+            create: {
+              subcategoryId: subcategory.id,
+              name: row.name,
+              slug,
+              type: row.type === 'Service' ? 'Service' : 'Product',
+              unit: row.unit || null,
+              altUnits: row.altUnits || null,
+              quantityParams: row.quantityParams || null,
+              hsCode: row.type === 'Product' ? `HS-${row.serialNo}` : null,
+              sacCode: row.type === 'Service' ? `SAC-${row.serialNo}` : null,
+              keywords,
+              synonyms: generateKeywords(row.altUnits),
+              seoTitle: row.name,
+              seoDescription: `${row.name} - ${row.category} / ${row.subCategory} on TRADINGO`,
+              isActive: true,
+              sourceData: row as any,
+            },
+          });
+          created++;
+        } catch (err) {
+          errors.push(`CatalogItem "${row.name}": ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }));
+    }
+
+    return { created, errors };
+  }
+
+  private async importCatalogUnits(
+    parseResult: CsvParseResult,
+    _jobId: string,
+  ): Promise<{ created: number; errors: string[] }> {
+    let created = 0;
+    const errors: string[] = [];
+
+    const unitSet = new Set<string>();
+    for (const row of parseResult.rows) {
+      if (row.unit) unitSet.add(row.unit.trim());
+      if (row.altUnits) unitSet.add(row.altUnits.trim());
+    }
+
+    const uniqueUnits = [...unitSet].filter(Boolean);
+    for (const unit of uniqueUnits) {
+      try {
+        const lowerName = unit.toLowerCase();
+        const slug = lowerName.replace(/[/\s]+/g, '-').replace(/[^a-z0-9-]/g, '');
+        await this.prisma.catalogUnit.upsert({
+          where: { name: unit },
+          update: { symbol: unit },
+          create: { name: unit, symbol: unit, category: 'imported' },
+        });
+        created++;
+      } catch (err) {
+        errors.push(`CatalogUnit "${unit}": ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    return { created, errors };
   }
 
   async resumeImport(jobId: string, companyId: string): Promise<ImportResult> {
@@ -536,6 +812,10 @@ export class ImportOrchestratorService {
         serviceMastersCreated: 0,
         productsCreated: 0,
         searchIndexed: 0,
+        catalogCategoriesCreated: 0,
+        catalogSubcategoriesCreated: 0,
+        catalogItemsCreated: 0,
+        catalogUnitsCreated: 0,
         errors: [`Job ${jobId} not found`],
         summary: {},
       };
@@ -551,6 +831,10 @@ export class ImportOrchestratorService {
         serviceMastersCreated: 0,
         productsCreated: 0,
         searchIndexed: 0,
+        catalogCategoriesCreated: 0,
+        catalogSubcategoriesCreated: 0,
+        catalogItemsCreated: 0,
+        catalogUnitsCreated: 0,
         errors: [`Job ${jobId} is in ${job.status} status, cannot resume`],
         summary: {},
       };
@@ -570,6 +854,10 @@ export class ImportOrchestratorService {
         serviceMastersCreated: 0,
         productsCreated: 0,
         searchIndexed: 0,
+        catalogCategoriesCreated: 0,
+        catalogSubcategoriesCreated: 0,
+        catalogItemsCreated: 0,
+        catalogUnitsCreated: 0,
         errors: [],
         summary: { message: 'No failed rows to resume' },
       };

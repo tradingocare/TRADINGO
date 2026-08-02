@@ -21,13 +21,12 @@ interface ToastFn {
   error: (message: string, description?: string) => string;
 }
 
-let toastListeners: ((toast: Toast) => void)[] = [];
+let toastListeners: Set<(toast: Toast) => void> = new Set();
 let toastIdCounter = 0;
 
 const toastFn: ToastFn = (options: ToastOptions) => {
-  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}-${++toastIdCounter}`;
+  const id = typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${++toastIdCounter}`;
   const newToast: Toast = { id, ...options };
-  console.debug(`[toast] Generated toast ID: ${id}`);
   toastListeners.forEach((listener) => listener(newToast));
   return id;
 };
@@ -51,9 +50,9 @@ export function useToast() {
   }, []);
 
   useEffect(() => {
-    toastListeners.push(addToast);
+    toastListeners.add(addToast);
     return () => {
-      toastListeners = toastListeners.filter((l) => l !== addToast);
+      toastListeners.delete(addToast);
     };
   }, [addToast]);
 

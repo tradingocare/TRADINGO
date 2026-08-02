@@ -1,0 +1,414 @@
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/company-verifications 409 - A verification request is already pending for this company[39m
+ConflictException: A verification request is already pending for this company
+    at CompanyVerificationService.submit (E:\tradingo\apps\api\dist\modules\company-verification\company-verification.service.js:49:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/company-verifications/my 404 - Verification not found[39m
+NotFoundException: Verification not found
+    at CompanyVerificationService.findById (E:\tradingo\apps\api\dist\modules\company-verification\company-verification.service.js:196:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T14:52:10.467Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: 'fdabcf25-da1c-4b2c-8951-650ac24b262e',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T14:52:10.496Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: 'ffca1c5e-f7cc-4a5c-be32-4a8e2bbfd7dd',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/companies/cmp-seller-001/rfq/347a131a-3384-49a9-aa55-7ca25b623dc6/quotes 400 - property items should not exist,property validUntil should not exist[39m
+BadRequestException: Bad Request Exception
+    at ValidationPipe.exceptionFactory (E:\tradingo\apps\api\dist\main.js:158:20)
+    at ValidationPipe.transform (E:\tradingo\node_modules\.pnpm\@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_reflect-metadata@0.2.2_rxjs@7.8.2\node_modules\@nestjs\common\pipes\validation.pipe.js:79:30)
+    at async resolveParamValue (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\router-execution-context.js:151:23)
+    at async Promise.all (index 1)
+    at async pipesFn (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\router-execution-context.js:154:13)
+    at async E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\router-execution-context.js:37:30
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/buyer/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:22:10 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/seller/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:02 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/company-verifications 409 - A verification request is already pending for this company[39m
+ConflictException: A verification request is already pending for this company
+    at CompanyVerificationService.submit (E:\tradingo\apps\api\dist\modules\company-verification\company-verification.service.js:49:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:02 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/seller/products 400 - Slug "test-pcb-board-v6" already exists[39m
+BadRequestException: Slug "test-pcb-board-v6" already exists
+    at SellerProductService.createProduct (E:\tradingo\apps\api\dist\modules\seller-product\seller-product.service.js:132:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:02 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T14:56:02.803Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: '43273654-8e06-422b-95fe-6aeb42afc5ec',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:02 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:02 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T14:56:02.836Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: 'b2ec8f30-f1c0-40ff-b34b-5e8d95c2d270',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:02 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:02 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/companies/cmp-seller-001/rfq/0f574266-8007-4de5-9fee-707bfdfaa0f1/quotes 400 - RFQ is not accepting quotes[39m
+BadRequestException: RFQ is not accepting quotes
+    at QuoteService.create (E:\tradingo\apps\api\dist\modules\quote\quote.service.js:51:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:03 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/buyer/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:26:03 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/seller/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:28:03 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/company-verifications 409 - A verification request is already pending for this company[39m
+ConflictException: A verification request is already pending for this company
+    at CompanyVerificationService.submit (E:\tradingo\apps\api\dist\modules\company-verification\company-verification.service.js:49:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:28:03 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T14:58:03.770Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: 'b3d12e70-f279-4556-8935-d9b777109c3c',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:28:03 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:28:03 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T14:58:03.789Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: '44d22734-6c93-4578-be6b-7d8838d01a56',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:28:03 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:28:03 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/companies/cmp-seller-001/rfq/3e1cdc5a-69d5-46bc-aaa0-d9241aa55f64/quotes 403 - Only matched vendors can quote[39m
+ForbiddenException: Only matched vendors can quote
+    at QuoteService.create (E:\tradingo\apps\api\dist\modules\quote\quote.service.js:56:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:28:04 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/buyer/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:28:04 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/seller/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:35 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/company-verifications 409 - A verification request is already pending for this company[39m
+ConflictException: A verification request is already pending for this company
+    at CompanyVerificationService.submit (E:\tradingo\apps\api\dist\modules\company-verification\company-verification.service.js:49:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:35 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/seller/products 400 - Slug "arduino-mega-2560-r3" already exists[39m
+BadRequestException: Slug "arduino-mega-2560-r3" already exists
+    at SellerProductService.createProduct (E:\tradingo\apps\api\dist\modules\seller-product\seller-product.service.js:132:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:35 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T14:59:35.885Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: '8b233b5e-4f98-4252-b4bc-fdb7b491d90a',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:35 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:35 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T14:59:35.925Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: '8814c717-02c2-4609-8776-14149bdc573b',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:35 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:36 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/companies/cmp-seller-001/rfq/0bba6dde-1db1-40fa-bde2-71b1552173f4/quotes 403 - Only matched vendors can quote[39m
+ForbiddenException: Only matched vendors can quote
+    at QuoteService.create (E:\tradingo\apps\api\dist\modules\quote\quote.service.js:56:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:36 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/buyer/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:29:36 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/seller/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:30:25 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/company-verifications 409 - A verification request is already pending for this company[39m
+ConflictException: A verification request is already pending for this company
+    at CompanyVerificationService.submit (E:\tradingo\apps\api\dist\modules\company-verification\company-verification.service.js:49:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:30:26 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T15:00:26.456Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: 'b330c549-0f35-4104-b9c2-0b11761dc831',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:30:26 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:30:26 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO C0480000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T15:00:26.474Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: 'd4913447-bc00-4474-978a-0a4c56d782ce',
+  query_id: '689b3052-0631-4016-a764-351a945db0f6',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 24920  - [39m20/07/2026, 8:30:26 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 24920  - [39m20/07/2026, 8:30:26 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/companies/cmp-seller-001/rfq/15407281-6b69-4498-8f47-65e908e0e796/quotes 403 - Only matched vendors can quote[39m
+ForbiddenException: Only matched vendors can quote
+    at QuoteService.create (E:\tradingo\apps\api\dist\modules\quote\quote.service.js:56:19)
+[31m[Nest] 24920  - [39m20/07/2026, 8:30:26 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/buyer/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 24920  - [39m20/07/2026, 8:30:26 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/seller/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)

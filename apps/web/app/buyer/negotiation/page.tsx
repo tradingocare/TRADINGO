@@ -14,7 +14,7 @@ export default function BuyerNegotiationPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const { data: negotiations, isLoading } = useMyNegotiations(statusFilter || undefined);
+  const { data: negotiations, isLoading, isError } = useMyNegotiations(statusFilter || undefined);
 
   const list = Array.isArray(negotiations) ? negotiations : [];
 
@@ -40,8 +40,8 @@ export default function BuyerNegotiationPage() {
             onClick={() => setStatusFilter(tab.value)}
             className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               statusFilter === tab.value
-                ? 'bg-orange-500/20 text-orange-400'
-                : 'bg-white/[0.04] text-white/60 hover:text-white/80'
+                ? 'bg-accent/20 text-accent'
+                : 'bg-surface/20 text-text-tertiary hover:text-text-primary'
             }`}
           >
             {tab.label}
@@ -50,29 +50,36 @@ export default function BuyerNegotiationPage() {
       </div>
 
       <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
         <Input
           placeholder="Search negotiations..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-white/[0.04] border-white/[0.06] text-white"
+          className="pl-10 bg-surface/20 border-border/5 text-text-primary placeholder-text-tertiary"
         />
       </div>
 
       {isLoading ? (
         <TableSkeleton />
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border/5 bg-surface/20 p-12 backdrop-blur-xl">
+          <AlertCircle className="h-12 w-12 text-status-error" />
+          <p className="mt-4 text-lg font-medium text-text-primary">Failed to load negotiations</p>
+          <p className="mt-1 text-sm text-text-tertiary">Something went wrong. Please try again.</p>
+          <Button variant="accent" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
       ) : list.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <MessageSquare className="h-12 w-12 text-white/30" />
-          <p className="mt-4 text-lg font-medium text-white">No negotiations yet</p>
-          <p className="mt-1 text-sm text-white/60">Start a negotiation from a quote in your inbox to discuss pricing and terms.</p>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border/5 bg-surface/20 p-12 backdrop-blur-xl">
+          <MessageSquare className="h-12 w-12 text-text-tertiary" />
+          <p className="mt-4 text-lg font-medium text-text-primary">No negotiations yet</p>
+          <p className="mt-1 text-sm text-text-tertiary">Start a negotiation from a quote in your inbox to discuss pricing and terms.</p>
           <Button variant="accent" className="mt-4" onClick={() => router.push('/buyer/quote')}>
             View Quotes
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
+        <div className="rounded-xl border border-border/5 bg-surface/20 backdrop-blur-xl">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border/5 px-6 py-3 text-xs font-medium uppercase text-text-tertiary lg:grid">
             <div className="col-span-3">Supplier / RFQ</div>
             <div className="col-span-2">Status</div>
             <div className="col-span-2">Current Offer</div>
@@ -83,26 +90,26 @@ export default function BuyerNegotiationPage() {
           {list.map((n: any) => (
             <div
               key={n.id}
-              className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center hover:bg-white/[0.02] cursor-pointer"
+              className="grid grid-cols-1 gap-3 border-b border-border/5 px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center hover:bg-surface/10 cursor-pointer"
               onClick={() => router.push(`/buyer/negotiation/${n.id}`)}
             >
               <div className="lg:col-span-3">
-                <p className="text-sm font-medium text-white">{n.sellerCompany?.name || 'N/A'}</p>
-                <p className="text-xs text-white/40 truncate">{n.rfq?.title || ''}</p>
+                <p className="text-sm font-medium text-text-primary">{n.sellerCompany?.name || 'N/A'}</p>
+                <p className="text-xs text-text-tertiary truncate">{n.rfq?.title || ''}</p>
               </div>
               <div className="lg:col-span-2">
                 <StatusBadge status={formatNegotiationStatus(n.status)} />
               </div>
               <div className="flex items-center gap-1 lg:col-span-2">
-                <DollarSign className="h-3 w-3 text-white/40" />
-                <span className="text-sm text-white/80">
+                <DollarSign className="h-3 w-3 text-text-tertiary" />
+                <span className="text-sm text-text-primary">
                   {n.quote?.currency || 'INR'} {n.quote?.totalAmount?.toLocaleString('en-IN') || '-'}
                 </span>
               </div>
-              <p className="text-sm text-white/60 lg:col-span-2">
+              <p className="text-sm text-text-tertiary lg:col-span-2">
                 {n.updatedAt ? new Date(n.updatedAt).toLocaleDateString('en-IN') : '-'}
               </p>
-              <p className="text-center text-sm text-white/60 lg:col-span-1">{n._count?.versions || 0}</p>
+              <p className="text-center text-sm text-text-tertiary lg:col-span-1">{n._count?.versions || 0}</p>
               <div className="lg:col-span-2">
                 <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/buyer/negotiation/${n.id}`); }}>
                   <ArrowRight className="mr-1 h-3 w-3" />View

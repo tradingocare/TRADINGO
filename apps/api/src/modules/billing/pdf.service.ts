@@ -12,7 +12,6 @@ export class PdfService {
     const taxBreakdown = invoice.taxBreakdown || [];
     const totalAmount = Number(invoice.totalAmount);
     const subtotal = Number(invoice.subtotal);
-    const taxAmount = Number(invoice.taxAmount || 0);
     const discountAmount = Number(invoice.discountAmount || 0);
     const now = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
 
@@ -30,14 +29,14 @@ export class PdfService {
 <head><meta charset="utf-8"><title>Invoice ${invoice.invoiceNumber}</title>
 <style>
   body { font-family: 'Helvetica', 'Arial', sans-serif; margin: 0; padding: 40px; color: #333; }
-  .header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #FF4D00; }
-  .brand h1 { color: #FF4D00; font-size: 28px; margin: 0; }
+  .header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #f59e0b; }
+  .brand h1 { color: #f59e0b; font-size: 28px; margin: 0; }
   .brand p { color: #666; font-size: 11px; margin: 2px 0; }
   .invoice-meta { text-align: right; }
   .invoice-meta h2 { color: #333; font-size: 18px; margin: 0 0 5px; }
   .invoice-meta p { font-size: 11px; color: #666; margin: 2px 0; }
   .section { margin-bottom: 20px; }
-  .section h3 { font-size: 13px; color: #FF4D00; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .section h3 { font-size: 13px; color: #f59e0b; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 1px; }
   .details { display: flex; gap: 40px; }
   .details div { flex: 1; }
   .details p { font-size: 11px; margin: 3px 0; color: #555; }

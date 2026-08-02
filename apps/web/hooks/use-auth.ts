@@ -29,13 +29,6 @@ export function useAuth() {
     }>('/auth/login', { email, password });
 
     setAccessToken(res.accessToken);
-
-    await fetch('/api/auth/set-cookie', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: res.refreshToken }),
-    });
-
     setAuth(res.user, res.accessToken);
   };
 
@@ -47,13 +40,6 @@ export function useAuth() {
     }>('/auth/register', { name, email, password });
 
     setAccessToken(res.accessToken);
-
-    await fetch('/api/auth/set-cookie', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: res.refreshToken }),
-    });
-
     setAuth(res.user, res.accessToken);
   };
 

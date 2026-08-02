@@ -2,7 +2,9 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SmsService } from '../sms/sms.service';
 import { QueueNames, EmailJobTypes, EmailJobData, NotificationJobTypes, NotificationJobData } from '../../jobs/queues';
 import { NotificationChannel, NotificationStatus } from '@prisma/client';
 import { NotificationGateway } from './notification.gateway';
@@ -14,6 +16,7 @@ export class NotificationProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: NotificationGateway,
+    private readonly smsService: SmsService,
     @InjectQueue(QueueNames.NOTIFICATION) private readonly notificationQueue: Queue,
     @InjectQueue(QueueNames.EMAIL) private readonly emailQueue: Queue<EmailJobData>,
   ) {
@@ -136,7 +139,9 @@ export class NotificationProcessor extends WorkerHost {
     });
     const phone = company?.company?.mobile;
     if (!phone) throw new Error('Company mobile not found');
-    this.logger.log(`[SMS] To: ${phone}, Message: ${message.substring(0, 100)}...`);
+    const result = await this.smsService.send(phone, message, 'NOTIFICATION');
+    if (!result.success) throw new Error(`SMS delivery failed to ${phone}`);
+    this.logger.log(`[SMS] Sent to ${phone}: ${message.substring(0, 100)}...`);
   }
 
   private async sendPushNotification(userId: string | undefined, title: string, body: string): Promise<void> {
@@ -147,6 +152,7 @@ export class NotificationProcessor extends WorkerHost {
   @OnWorkerEvent('failed')
   onFailed(job: Job, error: Error): void {
     this.logger.error(`Notification job ${job.id} failed: ${error.message}`);
+    Sentry.captureException(error, { tags: { queue: 'notification', jobId: String(job.id), type: String(job.data.type) }, extra: { data: job.data } });
   }
 
   @OnWorkerEvent('completed')

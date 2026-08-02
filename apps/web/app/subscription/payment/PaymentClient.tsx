@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '@/lib/api/client'
-import { Loader2, CheckCircle2, XCircle, ArrowLeft, RefreshCcw, Shield, CreditCard, Smartphone, Landmark, Globe, AlertTriangle, Info } from 'lucide-react'
+import { CheckCircle2, XCircle, ArrowLeft, RefreshCcw, Shield, CreditCard, Smartphone, Landmark, Globe, AlertTriangle, Info } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 declare global {
   interface Window {
@@ -15,17 +16,11 @@ const PAYMENT_METHODS = [
   { id: 'RAZORPAY', label: 'Razorpay', icon: Shield, color: '#3D8BFF', description: 'Cards, UPI, Net Banking, Wallet' },
   { id: 'UPI', label: 'UPI', icon: Smartphone, color: '#4ade80', description: 'Google Pay, PhonePe, Paytm' },
   { id: 'CREDIT_CARD', label: 'Credit / Debit Card', icon: CreditCard, color: '#9B5DE5', description: 'Visa, Mastercard, RuPay' },
-  { id: 'NET_BANKING', label: 'Net Banking', icon: Landmark, color: '#FF4D00', description: 'All major banks' },
+  { id: 'NET_BANKING', label: 'Net Banking', icon: Landmark, color: '#f59e0b', description: 'All major banks' },
   { id: 'NEFT', label: 'NEFT / RTGS', icon: Globe, color: '#6b7280', description: 'Bank transfer' },
 ]
 
 type PaymentStatus = 'idle' | 'creating' | 'processing' | 'success' | 'failed'
-
-declare global {
-  interface Window {
-    Razorpay: any
-  }
-}
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -108,7 +103,8 @@ export default function PaymentClient() {
             const params = new URLSearchParams(window.location.search)
             router.push(`/subscription/success?plan=${planName}&invoice=${paymentIdRef.current || ''}`)
           }, 2000)
-        } catch {
+        } catch (verifyErr: any) {
+          console.error('Razorpay verify error:', verifyErr)
           setStatus('failed')
           setError('Payment verification failed. Please contact support.')
         }
@@ -124,7 +120,7 @@ export default function PaymentClient() {
         email: '',
         contact: '',
       },
-      theme: { color: '#FF4D00' },
+      theme: { color: '#f59e0b' },
     }
 
     const rzp = new window.Razorpay(options)
@@ -156,61 +152,63 @@ export default function PaymentClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors mb-6 text-sm">
+    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
+      <div className="pointer-events-none fixed inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -20%, rgba(245, 158, 11, 0.08), transparent)' }} />
+      <div className="relative max-w-2xl mx-auto px-4 py-8">
+        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors mb-6 text-sm">
           <ArrowLeft size={14} /> Back
         </button>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
-          <h1 className="text-xl font-bold text-gray-900 mb-1">Complete Payment</h1>
-          <p className="text-sm text-gray-500 mb-6">{planName}</p>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="rounded-[22px] p-6 sm:p-8 bg-bg-elevated border border-border">
+          <h1 className="text-xl font-bold text-white mb-1">Complete Payment</h1>
+          <p className="text-sm text-white/50 mb-6">{planName}</p>
 
           {amount > 0 && (
-            <div className="flex items-center justify-between p-4 rounded-xl bg-orange-50 border border-orange-200 mb-6">
-              <span className="text-sm font-semibold text-gray-700">Amount Due</span>
-              <span className="text-xl font-black text-orange-600">₹{amount.toLocaleString('en-IN')}</span>
+            <div className="flex items-center justify-between p-4 rounded-xl mb-6" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <span className="text-sm font-semibold text-white/70">Amount Due</span>
+              <span className="text-xl font-black text-amber-400">₹{amount.toLocaleString('en-IN')}</span>
             </div>
           )}
 
           <AnimatePresence mode="wait">
             {status === 'success' ? (
               <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 size={32} className="text-green-500" />
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(74,222,128,0.15)' }}>
+                  <CheckCircle2 size={32} className="text-green-400" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-900 mb-1">Payment Successful!</h2>
-                <p className="text-sm text-gray-500">Redirecting to confirmation...</p>
+                <h2 className="text-lg font-bold text-white mb-1">Payment Successful!</h2>
+                <p className="text-sm text-white/50">Redirecting to confirmation...</p>
               </motion.div>
             ) : status === 'failed' ? (
               <motion.div key="failed" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-                  <XCircle size={32} className="text-red-500" />
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(239,68,68,0.15)' }}>
+                  <XCircle size={32} className="text-red-400" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-900 mb-1">Payment Failed</h2>
-                <p className="text-sm text-gray-500 mb-4">{error || 'Something went wrong.'}</p>
-                <button onClick={handleRetry} className="px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-600 mx-auto transition-all">
+                <h2 className="text-lg font-bold text-white mb-1">Payment Failed</h2>
+                <p className="text-sm text-white/50 mb-4">{error || 'Something went wrong.'}</p>
+                <button onClick={handleRetry} className="px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 mx-auto transition-all">
                   <RefreshCcw size={14} /> Try Again
                 </button>
               </motion.div>
             ) : status === 'creating' ? (
               <motion.div key="creating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
-                <Loader2 size={32} className="animate-spin text-orange-500 mx-auto mb-4" />
-                <p className="text-sm text-gray-500">Creating payment order...</p>
+                <LoadingSpinner size="xl" />
+                <p className="text-sm text-white/50">Creating payment order...</p>
               </motion.div>
             ) : status === 'processing' ? (
               <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
                 {selectedMethod === 'RAZORPAY' ? (
                   <>
-                    <Loader2 size={32} className="animate-spin text-orange-500 mx-auto mb-4" />
-                    <p className="text-sm text-gray-500">Opening Razorpay checkout...</p>
+                    <LoadingSpinner size="xl" />
+                    <p className="text-sm text-white/50">Opening Razorpay checkout...</p>
                   </>
                 ) : (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
-                      <Loader2 size={32} className="animate-spin text-blue-500" />
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(59,130,246,0.15)' }}>
+                      <LoadingSpinner size="xl" />
                     </div>
-                    <p className="text-sm text-gray-500">Processing payment...</p>
+                    <p className="text-sm text-white/50">Processing payment...</p>
                   </>
                 )}
               </motion.div>
@@ -222,39 +220,40 @@ export default function PaymentClient() {
                     const selected = selectedMethod === method.id
                     return (
                       <button key={method.id} onClick={() => setSelectedMethod(method.id)}
-                        className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
-                          selected ? 'border-orange-400 ring-2 ring-orange-100 bg-orange-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}>
-                        <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center">
+                        className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all bg-bg-elevated ${
+                          selected ? 'border-orange-400/50' : 'border-border hover:border-border'
+                        }`}
+                        style={{ background: selected ? 'rgba(245,158,11,0.06)' : undefined }}>
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-elevated)' }}>
                           <Icon size={20} style={{ color: method.color }} />
                         </div>
                         <div className="flex-1">
-                          <span className="font-semibold text-sm text-gray-900">{method.label}</span>
-                          <p className="text-xs text-gray-400">{method.description}</p>
+                          <span className="font-semibold text-sm text-white">{method.label}</span>
+                          <p className="text-xs text-white/40">{method.description}</p>
                         </div>
-                        {selected && <CheckCircle2 size={18} className="text-orange-500 shrink-0" />}
+                        {selected && <CheckCircle2 size={18} className="text-orange-400 shrink-0" />}
                       </button>
                     )
                   })}
                 </div>
 
                 {error && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm mb-4">
+                  <div className="flex items-center gap-2 p-3 rounded-lg mb-4 text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
                     <AlertTriangle size={14} className="shrink-0" /> {error}
                   </div>
                 )}
 
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3 mb-6">
-                  <Info size={16} className="text-amber-500 mt-0.5 shrink-0" />
-                  <div className="text-sm text-amber-800">
-                    <p className="font-semibold mb-0.5">Secure Payment</p>
-                    <p className="text-amber-700">Your payment is processed securely through Razorpay. We never store your card details.</p>
+                <div className="p-4 rounded-xl flex items-start gap-3 mb-6" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}>
+                  <Info size={16} className="text-amber-400 mt-0.5 shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-semibold mb-0.5 text-amber-300">Secure Payment</p>
+                    <p className="text-amber-200/60">Your payment is processed securely through Razorpay. We never store your card details.</p>
                   </div>
                 </div>
 
                 <button onClick={handlePay} disabled={!selectedMethod || polling}
-                  className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-                  {polling ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}
+                  className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                  {polling ? <LoadingSpinner size="xs" /> : <Shield size={16} />}
                   Pay ₹{amount.toLocaleString('en-IN')}
                 </button>
               </motion.div>
@@ -262,7 +261,7 @@ export default function PaymentClient() {
           </AnimatePresence>
         </motion.div>
 
-        <p className="text-center text-[10px] text-gray-400 mt-4">Secured by Razorpay. SSL encrypted.</p>
+        <p className="text-center text-[10px] text-white/30 mt-4">Secured by Razorpay. SSL encrypted.</p>
       </div>
     </div>
   )

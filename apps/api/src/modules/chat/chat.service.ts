@@ -97,11 +97,18 @@ export class ChatService {
         orderBy: { updatedAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: {
+        select: {
+          id: true, type: true, source: true, sourceId: true, title: true,
+          rfqId: true, orderId: true, createdBy: true, createdAt: true, updatedAt: true,
           participants: {
-            include: { company: { select: { id: true, name: true, slug: true, logo: true } } },
+            select: {
+              id: true, userId: true, companyId: true, role: true,
+              joinedAt: true, leftAt: true, lastReadAt: true, isOnline: true,
+              lastSeenAt: true, isArchived: true, isMuted: true, isPinned: true,
+              company: { select: { id: true, name: true, slug: true, logo: true } },
+            },
           },
-          messages: { take: 1, orderBy: { createdAt: 'desc' }, include: { attachments: true } },
+          messages: { take: 1, orderBy: { createdAt: 'desc' }, select: { id: true, content: true, senderId: true, createdAt: true, type: true, attachments: { select: { id: true, type: true, url: true, originalName: true, mimeType: true, fileSize: true } } } },
           _count: { select: { messages: true } },
         },
       }),
@@ -175,8 +182,11 @@ export class ChatService {
       where,
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
-      include: {
-        attachments: true,
+      select: {
+        id: true, conversationId: true, senderId: true, senderCompanyId: true,
+        type: true, content: true, replyToId: true, isDeleted: true, status: true,
+        metadata: true, deliveredAt: true, seenAt: true, createdAt: true,
+        attachments: { select: { id: true, type: true, url: true, originalName: true, mimeType: true, fileSize: true, width: true, height: true, duration: true } },
         replyTo: { select: { id: true, content: true, senderId: true, createdAt: true, type: true } },
       },
     });
@@ -283,6 +293,7 @@ export class ChatService {
           const allUsers = await this.prisma.user.findMany({
             where: { id: { in: allUserIds } },
             select: { id: true, name: true },
+            take: 10,
           });
           const conversationName = conv.title ?? 'Conversation';
           for (const mentioned of mentionedNames) {
@@ -348,6 +359,8 @@ export class ChatService {
     const conversations = await this.prisma.conversation.findMany({
       where: { participants: { some: { userId, leftAt: null } } },
       select: { id: true },
+      take: 100,
+      orderBy: { updatedAt: 'desc' },
     });
 
     const conversationIds = conversations.map((c) => c.id);
@@ -367,7 +380,13 @@ export class ChatService {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: { attachments: true, conversation: { select: { id: true, title: true, type: true } } },
+        select: {
+          id: true, conversationId: true, senderId: true, senderCompanyId: true,
+          type: true, content: true, replyToId: true, isDeleted: true, status: true,
+          metadata: true, deliveredAt: true, seenAt: true, createdAt: true,
+          attachments: { select: { id: true, type: true, url: true, originalName: true, mimeType: true, fileSize: true } },
+          conversation: { select: { id: true, title: true, type: true } },
+        },
       }),
       this.prisma.message.count({ where }),
     ]);
@@ -433,6 +452,8 @@ export class ChatService {
     const conversations = await this.prisma.conversation.findMany({
       where: { participants: { some: { userId, leftAt: null } } },
       select: { id: true },
+      take: 500,
+      orderBy: { updatedAt: 'desc' },
     });
 
     let totalUnread = 0;
@@ -473,6 +494,7 @@ export class ChatService {
     const matches = await this.prisma.rfqVendorMatch.findMany({
       where: { rfqId, status: { in: ['SENT', 'VIEWED', 'QUOTED'] } },
       select: { companyId: true },
+      take: 100,
     });
 
     const participantCompanyIds = [rfq.companyId, ...matches.map((m) => m.companyId)];
@@ -530,7 +552,12 @@ export class ChatService {
 
     const conversations = await this.prisma.conversation.findMany({
       where: { type: 'DIRECT' },
-      include: { participants: { select: { userId: true } } },
+      select: {
+        id: true,
+        participants: { select: { userId: true } },
+      },
+      take: 50,
+      orderBy: { updatedAt: 'desc' },
     });
 
     return conversations.find((conv) =>

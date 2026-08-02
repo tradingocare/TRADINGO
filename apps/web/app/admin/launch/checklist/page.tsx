@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, Circle, Clock, AlertTriangle, Loader2, Shield } from 'lucide-react';
+import { Alert } from '@/components/ui/alert';
+import { CheckCircle2, Circle, Clock, Loader2, Shield } from 'lucide-react';
 
 type ItemStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'VERIFIED';
 
@@ -73,7 +74,7 @@ export default function GoLiveChecklistPage() {
       await updateChecklistStatus(itemId, newStatus, notes);
       await fetchAll();
     } catch {
-      // handled by parent
+      console.error('Failed to update checklist status');
     } finally {
       setSubmittingId(null);
     }
@@ -86,7 +87,7 @@ export default function GoLiveChecklistPage() {
       await verifyChecklistItem(itemId, notes);
       await fetchAll();
     } catch {
-      // handled by parent
+      console.error('Failed to verify checklist item');
     } finally {
       setSubmittingId(null);
     }
@@ -114,12 +115,9 @@ export default function GoLiveChecklistPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Go-Live Checklist" description="Phase 7E launch readiness verification" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <AlertTriangle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load checklist</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
-          <Button onClick={fetchAll} className="mt-4">Retry</Button>
-        </div>
+        <Alert variant="error" title="Failed to load checklist">{error.message}
+          <div className="mt-3"><Button onClick={fetchAll}>Retry</Button></div>
+        </Alert>
       </div>
     );
   }
@@ -248,7 +246,7 @@ export default function GoLiveChecklistPage() {
                         }
                         onBlur={async () => {
                           if (notes !== getItemNotes(item)) {
-                            await updateChecklistStatus(item.id, status, notes).catch(() => {});
+                            await updateChecklistStatus(item.id, status, notes).catch(() => { console.error('Failed to save notes'); });
                           }
                         }}
                       />

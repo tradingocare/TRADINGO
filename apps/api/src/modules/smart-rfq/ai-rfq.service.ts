@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { AiGatewayService } from '../ai-gateway/ai-gateway.service'
 import { PromptManagerService } from '../ai-gateway/prompt-manager.service'
 import { AiCreditsService } from '../ai-gateway/ai-credits.service'
@@ -13,7 +13,7 @@ import {
 } from './dto/ai-rfq.dto'
 
 @Injectable()
-export class AiRfqService {
+export class AiRfqService implements OnModuleInit {
   private readonly logger = new Logger(AiRfqService.name)
 
   constructor(
@@ -24,9 +24,60 @@ export class AiRfqService {
     private readonly prisma: PrismaService,
   ) {}
 
+  async onModuleInit() {
+    try {
+      await this.prompts.getPrompt(TaskType.RFQ_ANALYSIS)
+    } catch {
+      await this.prompts.createPrompt({
+        taskType: TaskType.RFQ_ANALYSIS,
+        name: 'RFQ Analysis',
+        description: 'Analyzes and processes RFQ (Request for Quote) data including generation, refinement, quality scoring, translation, and supplier matching',
+        systemPrompt: 'You are a TRADINGO B2B RFQ analysis assistant. Analyze the buyer requirement and extract structured data. Always respond with valid JSON only. Never include markdown, code fences, or explanatory text outside the JSON structure. Validate all field types before outputting. For string arrays, ensure proper JSON array formatting.',
+        userPrompt: 'Task: {{action}}\n\nUser Request: {{instructions}}\n\nData: {{data}}',
+        variables: ['action', 'instructions', 'data'],
+        temperature: 0.3,
+        maxTokens: 2048,
+        isActive: true,
+      })
+      this.logger.log('Seeded RFQ_ANALYSIS prompt')
+    }
+  }
+
+  private sanitizeInput(value: unknown): string {
+    if (!value) return ''
+    const str = String(value)
+    return str
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '[SCRIPT REMOVED]')
+      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '[EVENT REMOVED]')
+      .replace(/javascript\s*:/gi, '')
+      .substring(0, 50000)
+  }
+
+  private sanitizeObject(obj: Record<string, unknown>): Record<string, unknown> {
+    const clean: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === 'string') {
+        clean[key] = this.sanitizeInput(value)
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        clean[key] = this.sanitizeObject(value as Record<string, unknown>)
+      } else if (Array.isArray(value)) {
+        clean[key] = value.map(item =>
+          typeof item === 'string' ? this.sanitizeInput(item) :
+          typeof item === 'object' && item !== null ? this.sanitizeObject(item as Record<string, unknown>) :
+          item
+        )
+      } else {
+        clean[key] = value
+      }
+    }
+    return clean
+  }
+
   private async callAi(taskType: TaskType, payload: Record<string, unknown>, companyId = 'system', userId?: string, temperature = 0.3) {
+    const safePayload = this.sanitizeObject(payload)
     const result = await this.gateway.process(
-      { taskType, payload, temperature, maxTokens: 2048 },
+      { taskType, payload: safePayload, temperature, maxTokens: 2048 },
       companyId,
       userId,
     )
@@ -42,9 +93,8 @@ export class AiRfqService {
   async generateFromText(dto: NaturalLanguageRfqDto, companyId: string, userId?: string) {
     return this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'generate_rfq_from_text',
-      userText: dto.text,
-      language: dto.language || 'en',
-      instructions: `Parse the following buyer requirement into a structured RFQ. Extract: title, description, category, quantity, unit, deliveryLocation, deliveryTimeline, budgetMin, budgetMax, specifications[], suggestedTags[]. Output ONLY valid JSON. If a field is not mentioned, use null.`,
+      instructions: 'Parse the following buyer requirement into a structured RFQ. Extract: title, description, category, quantity, unit, deliveryLocation, deliveryTimeline, budgetMin, budgetMax, specifications[], suggestedTags[]. Output ONLY valid JSON. If a field is not mentioned, use null.',
+      data: JSON.stringify({ userText: dto.text, language: dto.language || 'en' }),
     }, companyId, userId)
   }
 
@@ -54,32 +104,24 @@ export class AiRfqService {
 
     return this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'refine_rfq',
-      focusArea: dto.focusArea || 'general',
-      additionalContext: dto.additionalContext || '',
-      currentTitle: rfq.title,
-      currentDescription: rfq.description,
-      productItems: rfq.productItems,
-      locations: rfq.locations,
       instructions: `Improve the RFQ's ${dto.focusArea || 'description and completeness'}. Output ONLY valid JSON with fields: improvedTitle, improvedDescription, additionalSpecs[], suggestions[].`,
+      data: JSON.stringify({ currentTitle: rfq.title, currentDescription: rfq.description, productItems: rfq.productItems, locations: rfq.locations, additionalContext: dto.additionalContext || '' }),
     }, companyId, userId)
   }
 
   async detectMissing(dto: DetectMissingDto, companyId: string, userId?: string) {
     return this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'detect_missing_fields',
-      rfqData: dto.rfqData,
-      language: dto.language || 'en',
-      instructions: `Analyze the RFQ data and identify missing or incomplete fields. Output ONLY valid JSON array where each item has: field (string), label (string), reason (string - why it matters), suggestion (string - what to enter).`,
+      instructions: 'Analyze the RFQ data and identify missing or incomplete fields. Output ONLY valid JSON array where each item has: field (string), label (string), reason (string - why it matters), suggestion (string - what to enter).',
+      data: JSON.stringify({ rfqData: dto.rfqData, language: dto.language || 'en' }),
     }, companyId, userId)
   }
 
   async detectDuplicates(dto: DetectDuplicatesDto, companyId: string, userId?: string) {
     const result = await this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'generate_search_criteria',
-      title: dto.title,
-      description: dto.description || '',
-      productNames: dto.productNames || [],
-      instructions: `Generate 3-5 search keywords from the RFQ to find similar existing RFQs. Output ONLY valid JSON array of strings.`,
+      instructions: 'Generate 3-5 search keywords from the RFQ to find similar existing RFQs. Output ONLY valid JSON array of strings.',
+      data: JSON.stringify({ title: dto.title, description: dto.description || '', productNames: dto.productNames || [] }),
     }, companyId, userId)
 
     const keywords: string[] = Array.isArray(result.data) ? result.data : []
@@ -120,9 +162,8 @@ export class AiRfqService {
   async predictCategory(dto: PredictCategoryDto, companyId: string, userId?: string) {
     const result = await this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'predict_category',
-      productName: dto.productName,
-      description: dto.description || '',
-      instructions: `Predict the most suitable product category for this RFQ item. Output ONLY valid JSON with fields: categoryName, categoryPath (e.g. "Food & Beverages > Cocoa > Cocoa Powder"), confidence (0-100), alternatives[] (array of {name, path, confidence}).`,
+      instructions: 'Predict the most suitable product category for this RFQ item. Output ONLY valid JSON with fields: categoryName, categoryPath (e.g. "Food & Beverages > Cocoa > Cocoa Powder"), confidence (0-100), alternatives[] (array of {name, path, confidence}).',
+      data: JSON.stringify({ productName: dto.productName, description: dto.description || '' }),
     }, companyId, userId)
 
     const categories = await this.prisma.category.findMany({
@@ -140,8 +181,8 @@ export class AiRfqService {
   async suggestProducts(dto: SuggestProductsDto, companyId: string, userId?: string) {
     const result = await this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'suggest_products',
-      productNames: dto.productNames,
-      instructions: `For each product name, suggest matching product specifications and category. Output ONLY valid JSON array with items: { productName, suggestedCategory, typicalSpecifications[], unitOptions[], priceRange: { min, max, currency } }.`,
+      instructions: 'For each product name, suggest matching product specifications and category. Output ONLY valid JSON array with items: { productName, suggestedCategory, typicalSpecifications[], unitOptions[], priceRange: { min, max, currency } }.',
+      data: JSON.stringify({ productNames: dto.productNames }),
     }, companyId, userId)
 
     const products = await this.prisma.product.findMany({
@@ -166,11 +207,8 @@ export class AiRfqService {
 
     const result = await this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'generate_supplier_criteria',
-      title: rfq.title,
-      description: rfq.description,
-      productItems: rfq.productItems,
-      locations: rfq.locations,
-      instructions: `Generate supplier matching criteria from this RFQ. Output ONLY valid JSON with fields: targetCategories[], targetIndustries[], requiredVerificationLevel (0-6), minTrustScore (0-100), preferredLocations[], productKeywords[].`,
+      instructions: 'Generate supplier matching criteria from this RFQ. Output ONLY valid JSON with fields: targetCategories[], targetIndustries[], requiredVerificationLevel (0-6), minTrustScore (0-100), preferredLocations[], productKeywords[].',
+      data: JSON.stringify({ title: rfq.title, description: rfq.description, productItems: rfq.productItems, locations: rfq.locations }),
     }, companyId, userId)
 
     const criteria = result.data || {}
@@ -217,10 +255,8 @@ export class AiRfqService {
 
     const result = await this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'quality_analysis',
-      rfqData: data,
-      breakdown: breakdown.map(b => ({ category: b.category, score: b.score, maxScore: b.maxScore })),
-      weightedScore,
-      instructions: `Based on the RFQ data and score breakdown, provide quality improvement suggestions. Output ONLY valid JSON with fields: improvements[] (string), strengths[] (string), overallAssessment (string).`,
+      instructions: 'Based on the RFQ data and score breakdown, provide quality improvement suggestions. Output ONLY valid JSON with fields: improvements[] (string), strengths[] (string), overallAssessment (string).',
+      data: JSON.stringify({ rfqData: data, breakdown: breakdown.map(b => ({ category: b.category, score: b.score, maxScore: b.maxScore })), weightedScore }),
     }, companyId, userId)
 
     return {
@@ -264,11 +300,8 @@ export class AiRfqService {
 
     return this.callAi(TaskType.RFQ_ANALYSIS, {
       action: 'translate_rfq',
-      targetLanguage: dto.targetLanguage,
-      title: rfq.title,
-      description: rfq.description,
-      productItems: rfq.productItems,
       instructions: `Translate the RFQ to ${dto.targetLanguage}. Output ONLY valid JSON with fields: translatedTitle, translatedDescription, translatedProductItems[] (each with productName, description). Keep all numbers and prices unchanged.`,
+      data: JSON.stringify({ targetLanguage: dto.targetLanguage, title: rfq.title, description: rfq.description, productItems: rfq.productItems }),
     }, companyId, userId)
   }
 
