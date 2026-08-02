@@ -1,3 +1,0 @@
-module.exports=[191675,a=>{"use strict";var b=a.i(201494);a.s(["default",0,function({children:a}){return(0,b.jsx)(b.Fragment,{children:a})},"metadata",0,{title:"Help Center | TRADINGO",description:"Find answers to common questions, browse help articles, and contact TRADINGO support for assistance with your account, orders, and platform features."}])},607121,a=>{a.n(a.i(191675))}];
-
-//# sourceMappingURL=apps_web_app_help_layout_tsx_10x9h1-._.js.map

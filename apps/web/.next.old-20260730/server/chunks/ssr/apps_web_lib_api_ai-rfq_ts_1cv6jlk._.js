@@ -1,3 +1,0 @@
-module.exports=[20487,a=>{"use strict";var b=a.i(109818);a.s(["calculateQualityScore",0,function(a){return b.default.post("/smart-rfq/ai/quality-score",{rfqData:a})},"detectDuplicateRfqs",0,function(a,c,d){return b.default.post("/smart-rfq/ai/detect-duplicates",{title:a,description:c,productNames:d})},"detectMissingFields",0,function(a,c){return b.default.post("/smart-rfq/ai/detect-missing",{rfqData:a,language:c})},"generateRfqFromText",0,function(a,c){return b.default.post("/smart-rfq/ai/generate-from-text",{text:a,language:c})},"predictCategory",0,function(a,c){return b.default.post("/smart-rfq/ai/predict-category",{productName:a,description:c})}])}];
-
-//# sourceMappingURL=apps_web_lib_api_ai-rfq_ts_1cv6jlk._.js.map

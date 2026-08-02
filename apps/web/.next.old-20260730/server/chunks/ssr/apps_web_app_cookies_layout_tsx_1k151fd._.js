@@ -1,3 +1,0 @@
-module.exports=[668851,a=>{"use strict";a.s(["default",0,function({children:a}){return a},"metadata",0,{title:"Cookies Policy | TRADINGO",description:"Learn how TRADINGO uses cookies, tracking technologies, and how you can manage your cookie preferences.",openGraph:{title:"Cookies Policy | TRADINGO",description:"Learn how TRADINGO uses cookies, tracking technologies, and how you can manage your cookie preferences."}}])},131718,a=>{a.n(a.i(668851))}];
-
-//# sourceMappingURL=apps_web_app_cookies_layout_tsx_1k151fd._.js.map
