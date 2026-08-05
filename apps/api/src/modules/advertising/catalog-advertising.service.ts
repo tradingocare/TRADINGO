@@ -37,7 +37,7 @@ export class CatalogAdvertisingService {
 
     return {
       companyId,
-      recommendations: scored.map(({ compositeScore, ...rest }) => rest),
+      recommendations: scored.map(({ compositeScore: _compositeScore, ...rest }) => rest),
       generatedAt: new Date().toISOString(),
     };
   }

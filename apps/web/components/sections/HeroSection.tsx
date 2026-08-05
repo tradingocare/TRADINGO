@@ -100,7 +100,7 @@ export default function HeroSection() {
             className="flex flex-col items-center gap-0"
           >
             <Image
-              src="/logo/trdn.png"
+              src="/logo/trdn6.png"
               alt="TRADINGO"
               width={400} height={400}
               style={{ width: '300px', height: '300px' }}

@@ -165,7 +165,7 @@ export class SupportService {
     return tickets.map((t) => t.category).filter(Boolean)
   }
 
-  async getStats(role: string) {
+  async getStats(_role: string) {
     const where = {}
     const [open, inProgress, waiting, resolved, closed] = await Promise.all([
       this.prisma.supportTicket.count({ where: { ...where, status: TicketStatus.OPEN } }),

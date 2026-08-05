@@ -7,7 +7,7 @@ import { SocialPostService } from './services/social-post.service';
 import { SocialFeedService } from './services/social-feed.service';
 import { SocialFollowService } from './services/social-follow.service';
 import { CreateCommunityDto, UpdateCommunityDto, DiscoverCommunitiesDto, CreateRoomDto, UpdateRoomDto, InviteMemberDto, UpdateMemberRoleDto, JoinCommunityDto, CreatePostDto, UpdatePostDto, PostFilterDto, SendCommentDto, CommentFilterDto, FollowDto, FollowCheckDto, FollowQueryDto } from './dto';
-import { CommunityMemberRole, CommunityMemberStatus, SocialPostType, FollowType } from '@prisma/client';
+import { CommunityMemberRole, CommunityMemberStatus, FollowType } from '@prisma/client';
 
 interface RequestWithUser extends Request {
   user: { id: string; companyId?: string; email?: string; roles?: string[] };
@@ -295,7 +295,7 @@ export class TradeTalkController {
 
   @Post('posts/:id/pin')
   @ApiOperation({ summary: 'Pin or unpin a post (OWNER/ADMIN only)' })
-  togglePin(@Param('id') id: string, @Body('pinned') pinned: boolean, @Req() req: RequestWithUser) {
+  togglePin(@Param('id') id: string, @Body('pinned') pinned: boolean, @Req() _req: RequestWithUser) {
     return this.socialPostService.setPinPost(id, pinned);
   }
 

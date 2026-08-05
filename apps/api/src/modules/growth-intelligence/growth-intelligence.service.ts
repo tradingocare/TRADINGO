@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   AcquisitionFunnelDto,
@@ -9,13 +8,7 @@ import {
   TopLandingPageDto,
   TrafficSourceDto,
 } from './dto/growth-intelligence.dto';
-import {
-  CohortQueryDto,
-  RetentionAnalysisDto,
-  LtvAnalysisDto,
-  CacAnalysisDto,
-  ChannelAttributionDto,
-} from './dto/growth-extended.dto';
+
 
 @Injectable()
 export class GrowthIntelligenceService {
@@ -332,7 +325,7 @@ export class GrowthIntelligenceService {
     return cohorts;
   }
 
-  async getRetentionAnalysis(months = 12): Promise<Record<string, any>> {
+  async getRetentionAnalysis(months = 12): Promise<Record<string, unknown>> {
     const cohorts = await this.getCohortAnalysis(months);
     const allRates = cohorts.flatMap((c: any) =>
       c.periods.map((p: any) => parseFloat(p.retentionRate))
@@ -372,7 +365,7 @@ export class GrowthIntelligenceService {
 
   // ─── LTV Analysis ─────────────────────────────────────────
 
-  async getLtvAnalysis(): Promise<Record<string, any>> {
+  async getLtvAnalysis(): Promise<Record<string, unknown>> {
     const buyerOrderValues = await this.prisma.order.groupBy({
       by: ['buyerCompanyId'],
       _sum: { totalAmount: true },
@@ -414,7 +407,7 @@ export class GrowthIntelligenceService {
 
   // ─── CAC Analysis ─────────────────────────────────────────
 
-  async getCacAnalysis(): Promise<Record<string, any>> {
+  async getCacAnalysis(): Promise<Record<string, unknown>> {
     const totalCompanies = await this.prisma.company.count();
 
     const totalAcquisitionCost = 0;
@@ -444,7 +437,7 @@ export class GrowthIntelligenceService {
 
   // ─── Channel Attribution ──────────────────────────────────
 
-  async getChannelAttribution(days = 90): Promise<Record<string, any>> {
+  async getChannelAttribution(days = 90): Promise<Record<string, unknown>> {
     const since = new Date(Date.now() - days * 86400000);
     const orders = await this.prisma.order.findMany({
       where: { createdAt: { gte: since } },

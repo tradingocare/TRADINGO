@@ -78,11 +78,10 @@ export class RefundEngineService {
         refundId = rf.id;
 
         // Update payment status
-        const totalRefundedAgg = await tx.refund.aggregate({
+        await tx.refund.aggregate({
           where: { paymentId: payment.id },
           _sum: { amount: true },
         });
-        const totalRefunded = (totalRefundedAgg._sum.amount ?? 0) + refundAmount;
 
         await tx.payment.update({
           where: { id: payment.id },

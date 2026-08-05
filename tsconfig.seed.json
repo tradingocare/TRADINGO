@@ -1,0 +1,7 @@
+{
+  "extends": "./prisma/seeds/tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["apps/api/node_modules/@types", "node_modules/@types"]
+  },
+  "include": ["prisma/seed-data/**/*.ts", "prisma/seed-scripts/**/*.ts"]
+}

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { Prisma, StockStatus, MediaType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SearchService, SearchResult } from '../search/search.service';
+import { SearchService } from '../search/search.service';
 import { buildProductIndexDoc } from './product-index.doc';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';

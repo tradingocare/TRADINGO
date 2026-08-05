@@ -20,7 +20,7 @@ export interface ProductLifecycleEvent {
   companyId: string;
   userId: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface QualityUpdatedEvent extends ProductLifecycleEvent {
@@ -32,47 +32,47 @@ export interface QualityUpdatedEvent extends ProductLifecycleEvent {
 export class EnterpriseCommerceEventService {
   constructor(private readonly eventEmitter: EventEmitter2) {}
 
-  emitProductCreated(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitProductCreated(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.CREATED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitProductUpdated(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitProductUpdated(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.UPDATED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitProductPublished(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitProductPublished(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.PUBLISHED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitProductUnpublished(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitProductUnpublished(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.UNPUBLISHED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitProductApproved(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitProductApproved(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.APPROVED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitProductRejected(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitProductRejected(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.REJECTED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitQualityUpdated(productId: string, companyId: string, userId: string, oldScore: number, newScore: number, metadata?: Record<string, any>) {
+  emitQualityUpdated(productId: string, companyId: string, userId: string, oldScore: number, newScore: number, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.QUALITY_UPDATED, { productId, companyId, userId, oldScore, newScore, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitAiEnriched(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitAiEnriched(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.AI_ENRICHED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitProductAdvertised(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitProductAdvertised(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.ADVERTISED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitProductRewarded(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitProductRewarded(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.REWARDED, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 
-  emitNotificationSent(productId: string, companyId: string, userId: string, metadata?: Record<string, any>) {
+  emitNotificationSent(productId: string, companyId: string, userId: string, metadata?: Record<string, unknown>) {
     this.emit(PRODUCT_EVENTS.NOTIFICATION_SENT, { productId, companyId, userId, timestamp: new Date().toISOString(), metadata });
   }
 

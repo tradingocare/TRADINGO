@@ -8,7 +8,7 @@ route:
 receivers:
   - name: 'default-receiver'
     slack_configs:
-      - api_url: '{{ env "SLACK_WEBHOOK_URL" }}'
+      - api_url_file: '/etc/alertmanager/slack_webhook_url'
         channel: '#tradingo-alerts'
         send_resolved: true
         title: '{{ .GroupLabels.alertname }}'

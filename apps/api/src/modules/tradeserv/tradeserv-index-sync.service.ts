@@ -140,7 +140,7 @@ export class TradeservIndexSyncService {
           locations: true,
         },
       });
-      if (!company || !company.professionalType) return;
+      if (!company?.professionalType) return;
 
       const avgRating = await this.prisma.professionalReview.aggregate({
         where: { companyId },

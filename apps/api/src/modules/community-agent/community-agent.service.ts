@@ -188,10 +188,9 @@ export class CommunityAgentService {
     };
   }
 
-  async getCommunityIntelligence(companyId: string): Promise<CommunityIntelligenceResponse> {
+  async getCommunityIntelligence(_companyId: string): Promise<CommunityIntelligenceResponse> {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
     const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000);
-    const sixMonthsAgo = new Date(Date.now() - 180 * 86400000);
 
     const [totalCommunities, communitiesCreated30d, totalMembers, membersJoined30d, industryDist, membersCount] = await Promise.all([
       this.prisma.community.count({ where: { deletedAt: null, isActive: true } }),
@@ -278,7 +277,7 @@ export class CommunityAgentService {
     };
   }
 
-  async getKnowledgeDiscovery(companyId: string): Promise<KnowledgeDiscoveryResponse> {
+  async getKnowledgeDiscovery(_companyId: string): Promise<KnowledgeDiscoveryResponse> {
     const [industries, communities, tradeServPros] = await Promise.all([
       this.prisma.industry.findMany({ orderBy: { name: 'asc' }, take: 10, select: { id: true, name: true } }),
       this.prisma.community.findMany({

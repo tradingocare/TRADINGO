@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { gracefulCatch } from '../../common/utils/graceful-catch';
 import { AgentRegistryService } from '../agent-framework/agent-registry.service';
-import { TradeAgentPriority, TradeAgentQuickAction, TradeAgentNotificationItem } from '../agent-framework/dto/agent-shared.dto';
+import { TradeAgentPriority, TradeAgentNotificationItem } from '../agent-framework/dto/agent-shared.dto';
 import {
   AdminDashboardCopilotResponse, SystemHealthResponse, SystemHealthItem,
   UserActivityResponse, FraudIntelligenceResponse, RevenueAnalyticsResponse,
@@ -50,7 +50,6 @@ export class AdminAgentService {
 
     const alerts: TradeAgentPriority[] = [];
     const totalRevenue = Number(revenueAgg._sum.totalAmount) || 0;
-    const alertThreshold = 1000000;
     if (openDisputes > 10) {
       alerts.push({ title: 'High Dispute Rate', description: `${openDisputes} open disputes exceeds threshold`, impact: 'high', actionUrl: '/admin/disputes' });
     }
@@ -157,7 +156,7 @@ export class AdminAgentService {
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-    const [totalRevenue, thisMonthRevenue, lastMonthRevenue, totalOrders, ordersThisMonth, ordersLastMonth, totalSellers, sellersThisMonth, totalBuyers, buyersThisMonth, totalProducts] = await Promise.all([
+    const [totalRevenue, thisMonthRevenue, lastMonthRevenue, , , , totalSellers, sellersThisMonth, totalBuyers, buyersThisMonth] = await Promise.all([
       this.prisma.order.aggregate({ _sum: { totalAmount: true } }).catch(gracefulCatch('adminAgent.getRevenueAnalytics.totalRevenue', { _sum: { totalAmount: 0 } })),
       this.prisma.order.aggregate({ where: { createdAt: { gte: thisMonth } }, _sum: { totalAmount: true } }).catch(gracefulCatch('adminAgent.getRevenueAnalytics.monthRevenue', { _sum: { totalAmount: 0 } })),
       this.prisma.order.aggregate({ where: { createdAt: { gte: lastMonth, lt: thisMonth } }, _sum: { totalAmount: true } }).catch(gracefulCatch('adminAgent.getRevenueAnalytics.prevMonthRevenue', { _sum: { totalAmount: 0 } })),

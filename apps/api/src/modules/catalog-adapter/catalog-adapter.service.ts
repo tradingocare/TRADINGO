@@ -11,13 +11,6 @@ function normalizeName(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, ' ').replace(/[^a-z0-9\s]/g, '').trim();
 }
 
-interface NameMapping {
-  targetId: string;
-  targetName: string;
-  confidence: number;
-  matchType: 'exact' | 'fuzzy' | 'none';
-}
-
 @Injectable()
 export class CatalogAdapterService {
   private readonly logger = new Logger(CatalogAdapterService.name);

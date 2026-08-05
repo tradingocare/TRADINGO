@@ -34,7 +34,7 @@ groups:
     interval: 5m
     rules:
       - record: business:active_users
-        expr: count(count by (user_id) (api_http_requests_total[1h]))
+        expr: count(count by (user_id) (rate(api_http_requests_total[1h])))
 
       - record: business:api_requests_per_user:rate5m
-        expr: rate(api_http_requests_total[5m]) / on() group_left count(count by (user_id) (api_http_requests_total[5m]))
+        expr: rate(api_http_requests_total[5m]) / on() group_left count(count by (user_id) (rate(api_http_requests_total[5m])))

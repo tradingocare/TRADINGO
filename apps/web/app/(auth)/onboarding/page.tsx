@@ -97,7 +97,7 @@ export default function OnboardingPage() {
  <Card className="w-full max-w-lg">
  <CardHeader className="items-center space-y-4 text-center">
  <Link href="/">
- <TradingoLogo height={36} showText />
+ <TradingoLogo height={36} />
  </Link>
  <div>
  <CardTitle>Complete your profile</CardTitle>

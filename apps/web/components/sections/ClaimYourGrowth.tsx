@@ -8,7 +8,7 @@ export default function ClaimYourGrowth() {
       <div className="relative z-10 mx-auto max-w-[1600px] px-4 text-center">
         <div className="glass-panel-prism p-10 sm:p-16">
           <img
-            src="/logo/trdn.png"
+            src="/logo/trdn6.png"
             alt="TRADINGO"
             className="mx-auto h-10 w-auto opacity-70 sm:h-12"
           />

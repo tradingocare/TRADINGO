@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogAdapterService } from '../catalog-adapter/catalog-adapter.service';
-import { EnrichedCategoryNode, EnrichedCategoryTreeResponse, MappingCoverageResponse, BatchResolveResponse } from './dto/bridge-response.dto';
+import { EnrichedCategoryNode, EnrichedCategoryTreeResponse, BatchResolveResponse } from './dto/bridge-response.dto';
 import { CatalogTreeNode, ResolveMappingResult } from '../catalog-adapter/dto/adapter-result.dto';
 
 @Injectable()
@@ -172,7 +172,7 @@ export class MarketplaceCatalogBridgeService {
     const enrichedProducts = products.map((p) => {
       if (!p.category) return { ...p, catalogCategory: null };
       const mapping = resolvedBySourceId.get(p.category.id);
-      if (mapping && mapping.targetId) {
+      if (mapping?.targetId) {
         return {
           ...p,
           catalogCategory: {

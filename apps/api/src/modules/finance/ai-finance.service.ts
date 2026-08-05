@@ -7,6 +7,18 @@ import { FinanceDashboardService } from './finance-dashboard.service'
 import { PrismaService } from '../../prisma/prisma.service'
 import { TaskType } from '@prisma/client'
 import { gracefulCatch } from '../../common/utils/graceful-catch'
+import {
+  AiFinanceCreditRiskDto,
+  AiFinancePaymentDelayDto,
+  AiFinanceCashFlowDto,
+  AiFinanceCollectionStrategyDto,
+  AiFinanceFinancialHealthDto,
+  AiFinanceCreditLimitDto,
+  AiFinanceInvoiceIntelligenceDto,
+  AiFinanceFraudSignalsDto,
+  AiFinanceCollectionDraftDto,
+  AiFinanceSidebarDto,
+} from './dto/ai-finance.dto'
 
 @Injectable()
 export class AiFinanceService {
@@ -58,16 +70,17 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }
   }
 
-  async creditRiskAssessment(companyId: string, userId: string, payload: Record<string, any>) {
+  async creditRiskAssessment(companyId: string, userId: string, payload: AiFinanceCreditRiskDto) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.creditData) context.creditData = payload.creditData
     if (payload.tradTrustData) context.tradTrustData = payload.tradTrustData
     if (payload.requestedLimit) context.requestedLimit = payload.requestedLimit
 
-    if (payload.companyData?.id) {
+    const targetCompanyId = payload.companyData?.id
+    if (typeof targetCompanyId === 'string') {
       try {
-        const credit = await this.creditService.getCredit(payload.companyData.id).catch(gracefulCatch('aiFinance.creditRiskAssessment.creditProfile', null))
+        const credit = await this.creditService.getCredit(targetCompanyId).catch(gracefulCatch('aiFinance.creditRiskAssessment.creditProfile', null))
         if (credit) context.creditProfile = credit
       } catch { /* skip */ }
     }
@@ -78,7 +91,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async paymentDelayPrediction(companyId: string, userId: string, payload: Record<string, any>) {
+  async paymentDelayPrediction(companyId: string, userId: string, payload: AiFinancePaymentDelayDto) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.invoiceAmount !== undefined) context.invoiceAmount = payload.invoiceAmount
@@ -86,9 +99,10 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     if (payload.avgPaymentDays !== undefined) context.avgPaymentDays = payload.avgPaymentDays
     if (payload.onTimePaymentRate !== undefined) context.onTimePaymentRate = payload.onTimePaymentRate
 
-    if (payload.companyData?.id) {
+    const targetCompanyId = payload.companyData?.id
+    if (typeof targetCompanyId === 'string') {
       const payments = await this.prisma.payment.findMany({
-        where: { companyId: payload.companyData.id },
+        where: { companyId: targetCompanyId },
         select: { amount: true, status: true, createdAt: true, paidAt: true },
         orderBy: { createdAt: 'desc' },
         take: 20,
@@ -102,7 +116,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async cashFlowForecast(companyId: string, userId: string, payload: Record<string, any>) {
+  async cashFlowForecast(companyId: string, userId: string, payload: AiFinanceCashFlowDto) {
     const context: Record<string, unknown> = {}
     if (payload.currentInflow !== undefined) context.currentInflow = payload.currentInflow
     if (payload.currentOutflow !== undefined) context.currentOutflow = payload.currentOutflow
@@ -125,7 +139,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async collectionStrategy(companyId: string, userId: string, payload: Record<string, any>) {
+  async collectionStrategy(companyId: string, userId: string, payload: AiFinanceCollectionStrategyDto) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.totalOverdue !== undefined) context.totalOverdue = payload.totalOverdue
@@ -134,13 +148,14 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     if (payload.totalInvoices !== undefined) context.totalInvoices = payload.totalInvoices
     if (payload.avgInvoiceValue !== undefined) context.avgInvoiceValue = payload.avgInvoiceValue
 
-    if (payload.companyData?.id) {
+    const targetCompanyId = payload.companyData?.id
+    if (typeof targetCompanyId === 'string') {
       try {
         const summary = await this.collectionsService.getOutstandingSummary().catch(gracefulCatch('aiFinance.collectionStrategy.collectionSummary', null))
         if (summary) context.collectionSummary = summary
         const aging = await this.collectionsService.getAgingReport().catch(gracefulCatch('aiFinance.collectionStrategy.agingReport', null))
         if (aging) context.agingReport = aging
-        const notes = await this.collectionsService.listNotes(payload.companyData.id).catch(gracefulCatch('aiFinance.collectionStrategy.collectionNotes', []))
+        const notes = await this.collectionsService.listNotes(targetCompanyId).catch(gracefulCatch('aiFinance.collectionStrategy.collectionNotes', []))
         if (notes.length) context.collectionNotes = notes
       } catch { /* skip */ }
     }
@@ -151,16 +166,17 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async financialHealth(companyId: string, userId: string, payload: Record<string, any>) {
+  async financialHealth(companyId: string, userId: string, payload: AiFinanceFinancialHealthDto) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.creditData) context.creditData = payload.creditData
     if (payload.tradTrustData) context.tradTrustData = payload.tradTrustData
     if (payload.recentTransactions) context.recentTransactions = payload.recentTransactions
 
-    if (payload.companyData?.id) {
+    const targetCompanyId = payload.companyData?.id
+    if (typeof targetCompanyId === 'string') {
       const payments = await this.prisma.payment.findMany({
-        where: { companyId: payload.companyData.id },
+        where: { companyId: targetCompanyId },
         select: { amount: true, status: true, createdAt: true, paidAt: true },
         orderBy: { createdAt: 'desc' },
         take: 30,
@@ -168,7 +184,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
       if (payments.length) context.paymentHistory = payments
 
       const overdue = await this.prisma.invoice.count({
-        where: { companyId: payload.companyData.id, status: 'OVERDUE' },
+        where: { companyId: targetCompanyId, status: 'OVERDUE' },
       }).catch(gracefulCatch('aiFinance.financialHealth.overdueInvoiceCount', 0))
       context.overdueInvoiceCount = overdue
     }
@@ -179,7 +195,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async creditLimitRecommendation(companyId: string, userId: string, payload: Record<string, any>) {
+  async creditLimitRecommendation(companyId: string, userId: string, payload: AiFinanceCreditLimitDto) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.creditData) context.creditData = payload.creditData
@@ -188,9 +204,10 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     if (payload.utilizationRate !== undefined) context.utilizationRate = payload.utilizationRate
     if (payload.trustScore !== undefined) context.trustScore = payload.trustScore
 
-    if (payload.companyData?.id) {
+    const targetCompanyId = payload.companyData?.id
+    if (typeof targetCompanyId === 'string') {
       try {
-        const credit = await this.creditService.getCredit(payload.companyData.id).catch(gracefulCatch('aiFinance.creditLimitRecommendation.creditProfile', null))
+        const credit = await this.creditService.getCredit(targetCompanyId).catch(gracefulCatch('aiFinance.creditLimitRecommendation.creditProfile', null))
         if (credit) context.creditProfile = credit
       } catch { /* skip */ }
     }
@@ -201,7 +218,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async invoiceIntelligence(companyId: string, userId: string, payload: Record<string, any>) {
+  async invoiceIntelligence(companyId: string, userId: string, payload: AiFinanceInvoiceIntelligenceDto) {
     const context: Record<string, unknown> = {}
     if (payload.invoiceData) context.invoiceData = payload.invoiceData
     if (payload.gstNumber) context.gstNumber = payload.gstNumber
@@ -215,7 +232,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async fraudSignals(companyId: string, userId: string, payload: Record<string, any>) {
+  async fraudSignals(companyId: string, userId: string, payload: AiFinanceFraudSignalsDto) {
     const context: Record<string, unknown> = {}
     if (payload.recentPayments) context.recentPayments = payload.recentPayments
     if (payload.recentRefunds) context.recentRefunds = payload.recentRefunds
@@ -230,7 +247,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async collectionDraft(companyId: string, userId: string, payload: Record<string, any>) {
+  async collectionDraft(companyId: string, userId: string, payload: AiFinanceCollectionDraftDto) {
     const context: Record<string, unknown> = {
       customerName: payload.customerName,
       outstandingAmount: payload.outstandingAmount || 0,
@@ -246,7 +263,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sidebar(companyId: string, userId: string, payload: Record<string, any>) {
+  async sidebar(companyId: string, userId: string, payload: AiFinanceSidebarDto) {
     const context: Record<string, unknown> = {}
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.creditData) context.creditData = payload.creditData
@@ -254,9 +271,10 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     if (payload.recentPayments) context.recentPayments = payload.recentPayments
     if (payload.collectionData) context.collectionData = payload.collectionData
 
-    if (payload.companyData?.id) {
+    const targetCompanyId = payload.companyData?.id
+    if (typeof targetCompanyId === 'string') {
       try {
-        const credit = await this.creditService.getCredit(payload.companyData.id).catch(gracefulCatch('aiFinance.sidebar.creditProfile', null))
+        const credit = await this.creditService.getCredit(targetCompanyId).catch(gracefulCatch('aiFinance.sidebar.creditProfile', null))
         if (credit) context.creditProfile = credit
       } catch { /* skip */ }
     }

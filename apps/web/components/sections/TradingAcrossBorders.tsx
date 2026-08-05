@@ -94,20 +94,20 @@ export default function TradingAcrossBorders() {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="h-px w-48 bg-gradient-to-r from-transparent via-border to-transparent" />
                 </div>
-                <div className="relative flex items-center justify-center gap-10 rounded-2xl border border-border bg-surface-secondary px-10 py-5 max-w-lg mx-auto">
-                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Born in</p>
-                    <p className="text-lg font-extrabold text-primary sm:text-xl">India</p>
+                <div className="relative flex flex-wrap items-center justify-center gap-4 sm:gap-6 rounded-2xl border border-border bg-surface-secondary px-6 py-3.5 max-w-2xl mx-auto">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Born in</span>
+                    <span className="text-base font-extrabold text-primary sm:text-lg">India</span>
                   </div>
-                  <div className="h-8 w-px bg-surface-tertiary" />
-                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Built for</p>
-                    <p className="text-lg font-extrabold text-amber-400 sm:text-xl">the World</p>
+                  <div className="h-4 w-px bg-surface-tertiary hidden sm:block" />
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Built for</span>
+                    <span className="text-base font-extrabold text-amber-400 sm:text-lg">the World</span>
                   </div>
-                  <div className="h-8 w-px bg-surface-tertiary" />
-                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Powered by</p>
-                    <p className="text-lg font-extrabold text-text-primary sm:text-xl">TRADHEXA</p>
+                  <div className="h-4 w-px bg-surface-tertiary hidden sm:block" />
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Powered by</span>
+                    <span className="text-base font-extrabold text-text-primary sm:text-lg">TRADHEXA</span>
                   </div>
                 </div>
               </div>

@@ -143,7 +143,7 @@ export class CampaignController {
   @Post(':id/evaluate-rules')
   @ApiOperation({ summary: 'Evaluate campaign rules' })
   @Roles('ADMIN')
-  evaluateRules(@Param('id') id: string, @Body() context: Record<string, any>) {
+  evaluateRules(@Param('id') id: string, @Body() context: Record<string, unknown>) {
     return this.campaignService.evaluateRules(id, context);
   }
 }

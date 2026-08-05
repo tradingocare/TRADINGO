@@ -318,7 +318,7 @@ export class TradeTalkService {
       const alreadyMember = await this.prisma.communityMember.findUnique({
         where: { communityId_userId: { communityId, userId: existingUser.id } },
       });
-      if (alreadyMember && alreadyMember.status === 'ACTIVE') throw new ConflictException('User is already a member');
+      if (alreadyMember?.status === 'ACTIVE') throw new ConflictException('User is already a member');
     }
 
     const token = uuid();
@@ -354,12 +354,12 @@ export class TradeTalkService {
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.email !== invitation.email) throw new ForbiddenException('This invitation is for a different email');
+    if (user?.email !== invitation.email) throw new ForbiddenException('This invitation is for a different email');
 
     const existing = await this.prisma.communityMember.findUnique({
       where: { communityId_userId: { communityId: invitation.communityId, userId } },
     });
-    if (existing && existing.status === 'ACTIVE') throw new ConflictException('Already a member');
+    if (existing?.status === 'ACTIVE') throw new ConflictException('Already a member');
 
     await this.prisma.$transaction(async (tx) => {
       if (existing) {
@@ -408,7 +408,7 @@ export class TradeTalkService {
   async cancelInvitation(invitationId: string, communityId: string, userId: string) {
     await this.requireCommunityAccess(communityId, userId, ['OWNER', 'ADMIN']);
     const invitation = await this.prisma.communityInvitation.findUnique({ where: { id: invitationId } });
-    if (!invitation || invitation.communityId !== communityId) throw new NotFoundException('Invitation not found');
+    if (invitation?.communityId !== communityId) throw new NotFoundException('Invitation not found');
     return this.prisma.communityInvitation.update({
       where: { id: invitationId },
       data: { status: 'EXPIRED' },
@@ -690,7 +690,7 @@ export class TradeTalkService {
   // ─── Dashboard Stats ──────────────────────────────────────────────────
 
   async getDashboardStats(userId: string) {
-    const [user, owner] = await Promise.all([
+    const [user] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true } }),
       this.prisma.companyOwner.findFirst({
         where: { userId },
@@ -877,7 +877,7 @@ export class TradeTalkService {
     const member = await this.prisma.communityMember.findUnique({
       where: { communityId_userId: { communityId, userId } },
     });
-    if (!member || member.status !== 'ACTIVE') throw new ForbiddenException('Access denied');
+    if (member?.status !== 'ACTIVE') throw new ForbiddenException('Access denied');
     if (!allowedRoles.includes(member.role)) throw new ForbiddenException('Insufficient permissions');
     return member;
   }

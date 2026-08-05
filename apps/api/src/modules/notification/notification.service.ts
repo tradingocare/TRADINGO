@@ -646,7 +646,7 @@ export class NotificationService {
 
   async executeWorkflow(workflowId: string, triggerId: string, context: Record<string, unknown>) {
     const workflow = await this.prisma.marketingWorkflow.findUnique({ where: { id: workflowId } });
-    if (!workflow || workflow.status !== 'ACTIVE') return { executed: false, reason: 'Workflow not active' };
+    if (workflow?.status !== 'ACTIVE') return { executed: false, reason: 'Workflow not active' };
 
     try {
       const actions = workflow.actions as Record<string, unknown>[];

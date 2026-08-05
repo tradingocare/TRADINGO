@@ -151,7 +151,7 @@ export class AdvertisingService {
     if (dto.autoResume !== undefined) updateData.autoResume = dto.autoResume;
     if (dto.autoStop !== undefined) updateData.autoStop = dto.autoStop;
     if (dto.priority !== undefined) updateData.priority = dto.priority;
-    if (dto.metadata !== undefined) updateData.metadata = dto.metadata as Record<string, any>;
+    if (dto.metadata !== undefined) updateData.metadata = dto.metadata as Prisma.InputJsonValue;
 
     if (dto.targets) {
       await this.prisma.adTarget.deleteMany({ where: { advertisementId: id } });
@@ -366,7 +366,7 @@ export class AdvertisingService {
 
   async recordImpression(adId: string) {
     const ad = await this.prisma.advertisement.findUnique({ where: { id: adId } });
-    if (!ad || ad.status !== AdStatus.ACTIVE) return;
+    if (ad?.status !== AdStatus.ACTIVE) return;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -381,7 +381,7 @@ export class AdvertisingService {
 
   async recordClick(adId: string) {
     const ad = await this.prisma.advertisement.findUnique({ where: { id: adId } });
-    if (!ad || ad.status !== AdStatus.ACTIVE) return;
+    if (ad?.status !== AdStatus.ACTIVE) return;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);

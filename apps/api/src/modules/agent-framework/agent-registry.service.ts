@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { TradeAgentMetadata, TradeAgentCapability, TradeAgentContext, TradeAgentExecutionResult } from './interfaces/agent.interfaces';
+import { TradeAgentMetadata, TradeAgentCapability } from './interfaces/agent.interfaces';
 
 @Injectable()
 export class AgentRegistryService {

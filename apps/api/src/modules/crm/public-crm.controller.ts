@@ -64,7 +64,7 @@ export class PublicCrmController {
     };
 
     // Create lead via CRM service
-    const lead = await this.crmService.createPublicLead({
+    await this.crmService.createPublicLead({
       name: sanitized.name,
       email: sanitized.email,
       description: `Subject: ${sanitized.subject}\n\nMessage: ${sanitized.message}`,

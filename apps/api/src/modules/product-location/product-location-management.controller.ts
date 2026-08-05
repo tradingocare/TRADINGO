@@ -84,7 +84,7 @@ export class ProductLocationManagementController {
       where: { id: productId },
       select: { companyId: true },
     });
-    if (!product || product.companyId !== companyId) {
+    if (product?.companyId !== companyId) {
       throw new Error('Product not found or not owned by you');
     }
     return this.service.update(productId, dto);

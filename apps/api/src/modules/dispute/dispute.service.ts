@@ -211,7 +211,7 @@ export class DisputeService {
         },
       });
 
-      if (booking.escrow && booking.escrow.status === 'HELD') {
+      if (booking.escrow?.status === 'HELD') {
         await tx.escrow.update({
           where: { id: booking.escrow.id },
           data: { status: 'DISPUTED', disputedAt: new Date() },

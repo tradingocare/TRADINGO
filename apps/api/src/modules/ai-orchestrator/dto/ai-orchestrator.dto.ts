@@ -17,7 +17,7 @@ export class OrchestrateRequestDto {
 
   @IsObject()
   @ApiProperty({ description: 'Request payload' })
-  payload: Record<string, any>
+  payload: Record<string, unknown>
 
   @IsOptional()
   @IsBoolean()
@@ -66,7 +66,7 @@ export class WorkflowExecuteDto {
 
   @IsObject()
   @ApiProperty({ description: 'Workflow context' })
-  context: Record<string, any>
+  context: Record<string, unknown>
 }
 
 export class ContextRequestDto {
@@ -162,7 +162,7 @@ export class WorkflowExecuteResponseDto {
   @ApiProperty({ description: 'Total latency in milliseconds' })
   totalLatencyMs: number
   @ApiProperty({ description: 'Final workflow context' })
-  finalContext: Record<string, any>
+  finalContext: Record<string, unknown>
   @ApiPropertyOptional({ description: 'Error message' })
   error?: string
 }

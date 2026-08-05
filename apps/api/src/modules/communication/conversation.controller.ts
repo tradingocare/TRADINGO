@@ -5,8 +5,6 @@ import { RateLimits } from '../../common/constants/rate-limits.const';
 import { ConversationService } from './conversation.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { CreateConversationDto, AddParticipantDto } from './dto';
 
 @ApiTags('Communication Hub — Conversations')

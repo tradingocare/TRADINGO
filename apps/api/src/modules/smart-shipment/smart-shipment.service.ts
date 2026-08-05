@@ -144,7 +144,7 @@ export class SmartShipmentService {
     }
 
     const provider = await this.prisma.courierProvider.findUnique({ where: { id: dto.courierProviderId } });
-    if (!provider || !provider.isActive) throw new NotFoundException('Courier provider not found or inactive');
+    if (!provider?.isActive) throw new NotFoundException('Courier provider not found or inactive');
 
     const existingTracking = await this.prisma.shipment.findUnique({ where: { trackingNumber: dto.trackingNumber } });
     if (existingTracking && existingTracking.id !== shipmentId) {
@@ -204,7 +204,7 @@ export class SmartShipmentService {
     if (!isSeller && !isBuyer) throw new ForbiddenException('Access denied');
 
     const allowedTransitions = STATUS_FLOW[shipment.status as ShipmentStatus];
-    if (!allowedTransitions || !allowedTransitions.includes(newStatus)) {
+    if (!allowedTransitions?.includes(newStatus)) {
       throw new BadRequestException(`Cannot transition from ${shipment.status} to ${newStatus}`);
     }
 

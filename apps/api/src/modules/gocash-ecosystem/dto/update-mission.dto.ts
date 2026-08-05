@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsInt, IsNumber, Min, IsBoolean, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsInt, IsNumber, Min, IsObject } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EcosystemMissionPeriod, EcosystemMissionActionType } from '@prisma/client';
 

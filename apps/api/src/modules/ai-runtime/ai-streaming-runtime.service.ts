@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter'
 import { Observable, Subject } from 'rxjs'
-import { filter } from 'rxjs/operators'
 import { StreamingEvent } from './dto/ai-runtime.dto'
 
 @Injectable()

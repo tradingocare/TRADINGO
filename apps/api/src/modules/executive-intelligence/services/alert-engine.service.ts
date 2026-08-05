@@ -182,7 +182,7 @@ export class AlertEngineService {
 
   acknowledgeAlert(eventId: string): AlertEventDto | null {
     const event = this.events.find(e => e.id === eventId);
-    if (!event || event.status !== 'fired') return null;
+    if (event?.status !== 'fired') return null;
     event.status = 'acknowledged';
     event.acknowledgedAt = new Date().toISOString();
     return { ...event };

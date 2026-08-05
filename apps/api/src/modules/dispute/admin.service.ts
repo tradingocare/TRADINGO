@@ -1,13 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+interface AvailableAdmin {
+  id: string;
+  name: string;
+  email: string;
+  activeDisputeCount: number;
+}
+
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAvailableAdmins(): Promise<Record<string, any>[]> {
+  async getAvailableAdmins(): Promise<AvailableAdmin[]> {
     const activeDisputes = await this.prisma.dispute.groupBy({
       by: ['assignedAdminId'],
       where: {
@@ -42,7 +49,7 @@ export class AdminService {
     }));
   }
 
-  async getLeastBusyAdmin(): Promise<Record<string, any> | null> {
+  async getLeastBusyAdmin(): Promise<AvailableAdmin | null> {
     const admins = await this.getAvailableAdmins();
     if (admins.length === 0) return null;
 

@@ -53,6 +53,10 @@ async function bootstrap() {
           : undefined,
       },
       bodyLimit: 100 * 1024 * 1024,
+      // Production only-entry is nginx (loopback-bound); Cloudflare sets X-Forwarded-For
+      // at the edge and nginx appends it. Formerly unset, req.ip returned the nginx/edge
+      // IP, making the per-IP throttler (5-100 req/min) ineffective behind the proxy.
+      trustProxy: true,
     }),
   );
 
@@ -63,57 +67,80 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
+  const PLACEHOLDER_PATTERNS = ['change-me', 'change_me', 'replace', 'your_', 'your-', 'yours', '<your-', '<secret', 'dummy', 'founder', 'xxxxxx'];
+  const isPlaceholder = (value?: string): boolean => {
+    if (!value) return true;
+    const v = value.toLowerCase();
+    return PLACEHOLDER_PATTERNS.some((p) => v.includes(p));
+  };
+
   // Validate JWT secrets are not placeholders
   const jwtSecret = configService.get<string>('jwt.secret', '');
   const jwtRefreshSecret = configService.get<string>('jwt.refreshSecret', '');
-  if (!jwtSecret || jwtSecret.startsWith('change-me') || jwtSecret.length < 32) {
+  if (!jwtSecret || isPlaceholder(jwtSecret) || jwtSecret.length < 32) {
     throw new Error('JWT_SECRET is invalid, missing, or still a placeholder. Set a strong 64-char random secret in your .env file.');
   }
-  if (!jwtRefreshSecret || jwtRefreshSecret.startsWith('change-me') || jwtRefreshSecret.length < 32) {
+  if (!jwtRefreshSecret || isPlaceholder(jwtRefreshSecret) || jwtRefreshSecret.length < 32) {
     throw new Error('JWT_REFRESH_SECRET is invalid, missing, or still a placeholder. Set a strong 64-char random secret in your .env file.');
   }
 
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
+  const paymentMode = configService.get<string>('PAYMENT_MODE', 'test');
+
+  // Sentry flags are resolved once and reused by the initialization block below
+  const sentryDsn = configService.get<string>('sentry.dsn', '');
+  const sentryEnabled = configService.get<boolean>('sentry.enabled', false);
 
   // Production credential validation
   if (isProduction) {
     const errors: string[] = [];
 
     // AWS credentials (SES + S3) — warn only, not fatal (supports deployments without email)
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      logger.warn('AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY not set — SES email delivery disabled');
+    const awsKeyId = process.env.AWS_ACCESS_KEY_ID || '';
+    const awsSecret = process.env.AWS_SECRET_ACCESS_KEY || '';
+    if (!awsKeyId || !awsSecret || isPlaceholder(awsKeyId) || isPlaceholder(awsSecret)) {
+      logger.warn('AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY not set or still placeholders — SES email and S3 backups will fail at runtime');
     }
 
-    // Razorpay live keys
+    // Razorpay keys — fail-fast when PAYMENT_MODE=live (prevents silent payment failures), lenient warnings in test mode
     const rpKeyId = configService.get<string>('razorpay.keyId', '');
-    if (!rpKeyId || rpKeyId.includes('<replace>') || rpKeyId === 'rzp_test_xxxxxxxxxxxx') {
-      errors.push('RAZORPAY_KEY_ID is missing or still a placeholder. Set a valid live key (rzp_live_*)');
-    }
     const rpKeySecret = configService.get<string>('razorpay.keySecret', '');
-    if (!rpKeySecret || rpKeySecret.includes('<replace>') || rpKeySecret === 'your_razorpay_secret') {
-      errors.push('RAZORPAY_KEY_SECRET is missing or still a placeholder');
-    }
     const rpWebhookSecret = configService.get<string>('razorpay.webhookSecret', '');
-    if (!rpWebhookSecret || rpWebhookSecret.includes('<replace>') || rpWebhookSecret === 'your_webhook_secret') {
-      errors.push('RAZORPAY_WEBHOOK_SECRET is missing or still a placeholder — webhooks will fail');
+    if (paymentMode === 'live') {
+      if (!rpKeyId || rpKeyId.startsWith('rzp_test_') || isPlaceholder(rpKeyId) || rpKeyId === 'rzp_live_YOUR_KEY_ID_HERE') {
+        errors.push('RAZORPAY_KEY_ID is missing or still a placeholder. Set a valid LIVE key (rzp_live_*) or use PAYMENT_MODE=test.');
+      }
+      if (!rpKeySecret || isPlaceholder(rpKeySecret) || rpKeySecret === 'rzp_secret_YOUR_KEY_SECRET') {
+        errors.push('RAZORPAY_KEY_SECRET is missing or still a placeholder');
+      }
+      if (!rpWebhookSecret || isPlaceholder(rpWebhookSecret) || rpWebhookSecret === 'rzp_webhook_YOUR_WEBHOOK_SECRET') {
+        errors.push('RAZORPAY_WEBHOOK_SECRET is missing or still a placeholder — live webhooks will be rejected');
+      }
+    } else if (isPlaceholder(rpKeyId) || isPlaceholder(rpKeySecret) || isPlaceholder(rpWebhookSecret)) {
+      logger.warn('RAZORPAY_KEY_ID / KEY_SECRET / WEBHOOK_SECRET are missing or placeholders — payment flows will be unavailable in test mode');
     }
 
     // Email from address
     const emailFrom = configService.get<string>('EMAIL_FROM', '');
     if (!emailFrom) {
       errors.push('EMAIL_FROM must be set in production');
+    } else {
+      const fromDomain = emailFrom.split('@')[1]?.toLowerCase() || '';
+      if (!fromDomain || ['example.com', 'tradingotech.com', 'yourdomain.com', 'yourdomain.in', 'localhost'].includes(fromDomain)) {
+        errors.push(`EMAIL_FROM domain "${fromDomain}" is not a verified send domain — create the SES identity for it and use that domain`);
+      }
     }
 
-    // Sentry DSN (warning only)
-    if (!process.env.SENTRY_DSN) {
-      logger.warn('SENTRY_DSN is not set — error reporting disabled. Set a valid DSN for production monitoring.');
+    // Sentry — fatal when claimed enabled but DSN is a placeholder (prevents silent report loss)
+    if (sentryEnabled && (!sentryDsn || isPlaceholder(sentryDsn))) {
+      errors.push('SENTRY_ENABLED=true but SENTRY_DSN is missing or a placeholder — set the project DSN or set SENTRY_ENABLED=false');
     }
 
-    // AI provider keys (warn only)
+    // AI provider keys (warn only) — at least one real configured key required for AI features
     const aiKeys = ['OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'GEMINI_API_KEY', 'GROQ_API_KEY', 'TAVILY_API_KEY', 'FIRECRAWL_API_KEY'];
-    const hasAiKey = aiKeys.some((k) => process.env[k] && !process.env[k]!.startsWith('YOUR_'));
+    const hasAiKey = aiKeys.some((k) => process.env[k] && !isPlaceholder(process.env[k]));
     if (!hasAiKey) {
-      logger.warn('No AI provider keys configured — AI features will be unavailable. Set at least one of: ' + aiKeys.join(', '));
+      logger.warn('No AI provider keys configured (or all placeholders) — AI features will be unavailable. Set at least one of: ' + aiKeys.join(', '));
     }
 
     if (errors.length > 0) {
@@ -124,12 +151,10 @@ async function bootstrap() {
       throw new Error(`Production environment validation failed:\n  ${errors.join('\n  ')}`);
     }
 
-    logger.info('Production environment validation passed');
+    logger.info(`Production environment validation passed (PAYMENT_MODE=${paymentMode})`);
   }
 
-  // Sentry initialization
-  const sentryDsn = configService.get<string>('sentry.dsn', '');
-  const sentryEnabled = configService.get<boolean>('sentry.enabled', false);
+  // Sentry initialization (dsn/enabled resolved during credential validation above)
   if (sentryDsn && sentryEnabled) {
     Sentry.init({
       dsn: sentryDsn,
@@ -180,7 +205,7 @@ async function bootstrap() {
 
   // CSRF protection — provides generateCsrf() utility + csrfProtection preHandler
   await app.register(cookie, { secret: configService.get<string>('JWT_SECRET', 'change-me-to-a-random-64-char-string') });
-  await app.register(csrf, { cookieOpts: { signed: true } });
+  await app.register(csrf, { cookieOpts: { signed: true, path: '/', sameSite: true, httpOnly: true } });
   const fastifyApp: any = app.getHttpAdapter().getInstance();
 
   // Correlation ID — propagate x-request-id from incoming headers, set response headers
@@ -203,6 +228,7 @@ async function bootstrap() {
       return done();
     }
     if (String(request.url).includes('/payments/webhook/')) return done();
+    if (String(request.url).endsWith('/membership/webhook')) return done();
     if (request.headers?.authorization) return done();
     if (typeof fastifyApp.csrfProtection === 'function') {
       fastifyApp.csrfProtection(request, reply, (err?: any) => {

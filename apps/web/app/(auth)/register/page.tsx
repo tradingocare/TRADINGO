@@ -90,7 +90,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="items-center space-y-4 text-center">
           <Link href="/">
-            <TradingoLogo height={36} showText />
+            <TradingoLogo height={36} />
           </Link>
           <div>
             <CardTitle>Create account</CardTitle>

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { GlobalAttributeType } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateGlobalAttributeDto, UpdateGlobalAttributeDto, QueryGlobalAttributeDto } from '../dto/global-attribute.dto';
 
@@ -60,6 +61,6 @@ export class GlobalAttributeService {
   }
 
   async getTypes() {
-    return Object.values(require('@prisma/client').GlobalAttributeType);
+    return Object.values(GlobalAttributeType);
   }
 }

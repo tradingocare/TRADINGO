@@ -1,15 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
-type CatalogEventType = 'AI_USAGE' | 'QUALITY_CHANGE' | 'DUPLICATE_DETECTED' | 'MISSING_FIELDS_RESOLVED' | 'BULK_ACTION' | 'PRODUCT_CREATED' | 'PRODUCT_PUBLISHED' | 'REWARD_EARNED' | 'ADVERTISING_CREATED' | 'SEARCH_IMPRESSION' | 'SEARCH_CLICK' | 'CONVERSION';
-
 @Injectable()
 export class CatalogAnalyticsService {
   private readonly logger = new Logger(CatalogAnalyticsService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async trackAiUsage(companyId: string, userId: string | undefined, action: string, metadata?: Record<string, any>) {
+  async trackAiUsage(companyId: string, userId: string | undefined, action: string, metadata?: Record<string, unknown>) {
     return this.logEvent(companyId, userId, 'AI_USAGE', { action, ...metadata });
   }
 
@@ -29,7 +27,7 @@ export class CatalogAnalyticsService {
     return this.logEvent(companyId, userId, 'BULK_ACTION', { action, productCount });
   }
 
-  async trackProductCreated(companyId: string, userId: string | undefined, productId: string, metadata?: Record<string, any>) {
+  async trackProductCreated(companyId: string, userId: string | undefined, productId: string, metadata?: Record<string, unknown>) {
     return this.logEvent(companyId, userId, 'PRODUCT_CREATED', { productId, ...metadata });
   }
 
@@ -37,7 +35,7 @@ export class CatalogAnalyticsService {
     return this.logEvent(companyId, userId, 'PRODUCT_PUBLISHED', { productId, isFirstPublish });
   }
 
-  async trackRewardEarned(companyId: string, userId: string | undefined, rewardAction: string, amount: number, metadata?: Record<string, any>) {
+  async trackRewardEarned(companyId: string, userId: string | undefined, rewardAction: string, amount: number, metadata?: Record<string, unknown>) {
     return this.logEvent(companyId, userId, 'REWARD_EARNED', { rewardAction, amount, ...metadata });
   }
 
@@ -56,11 +54,11 @@ export class CatalogAnalyticsService {
 
     const dailyMap = new Map<string, { deltas: number[]; count: number }>();
     for (const e of events) {
-      const meta = e.metadata as Record<string, any> | null;
+      const meta = e.metadata as Record<string, unknown> | null;
       if (meta?.catalogEventType === 'QUALITY_CHANGE') {
         const day = e.createdAt.toISOString().slice(0, 10);
         const existing = dailyMap.get(day) || { deltas: [], count: 0 };
-        existing.deltas.push(meta.delta || 0);
+        existing.deltas.push(Number(meta.delta) || 0);
         existing.count += 1;
         dailyMap.set(day, existing);
       }
@@ -73,7 +71,7 @@ export class CatalogAnalyticsService {
     })).sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  private async logEvent(companyId: string, userId: string | undefined, catalogEventType: string, metadata: Record<string, any>) {
+  private async logEvent(companyId: string, userId: string | undefined, catalogEventType: string, metadata: Record<string, unknown>) {
     return this.prisma.sellerAnalyticsEvent.create({
       data: {
         companyId,

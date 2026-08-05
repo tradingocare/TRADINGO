@@ -40,7 +40,7 @@ export class IncidentResponseService {
   }
 
   async createIncident(payload: SecurityEventPayload): Promise<void> {
-    const { severity, notifyAdmin } = this.classify(payload.action);
+    const { severity } = this.classify(payload.action);
     const title = `${severity}: ${payload.action.replace(/^SECURITY_/, '').replace(/_/g, ' ')}`;
     const description = `${payload.action} on ${payload.resource}`;
 
@@ -82,7 +82,7 @@ export class IncidentResponseService {
   }
 
   async getSummary() {
-    const [open, critical, high, medium, low, autoResolved] = await Promise.all([
+    await Promise.all([
       this.countByStatus('DETECTED'),
       this.countBySeverity('CRITICAL'),
       this.countBySeverity('HIGH'),

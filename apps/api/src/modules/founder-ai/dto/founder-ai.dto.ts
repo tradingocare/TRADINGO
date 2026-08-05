@@ -1,6 +1,4 @@
-﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-
-import { IsString, IsOptional, IsNumber, Min, Max, IsArray, IsObject, IsIn } from 'class-validator'
+﻿import { IsString, IsOptional, IsObject } from 'class-validator'
 
 export class FounderAiInsight {
   title: string

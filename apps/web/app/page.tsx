@@ -40,7 +40,7 @@ const jsonLd = {
   '@type': 'Organization',
   name: 'TRADINGO',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradingo.com',
-  logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradingo.com'}/logo/trdn.png`,
+  logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradingo.com'}/logo/trdn6.png`,
   description: "India's first Trusted Electronic Marketplace (TEM). Discover verified B2B suppliers, compare wholesale prices, and trade securely across 500+ cities.",
   contactPoint: {
     '@type': 'ContactPoint',
@@ -76,7 +76,7 @@ export default function HomePage() {
           </div>
           <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
             <div className="mx-auto max-w-4xl text-center">
-              <img src="/logo/trdn.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+              <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">Why Sell on TRADINGO?</h2>
                 <p className="mx-auto mt-3 max-w-3xl text-sm leading-relaxed text-text-secondary sm:text-base">Reach millions of buyers across India with zero upfront investment. Our platform is built for sellers.</p>
             </div>
@@ -130,7 +130,7 @@ export default function HomePage() {
           </div>
           <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
             <div className="mx-auto max-w-4xl text-center">
-              <img src="/logo/trdn.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+              <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">Why Buy on TRADINGO?</h2>
                 <p className="mx-auto mt-3 max-w-3xl text-sm leading-relaxed text-text-secondary sm:text-base">Source verified products from trusted sellers. Get competitive quotes and trade with confidence.</p>
             </div>
@@ -184,7 +184,7 @@ export default function HomePage() {
         </div>
         <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
           <div className="mx-auto max-w-4xl text-center">
-            <img src="/logo/trdn.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+            <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">Why TRADINGO?</h2>
                <p className="mx-auto mt-3 max-w-3xl text-sm leading-relaxed text-text-secondary sm:text-base">We&apos;re not just another marketplace. Here&apos;s what makes us different.</p>
           </div>
@@ -238,7 +238,7 @@ style={{ background: `radial-gradient(600px circle at 30% 50%, color-mix(in srgb
         </div>
         <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
           <div className="mx-auto max-w-4xl text-center">
-            <img src="/logo/trdn.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+            <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">GOCASH Rewards Program</h2>
                <p className="mx-auto mt-3 max-w-3xl text-sm leading-relaxed text-text-secondary sm:text-base">Earn GOCASH on every successful trade. Redeem for listing boosts, premium analytics, platform discounts, and exclusive seller tools.</p>
           </div>
@@ -290,7 +290,7 @@ style={{ background: `radial-gradient(600px circle at 30% 50%, color-mix(in srgb
         </div>
         <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
-            <img src="/logo/trdn.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+            <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">TRADGO &mdash; Gamified Trading Races</h2>
                <p className="mx-auto mt-3 max-w-3xl text-sm leading-relaxed text-text-secondary sm:text-base">Turn trading into a sport. Compete in trading races, earn badges, climb leaderboards, and unlock exclusive rewards.</p>
           </div>
@@ -345,7 +345,7 @@ style={{ background: `radial-gradient(600px circle at 30% 50%, color-mix(in srgb
         </div>
         <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
           <div className="mx-auto max-w-4xl text-center">
-            <img src="/logo/trdn.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+            <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl leading-tight">Built by Businesses. Powered by TRADHEXA&trade;. Proven by Results. &#x1F680;</h2>
                <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-text-secondary sm:text-base">Explore inspiring stories of buyers, sellers, manufacturers, distributors, and service providers who used TRADINGO&apos;s 6-Engine Business Framework&trade;, Near to Far&trade; discovery, RFQ system, and Zero Commission trading model to unlock new growth opportunities across India and beyond.</p>
           </div>

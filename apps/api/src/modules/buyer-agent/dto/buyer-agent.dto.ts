@@ -1,6 +1,4 @@
-﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-
-export class BuyerAgentPriority {
+﻿export class BuyerAgentPriority {
   title: string;
   description: string;
   impact: 'high' | 'medium' | 'low';

@@ -93,7 +93,7 @@ export class ImportOrchestratorService {
       throw new ConflictException('Failed to create import job');
     }
 
-    if (existingJobId && job && job.status === 'COMPLETED') {
+    if (existingJobId && job?.status === 'COMPLETED') {
       throw new ConflictException(`Job ${jobId} is already completed`);
     }
     const errors: string[] = [];
@@ -781,7 +781,7 @@ export class ImportOrchestratorService {
     for (const unit of uniqueUnits) {
       try {
         const lowerName = unit.toLowerCase();
-        const slug = lowerName.replace(/[/\s]+/g, '-').replace(/[^a-z0-9-]/g, '');
+        lowerName.replace(/[/\s]+/g, '-').replace(/[^a-z0-9-]/g, '');
         await this.prisma.catalogUnit.upsert({
           where: { name: unit },
           update: { symbol: unit },

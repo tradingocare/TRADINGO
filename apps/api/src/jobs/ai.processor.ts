@@ -72,9 +72,7 @@ export class AiProcessor extends WorkerHost {
   }
 
   private async executeJob(job: Job<AiJobData>): Promise<any> {
-    const { type, companyId: compId, userId, options } = job.data
-    const taskId = options?.taskId
-    const companyId = compId || 'system'
+    const { type } = job.data
 
     switch (type) {
       case AiJobTypes.PROCESS_WORKFLOW:
@@ -116,7 +114,7 @@ export class AiProcessor extends WorkerHost {
 
     const dto: AiGatewayRequestDto = {
       taskType: gatewayTaskType as TaskType,
-      payload: (options?.payload || {}) as Record<string, any>,
+      payload: (options?.payload || {}) as Record<string, unknown>,
       providerOverride: undefined,
       modelOverride: undefined,
       temperature: undefined,
@@ -177,7 +175,7 @@ export class AiProcessor extends WorkerHost {
       workflowId: options.workflowId,
       companyId,
       userId,
-      context: (options.payload || {}) as Record<string, any>,
+      context: (options.payload || {}) as Record<string, unknown>,
     })
 
     await job.updateProgress(100)
@@ -186,8 +184,8 @@ export class AiProcessor extends WorkerHost {
 
   private async executeParallel(job: Job<AiJobData>): Promise<any> {
     const { companyId, userId, options } = job.data
-    const payload = (options?.payload || {}) as Record<string, any>
-    const actions = payload.actions as Array<{ actionId: string; payload: Record<string, any> }> | undefined
+    const payload = (options?.payload || {}) as Record<string, unknown>
+    const actions = payload.actions as Array<{ actionId: string; payload: Record<string, unknown> }> | undefined
 
     if (!actions || actions.length === 0) {
       throw new Error('actions array is required for PROCESS_PARALLEL')

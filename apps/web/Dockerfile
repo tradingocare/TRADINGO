@@ -1,4 +1,4 @@
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
@@ -6,7 +6,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/ packages/
 RUN pnpm install --frozen-lockfile
 
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
 COPY --from=deps /app/ ./
@@ -36,7 +36,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 RUN pnpm --filter @tradingo/web build
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 RUN apk add --no-cache curl
 RUN addgroup --system --gid 1001 nodejs && \

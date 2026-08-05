@@ -58,7 +58,7 @@ export class CommunityAgentController {
 
   @ApiOperation({ summary: 'Get community agent analytics' })
   @Get('analytics')
-  getAnalytics(@Req() req: any) {
+  getAnalytics(@Req() _req: any) {
     return this.agent.getAnalytics();
   }
 

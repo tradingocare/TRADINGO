@@ -9,7 +9,7 @@ import {
   NaturalLanguageRfqDto, RefineRfqDto, DetectMissingDto, DetectDuplicatesDto,
   PredictCategoryDto, SuggestProductsDto, SuggestSuppliersDto, QualityScoreDto,
   TranslateRfqDto, AiAssistantDto,
-  GeneratedRfq, MissingField, DuplicateRfq, QualityScoreResult,
+  DuplicateRfq,
 } from './dto/ai-rfq.dto'
 
 @Injectable()
@@ -250,7 +250,7 @@ export class AiRfqService implements OnModuleInit {
       { category: 'Budget', score: data.budgetMin || data.budgetMax ? 10 : 0, maxScore: 10, weight: 0.1 },
     ]
 
-    const totalScore = Math.round(breakdown.reduce((sum, b) => sum + b.score, 0))
+    Math.round(breakdown.reduce((sum, b) => sum + b.score, 0))
     const weightedScore = Math.round(breakdown.reduce((sum, b) => sum + b.score * b.weight, 0))
 
     const result = await this.callAi(TaskType.RFQ_ANALYSIS, {

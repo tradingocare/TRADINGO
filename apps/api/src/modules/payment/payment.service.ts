@@ -549,7 +549,7 @@ export class PaymentService {
               this.logger.log(`Credits ${pack.credits} added to company ${updatedPayment.companyId} from pack ${pack.id}`);
             }
           } else if (updatedPayment.type === 'SUBSCRIPTION') {
-            const notes = updatedPayment.notes as Record<string, any> | null;
+            const notes = updatedPayment.notes as { planId?: string; planTier?: string } | null;
             if (notes?.planId) {
               try {
                 await this.membershipService.activateSubscription({
@@ -565,7 +565,7 @@ export class PaymentService {
               }
             }
           } else if (updatedPayment.type === 'BOOKING_PAYMENT') {
-            const notes = updatedPayment.notes as Record<string, any> | null;
+            const notes = updatedPayment.notes as { bookingId?: string } | null;
             const bookingId = notes?.bookingId;
             if (bookingId) {
               try {
@@ -598,8 +598,8 @@ export class PaymentService {
         });
 
         // Emit event for booking payment webhook capture — orchestrator listens to create escrow
-        if (pendingPayment && pendingPayment.type === 'BOOKING_PAYMENT') {
-          const notes = pendingPayment.notes as Record<string, any> | null;
+        if (pendingPayment?.type === 'BOOKING_PAYMENT') {
+          const notes = pendingPayment.notes as Record<string, unknown> | null;
           const bookingId = notes?.bookingId;
           if (bookingId) {
             this.eventBus.emit('booking.payment.webhook.captured', {

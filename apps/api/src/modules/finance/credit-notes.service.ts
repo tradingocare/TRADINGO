@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCreditNoteDto, CreateDebitNoteDto, QueryNoteDto } from './dto';
-import { Prisma, CreditNoteStatus, DebitNoteStatus, InvoiceStatus } from '@prisma/client';
+import { Prisma, CreditNoteStatus, DebitNoteStatus } from '@prisma/client';
 
 @Injectable()
 export class CreditNoteService {
@@ -17,7 +17,7 @@ export class CreditNoteService {
     return `${prefix}-${year}-${String(seq.lastSeq).padStart(5, '0')}`;
   }
 
-  async createCreditNote(dto: CreateCreditNoteDto, userId: string) {
+  async createCreditNote(dto: CreateCreditNoteDto, _userId: string) {
     const invoice = await this.prisma.invoice.findUnique({ where: { id: dto.invoiceId } });
     if (!invoice) throw new NotFoundException('Invoice not found');
 
@@ -82,7 +82,7 @@ export class CreditNoteService {
     };
   }
 
-  async createDebitNote(dto: CreateDebitNoteDto, userId: string) {
+  async createDebitNote(dto: CreateDebitNoteDto, _userId: string) {
     const invoice = await this.prisma.invoice.findUnique({ where: { id: dto.invoiceId } });
     if (!invoice) throw new NotFoundException('Invoice not found');
 

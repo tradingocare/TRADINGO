@@ -341,7 +341,7 @@ export class MembershipService {
     const existing = await this.prisma.membershipPlan.findUnique({ where: { planId: newPlanId } });
     if (existing) throw new BadRequestException(`Plan '${newPlanId}' already exists`);
 
-    const plan = await this.prisma.membershipPlan.create({
+    await this.prisma.membershipPlan.create({
       data: {
         planId: newPlanId,
         name: newName,

@@ -240,9 +240,11 @@ export class TradfindService {
       });
 
       let categoryCount = 0;
+      const categoryDocs: { id: string; body: Record<string, unknown> }[] = [];
       for (const cat of categories) {
-        try {
-          await this.searchService.indexDocument(CATALOG_CATEGORIES_INDEX, cat.id, {
+        categoryDocs.push({
+          id: cat.id,
+          body: {
             id: cat.id,
             name: cat.name,
             slug: cat.slug,
@@ -250,15 +252,14 @@ export class TradfindService {
             parent: null,
             level: 0,
             createdAt: cat.createdAt,
-          });
-        } catch (err) {
-          this.logger.warn(`Failed to index category ${cat.id}: ${(err as Error).message}`);
-        }
+          },
+        });
         categoryCount++;
 
         for (const sub of cat.subcategories) {
-          try {
-            await this.searchService.indexDocument(CATALOG_CATEGORIES_INDEX, sub.id, {
+          categoryDocs.push({
+            id: sub.id,
+            body: {
               id: sub.id,
               name: sub.name,
               slug: sub.slug,
@@ -266,53 +267,72 @@ export class TradfindService {
               parent: cat.id,
               level: 1,
               createdAt: sub.createdAt,
-            });
-          } catch (err) {
-            this.logger.warn(`Failed to index subcategory ${sub.id}: ${(err as Error).message}`);
-          }
+            },
+          });
           categoryCount++;
         }
       }
+      const categoryResult = await this.searchService.bulkIndex(CATALOG_CATEGORIES_INDEX, categoryDocs);
+      this.logger.log(
+        `Indexed ${categoryResult.indexed} category/subcategory docs (${categoryResult.failed} failed)`,
+      );
 
-      // 3. Fetch and index Catalog Items
-      const items = await this.prisma.catalogItem.findMany({
-        where: { isActive: true },
-        include: {
-          subcategory: {
-            include: {
-              category: true,
-            },
-          },
-          attributes: { where: { isActive: true } },
-        },
-      });
-
+      // 3. Fetch and index Catalog Items (cursor-paginated to avoid PostgreSQL bind variable limit)
       let itemCount = 0;
-      for (const item of items) {
-        try {
+      let cursor: string | undefined;
+      let hasMore = true;
+      while (hasMore) {
+        const chunk = await this.prisma.catalogItem.findMany({
+          take: 2000,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          orderBy: { id: 'asc' },
+          where: { isActive: true },
+          include: {
+            subcategory: {
+              include: {
+                category: true,
+              },
+            },
+            attributes: { where: { isActive: true } },
+          },
+        });
+
+        const itemDocs: { id: string; body: Record<string, unknown> }[] = [];
+        for (const item of chunk) {
           const categoryPath = `${item.subcategory.category.name} > ${item.subcategory.name}`;
           const attributesMapped = item.attributes.map((attr) => ({
             key: attr.key,
             value: attr.value,
           }));
-
-          await this.searchService.indexDocument(CATALOG_ITEMS_INDEX, item.id, {
+          itemDocs.push({
             id: item.id,
-            name: item.name,
-            type: item.type,
-            slug: item.slug,
-            unit: item.unit || null,
-            altUnits: item.altUnits || null,
-            quantityParams: item.quantityParams || null,
-            keywords: item.keywords,
-            synonyms: item.synonyms,
-            categoryPath,
-            attributes: attributesMapped,
-            createdAt: item.createdAt,
+            body: {
+              id: item.id,
+              name: item.name,
+              type: item.type,
+              slug: item.slug,
+              unit: item.unit || null,
+              altUnits: item.altUnits || null,
+              quantityParams: item.quantityParams || null,
+              keywords: item.keywords,
+              synonyms: item.synonyms,
+              categoryPath,
+              attributes: attributesMapped,
+              createdAt: item.createdAt,
+            },
           });
-          itemCount++;
-        } catch (err) {
-          this.logger.warn(`Failed to index catalog item ${item.id}: ${(err as Error).message}`);
+        }
+
+        const result = await this.searchService.bulkIndex(CATALOG_ITEMS_INDEX, itemDocs);
+        itemCount += result.indexed;
+        if (result.failed > 0) {
+          this.logger.warn(`Failed to index ${result.failed} catalog item docs`);
+        }
+
+        if (chunk.length < 2000) {
+          hasMore = false;
+        } else {
+          cursor = chunk[chunk.length - 1].id;
         }
       }
 

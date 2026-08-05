@@ -1,6 +1,4 @@
-﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-
-export class DigitalTwinSnapshotDto {
+﻿export class DigitalTwinSnapshotDto {
   timestamp: string;
   marketplace: {
     totalBuyers: number;

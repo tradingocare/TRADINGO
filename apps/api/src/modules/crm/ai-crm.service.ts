@@ -5,6 +5,20 @@ import { CrmService } from './crm.service'
 import { TradTrustService } from '../tradtrust/tradtrust.service'
 import { PrismaService } from '../../prisma/prisma.service'
 import { TaskType } from '@prisma/client'
+import {
+  AiCrmScoringDto,
+  AiCrmNextBestActionDto,
+  AiCrmConversionProbabilityDto,
+  AiCrmLeadInsightsDto,
+  AiCrmSentimentDto,
+  AiCrmPipelineHealthDto,
+  AiCrmForecastDto,
+  AiCrmDealRiskDto,
+  AiCrmRecommendedActionsDto,
+  AiCrmCommunicationTipsDto,
+  AiCrmFollowUpPriorityDto,
+  AiCrmSidebarDto,
+} from './dto/ai-crm.dto'
 
 @Injectable()
 export class AiCrmService {
@@ -57,13 +71,14 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }
   }
 
-  async leadScoring(companyId: string, userId: string, payload: Record<string, any>) {
+  async leadScoring(companyId: string, userId: string, payload: AiCrmScoringDto) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
 
-    if (payload.leadData?.companyId) {
-      const trust = await this.tradTrust.getUnifiedScore(payload.leadData.companyId).catch(() => null)
+    const leadCompanyId = payload.leadData?.companyId
+    if (typeof leadCompanyId === 'string') {
+      const trust = await this.tradTrust.getUnifiedScore(leadCompanyId).catch(() => null)
       if (trust) context.trustScore = trust
     }
 
@@ -73,7 +88,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async nextBestAction(companyId: string, userId: string, payload: Record<string, any>) {
+  async nextBestAction(companyId: string, userId: string, payload: AiCrmNextBestActionDto) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.recentActivities) context.recentActivities = payload.recentActivities
@@ -85,14 +100,15 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async conversionProbability(companyId: string, userId: string, payload: Record<string, any>) {
+  async conversionProbability(companyId: string, userId: string, payload: AiCrmConversionProbabilityDto) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.pastInteractions) context.pastInteractions = payload.pastInteractions
 
-    if (payload.leadData?.companyId) {
-      const trust = await this.tradTrust.getUnifiedScore(payload.leadData.companyId).catch(() => null)
+    const leadCompanyId = payload.leadData?.companyId
+    if (typeof leadCompanyId === 'string') {
+      const trust = await this.tradTrust.getUnifiedScore(leadCompanyId).catch(() => null)
       if (trust) context.trustScore = trust
     }
 
@@ -102,7 +118,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async leadInsights(companyId: string, userId: string, payload: Record<string, any>) {
+  async leadInsights(companyId: string, userId: string, payload: AiCrmLeadInsightsDto) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
@@ -115,7 +131,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sentiment(companyId: string, userId: string, payload: Record<string, any>) {
+  async sentiment(companyId: string, userId: string, payload: AiCrmSentimentDto) {
     const context: Record<string, unknown> = {
       notes: payload.notes ?? [],
       interactions: payload.interactions ?? [],
@@ -126,7 +142,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async pipelineHealth(companyId: string, userId: string, payload: Record<string, any>) {
+  async pipelineHealth(companyId: string, userId: string, payload: AiCrmPipelineHealthDto) {
     const context: Record<string, unknown> = {
       stages: payload.stages ?? [],
       totalPipelineValue: payload.totalPipelineValue || 0,
@@ -143,7 +159,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async forecast(companyId: string, userId: string, payload: Record<string, any>) {
+  async forecast(companyId: string, userId: string, payload: AiCrmForecastDto) {
     const context: Record<string, unknown> = {
       currentPipelineValue: payload.currentPipelineValue || 0,
       activeDeals: payload.activeDeals || 0,
@@ -157,14 +173,15 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async dealRisk(companyId: string, userId: string, payload: Record<string, any>) {
+  async dealRisk(companyId: string, userId: string, payload: AiCrmDealRiskDto) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
     if (payload.recentActivities) context.recentActivities = payload.recentActivities
 
-    if (payload.leadData?.companyId) {
-      const trust = await this.tradTrust.getUnifiedScore(payload.leadData.companyId).catch(() => null)
+    const leadCompanyId = payload.leadData?.companyId
+    if (typeof leadCompanyId === 'string') {
+      const trust = await this.tradTrust.getUnifiedScore(leadCompanyId).catch(() => null)
       if (trust) context.trustScore = trust
     }
 
@@ -174,7 +191,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async recommendedActions(companyId: string, userId: string, payload: Record<string, any>) {
+  async recommendedActions(companyId: string, userId: string, payload: AiCrmRecommendedActionsDto) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
@@ -186,7 +203,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async communicationTips(companyId: string, userId: string, payload: Record<string, any>) {
+  async communicationTips(companyId: string, userId: string, payload: AiCrmCommunicationTipsDto) {
     const context: Record<string, unknown> = {
       leadName: payload.leadName,
       leadStatus: payload.leadStatus,
@@ -199,7 +216,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async followUpPriority(companyId: string, userId: string, payload: Record<string, any>) {
+  async followUpPriority(companyId: string, userId: string, payload: AiCrmFollowUpPriorityDto) {
     const context: Record<string, unknown> = {
       followUps: payload.followUps ?? [],
       maxRecommendations: payload.maxRecommendations || 5,
@@ -210,7 +227,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async sidebar(companyId: string, userId: string, payload: Record<string, any>) {
+  async sidebar(companyId: string, userId: string, payload: AiCrmSidebarDto) {
     const context: Record<string, unknown> = {}
     if (payload.leadData) context.leadData = payload.leadData
     if (payload.companyData) context.companyData = payload.companyData
@@ -218,8 +235,9 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     if (payload.upcomingFollowUps) context.upcomingFollowUps = payload.upcomingFollowUps
     if (payload.pendingTasks) context.pendingTasks = payload.pendingTasks
 
-    if (payload.leadData?.companyId) {
-      const trust = await this.tradTrust.getUnifiedScore(payload.leadData.companyId).catch(() => null)
+    const leadCompanyId = payload.leadData?.companyId
+    if (typeof leadCompanyId === 'string') {
+      const trust = await this.tradTrust.getUnifiedScore(leadCompanyId).catch(() => null)
       if (trust) context.trustScore = trust
     }
 

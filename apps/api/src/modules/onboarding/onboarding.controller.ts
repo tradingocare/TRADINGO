@@ -5,7 +5,6 @@ import { OnboardingService } from './onboarding.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdvanceOnboardingStepDto } from './dto/advance-onboarding-step.dto';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Onboarding')

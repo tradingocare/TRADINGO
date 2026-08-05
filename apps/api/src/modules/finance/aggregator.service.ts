@@ -334,7 +334,7 @@ export class FinanceAggregatorService {
    * Authoritative revenue source — uses Payment.amount WHERE status = 'CAPTURED'.
    * All services MUST use this method for consistent revenue numbers.
    */
-  async getAuthoritativeRevenue(options?: {
+  async getAuthoritativeRevenue(_options?: {
     startDate?: Date;
     endDate?: Date;
     includeYesterday?: boolean;

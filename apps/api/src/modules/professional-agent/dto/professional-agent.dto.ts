@@ -1,4 +1,4 @@
-﻿import { TradeAgentPriority, TradeAgentQuickAction, TradeAgentNotificationItem, TradeAgentMetric, TradeAgentSuggestion } from '../../agent-framework/dto/agent-shared.dto';
+﻿import { TradeAgentPriority, TradeAgentQuickAction, TradeAgentNotificationItem } from '../../agent-framework/dto/agent-shared.dto';
 
 export class ProfessionalDashboardCopilotResponse {
   priorities: TradeAgentPriority[];
@@ -93,5 +93,3 @@ export class ProfessionalAgentInsightsResponse {
   notifications: ProfessionalNotificationsResponse;
   tradeTalkIntegration: TradeTalkIntegrationResponse;
 }
-
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'

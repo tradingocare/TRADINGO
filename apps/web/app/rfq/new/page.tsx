@@ -17,7 +17,7 @@ export default function NewRfqPage() {
         <div className="flex items-center justify-between px-6 py-4"
           style={{ borderBottom: '1px solid var(--border-color)' }}>
           <a href="/">
-            <img src="/logo/trdn.png" alt="TRADINGO" className="h-9 w-9 object-contain" />
+            <img src="/logo/trdn6.png" alt="TRADINGO" className="h-9 w-9 object-contain" />
           </a>
           <a href="/buyer/rfqs" className="text-white/40 text-xs hover:text-[#f59e0b] transition-colors">
             ← Back to My RFQs

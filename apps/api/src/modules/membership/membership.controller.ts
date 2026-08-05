@@ -21,7 +21,6 @@ import {
   DowngradeSubscriptionDto,
   RenewSubscriptionDto,
   SuspendSubscriptionDto,
-  ReactivateSubscriptionDto,
 } from './membership.dto';
 
 @ApiTags('Membership')

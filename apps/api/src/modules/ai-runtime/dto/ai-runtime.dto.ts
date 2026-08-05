@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsObject, IsNumber, IsArray, IsEnum, Min, Max, MinLength } from 'class-validator'
+import { IsString, IsOptional, IsObject, IsNumber, IsArray, IsEnum, Min, Max } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { TaskType } from '@prisma/client'
 
@@ -48,7 +48,7 @@ export class EnqueueTaskDto {
   @IsOptional()
   @IsObject()
   @ApiPropertyOptional({ description: 'Task payload' })
-  payload?: Record<string, any>
+  payload?: Record<string, unknown>
 
   @IsOptional()
   @IsEnum(TaskType)
@@ -108,7 +108,7 @@ export class DispatchActionDto {
 
   @IsObject()
   @ApiProperty({ description: 'Action payload' })
-  payload: Record<string, any>
+  payload: Record<string, unknown>
 
   @IsOptional()
   @IsEnum(AiTaskPriority)
@@ -137,7 +137,7 @@ export class ExecuteWorkflowDto {
 
   @IsObject()
   @ApiProperty({ description: 'Workflow context' })
-  context: Record<string, any>
+  context: Record<string, unknown>
 
   @IsOptional()
   @IsEnum(AiTaskPriority)
@@ -157,7 +157,7 @@ export class ParallelBatchDto {
 
   @IsArray()
   @ApiProperty({ description: 'Array of actions to execute in parallel' })
-  actions: { actionId: string; payload: Record<string, any>; priority?: AiTaskPriority; timeoutMs?: number }[]
+  actions: { actionId: string; payload: Record<string, unknown>; priority?: AiTaskPriority; timeoutMs?: number }[]
 
   @IsOptional()
   @IsEnum(AiTaskPriority)

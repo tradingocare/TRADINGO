@@ -39,7 +39,7 @@ export class TradeservService {
         locations: true,
       },
     });
-    if (!company || !company.professionalType) {
+    if (!company?.professionalType) {
       throw new NotFoundException('Professional not found');
     }
     return company;
@@ -443,7 +443,7 @@ export class TradeservService {
       where: { id: dto.companyId },
       select: { id: true, professionalType: true, professionalStatus: true },
     });
-    if (!company || !company.professionalType) {
+    if (!company?.professionalType) {
       throw new NotFoundException('Professional not found');
     }
     if (company.professionalStatus !== ProfessionalCompanyStatus.APPROVED) {
@@ -501,7 +501,7 @@ export class TradeservService {
     };
 
     const allowed = validTransitions[booking.status];
-    if (!allowed || !allowed.includes(dto.status)) {
+    if (!allowed?.includes(dto.status)) {
       throw new BadRequestException(
         `Cannot transition booking from ${booking.status} to ${dto.status}`,
       );

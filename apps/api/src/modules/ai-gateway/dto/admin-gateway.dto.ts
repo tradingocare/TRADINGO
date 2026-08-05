@@ -1,5 +1,5 @@
 import { IsOptional, IsEnum, IsString } from 'class-validator'
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { TaskType } from '@prisma/client'
 

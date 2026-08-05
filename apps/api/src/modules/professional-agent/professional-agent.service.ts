@@ -26,7 +26,7 @@ export class ProfessionalAgentService {
   ) {}
 
   async getDashboardCopilot(companyId: string): Promise<ProfessionalDashboardCopilotResponse> {
-    const [stats, trustScore, inquiryStats, proposals, profile] = await Promise.all([
+    const [, trustScore, inquiryStats, proposals, profile] = await Promise.all([
       this.tradeserv.getDashboardStats(companyId).catch(gracefulCatch('professionalAgent.getDashboardCopilot.stats', null)),
       this.tradTrust.getScore(companyId).catch(gracefulCatch('professionalAgent.getDashboardCopilot.trustScore', null)),
       this.inquiries.getInquiryStats(companyId).catch(gracefulCatch('professionalAgent.getDashboardCopilot.inquiryStats', null)),
@@ -451,7 +451,7 @@ export class ProfessionalAgentService {
   }
 
   async getTradeTalkIntegration(companyId: string): Promise<TradeTalkIntegrationResponse> {
-    const [company, communities, members] = await Promise.all([
+    const [, communities, members] = await Promise.all([
       this.prisma.company.findUnique({
         where: { id: companyId },
         select: { professionalType: true, professionalServices: { select: { category: true } } },
@@ -460,7 +460,6 @@ export class ProfessionalAgentService {
       this.prisma.communityMember.findMany({ where: { userId: companyId }, select: { communityId: true } }).catch(gracefulCatch('professionalAgent.getTradeTalkIntegration.members', [] as Array<{ communityId: string }>)),
     ]);
 
-    const myCategories = ((company as any)?.professionalServices?.map((s: any) => s.category).filter(Boolean) as string[]) || [];
     const myCommunityIds = new Set(members.map(m => m.communityId));
 
     const recommendedCommunities = communities

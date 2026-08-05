@@ -34,7 +34,7 @@ export class FounderExecutiveAgentService {
   ) {}
 
   async getExecutiveCopilot(): Promise<ExecutiveCopilotResponse> {
-    const [brief, _risk, prioritiesResp, health, _, _digitalTwin, _predictions, _opportunities] = await Promise.all([
+    const [brief, , prioritiesResp, health, , _digitalTwin, , ] = await Promise.all([
       this.founderAi.morningBrief().catch(gracefulCatch('executiveAgent.getExecutiveCopilot.morningBrief', null)),
       this.founderAi.riskIntelligence().catch(gracefulCatch('executiveAgent.getExecutiveCopilot.riskIntelligence', null)),
       this.founderAi.executivePriorities().catch(gracefulCatch('executiveAgent.getExecutiveCopilot.executivePriorities', null)),
@@ -176,7 +176,7 @@ export class FounderExecutiveAgentService {
     ]);
 
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const [ordersToday, usersToday, companiesToday, _tradeservCounts] = await Promise.all([
+    const [ordersToday, usersToday, companiesToday] = await Promise.all([
       this.prisma.order.count({ where: { createdAt: { gte: today } } }),
       this.prisma.user.count({ where: { createdAt: { gte: today } } }),
       this.prisma.company.count({ where: { createdAt: { gte: today } } }),
@@ -310,7 +310,7 @@ export class FounderExecutiveAgentService {
   }
 
   async getOpportunityEngine(): Promise<ExecutiveOpportunityResponse> {
-    const [growth, _marketplace] = await Promise.all([
+    const [growth] = await Promise.all([
       this.founderAi.growthIntelligence().catch(gracefulCatch('executiveAgent.getOpportunityEngine.growthIntelligence', null)),
       this.founderAi.marketplaceIntelligence().catch(gracefulCatch('executiveAgent.getOpportunityEngine.marketplaceIntelligence', null)),
     ]);
@@ -372,7 +372,7 @@ export class FounderExecutiveAgentService {
   }
 
   async getExecutiveAnalytics(): Promise<ExecutiveAnalyticsResponse> {
-    const [brief, _risk] = await Promise.all([
+    const [brief] = await Promise.all([
       this.founderAi.eveningSummary().catch(gracefulCatch('executiveAgent.getExecutiveAnalytics.eveningSummary', null)),
       this.founderAi.riskIntelligence().catch(gracefulCatch('executiveAgent.getExecutiveAnalytics.riskIntelligence', null)),
     ]);

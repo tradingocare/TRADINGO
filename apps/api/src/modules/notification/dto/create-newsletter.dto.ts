@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsDateString, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsArray } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateNewsletterCampaignDto {

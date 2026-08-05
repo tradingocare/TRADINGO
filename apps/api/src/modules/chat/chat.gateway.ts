@@ -78,7 +78,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         select: { id: true, isActive: true },
       });
 
-      if (!user || !user.isActive) {
+      if (!user?.isActive) {
         socket.emit('error', { message: 'Account is inactive or suspended' });
         await this.auditLog.create({
           userId,

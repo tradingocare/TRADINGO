@@ -47,6 +47,25 @@ export class SearchService {
     });
   }
 
+  async bulkIndex(
+    index: string,
+    docs: { id: string; body: Record<string, unknown> }[],
+  ): Promise<{ indexed: number; failed: number }> {
+    if (docs.length === 0) return { indexed: 0, failed: 0 };
+    const operations: Record<string, unknown>[] = [];
+    for (const doc of docs) {
+      operations.push({ index: { _index: index, _id: doc.id } });
+      operations.push(doc.body);
+    }
+    const response = await this.client.bulk({
+      body: operations,
+      refresh: false,
+    });
+    const items = (response.body.items ?? []) as { index?: { error?: unknown } }[];
+    const failed = items.filter((item) => item.index?.error).length;
+    return { indexed: docs.length - failed, failed };
+  }
+
   async search<T>(
     index: string,
     query: string,

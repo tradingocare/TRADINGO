@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { NotificationService } from '../../notification/notification.service';
-import { SocialPostType, SocialContentStatus } from '@prisma/client';
+import { SocialPostType } from '@prisma/client';
 
 @Injectable()
 export class SocialPostService {
@@ -21,7 +21,7 @@ export class SocialPostService {
     const membership = await this.prisma.communityMember.findUnique({
       where: { communityId_userId: { communityId, userId } },
     });
-    if (!membership || membership.status !== 'ACTIVE') {
+    if (membership?.status !== 'ACTIVE') {
       throw new ForbiddenException('You must be an active member to post');
     }
 
@@ -309,7 +309,7 @@ export class SocialPostService {
     const membership = await this.prisma.communityMember.findUnique({
       where: { communityId_userId: { communityId: post.communityId, userId } },
     });
-    if (!membership || membership.status !== 'ACTIVE') {
+    if (membership?.status !== 'ACTIVE') {
       throw new ForbiddenException('You must be a member to comment');
     }
 

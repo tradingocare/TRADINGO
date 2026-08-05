@@ -263,7 +263,7 @@ export class SellerProductService {
 
     const updateData: any = { updatedBy: userId };
     const fields = ['name', 'shortDescription', 'description', 'productType', 'brand', 'model', 'sku', 'moq', 'unit', 'categoryId', 'industryId', 'originalPrice', 'videoUrl', 'returnPolicy', 'brandId'];
-    const dtoAny = dto as Record<string, any>;
+    const dtoAny = dto as Record<string, unknown>;
     for (const f of fields) {
       if (dtoAny[f] !== undefined) updateData[f] = dtoAny[f];
     }

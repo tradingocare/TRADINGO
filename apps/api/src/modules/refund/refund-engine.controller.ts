@@ -69,7 +69,7 @@ export class RefundEngineController {
   @Roles('ADMIN', 'SUPER_ADMIN')
   async approveManualRefund(
     @Body() dto: ManualRefundApprovalDto,
-    @CurrentUser('id') userId: string,
+    @CurrentUser('id') _userId: string,
   ) {
     if (dto.decision === 'APPROVED') {
       const refund = await this.prisma.refund.update({

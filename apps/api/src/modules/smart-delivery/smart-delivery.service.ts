@@ -221,7 +221,7 @@ export class SmartDeliveryService {
     if (!isSeller && !isBuyer) throw new ForbiddenException('Access denied');
 
     const allowedTransitions = STATUS_FLOW[delivery.status as DeliveryStatus];
-    if (!allowedTransitions || !allowedTransitions.includes(newStatus)) {
+    if (!allowedTransitions?.includes(newStatus)) {
       throw new BadRequestException(`Cannot transition from ${delivery.status} to ${newStatus}`);
     }
 

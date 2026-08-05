@@ -212,7 +212,7 @@ export default function IndiaHubs() {
             </div>
 
             <img
-              src="/logo/trdn.png"
+              src="/logo/trdn6.png"
               alt="TRDN"
               className="mx-auto h-10 w-auto opacity-50 sm:h-12"
             />
@@ -348,7 +348,7 @@ export default function IndiaHubs() {
               <div className="absolute -bottom-32 -right-32 h-64 w-64 rounded-full bg-[rgba(255,77,0,0.04)] blur-[80px]" />
             </div>
             <div className="relative z-10 flex flex-col items-center px-8 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
-              <img src="/logo/trdn.png" alt="TRADINGO" loading="lazy"
+              <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy"
                 className="mx-auto h-10 w-auto opacity-40 sm:h-12" />
               <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.25)] bg-[rgba(212,175,55,0.08)] px-4 py-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
                 <Target className="h-3 w-3" />

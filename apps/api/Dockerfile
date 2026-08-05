@@ -1,7 +1,7 @@
 # ===========================
 # Stage 1 : Builder
 # ===========================
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ RUN pnpm --filter @tradingo/api build
 # ===========================
 # Stage 2 : Migration runner (optional init container)
 # ===========================
-FROM node:20-alpine AS migration
+FROM node:24-alpine AS migration
 
 WORKDIR /app
 
@@ -57,7 +57,7 @@ CMD ["node", "dist/main"]
 # ===========================
 # Stage 3 : Runner
 # ===========================
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 

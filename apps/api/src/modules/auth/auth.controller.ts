@@ -42,6 +42,13 @@ export class AuthController {
     res.clearCookie('refreshToken', { path: '/api/v1/auth' });
   }
 
+  @Get('csrf')
+  @ApiOperation({ summary: 'Get CSRF token for anonymous state-changing requests' })
+  getCsrfToken(@Res({ passthrough: true }) res: FastifyReply) {
+    const token = (res as unknown as { generateCsrf?: () => string }).generateCsrf?.() ?? '';
+    return { token };
+  }
+
   @Post('register')
   @UseGuards(TurnstileGuard)
   @ApiOperation({ summary: 'Register a new user' })

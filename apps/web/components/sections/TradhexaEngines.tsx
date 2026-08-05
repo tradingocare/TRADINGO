@@ -41,7 +41,7 @@ export default function TradhexaEngines() {
             </div>
 
             <img
-              src="/logo/trdn.png"
+              src="/logo/trdn6.png"
               alt="TRDN"
               className="mx-auto h-10 w-auto opacity-50 sm:h-12"
             />

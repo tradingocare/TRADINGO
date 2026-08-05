@@ -7,10 +7,11 @@ import {
   EcosystemXPReason,
   EcosystemMissionActionType,
   EcosystemMissionPeriod,
-  EcosystemStreakType,
   EcosystemEntityStatus,
   EcosystemLevelName,
   NotificationType,
+  type EcosystemMission,
+  type Prisma,
 } from '@prisma/client';
 import { UpdateMissionDto } from './dto/update-mission.dto';
 import { UpdateAchievementDto } from './dto/update-achievement.dto';
@@ -27,7 +28,7 @@ const LEVEL_XP_THRESHOLDS: Record<string, number> = {
   LEGEND: 50000,
 };
 
-const levels: { name: EcosystemLevelName; levelNumber: number; minXP: number; maxXP: number; benefits: any[]; rewards: Record<string, any>[]; sortOrder: number }[] = [
+const levels: Array<{ name: EcosystemLevelName; levelNumber: number; minXP: number; maxXP: number; benefits: string[]; rewards: Array<{ type: string; amount: number }>; sortOrder: number }> = [
   { name: 'BRONZE', levelNumber: 1, minXP: 0, maxXP: 499, benefits: [], rewards: [], sortOrder: 1 },
   { name: 'SILVER', levelNumber: 2, minXP: 500, maxXP: 1499, benefits: [], rewards: [{ type: 'GOCASH', amount: 50 }], sortOrder: 2 },
   { name: 'GOLD', levelNumber: 3, minXP: 1500, maxXP: 2999, benefits: [], rewards: [{ type: 'GOCASH', amount: 150 }], sortOrder: 3 },
@@ -37,6 +38,33 @@ const levels: { name: EcosystemLevelName; levelNumber: number; minXP: number; ma
   { name: 'ELITE', levelNumber: 7, minXP: 25000, maxXP: 49999, benefits: [], rewards: [{ type: 'GOCASH', amount: 2500 }], sortOrder: 7 },
   { name: 'LEGEND', levelNumber: 8, minXP: 50000, maxXP: 999999, benefits: [], rewards: [{ type: 'GOCASH', amount: 5000 }], sortOrder: 8 },
 ];
+
+interface CheckinCompletedPayload {
+  userId: string;
+  companyId?: string;
+  streakCount?: number;
+  bonusEarned?: boolean;
+}
+
+interface LevelUpPayload {
+  userId: string;
+  companyId?: string;
+  oldLevel?: string;
+  newLevel?: string;
+}
+
+interface BadgeEarnedPayload {
+  userId: string;
+  companyId?: string;
+  badgeId: string;
+}
+
+interface MissionCompletedPayload {
+  userId: string;
+  companyId?: string;
+  missionId?: string;
+  missionName?: string;
+}
 
 const XP_REWARD_MAP: Partial<Record<EcosystemXPReason, number>> = {
   LOGIN: 10,
@@ -72,24 +100,6 @@ const XP_REWARD_MAP: Partial<Record<EcosystemXPReason, number>> = {
   MONTHLY_COMPLETION: 500,
   MISSION_COMPLETED: 100,
   LEADERBOARD_RANK: 200,
-};
-
-const ACTION_TYPE_XP_REASON_MAP: Partial<Record<EcosystemMissionActionType, EcosystemXPReason>> = {
-  LOGIN: EcosystemXPReason.LOGIN,
-  RFQ_CREATE: EcosystemXPReason.RFQ_CREATED,
-  QUOTE_SUBMIT: EcosystemXPReason.QUOTE_SUBMITTED,
-  ORDER_COMPLETE: EcosystemXPReason.ORDER_COMPLETED,
-  PRODUCT_UPLOAD: EcosystemXPReason.PRODUCT_UPLOADED,
-  REFERRAL_SEND: EcosystemXPReason.REFERRAL_SUBMITTED,
-  AI_USE: EcosystemXPReason.AI_USAGE,
-  REVIEW_GIVE: EcosystemXPReason.REVIEW_GIVEN,
-  KYC_COMPLETE: EcosystemXPReason.KYC_COMPLETED,
-  PROFILE_COMPLETE: EcosystemXPReason.PROFILE_COMPLETED,
-  NEGOTIATION_WIN: EcosystemXPReason.NEGOTIATION_COMPLETED,
-  DELIVERY_CONFIRM: EcosystemXPReason.DELIVERY_CONFIRMED,
-  PAYMENT_MAKE: EcosystemXPReason.PAYMENT_MADE,
-  CAMPAIGN_JOIN: EcosystemXPReason.CAMPAIGN_PARTICIPATION,
-  SEARCH_USE: EcosystemXPReason.SEARCH,
 };
 
 function getPeriodBounds(period: EcosystemMissionPeriod): { start: Date; end: Date } {
@@ -164,12 +174,12 @@ export class GocashEcosystemService {
         this.logger.log(`User ${userId} leveled up to ${nextName}`);
         this.eventEmitter.emit('ecosystem.level.up', { userId, companyId, oldLevel: currentLevelName, newLevel: nextName });
         await this.awardXp(userId, companyId, EcosystemXPReason.LEVEL_UP);
-        await this.processLevelRewards(userId, companyId, nextLevel.rewards as Record<string, any>[]);
+        await this.processLevelRewards(userId, companyId, nextLevel.rewards as unknown as Array<{ type: string; amount: number }>);
       }
     }
   }
 
-  private async processLevelRewards(userId: string, companyId: string | undefined, rewards: Record<string, any>[]) {
+  private async processLevelRewards(userId: string, companyId: string | undefined, rewards: Array<{ type: string; amount: number }>) {
     if (!rewards || !Array.isArray(rewards)) return;
     for (const reward of rewards) {
       if (reward.type === 'GOCASH' && reward.amount) {
@@ -194,12 +204,18 @@ export class GocashEcosystemService {
     }
   }
 
-  async awardXp(userId: string, companyId: string | undefined, reason: EcosystemXPReason, metadata?: Record<string, any>) {
+  async awardXp(userId: string, companyId: string | undefined, reason: EcosystemXPReason, metadata?: Record<string, unknown>) {
     const amount = this.getXpAmount(reason);
-    await this.prisma.ecosystemXPTransaction.create({
-      data: { userId, companyId, amount, reason, metadata: metadata ?? {} },
+await this.prisma.ecosystemXPTransaction.create({
+      data: {
+        userId,
+        companyId,
+        amount,
+        reason,
+        metadata: (metadata ?? {}) as Prisma.InputJsonValue,
+      },
     });
-    const userLevel = await this.getOrCreateUserLevel(userId, companyId);
+    await this.getOrCreateUserLevel(userId, companyId);
     await this.prisma.ecosystemUserLevel.update({
       where: { userId },
       data: { totalXP: { increment: amount } },
@@ -564,7 +580,7 @@ export class GocashEcosystemService {
     }
   }
 
-  private async completeMission(userMissionId: string, userId: string, companyId: string | undefined, mission: Record<string, any>) {
+  private async completeMission(userMissionId: string, userId: string, companyId: string | undefined, mission: EcosystemMission) {
     await this.prisma.ecosystemUserMission.update({
       where: { id: userMissionId },
       data: { status: 'COMPLETED', completedAt: new Date() },
@@ -572,7 +588,13 @@ export class GocashEcosystemService {
     this.eventEmitter.emit('ecosystem.mission.completed', { userId, companyId, missionId: mission.id, missionName: mission.name });
     if (mission.xpReward > 0) {
       await this.prisma.ecosystemXPTransaction.create({
-        data: { userId, companyId, amount: mission.xpReward, reason: 'MISSION_COMPLETED', metadata: { missionId: mission.id, bonus: true } },
+        data: {
+          userId,
+          companyId,
+          amount: mission.xpReward,
+          reason: 'MISSION_COMPLETED',
+          metadata: { missionId: mission.id, bonus: true } as Prisma.InputJsonValue,
+        },
       });
       await this.prisma.ecosystemUserLevel.update({
         where: { userId }, data: { totalXP: { increment: mission.xpReward } },
@@ -599,7 +621,15 @@ export class GocashEcosystemService {
   async seedInitialData() {
     const existingLevels = await this.prisma.ecosystemLevel.count();
     if (existingLevels === 0) {
-      await this.prisma.ecosystemLevel.createMany({ data: levels });
+      await this.prisma.ecosystemLevel.createMany({ data: levels.map((l) => ({
+        name: l.name,
+        levelNumber: l.levelNumber,
+        minXP: l.minXP,
+        maxXP: l.maxXP,
+        benefits: [] as any,
+        rewards: l.rewards as any,
+        sortOrder: l.sortOrder,
+      })) });
       this.logger.log('Levels seeded');
     } else {
       this.logger.log('Levels already seeded');
@@ -629,11 +659,10 @@ export class GocashEcosystemService {
   }
 
   @OnEvent('ecosystem.checkin.completed')
-  async handleCheckinCompleted(payload: Record<string, any>) {
+  async handleCheckinCompleted(payload: CheckinCompletedPayload) {
     this.logger.log(`Checkin completed for user ${payload.userId}, streak: ${payload.streakCount}`);
     if (payload.companyId && payload.userId) {
       try {
-        const badge = payload.bonusEarned ? '🔥' : '✅';
         await this.notificationService.createWithTemplate(
           payload.companyId, payload.userId,
           NotificationType.DAILY_CHECKIN,
@@ -645,7 +674,7 @@ export class GocashEcosystemService {
   }
 
   @OnEvent('ecosystem.level.up')
-  async handleLevelUp(payload: Record<string, any>) {
+  async handleLevelUp(payload: LevelUpPayload) {
     this.logger.log(`User ${payload.userId} leveled up to ${payload.newLevel}`);
     if (payload.companyId && payload.userId) {
       try {
@@ -660,7 +689,7 @@ export class GocashEcosystemService {
   }
 
   @OnEvent('ecosystem.badge.earned')
-  async handleBadgeEarned(payload: Record<string, any>) {
+  async handleBadgeEarned(payload: BadgeEarnedPayload) {
     this.logger.log(`Badge earned by user ${payload.userId}`);
     if (payload.companyId && payload.userId) {
       try {
@@ -676,7 +705,7 @@ export class GocashEcosystemService {
   }
 
   @OnEvent('ecosystem.mission.completed')
-  async handleMissionCompleted(payload: Record<string, any>) {
+  async handleMissionCompleted(payload: MissionCompletedPayload) {
     this.logger.log(`Mission ${payload.missionName} completed by user ${payload.userId}`);
     if (payload.companyId && payload.userId) {
       try {

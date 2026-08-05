@@ -106,7 +106,6 @@ import { HomepageModule } from './modules/homepage/homepage.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { AdminSettingsModule } from './modules/admin-settings/admin-settings.module';
 import { MetricsModule } from './common/services/metrics.module';
-import { MetricsRegistryService } from './common/services/metrics-registry.service';
 import { EnterpriseCatalogModule } from './modules/enterprise-catalog/enterprise-catalog.module';
 import { AiOrchestratorModule } from './modules/ai-orchestrator/ai-orchestrator.module';
 import { AiRuntimeModule } from './modules/ai-runtime/ai-runtime.module';

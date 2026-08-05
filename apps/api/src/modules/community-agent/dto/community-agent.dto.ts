@@ -1,4 +1,4 @@
-﻿import { TradeAgentPriority, TradeAgentQuickAction, TradeAgentNotificationItem, TradeAgentMetric } from '../../agent-framework/dto/agent-shared.dto';
+﻿import { TradeAgentPriority, TradeAgentQuickAction, TradeAgentNotificationItem } from '../../agent-framework/dto/agent-shared.dto';
 
 export class CommunityDashboardCopilotResponse {
   todaysDiscussions: Array<{ title: string; communityName: string; replyCount: number; lastActivity: Date }>;
@@ -89,5 +89,3 @@ export class CommunityAgentInsightsResponse {
   notifications: CommunityNotificationsResponse;
   analytics: CommunityAnalyticsResponse;
 }
-
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'

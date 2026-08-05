@@ -1,17 +1,9 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Gauge } from 'prom-client';
 import { QueueNames } from '../../jobs/queues';
 import { MetricsRegistryService } from './metrics-registry.service';
-
-const ALL_QUEUES = [
-  QueueNames.EMAIL, QueueNames.EXPORT, QueueNames.NOTIFICATION,
-  QueueNames.CERTIFICATION, QueueNames.SUBSCRIPTION, QueueNames.RFQ,
-  QueueNames.ESCROW, QueueNames.SETTLEMENT, QueueNames.DISPUTE,
-  QueueNames.ANALYTICS, QueueNames.BESTSELLER, QueueNames.AI,
-  QueueNames.TRACKING,
-] as const;
 
 @Injectable()
 export class QueueMetricsService {

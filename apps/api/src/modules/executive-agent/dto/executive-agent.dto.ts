@@ -1,6 +1,4 @@
-﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-
-import { IsString, IsOptional, IsObject, IsArray } from 'class-validator';
+﻿import { IsString, IsOptional, IsObject } from 'class-validator';
 
 export class ExecutiveCopilotResponse {
   todayBrief: string;

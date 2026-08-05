@@ -36,7 +36,7 @@ export default function AboutTradingo() {
             </div>
 
             <div className="relative z-10 flex flex-col items-center px-8 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
-              <img src="/logo/trdn.png" alt="TRADINGO" loading="lazy"
+              <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy"
                 className="mx-auto h-10 w-auto opacity-40 sm:h-12" />
               <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent-500">
                 ✨ What is TRADINGO?

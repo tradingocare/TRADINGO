@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { FederationAnalytics, FederationExecutionResult, FederationNodeResult } from './interfaces/federation.interfaces';
+import { FederationAnalytics, FederationExecutionResult } from './interfaces/federation.interfaces';
 
 export interface StoredCollaboration {
   collaborationId: string;

@@ -9,7 +9,7 @@ export class AiBulkService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBulkJob(dto: BulkEnhancementDto, companyId: string, userId: string) {
+  async createBulkJob(dto: BulkEnhancementDto, companyId: string, _userId: string) {
     const jobs = await Promise.all(dto.productIds.map(productId =>
       this.prisma.aiJob.create({
         data: { productId, companyId, jobType: AiJobType.BULK_ENHANCEMENT, status: AiJobStatus.PENDING, payload: { jobTypes: dto.jobTypes, options: dto.options || {} } as any },

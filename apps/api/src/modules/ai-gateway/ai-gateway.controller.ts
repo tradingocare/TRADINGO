@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Query, UseGuards, Req, Patch, Res, HttpStatus } from '@nestjs/common'
+import { Controller, Post, Get, Param, Body, Query, UseGuards, Req, Patch, Res } from '@nestjs/common'
 import { ApiTags, ApiOperation } from '@nestjs/swagger'
 import { AiGatewayService } from './ai-gateway.service'
 import { ProviderRegistryService } from './provider-registry.service'

@@ -1,6 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { SocialPostType, CommunityVisibility } from '@prisma/client';
+import { SocialPostType } from '@prisma/client';
 
 @Injectable()
 export class SocialFeedService {

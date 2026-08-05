@@ -150,7 +150,7 @@ export class CompanyVerificationService {
   }
 
   private maskDocumentUrls(record: any) {
-    if (!record || !record.documents) return record;
+    if (!record?.documents) return record;
     const SENSITIVE_TYPES = ['PAN', 'AADHAAR', 'BANK_STATEMENT', 'GST_CERTIFICATE'];
     return {
       ...record,

@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, Query,
+  Controller, Get, Post, Delete, Body, Param, Query,
   UseGuards, HttpCode, HttpStatus, Sse, MessageEvent,
 } from '@nestjs/common'
 import { ApiTags, ApiOperation } from '@nestjs/swagger'
@@ -16,7 +16,7 @@ import {
   EnqueueTaskDto, DispatchActionDto, ExecuteWorkflowDto, ParallelBatchDto,
   CircuitBreakerConfigDto, SlaConfigDto,
 } from './dto/ai-runtime.dto'
-import { Observable, interval, from, switchMap, map } from 'rxjs'
+import { Observable, map } from 'rxjs'
 
 @ApiTags('AI Runtime')
 @Controller('ai-runtime')

@@ -98,7 +98,7 @@ export class AcceptAiSuggestionDto {
   @IsOptional()
   @IsObject()
   @ApiPropertyOptional({ description: 'Edits' })
-  edits?: Record<string, any>;
+  edits?: Record<string, unknown>;
 }
 
 export class BulkEnhancementDto {
@@ -113,7 +113,7 @@ export class BulkEnhancementDto {
   @IsOptional()
   @IsObject()
   @ApiPropertyOptional({ description: 'Options' })
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 export class QueryCatalogQualityDto {

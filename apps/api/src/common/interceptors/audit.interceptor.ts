@@ -22,7 +22,7 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap({
         next: (data: unknown) => {
-          const response = context.switchToHttp().getResponse();
+          context.switchToHttp().getResponse();
           this.auditLogService.create({
             action: auditOptions.action,
             resource: auditOptions.resource,

@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, UploadedFiles, UseInterceptors, Body, BadRequestException, ParseArrayPipe } from '@nestjs/common';
+import { Controller, Post, UseGuards, UploadedFiles, UseInterceptors, Body, BadRequestException } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StorageService } from './storage.service';

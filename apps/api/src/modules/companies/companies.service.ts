@@ -189,7 +189,7 @@ export class CompaniesService {
     page:        number
     limit:       number
   }) {
-    const { q, category, city, state, verified, elite, sellerType, minTrust, sortBy, page, limit } = params
+    const { q, category, city, verified, elite, sellerType, minTrust, sortBy, page, limit } = params
     const skip = (page - 1) * limit
 
     const where: Prisma.CompanyWhereInput = { deletedAt: null, status: { not: 'INACTIVE' } }

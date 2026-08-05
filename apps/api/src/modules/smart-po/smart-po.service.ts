@@ -508,7 +508,7 @@ export class SmartPoService {
 
   // ─── HELPERS ────────────────────────────────────────────────────────
 
-  private async trackVersion(tx: Record<string, any>, poId: string, status: string, userId: string, notes?: string) {
+  private async trackVersion(tx: Prisma.TransactionClient, poId: string, status: string, userId: string, notes?: string) {
     const latest = await tx.purchaseOrderVersion.findFirst({
       where: { purchaseOrderId: poId }, orderBy: { version: 'desc' },
     });
@@ -525,14 +525,14 @@ export class SmartPoService {
     });
   }
 
-  private async trackEvent(tx: Record<string, any>, poId: string, eventType: string, actorId: string, actorRole: string, metadata?: Record<string, unknown>) {
+  private async trackEvent(tx: Prisma.TransactionClient, poId: string, eventType: string, actorId: string, actorRole: string, metadata?: Record<string, unknown>) {
     await tx.purchaseOrderEvent.create({
       data: {
         purchaseOrderId: poId,
         eventType: eventType as PoEventType,
         actorId,
         actorRole,
-        metadata: metadata || undefined,
+        metadata: (metadata || undefined) as Prisma.InputJsonValue,
       },
     });
   }

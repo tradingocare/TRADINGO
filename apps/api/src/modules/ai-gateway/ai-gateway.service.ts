@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, ForbiddenException, HttpException } from '@nestjs/common'
+import { Injectable, Logger, BadRequestException, HttpException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { EventEmitter2 } from '@nestjs/event-emitter'
 import { PrismaService } from '../../prisma/prisma.service'

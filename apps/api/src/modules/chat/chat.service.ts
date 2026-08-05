@@ -327,7 +327,7 @@ export class ChatService {
     const msg = await this.prisma.message.findUnique({
       where: { id: messageId },
     });
-    if (!msg || msg.conversationId !== conversationId) throw new NotFoundException('Message not found');
+    if (msg?.conversationId !== conversationId) throw new NotFoundException('Message not found');
     if (msg.senderId !== userId) throw new ForbiddenException('Can only delete own messages');
 
     await this.prisma.message.update({
@@ -340,7 +340,7 @@ export class ChatService {
 
   async markAsSeen(conversationId: string, messageId: string, userId: string) {
     const msg = await this.prisma.message.findUnique({ where: { id: messageId } });
-    if (!msg || msg.conversationId !== conversationId) throw new NotFoundException('Message not found');
+    if (msg?.conversationId !== conversationId) throw new NotFoundException('Message not found');
 
     await this.prisma.message.update({
       where: { id: messageId },
@@ -430,7 +430,7 @@ export class ChatService {
 
   async reportMessage(conversationId: string, messageId: string, userId: string, dto: ReportMessageDto) {
     const msg = await this.prisma.message.findUnique({ where: { id: messageId } });
-    if (!msg || msg.conversationId !== conversationId) throw new NotFoundException('Message not found');
+    if (msg?.conversationId !== conversationId) throw new NotFoundException('Message not found');
 
     await this.prisma.reportedMessage.create({
       data: { messageId, reportedById: userId, reason: dto.reason, description: dto.description },

@@ -130,7 +130,7 @@ export default function BusinessCities() {
           <div className="relative z-10 flex flex-col items-center text-center">
             <Link href="/products">
               <img
-                src="/logo/trdn.png"
+                src="/logo/trdn6.png"
                 alt="TRDN"
                 className="mx-auto mb-4 h-10 w-auto opacity-50 transition-opacity hover:opacity-70 sm:h-12"
               />

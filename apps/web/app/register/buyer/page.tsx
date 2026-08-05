@@ -20,7 +20,7 @@ export default function BuyerRegisterPage() {
         <div className="flex items-center justify-between px-6 py-4"
           style={{ borderBottom: '1px solid var(--border-color)' }}>
           <Link href="/">
-            <img src="/logo/trdn.png" alt="TRADINGO" className="h-9 w-9 object-contain" />
+            <img src="/logo/trdn6.png" alt="TRADINGO" className="h-9 w-9 object-contain" />
           </Link>
           <p className="text-text-secondary text-xs">
             Already have an account?{' '}

@@ -63,11 +63,11 @@ export const metadata: Metadata = {
   applicationName: 'TRADINGO',
   icons: {
     icon: [
-      { url: '/logo/trdn.png', type: 'image/png', sizes: '792x547' },
+      { url: '/logo/trdn6.png', type: 'image/png', sizes: '792x547' },
       { url: '/favicon.ico', sizes: 'any' },
     ],
     apple: [
-      { url: '/logo/trdn.png', sizes: '792x547', type: 'image/png' },
+      { url: '/logo/trdn6.png', sizes: '792x547', type: 'image/png' },
     ],
   },
   openGraph: {
@@ -77,14 +77,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: 'TRADINGO',
-    images: [{ url: '/logo/trdn.png', width: 792, height: 547, alt: 'TRADINGO' }],
+    images: [{ url: '/logo/trdn6.png', width: 792, height: 547, alt: 'TRADINGO' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: "TRADINGO | The Global Smart Trade System",
     description:
       "TRADINGO is a Global Smart Trade System powered by TRADHEXA, enabling businesses worldwide to discover, connect, negotiate, and grow.",
-    images: ['/logo/trdn.png'],
+    images: ['/logo/trdn6.png'],
   },
   alternates: {
     canonical: 'https://www.tradingo.com',

@@ -93,7 +93,7 @@ export default function ForgotPasswordPage() {
 
         <div className="text-center mb-8">
           <Link href="/">
-            <Image src="/logo/trdn.png" alt="TRADINGO"
+            <Image src="/logo/trdn6.png" alt="TRADINGO"
               width={44} height={44} className="object-contain mx-auto mb-3" />
           </Link>
         </div>

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SearchService } from '../../search/search.service';
 import { GeoSearchService } from './geo-search.service';
 import { SearchRankingService } from './search-ranking.service';
-import { UnifiedRankingService } from './unified-ranking.service';
+import { UnifiedRankingService, UnifiedRankingScore } from './unified-ranking.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { SearchAnalyticsService } from './search-analytics.service';
 import { ProductSearchDto } from '../dto/product-search.dto';
@@ -175,7 +175,7 @@ export class ProductSearchService {
         };
       });
 
-      const rankedHits = this.unifiedRanking.reorderByScore(hits, (h) => h._unifiedRanking);
+      const rankedHits = this.unifiedRanking.reorderByScore(hits as Array<Record<string, UnifiedRankingScore>>, (h) => h._unifiedRanking);
 
       const totalInfo = osResponse.body.hits.total;
       const total = typeof totalInfo === 'number' ? totalInfo : totalInfo?.value ?? 0;

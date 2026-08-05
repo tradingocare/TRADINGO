@@ -1,7 +1,7 @@
-import { IsString, IsOptional, IsNumber, IsEnum, IsDateString, Min } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CreditStatus, RiskLevel, CreditApprovalStatus } from '@prisma/client';
+import { CreditStatus, RiskLevel } from '@prisma/client';
 
 export class SetCreditLimitDto {
   @IsNumber() @Min(0) @Type(() => Number)

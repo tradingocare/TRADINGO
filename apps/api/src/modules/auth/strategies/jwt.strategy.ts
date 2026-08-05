@@ -40,7 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       select: { id: true, isActive: true },
     });
 
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       await this.redis.set(cacheKey, 'false', 300);
       throw new UnauthorizedException('User not found or inactive');
     }

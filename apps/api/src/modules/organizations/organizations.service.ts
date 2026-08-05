@@ -235,7 +235,7 @@ export class OrganizationsService {
       where: { token },
       include: { organization: { select: { id: true, name: true, deletedAt: true } } },
     });
-    if (!invitation || invitation.status !== 'PENDING') throw new NotFoundException('Invalid or expired invitation');
+    if (invitation?.status !== 'PENDING') throw new NotFoundException('Invalid or expired invitation');
     if (invitation.organization.deletedAt) throw new NotFoundException('Organization no longer exists');
     if (invitation.expiresAt < new Date()) throw new ConflictException('Invitation has expired');
 
@@ -265,7 +265,7 @@ export class OrganizationsService {
       where: { token },
       select: { id: true, organizationId: true, status: true },
     });
-    if (!invitation || invitation.status !== 'PENDING') throw new NotFoundException('Invalid or expired invitation');
+    if (invitation?.status !== 'PENDING') throw new NotFoundException('Invalid or expired invitation');
 
     await this.prisma.organizationInvitation.update({
       where: { id: invitation.id },

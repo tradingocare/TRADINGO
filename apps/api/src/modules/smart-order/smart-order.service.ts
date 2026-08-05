@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException,
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrderService } from '../order/order.service';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType, OrderStatus, OrderSource, OrderType } from '@prisma/client';
+import { NotificationType, OrderStatus, OrderSource, OrderType, type PurchaseOrder, type Order } from '@prisma/client';
 import { UpdateOrderDto, CancelOrderDto, CreateReturnDto } from './dto/smart-order.dto';
 
 @Injectable()
@@ -109,7 +109,7 @@ export class SmartOrderService {
     return prefix;
   }
 
-  private async notifyOrderCreation(po: Record<string, any>, order: Record<string, any>, userId: string) {
+  private async notifyOrderCreation(po: PurchaseOrder, order: Order, userId: string) {
     try {
       await this.notificationService.createWithTemplate(
         po.buyerCompanyId,

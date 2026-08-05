@@ -172,7 +172,7 @@ export class BuyerAgentService {
     const negWhere = companyId ? { buyerCompanyId: companyId } : { id: '' };
     const quoteWhere = companyId ? { rfq: { companyId } } : { id: '' };
 
-    const [negotiations, quotes] = await Promise.all([
+    const [negotiations] = await Promise.all([
       this.prisma.negotiation.findMany({ where: negWhere, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, status: true, proposedPrice: true, createdAt: true } }).catch(gracefulCatch('buyerAgent.getNegotiationAdvisor.negotiations', [])),
       this.prisma.quote.findMany({ where: quoteWhere, take: 50, select: { id: true, totalAmount: true, status: true, companyId: true } }).catch(gracefulCatch('buyerAgent.getNegotiationAdvisor.quotes', [])),
     ]);

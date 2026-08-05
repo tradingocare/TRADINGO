@@ -580,11 +580,11 @@ All 3 production blockers fully remediated:
 - **Verification**: prisma validate ✅, prisma generate ✅, tsc api 0 errors ✅, tsc web 0 errors ✅
 
 ## Next Steps
-1. **Fix pre-existing 500 errors** — Categories, Industries, Companies, Search controllers return 500 under any load
-2. **Fix rate limiter 429 vs 500** — Ensure throttled requests return correct status code
-3. **Optimize health endpoint** — Reduce from 5-backend check to lightweight DB-only check
-4. **Re-run load test** — After above fixes, verify <5% error rate at 100 VUs
-5. **Cloud VPS/K8s Deployment** — Deploy using existing `ops/k8s/` manifests
+1. **Fix pre-existing 500 errors** — Audited 2026-08-04: root cause was OpenSearch outage at test time (Prisma fallback since added in `searchProducts()`); all 4 controllers (categories/industries/companies/search) verified clean — no N+1, no unhandled exceptions. ✅
+2. **Fix rate limiter 429 vs 500** — Fixed `RedisThrottlerStorage` bug (`EXPIRE key 0` was deleting throttle keys → blocking ineffective); throttled requests now return correct 429 and log at warn level. ✅
+3. **Optimize health endpoint** — `/health` + `/ready` are DB-only (Prisma ping); full 5-backend diagnostics moved to `/health/diagnostics`. ✅
+4. **Re-run load test** — 100 VUs: 0.00% 5xx across 136k requests (baseline 84.12%), p95 7.65 ms, 293.7 req/s, 100% checks passed, memory flat. PASS. Report: `docs/reports/LOAD-TEST-REMEDIATION-ROOT-CAUSE.md`. ✅
+5. **Cloud VPS/K8s Deployment** — Deploy using existing `ops/k8s/` manifests. Pre-requisites all completed (rate limiting ✅, security hardening ✅, CI/CD ✅, load test ✅). Per roadmap: READY.
 
 ## Relevant Files
 - `TRADINGO-SECURITY-CERTIFICATION.md`: 14-category security audit
@@ -1319,7 +1319,7 @@ Replaced all invisible `text-white`/`text-white/*` classes on `#DBF1FD` light bl
 - **Report**: `docs/reports/SPRINT-6J-FINANCE-DASHBOARD.md`
 
 ## Status
-**PRP-03A complete (86/100, PRODUCTION GO).** All 7 Critical + 12 High findings remediated. Operations score improved from 48/100 to 86/100. **Load Test: NO-GO (84% error rate, 5/7 endpoints broken).** Pre-existing 500 errors found in categories, industries, companies, and search controllers must be fixed before production.
+**PRP-03A complete (86/100, PRODUCTION GO).** Load test re-verified 2026-08-04: **0.00% server errors @ 100 VUs across 136,115 requests (was 84.12% NO-GO), P95 7.65 ms, 293.7 req/s, 100% checks passed, memory flat.** Rate limiter returns correct 429s (block-window bug fixed); `/health` is DB-only; all 4 marketplace controllers audited clean. Report: `docs/reports/LOAD-TEST-REMEDIATION-ROOT-CAUSE.md`.
 
 ### Done (Sprint 6L — Critical Stabilization)
 - **Scope**: Resolve Phase 2 release blockers only. No new features/modules/UI. Zero business behaviour changes.

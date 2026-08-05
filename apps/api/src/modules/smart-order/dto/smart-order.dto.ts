@@ -1,6 +1,5 @@
-import { IsString, IsOptional, IsEnum, IsArray, IsNumber, Min, ValidateNested, IsBoolean, IsDateString } from 'class-validator';
-import { Type } from 'class-transformer';
-import { DeliveryMethod, CancellationReason, CancellationActor, ReturnReason } from '@prisma/client';
+import { IsString, IsOptional, IsEnum, IsNumber, Min, IsBoolean, IsDateString } from 'class-validator';
+import { CancellationReason, CancellationActor, ReturnReason } from '@prisma/client';
 
 export class CreateOrderItemDto {
   @IsOptional() @IsString() productId?: string;

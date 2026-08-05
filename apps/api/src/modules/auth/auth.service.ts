@@ -92,7 +92,7 @@ export class AuthService {
     }
 
     const user = await this.findUserByIdentifier(dto.identifier);
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       await this.handleFailedLogin(dto.identifier, ipAddress);
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -139,7 +139,6 @@ export class AuthService {
     await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, userAgent, ipAddress);
 
     // Update rememberMe expiry for refresh token
-    const rememberMeExpiry = dto.rememberMe ? 30 : 7;
     const cookieMaxAge = dto.rememberMe ? 30 * 24 * 60 * 60 : 15 * 60;
 
     return {
@@ -258,7 +257,7 @@ export class AuthService {
       include: { user: true },
     });
 
-    if (!oldSession || !oldSession.user) {
+    if (!oldSession?.user) {
       throw new UnauthorizedException('Session not found');
     }
 

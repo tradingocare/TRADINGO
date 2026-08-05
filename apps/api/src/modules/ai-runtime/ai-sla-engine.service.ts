@@ -3,7 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter'
 import { PrismaService } from '../../prisma/prisma.service'
 import { NotificationService } from '../notification/notification.service'
 import { NotificationType, NotificationPriority } from '@prisma/client'
-import { SlaStatus, SlaConfigDto, StreamingEvent } from './dto/ai-runtime.dto'
+import { SlaStatus, StreamingEvent } from './dto/ai-runtime.dto'
 
 interface SlaConfig {
   p50TargetMs: number

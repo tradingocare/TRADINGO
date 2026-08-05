@@ -8,8 +8,8 @@ export class AiContextEngine {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAggregatedContext(dto: ContextRequestDto): Promise<Record<string, any>> {
-    const context: Record<string, any> = {}
+  async getAggregatedContext(dto: ContextRequestDto): Promise<Record<string, unknown>> {
+    const context: Record<string, unknown> = {}
     const fetches: Promise<void>[] = []
 
     if (dto.include.includes('company')) {
@@ -42,7 +42,7 @@ export class AiContextEngine {
     return context
   }
 
-  private async getCompanyContext(companyId: string): Promise<Record<string, any>> {
+  private async getCompanyContext(companyId: string): Promise<Record<string, unknown>> {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
       select: {
@@ -77,7 +77,7 @@ export class AiContextEngine {
     }
   }
 
-  private async getProductContext(productId: string): Promise<Record<string, any>> {
+  private async getProductContext(productId: string): Promise<Record<string, unknown>> {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
       select: {
@@ -102,7 +102,7 @@ export class AiContextEngine {
     return { ...product, rfqCount, orderCount, mediaCount: product.media.length, specCount: product.specifications.length, attrCount: product.attributes.length }
   }
 
-  private async getUserContext(userId: string): Promise<Record<string, any>> {
+  private async getUserContext(userId: string): Promise<Record<string, unknown>> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, name: true, email: true, role: true, verificationLevel: true, isActive: true },
@@ -110,7 +110,7 @@ export class AiContextEngine {
     return user ?? {}
   }
 
-  private async getMarketplaceContext(): Promise<Record<string, any>> {
+  private async getMarketplaceContext(): Promise<Record<string, unknown>> {
     const [companyCount, buyerCount, sellerCount, productCount, categoryCount] = await Promise.all([
       this.prisma.company.count({ where: { status: 'ACTIVE' as any } }),
       this.prisma.company.count({ where: { status: 'ACTIVE' as any, businessType: { in: ['BUYER' as any, 'BOTH' as any] } } }),
@@ -127,7 +127,7 @@ export class AiContextEngine {
     return { companyCount, buyerCount, sellerCount, productCount, categoryCount, ordersToday, rfqsToday }
   }
 
-  private async getMembershipContext(companyId: string): Promise<Record<string, any>> {
+  private async getMembershipContext(companyId: string): Promise<Record<string, unknown>> {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
       select: {
@@ -138,7 +138,7 @@ export class AiContextEngine {
         currentPlan: { select: { planId: true, name: true } },
       },
     })
-    if (!company || !company.currentPlan) {
+    if (!company?.currentPlan) {
       return { planName: 'Free', status: company?.subscriptionStatus ?? 'TRIAL' }
     }
     return {

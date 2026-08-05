@@ -79,7 +79,7 @@ export class UnifiedRankingService {
     };
   }
 
-  reorderByScore<T extends Record<string, any>>(hits: T[], getScore: (hit: T) => UnifiedRankingScore): T[] {
+  reorderByScore<T extends Record<string, unknown>>(hits: T[], getScore: (hit: T) => UnifiedRankingScore): T[] {
     return [...hits].sort((a, b) => {
       const sa = getScore(a);
       const sb = getScore(b);

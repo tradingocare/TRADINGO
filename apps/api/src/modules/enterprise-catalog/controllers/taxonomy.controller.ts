@@ -5,7 +5,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { Public } from '../../../common/decorators/public.decorator';
 import { TaxonomyService } from '../services/taxonomy.service';
-import { CreateCatalogSynonymDto, UpdateCatalogSynonymDto, CreateIndustryCategoryMappingDto, UpdateIndustryCategoryMappingDto } from '../dto/taxonomy.dto';
+import { CreateCatalogSynonymDto, UpdateCatalogSynonymDto, CreateIndustryCategoryMappingDto } from '../dto/taxonomy.dto';
 
 @ApiTags('Taxonomy')
 @Controller('enterprise-catalog/taxonomy')

@@ -253,7 +253,7 @@ export class OrderService {
     }
 
     const allowedTransitions = STATUS_FLOW[order.status];
-    if (!allowedTransitions || !allowedTransitions.includes(newStatus)) {
+    if (!allowedTransitions?.includes(newStatus)) {
       throw new BadRequestException(`Cannot transition from ${order.status} to ${newStatus}`);
     }
 
@@ -297,7 +297,7 @@ export class OrderService {
     if (order.status !== 'PROCESSING') throw new BadRequestException('Order must be in PROCESSING status');
 
     const location = await this.prisma.orderLocation.findUnique({ where: { id: locationId } });
-    if (!location || location.orderId !== orderId) throw new NotFoundException('Location not found');
+    if (location?.orderId !== orderId) throw new NotFoundException('Location not found');
     if (location.deliveryStatus !== 'PENDING') throw new BadRequestException('Location already dispatched');
 
     const updated = await this.prisma.orderLocation.update({
@@ -321,7 +321,7 @@ export class OrderService {
     if (order.status !== 'DISPATCHED') throw new BadRequestException('Order must be in DISPATCHED status');
 
     const location = await this.prisma.orderLocation.findUnique({ where: { id: locationId } });
-    if (!location || location.orderId !== orderId) throw new NotFoundException('Location not found');
+    if (location?.orderId !== orderId) throw new NotFoundException('Location not found');
     if (location.deliveryStatus !== 'DISPATCHED') throw new BadRequestException('Location must be dispatched first');
 
     const updated = await this.prisma.orderLocation.update({

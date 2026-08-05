@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CreateCatalogSynonymDto, UpdateCatalogSynonymDto, CreateIndustryCategoryMappingDto, UpdateIndustryCategoryMappingDto } from '../dto/taxonomy.dto';
+import { CreateCatalogSynonymDto, UpdateCatalogSynonymDto, CreateIndustryCategoryMappingDto } from '../dto/taxonomy.dto';
 
 @Injectable()
 export class TaxonomyService {

@@ -96,7 +96,7 @@ export class EnterpriseCommerceEventHandler {
     }
   }
 
-  private async notifySeller(companyId: string, userId: string, type: string, context: Record<string, any>) {
+  private async notifySeller(companyId: string, userId: string, type: string, context: Record<string, unknown>) {
     try {
       await this.notification.createWithTemplate(
         companyId,

@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { RateLimits } from '../../common/constants/rate-limits.const';

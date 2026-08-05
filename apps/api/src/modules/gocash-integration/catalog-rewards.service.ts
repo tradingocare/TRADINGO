@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GocashService } from '../../modules/gocash/gocash.service';
-import { GOCASH_REWARDS, INTEGRATION_SOURCE, SYSTEM_ACTOR } from './constants';
+import { GOCASH_REWARDS, INTEGRATION_SOURCE } from './constants';
 
 @Injectable()
 export class CatalogRewardsService {

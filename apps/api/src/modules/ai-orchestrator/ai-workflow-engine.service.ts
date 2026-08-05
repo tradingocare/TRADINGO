@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { AiOrchestratorService } from './ai-orchestrator.service'
 import {
   WorkflowDefinition, WorkflowStep, WorkflowExecuteDto,
@@ -160,8 +160,8 @@ export class AiWorkflowEngine {
     }
   }
 
-  private buildStepPayload(step: WorkflowStep, context: Record<string, any>, dto: WorkflowExecuteDto): Record<string, any> {
-    const payload: Record<string, any> = {}
+  private buildStepPayload(step: WorkflowStep, context: Record<string, unknown>, _dto: WorkflowExecuteDto): Record<string, unknown> {
+    const payload: Record<string, unknown> = {}
     if (step.inputMapping) {
       for (const [payloadKey, ctxKey] of Object.entries(step.inputMapping)) {
         if (ctxKey in context) {
@@ -172,7 +172,7 @@ export class AiWorkflowEngine {
     return payload
   }
 
-  private evaluateCondition(condition: string, context: Record<string, any>): boolean {
+  private evaluateCondition(condition: string, context: Record<string, unknown>): boolean {
     try {
       const match = condition.match(/^context\.(\w+)\s*(===|!==|>|<|>=|<=)\s*(.+)$/)
       if (!match) return true

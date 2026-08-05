@@ -215,7 +215,7 @@ export class AiProductIntelligenceService {
     return { productId: dto.productId, suggestion: content };
   }
 
-  async suggestRelatedProducts(dto: SuggestRelatedProductsDto, userId: string) {
+  async suggestRelatedProducts(dto: SuggestRelatedProductsDto, _userId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
       include: { category: true, specifications: true },
@@ -231,7 +231,7 @@ export class AiProductIntelligenceService {
     const scored = candidates.map(c => {
       let score = 0;
       if (c.categoryId === product.categoryId) score += 50;
-      if (c.brand && product.brand && c.brand.toLowerCase() === product.brand.toLowerCase()) score += 30;
+      if (c.brand && c.brand.toLowerCase() === product.brand?.toLowerCase()) score += 30;
       score += this.similarityScore(c.name, product.name) * 20;
       return { ...c, score };
     }).sort((a, b) => b.score - a.score).slice(0, limit);

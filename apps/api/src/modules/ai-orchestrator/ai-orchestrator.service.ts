@@ -34,7 +34,7 @@ const SERVICE_MAP: Record<string, ServiceClass> = {
   FounderAiAggregatorService,
 }
 
-type ParamBuilder = (companyId: string, userId: string | undefined, payload: Record<string, any>) => any[]
+type ParamBuilder = (companyId: string, userId: string | undefined, payload: Record<string, unknown>) => any[]
 
 const PARAM_BUILDERS: Record<string, ParamBuilder> = {
   AiProductIntelligenceService: (_c, u, p) => [p, u ?? 'system'],
@@ -172,7 +172,7 @@ export class AiOrchestratorService implements OnModuleInit {
     }
   }
 
-  async dispatchRaw(actionId: string, companyId: string, userId: string | undefined, payload: Record<string, any>): Promise<any> {
+  async dispatchRaw(actionId: string, companyId: string, userId: string | undefined, payload: Record<string, unknown>): Promise<any> {
     const result = await this.dispatch({ actionId, companyId, userId, payload, useCache: false })
     return result.result
   }

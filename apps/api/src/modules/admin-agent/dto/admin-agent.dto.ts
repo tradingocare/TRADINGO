@@ -101,5 +101,3 @@ export class AdminAgentAllInsightsResponse {
   performanceMetrics: PerformanceMetricsResponse;
   dailyBrief: DailyBriefResponse;
 }
-
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'

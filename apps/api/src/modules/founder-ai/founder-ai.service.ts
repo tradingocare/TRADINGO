@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
-import { Prisma, DisputeStatus, ShipmentStatus, IncidentStatus, IncidentSeverity } from '@prisma/client'
+import { Prisma, DisputeStatus, ShipmentStatus, IncidentStatus } from '@prisma/client'
 import { AiGatewayService } from '../ai-gateway/ai-gateway.service'
 import { AnalyticsService } from '../analytics/analytics.service'
 import { MarketplaceIntelligenceEngine } from '../marketplace-intelligence/marketplace-intelligence.engine'
@@ -122,11 +122,10 @@ export class FounderAiAggregatorService {
     const yesterdayStart = new Date(yesterday.getTime() - 86400000)
     yesterdayStart.setHours(0, 0, 0, 0)
 
-    const [totalUsers, totalCompanies, ordersToday, ordersYesterday, signupsToday,
+    const [totalUsers, ordersToday, ordersYesterday, signupsToday,
       rfqsToday, quotesToday, paymentsToday, openDisputes, disputesToday,
-      pendingVerifications, poCount, shipmentsDelayed] = await Promise.all([
+      pendingVerifications] = await Promise.all([
       this.prisma.user.count(),
-      this.prisma.company.count({ where: { deletedAt: null } }),
       this.prisma.order.count({ where: { createdAt: { gte: todayStart } } }),
       this.prisma.order.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart } } }),
       this.prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
@@ -136,8 +135,6 @@ export class FounderAiAggregatorService {
       this.prisma.dispute.count({ where: { status: { notIn: [DisputeStatus.RESOLVED, DisputeStatus.CANCELLED, DisputeStatus.EXPIRED] } } }).catch(gracefulCatch('founderAi.morningBrief.openDisputes', 0)),
       this.prisma.dispute.count({ where: { createdAt: { gte: todayStart } } }).catch(gracefulCatch('founderAi.morningBrief.newDisputes', 0)),
       this.prisma.companyVerification.count({ where: { status: 'PENDING' } }).catch(gracefulCatch('founderAi.morningBrief.pendingVerifications', 0)),
-      this.prisma.purchaseOrder.count().catch(gracefulCatch('founderAi.morningBrief.poCount', 0)),
-      this.prisma.shipment.count({ where: { status: { in: [ShipmentStatus.IN_TRANSIT, ShipmentStatus.OUT_FOR_DELIVERY] } } }).catch(gracefulCatch('founderAi.morningBrief.delayedShipments', 0)),
     ])
 
     const revData = await this.financeAggregator.getAuthoritativeRevenue({
@@ -230,7 +227,7 @@ export class FounderAiAggregatorService {
     weekAgo.setHours(0, 0, 0, 0)
 
     const [dailyRevenue, dailyOrders, completedMissions, expiredRfqs, cancelledOrders, abandonedQuotes,
-      pendingVerifications, overdueCount, expiringSoon, totalUsers, totalCompanies] = await Promise.all([
+      pendingVerifications, overdueCount, expiringSoon, totalCompanies] = await Promise.all([
       this.prisma.order.aggregate({
         where: { createdAt: { gte: todayStart }, status: { in: ['COMPLETED', 'DELIVERED'] } },
         _sum: { totalAmount: true },
@@ -243,7 +240,6 @@ export class FounderAiAggregatorService {
       this.prisma.companyVerification.count({ where: { status: 'PENDING' } }).catch(gracefulCatch('founderAi.eveningSummary.pendingVerifications', 0)),
       this.prisma.collectionNote.count({ where: { followUpAt: { lte: today } } }).catch(gracefulCatch('founderAi.eveningSummary.overdueCollections', 0)),
       this.prisma.company.count({ where: { subscriptionExpiresAt: { lte: new Date(today.getTime() + 7 * 86400000), gte: todayStart } } }).catch(gracefulCatch('founderAi.eveningSummary.expiringSubscriptions', 0)),
-      this.prisma.user.count().catch(gracefulCatch('founderAi.eveningSummary.totalUsers', 0)),
       this.prisma.company.count({ where: { deletedAt: null } }).catch(gracefulCatch('founderAi.eveningSummary.totalCompanies', 0)),
     ])
 
@@ -307,7 +303,7 @@ export class FounderAiAggregatorService {
     if (cached) return cached
 
     const [revenueTrend, orders30d, users30d, rfqs30d, categories, cities, states,
-      industries, topBuyers, topSellers, activeCompanies] = await Promise.all([
+      industries, topBuyers, topSellers] = await Promise.all([
       this.prisma.$queryRaw<Array<{ day: string; amount: number }>>(Prisma.sql`
         SELECT DATE(o.created_at)::text as day, COALESCE(SUM(o.total_amount),0) as amount
         FROM "Order" o WHERE o.created_at >= ${thirtyDaysAgo} AND o.status IN ('COMPLETED','DELIVERED')
@@ -322,7 +318,6 @@ export class FounderAiAggregatorService {
       this.prisma.companyIndustry.groupBy({ by: ['industryId'], _count: { industryId: true }, orderBy: { _count: { industryId: 'desc' } }, take: 10 }).catch(gracefulCatch('founderAi.executiveDashboard.industries', [] as Array<{ industryId: string; _count: { industryId: number } }>)),
       this.prisma.order.groupBy({ by: ['buyerCompanyId'], _count: { id: true }, _sum: { totalAmount: true }, orderBy: { _count: { id: 'desc' } }, take: 10 }).catch(gracefulCatch('founderAi.executiveDashboard.topBuyers', [])),
       this.prisma.order.groupBy({ by: ['sellerCompanyId'], _count: { id: true }, _sum: { totalAmount: true }, orderBy: { _count: { id: 'desc' } }, take: 10 }).catch(gracefulCatch('founderAi.executiveDashboard.topSellers', [])),
-      this.prisma.company.count({ where: { deletedAt: null } }).catch(gracefulCatch('founderAi.executiveDashboard.activeCompanies', 0)),
     ])
 
     const cashFlowData = await this.prisma.payment.aggregate({
@@ -335,8 +330,8 @@ export class FounderAiAggregatorService {
       _sum: { amount: true },
     }).catch(gracefulCatch('founderAi.executiveDashboard.refundData', { _sum: { amount: 0 } }))
 
-    const allTimeUsers = await this.prisma.user.count().catch(gracefulCatch('founderAi.executiveDashboard.allTimeUsers', 0))
-    const allTimeRfqs = await this.prisma.rfq.count().catch(gracefulCatch('founderAi.executiveDashboard.allTimeRfqs', 0))
+    await this.prisma.user.count().catch(gracefulCatch('founderAi.executiveDashboard.allTimeUsers', 0))
+    await this.prisma.rfq.count().catch(gracefulCatch('founderAi.executiveDashboard.allTimeRfqs', 0))
 
     const monthOld = new Date(today.getTime() - 60 * 86400000)
     const prevMonthOrders = await this.prisma.order.count({ where: { createdAt: { gte: monthOld, lt: thirtyDaysAgo } } }).catch(gracefulCatch('founderAi.executiveDashboard.prevMonthOrders', 0))
@@ -482,7 +477,7 @@ export class FounderAiAggregatorService {
     if (cached) return cached
 
     const [overdueInvoices, totalOverdueAmount, openDisputes, fraudAlerts24h, blacklisted,
-      delayedShipments, totalShipments, totalBuyerCredits] = await Promise.all([
+      delayedShipments, totalShipments] = await Promise.all([
       this.prisma.invoice.count({ where: { status: 'OVERDUE' } }).catch(gracefulCatch('founderAi.riskIntelligence.overdueInvoices', 0)),
       this.prisma.invoice.aggregate({ where: { status: 'OVERDUE' }, _sum: { totalAmount: true } }).then(r => Number(r._sum.totalAmount ?? 0)).catch(gracefulCatch('founderAi.riskIntelligence.totalOverdueAmount', 0)),
       this.prisma.dispute.count({ where: { status: { notIn: [DisputeStatus.RESOLVED, DisputeStatus.CANCELLED] } } }).catch(gracefulCatch('founderAi.riskIntelligence.openDisputes', 0)),
@@ -490,7 +485,6 @@ export class FounderAiAggregatorService {
       this.prisma.referralBlacklist.count().catch(gracefulCatch('founderAi.riskIntelligence.blacklisted', 0)),
       this.prisma.shipment.count({ where: { status: ShipmentStatus.IN_TRANSIT } }).catch(gracefulCatch('founderAi.riskIntelligence.delayedShipments', 0)),
       this.prisma.shipment.count({ where: { createdAt: { gte: thirtyDaysAgo } } }).catch(gracefulCatch('founderAi.riskIntelligence.totalShipments', 0)),
-      this.prisma.buyerCredit.count({ where: { status: 'ACTIVE' } }).catch(gracefulCatch('founderAi.riskIntelligence.totalBuyerCredits', 0)),
     ])
 
     const totalCompanies = await this.prisma.company.count({ where: { deletedAt: null } }).catch(gracefulCatch('founderAi.riskIntelligence.totalCompanies', 1))
@@ -578,9 +572,7 @@ export class FounderAiAggregatorService {
     const cached = await this.cacheGet<FounderAiResponse<GrowthIntelligenceResponse>>(cacheK)
     if (cached) return cached
 
-    const [currentOrders, prevOrders, cities, categories, industries] = await Promise.all([
-      this.prisma.order.groupBy({ by: ['sellerCompanyId'], _count: { id: true }, _sum: { totalAmount: true }, where: { createdAt: { gte: thirtyDaysAgo }, status: { in: ['COMPLETED', 'DELIVERED'] } } }).catch(gracefulCatch('founderAi.growthIntelligence.currentOrders', [])),
-      this.prisma.order.groupBy({ by: ['sellerCompanyId'], _count: { id: true }, where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo }, status: { in: ['COMPLETED', 'DELIVERED'] } } }).catch(gracefulCatch('founderAi.growthIntelligence.prevOrders', [])),
+    const [cities, categories, industries] = await Promise.all([
       this.prisma.companyLocation.groupBy({ by: ['city', 'state'], _count: { id: true }, where: { deletedAt: null, createdAt: { gte: thirtyDaysAgo } }, orderBy: { _count: { id: 'desc' } }, take: 10 }).catch(gracefulCatch('founderAi.growthIntelligence.cities', [] as Array<{ city: string; state: string; _count: { id: number } }>)),
       this.prisma.product.groupBy({ by: ['categoryId'], _count: { id: true }, where: { createdAt: { gte: thirtyDaysAgo } }, orderBy: { _count: { id: 'desc' } }, take: 10 }).catch(gracefulCatch('founderAi.growthIntelligence.categories', [] as Array<{ categoryId: string; _count: { id: number } }>)),
       this.prisma.companyIndustry.groupBy({ by: ['industryId'], _count: { industryId: true }, orderBy: { _count: { industryId: 'desc' } }, take: 10 }).catch(gracefulCatch('founderAi.growthIntelligence.industries', [] as Array<{ industryId: string; _count: { industryId: number } }>)),
@@ -703,7 +695,7 @@ export class FounderAiAggregatorService {
 
     const [totalOrders, completedOrders, totalUsers30d, totalCompanies,
       trustAvg, trustTotal, overdueAmount, totalInvoiceAmount,
-      openDisputes, totalShipments, delayedShipments,
+      openDisputes,
       ecosystemUsers, ecosystemXp] = await Promise.all([
       this.prisma.order.count({ where: { createdAt: { gte: thirtyDaysAgo } } }).catch(gracefulCatch('founderAi.healthScore.totalOrders', 0)),
       this.prisma.order.count({ where: { createdAt: { gte: thirtyDaysAgo }, status: { in: ['COMPLETED', 'DELIVERED'] } } }).catch(gracefulCatch('founderAi.healthScore.completedOrders', 0)),
@@ -714,8 +706,6 @@ export class FounderAiAggregatorService {
       this.prisma.invoice.aggregate({ where: { status: 'OVERDUE' }, _sum: { totalAmount: true } }).then(r => Number(r._sum.totalAmount ?? 0)).catch(gracefulCatch('founderAi.healthScore.overdueAmount', 0)),
       this.prisma.invoice.aggregate({ _sum: { totalAmount: true } }).then(r => Number(r._sum.totalAmount ?? 0)).catch(gracefulCatch('founderAi.healthScore.totalInvoiceAmount', 1)),
       this.prisma.dispute.count({ where: { status: { notIn: ['RESOLVED', 'CANCELLED'] } } }).catch(gracefulCatch('founderAi.healthScore.openDisputes', 0)),
-      this.prisma.shipment.count({ where: { createdAt: { gte: thirtyDaysAgo } } }).catch(gracefulCatch('founderAi.healthScore.totalShipments', 0)),
-      this.prisma.shipment.count({ where: { createdAt: { gte: thirtyDaysAgo }, status: { in: ['IN_TRANSIT', 'OUT_FOR_DELIVERY'] } } }).catch(gracefulCatch('founderAi.healthScore.delayedShipments', 0)),
       this.prisma.ecosystemUserLevel.count().catch(gracefulCatch('founderAi.healthScore.ecosystemUsers', 0)),
       this.prisma.ecosystemXPTransaction.aggregate({ _sum: { amount: true } }).then(r => r._sum.amount ?? 0).catch(gracefulCatch('founderAi.healthScore.ecosystemXp', 0)),
     ])
@@ -953,7 +943,6 @@ export class FounderAiAggregatorService {
   async marketplaceIntelligence(): Promise<FounderAiResponse<MarketplaceIntelligenceResponse>> {
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000)
 
     const cacheK = this.cacheKey('marketplaceIntel')
@@ -1177,8 +1166,8 @@ export class FounderAiAggregatorService {
     const totalPro = proCompanyIds.length
     const pro30dLen = proCompanies30dAgo.length
     const services = await this.prisma.professionalService.count()
-    const bookings = await this.prisma.booking.count()
-    const proposals = await this.prisma.proposal.count()
+    await this.prisma.booking.count()
+    await this.prisma.proposal.count()
     const bookings30d = await this.prisma.booking.count({ where: { createdAt: { gte: thirtyDaysAgo } } })
 
     const topServiceCats = await this.prisma.professionalService.groupBy({ by: ['category'], _count: { category: true }, orderBy: { _count: { category: 'desc' } }, take: 5 }) as unknown as Array<{ category: string; _count: { category: number } }>
@@ -1221,11 +1210,10 @@ export class FounderAiAggregatorService {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000)
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    const [totalCommunities, communities30dAgo, totalMembers, members30dAgo] = await Promise.all([
+    const [totalCommunities, communities30dAgo, totalMembers] = await Promise.all([
       this.prisma.community.count({ where: { deletedAt: null, isActive: true } }),
       this.prisma.community.count({ where: { createdAt: { lt: thirtyDaysAgo }, deletedAt: null, isActive: true } }),
       this.prisma.communityMember.count({ where: { community: { deletedAt: null, isActive: true } } }),
-      this.prisma.communityMember.count({ where: { joinedAt: { lt: thirtyDaysAgo }, community: { deletedAt: null, isActive: true } } }),
     ])
 
     const [activeMembers, invitations, mostActive, newThisMonth] = await Promise.all([
@@ -1310,10 +1298,9 @@ export class FounderAiAggregatorService {
     if (cached) return cached
 
     const now = new Date()
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000)
 
     const wallets = await this.prisma.gOCASH_Wallet.count()
-    const xpTxCount = await this.prisma.ecosystemXPTransaction.count()
+    await this.prisma.ecosystemXPTransaction.count()
     const missions = await this.prisma.ecosystemMission.count()
     const completedMissions = await this.prisma.ecosystemUserMission.count({ where: { completedAt: { not: null } } })
     const activeMissions = await this.prisma.ecosystemUserMission.count({ where: { completedAt: null } })
@@ -1465,7 +1452,6 @@ export class FounderAiAggregatorService {
   async securityIntelligence(): Promise<FounderAiResponse<SecurityIntelligenceResponse>> {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterdayStart = new Date(todayStart.getTime() - 86400000);
     const weekAgo = new Date(todayStart.getTime() - 7 * 86400000);
     const dayAgo = new Date(now.getTime() - 86400000);
 
@@ -1473,10 +1459,9 @@ export class FounderAiAggregatorService {
     const cached = await this.cacheGet<FounderAiResponse<SecurityIntelligenceResponse>>(cacheK)
     if (cached) return cached
 
-    const [openIncidents, resolvedIncidents, auditTotal, failedLogins24h, promptInject24h, wsReject24h, privilegeChanges24h, dailyCounts] = await Promise.all([
+    const [openIncidents, resolvedIncidents, failedLogins24h, promptInject24h, wsReject24h, privilegeChanges24h, dailyCounts] = await Promise.all([
       this.prisma.incident.count({ where: { status: { in: [IncidentStatus.DETECTED, IncidentStatus.INVESTIGATING] } } }).catch(gracefulCatch('founderAi.securityIntelligence.openIncidents', 0)),
       this.prisma.incident.count({ where: { status: IncidentStatus.RESOLVED } }).catch(gracefulCatch('founderAi.securityIntelligence.resolvedIncidents', 0)),
-      this.prisma.auditLog.count({ where: { createdAt: { gte: todayStart } } }).catch(gracefulCatch('founderAi.securityIntelligence.auditTotal', 0)),
       this.prisma.auditLog.count({ where: { action: 'SECURITY_LOGIN_FAILURE', createdAt: { gte: dayAgo } } }).catch(gracefulCatch('founderAi.securityIntelligence.failedLogins24h', 0)),
       this.prisma.auditLog.count({ where: { action: 'SECURITY_PROMPT_INJECTION', createdAt: { gte: dayAgo } } }).catch(gracefulCatch('founderAi.securityIntelligence.promptInject24h', 0)),
       this.prisma.auditLog.count({ where: { action: 'SECURITY_WEBSOCKET_REJECTED', createdAt: { gte: dayAgo } } }).catch(gracefulCatch('founderAi.securityIntelligence.wsReject24h', 0)),

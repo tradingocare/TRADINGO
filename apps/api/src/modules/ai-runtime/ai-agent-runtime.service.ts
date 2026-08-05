@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectQueue } from '@nestjs/bullmq'
-import { Queue, Job } from 'bullmq'
+import { Queue } from 'bullmq'
 import { EventEmitter2 } from '@nestjs/event-emitter'
 import { PrismaService } from '../../prisma/prisma.service'
 import { QueueNames, AiJobData, AiJobTypes } from '../../jobs/queues'

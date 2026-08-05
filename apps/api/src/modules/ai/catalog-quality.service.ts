@@ -154,8 +154,8 @@ export class CatalogQualityService {
         const a = products[i]!; const b = products[j]!;
         const nameSim = this.similarity(a.name.toLowerCase(), b.name.toLowerCase());
         const sameCategory = a.categoryId && b.categoryId && a.categoryId === b.categoryId;
-        const sameSku = a.sku && b.sku && a.sku.toLowerCase() === b.sku.toLowerCase();
-        const sameBrand = a.brand && b.brand && a.brand.toLowerCase() === b.brand.toLowerCase();
+        const sameSku = a.sku && a.sku.toLowerCase() === b.sku?.toLowerCase();
+        const sameBrand = a.brand && a.brand.toLowerCase() === b.brand?.toLowerCase();
         const brandNameSim = sameBrand ? nameSim * 1.15 : nameSim;
         const nearDuplicate = brandNameSim > 0.75 && sameCategory && sameBrand;
         const exactBrandNameSim = brandNameSim > 0.9 && sameBrand;
@@ -182,7 +182,7 @@ export class CatalogQualityService {
     for (let i = 0; i < Math.min(products.length, 50); i++) {
       for (let j = i + 1; j < Math.min(products.length, 50); j++) {
         const sim = this.similarity(products[i].name.toLowerCase(), products[j].name.toLowerCase());
-        const sameBrand = products[i].brand && products[j].brand && products[i].brand!.toLowerCase() === products[j].brand!.toLowerCase();
+        const sameBrand = products[i].brand && products[i].brand!.toLowerCase() === products[j].brand?.toLowerCase();
         if (sim > 0.85 || (sim > 0.75 && sameBrand)) {
           results.push({ id: products[i].id, name: products[i].name, similarTo: products[j].name });
         }

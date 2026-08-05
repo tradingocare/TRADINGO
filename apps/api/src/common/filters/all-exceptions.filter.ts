@@ -23,7 +23,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = typeof exResponse === 'string' ? exResponse : (exResponse as Record<string, unknown>).message as string || message;
     }
 
-    logger.error({ err: exception, status, path: request.url }, `${request.method} ${request.url} ${status}`);
+    // 429s are expected traffic control, not application errors — log at warn
+    // to avoid flooding error-level logs during legitimate rate limiting.
+    if (status === HttpStatus.TOO_MANY_REQUESTS) {
+      logger.warn({ status, path: request.url }, `${request.method} ${request.url} ${status} (rate limited)`);
+    } else {
+      logger.error({ err: exception, status, path: request.url }, `${request.method} ${request.url} ${status}`);
+    }
 
     // Send unhandled 5xx errors to Sentry (4xx are client errors, skip to reduce noise)
     if (status >= 500) {

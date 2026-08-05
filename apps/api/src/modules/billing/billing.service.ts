@@ -161,7 +161,7 @@ export class BillingService {
       where: { id: companyId },
       select: { subscriptionActivatedAt: true, subscriptionExpiresAt: true },
     });
-    if (!company || !company.subscriptionActivatedAt || !company.subscriptionExpiresAt) {
+    if (!company?.subscriptionActivatedAt || !company.subscriptionExpiresAt) {
       return { proratedAmount: newPlanPrice, daysLeft: 0, totalDays: 365 };
     }
 

@@ -13,7 +13,6 @@ export class NearToFarService {
     });
     if (!rfq) return [];
 
-    const primaryLocation = rfq.locations?.find((l) => l.isPrimary) || rfq.locations?.[0];
     const buyerCompany = await this.prisma.company.findUnique({ where: { id: rfq.companyId }, include: { locations: true } });
     const buyerLocation = buyerCompany?.locations?.[0];
 
@@ -70,7 +69,7 @@ export class NearToFarService {
     return scored.sort((a, b) => b.matchScore - a.matchScore);
   }
 
-  async findSuppliersForCompany(companyId: string) {
+  async findSuppliersForCompany(_companyId: string) {
     return [];
   }
 

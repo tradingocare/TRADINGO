@@ -137,7 +137,7 @@ export class SmartNegotiationService {
     }
 
     const changedFields: string[] = [];
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
     for (const field of NEGOTIATION_FIELDS) {
       if (dto[field] !== undefined) {
         (updateData as any)[field] = dto[field];

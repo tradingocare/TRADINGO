@@ -295,16 +295,8 @@ export default function LoginClient() {
         <div className="relative z-10 flex flex-col h-full p-10 xl:p-12">
 
           <Link href="/" className="flex items-center gap-3 mb-auto w-fit">
-            <Image src="/logo/trdn.png" alt="TRADINGO"
+            <Image src="/logo/trdn6.png" alt="TRADINGO"
               width={44} height={44} className="object-contain" />
-            <div>
-              <p className="text-white font-black text-lg leading-none">
-                TRADINGO
-              </p>
-              <p className="text-white/35 text-[10px] font-medium tracking-wider">
-                Trading Right. Go Bright.
-              </p>
-            </div>
           </Link>
 
           <AnimatePresence mode="wait">
@@ -402,7 +394,7 @@ export default function LoginClient() {
         <div className="lg:hidden flex items-center justify-between px-5 py-4"
           style={{ borderBottom:'1px solid var(--border-color)' }}>
           <Link href="/">
-            <Image src="/logo/trdn.png" alt="TRADINGO"
+            <Image src="/logo/trdn6.png" alt="TRADINGO"
               width={36} height={36} className="object-contain" />
           </Link>
           <Link href="/register"

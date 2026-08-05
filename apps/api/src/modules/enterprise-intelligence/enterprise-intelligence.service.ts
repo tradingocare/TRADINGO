@@ -58,7 +58,7 @@ export class EnterpriseIntelligenceService {
 
     const [totalCompanies, professionals, products, activeProducts, totalCats, orders, revenue, rfqs, quotes, negotiations,
       trustResult, communityIns, pServices, pBookings, pProposals, companies30d, users30d, orders30d, products30d,
-      revenue30d, revenuePrev, cirSummary, telemetrySnap, queueCounts, catalogDash, expiringSoon] = await Promise.all([
+      revenue30d, , cirSummary, telemetrySnap, queueCounts, , expiringSoon] = await Promise.all([
       this.prisma.company.count({ where: { deletedAt: null } }),
       this.prisma.company.count({ where: { professionalType: { not: null }, professionalStatus: 'APPROVED' } }),
       this.prisma.company.count({ where: { professionalType: { not: null }, professionalStatus: 'APPROVED' } }),
@@ -417,7 +417,7 @@ export class EnterpriseIntelligenceService {
 
   async getRecommendations() {
     const twin = await this.getDigitalTwin();
-    const health = await this.getHealthIndex();
+    await this.getHealthIndex();
     const sd = await this.getSupplyDemandBalance();
 
     return {

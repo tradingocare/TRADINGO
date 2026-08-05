@@ -25,10 +25,14 @@ export class RedisThrottlerStorage {
 
       const isBlocked = count > limit;
       const blockSeconds = Math.ceil(blockDuration / 1000);
-      if (isBlocked && count === limit + 1) {
+      // Only apply a hard block window when one is configured. blockDuration=0
+      // (default in app.module.ts) means "block until the TTL window expires".
+      // Calling EXPIRE with 0 seconds would DELETE the key, silently resetting
+      // the counter and defeating rate limiting entirely.
+      if (isBlocked && count === limit + 1 && blockSeconds > 0) {
         await this.redisService.expire(redisKey, blockSeconds);
       }
-      const blockRemaining = isBlocked ? (await this.redisService.ttl(redisKey)) * 1000 : 0;
+      const blockRemaining = isBlocked && blockSeconds > 0 ? (await this.redisService.ttl(redisKey)) * 1000 : 0;
 
       return {
         totalHits: count,

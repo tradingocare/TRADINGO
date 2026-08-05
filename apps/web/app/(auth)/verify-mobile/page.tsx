@@ -63,7 +63,7 @@ export default function VerifyMobilePage() {
         <Card className="w-full max-w-md">
           <CardHeader className="items-center space-y-4 text-center">
             <Link href="/">
-              <TradingoLogo height={36} showText />
+              <TradingoLogo height={36} />
             </Link>
             <div className="flex flex-col items-center gap-2">
               <CheckCircle className="h-12 w-12 text-accent-500" />
@@ -86,7 +86,7 @@ export default function VerifyMobilePage() {
       <Card className="w-full max-w-md">
         <CardHeader className="items-center space-y-4 text-center">
           <Link href="/">
-            <TradingoLogo height={36} showText />
+            <TradingoLogo height={36} />
           </Link>
           <div>
             <CardTitle>Verify your mobile</CardTitle>

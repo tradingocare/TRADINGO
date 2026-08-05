@@ -113,7 +113,7 @@ export class AiCreditsService implements OnModuleInit {
       where: { id: companyId },
       select: { subscriptionPlan: true, subscriptionStatus: true },
     })
-    if (!company || company.subscriptionStatus !== 'ACTIVE' || !company.subscriptionPlan) {
+    if (company?.subscriptionStatus !== 'ACTIVE' || !company.subscriptionPlan) {
       const freePlan = await this.prisma.membershipPlan.findFirst({ where: { isFree: true } })
       if (!freePlan) return 20
       return this.getPlanCredits(freePlan.planId)

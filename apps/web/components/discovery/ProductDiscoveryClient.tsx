@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import {
   useState, useCallback, useMemo,
 } from 'react'
@@ -153,9 +153,9 @@ export default function ProductDiscoveryClient() {
           style={{ background: 'radial-gradient(circle, #3D8BFF18, transparent 70%)', filter: 'blur(80px)' }} />
       </div>
 
-      <div className="fixed left-0 right-0 z-40 py-4 px-4 bg-surface border-b border-border"
+      <div className="fixed left-0 right-0 z-40 py-1.5 px-4 bg-surface/95 border-b border-border"
         style={{
-          top: '100px',
+          top: '84px',
           backdropFilter: 'blur(24px)',
         }}>
         <div className="max-w-[1600px] mx-auto">
@@ -165,7 +165,7 @@ export default function ProductDiscoveryClient() {
               onSearch={updateFilters}
               isLoading={isLoading}
               geoBanner={
-                <div className="mt-2.5 flex items-center gap-2">
+                <div className="mt-1 flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <NearToFarBanner
                       activeScope={geoScope}
@@ -194,8 +194,8 @@ export default function ProductDiscoveryClient() {
         </div>
       </div>
 
-      <div className="min-h-screen" style={{ paddingTop: '250px' }}>
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 py-3">
+      <div className="min-h-screen" style={{ paddingTop: '155px' }}>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 py-1">
 
         <div className="mb-2 rounded-2xl border border-border px-4 py-2.5"
           style={{

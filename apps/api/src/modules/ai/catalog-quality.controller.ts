@@ -101,7 +101,7 @@ export class CatalogQualityController {
       where: { companyId: req.user.companyId, status: 'ACTIVE' as any, deletedAt: null },
       select: {
         id: true, name: true, slug: true, isFeatured: true, isBestseller: true,
-        qualityScores: { orderBy: { createdAt: 'desc' as const }, take: 1, select: { total: true } },
+        qualityScores: { select: { total: true } },
       },
       take: 50,
     });
@@ -112,10 +112,10 @@ export class CatalogQualityController {
     });
     const promotedIds = new Set(existing.map(a => a.productId));
     const opportunities = products
-      .filter(p => !promotedIds.has(p.id) && p.qualityScores?.[0]?.total >= 50)
+      .filter(p => !promotedIds.has(p.id) && (p.qualityScores?.total ?? 0) >= 50)
       .map(p => ({
         productId: p.id, name: p.name, slug: p.slug,
-        qualityScore: p.qualityScores?.[0]?.total || 0,
+        qualityScore: p.qualityScores?.total || 0,
         isFeatured: p.isFeatured, isBestseller: p.isBestseller,
       }))
       .sort((a, b) => b.qualityScore - a.qualityScore);
@@ -130,15 +130,15 @@ export class CatalogQualityController {
       where: { companyId: req.user.companyId, deletedAt: null },
       select: {
         id: true, isBestseller: true, isFeatured: true, viewCount: true, savedCount: true, monthlyOrders: true,
-        qualityScores: { orderBy: { createdAt: 'desc' as const }, take: 1, select: { total: true, seoQuality: true, imageQuality: true, specificationQuality: true, attributeQuality: true } },
+        qualityScores: { select: { total: true, seoQuality: true, imageQuality: true, specificationQuality: true, attributeQuality: true } },
       },
       take: 200,
     });
-    const scored = products.filter(p => p.qualityScores?.[0]);
+    const scored = products.filter(p => p.qualityScores);
     if (scored.length === 0) return { avgCommerceScore: 0, productCount: 0 };
 
     const avgCommerce = Math.round(scored.reduce((s, p) => {
-      const cq = p.qualityScores![0];
+      const cq = p.qualityScores!;
       const salesScore = (p.isBestseller ? 30 : 0) + (p.isFeatured ? 20 : 0) + Math.min(p.monthlyOrders * 2, 30);
       return s + Math.round((cq.total * 0.3 + cq.seoQuality * 0.2 + cq.imageQuality * 0.15 + salesScore * 0.35));
     }, 0) / scored.length);

@@ -11,9 +11,9 @@ import { gracefulCatch } from '../../common/utils/graceful-catch';
 import {
   DashboardCopilotResponse, SellerAgentPriority, SellerAgentQuickAction,
   ProductAdvisorResponse, ProductImprovementSuggestion,
-  SalesAdvisorResponse, SalesAdvisorMetric,
+  SalesAdvisorResponse,
   AdvertisingAdvisorResponse,
-  TrustAdvisorResponse, TrustFactorDetail,
+  TrustAdvisorResponse,
   GrowthPlannerResponse,
   SellerAgentNotificationsResponse, AiNotificationItem,
   SellerAgentInsightsResponse,
@@ -264,7 +264,7 @@ export class SellerAgentService {
   }
 
   async getGrowthPlanner(companyId: string): Promise<GrowthPlannerResponse> {
-    const [scores, orders, rfqs, products, company] = await Promise.all([
+    const [scores, orders, , products] = await Promise.all([
       this.catalogQuality.getSellerDashboard(companyId).catch(gracefulCatch('sellerAgent.getGrowthPlanner.scores', null)),
       this.prisma.order.count({ where: { sellerCompanyId: companyId } }).catch(gracefulCatch('sellerAgent.getGrowthPlanner.orders', 0)),
       this.prisma.rfq.count({ where: { companyId, deletedAt: null } }).catch(gracefulCatch('sellerAgent.getGrowthPlanner.rfqs', 0)),
