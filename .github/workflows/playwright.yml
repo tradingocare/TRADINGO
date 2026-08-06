@@ -92,7 +92,7 @@ jobs:
           DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
 
       - name: Seed database
-        run: pnpm seed
+        run: pnpm exec ts-node prisma/seed.ts
         env:
           DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
 
