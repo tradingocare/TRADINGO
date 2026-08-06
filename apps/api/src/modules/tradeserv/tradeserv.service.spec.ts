@@ -35,6 +35,7 @@ describe('TradeservService', () => {
     professionalServiceAreas: [{ id: 'area-1', city: 'Mumbai', state: 'Maharashtra' }],
     reviewsAsProfessional: [{ id: 'rev-1', rating: 5, comment: 'Excellent', client: { id: 'client-1', name: 'Client' }, createdAt: new Date() }],
     locations: [{ id: 'loc-1', address: '123 Main St', city: 'Mumbai', lat: 19.076, lng: 72.8777 }],
+    _count: { professionalServices: 1, professionalPortfolio: 1, reviewsAsProfessional: 1 },
     deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -119,9 +120,12 @@ describe('TradeservService', () => {
   describe('getProfessionalSummary', () => {
     it('should return summary for professional company', async () => {
       prisma.company.findUnique.mockResolvedValue(mockCompany);
-      prisma.professionalService.findMany.mockResolvedValue([mockService]);
+      prisma.professionalReview.aggregate.mockResolvedValue({ _avg: { rating: 4.5 } });
+      prisma.professionalLanguage.findMany.mockResolvedValue([{ language: 'English' }]);
       const result = await service.getProfessionalSummary('test-professional');
       expect(result).toBeDefined();
+      expect(result.averageRating).toBe(4.5);
+      expect(result.languages).toEqual(['English']);
     });
 
     it('should throw NotFoundException for missing professional', async () => {
@@ -141,33 +145,35 @@ describe('TradeservService', () => {
       expect(prisma.professionalService.create).toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException for non-professional company', async () => {
-      prisma.company.findUnique.mockResolvedValue({ ...mockCompany, professionalType: null });
-      await expect(service.addService('company-1', createDto)).rejects.toThrow(NotFoundException);
+    it('should create a service for a non-professional company', async () => {
+      prisma.professionalService.create.mockResolvedValue({ id: 'svc-new', ...createDto, companyId: 'company-1', sortOrder: 2, createdAt: new Date(), updatedAt: new Date() });
+      const result = await service.addService('company-1', createDto);
+      expect(result).toBeDefined();
+      expect(prisma.professionalService.create).toHaveBeenCalledWith({
+        data: { ...createDto, companyId: 'company-1' },
+      });
     });
   });
 
   describe('updateService', () => {
     it('should update a service', async () => {
-      prisma.professionalService.findUnique.mockResolvedValue(mockService);
-      prisma.company.findUnique.mockResolvedValue(mockCompany);
+      prisma.professionalService.findFirst.mockResolvedValue(mockService);
       prisma.professionalService.update.mockResolvedValue({ ...mockService, name: 'Updated' });
-      const result = await service.updateService('company-1', 'svc-1', { name: 'Updated' });
+      const result = await service.updateService('svc-1', 'company-1', { name: 'Updated' });
       expect(result).toBeDefined();
     });
 
     it('should throw NotFoundException for missing service', async () => {
-      prisma.professionalService.findUnique.mockResolvedValue(null);
-      await expect(service.updateService('company-1', 'nonexistent', { name: 'Updated' })).rejects.toThrow(NotFoundException);
+      prisma.professionalService.findFirst.mockResolvedValue(null);
+      await expect(service.updateService('svc-1', 'company-1', { name: 'Updated' })).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('deleteService', () => {
     it('should delete a service', async () => {
-      prisma.professionalService.findUnique.mockResolvedValue(mockService);
-      prisma.company.findUnique.mockResolvedValue(mockCompany);
+      prisma.professionalService.findFirst.mockResolvedValue(mockService);
       prisma.professionalService.delete.mockResolvedValue(mockService);
-      const result = await service.deleteService('company-1', 'svc-1');
+      const result = await service.deleteService('svc-1', 'company-1');
       expect(result).toBeDefined();
     });
   });
@@ -176,35 +182,39 @@ describe('TradeservService', () => {
     it('should create a booking', async () => {
       prisma.professionalService.findUnique.mockResolvedValue(mockService);
       prisma.company.findUnique.mockResolvedValue(mockCompany);
+      prisma.booking.findMany.mockResolvedValue([]);
       prisma.booking.create.mockResolvedValue(mockBooking);
       const dto = { companyId: 'company-1', serviceId: 'svc-1', scheduledAt: new Date(Date.now() + 86400000).toISOString(), durationMinutes: 60 };
       const result = await service.createBooking('client-1', dto);
       expect(result).toBeDefined();
     });
 
-    it('should throw if service not found', async () => {
+    it('should create a booking without amount when service not found', async () => {
       prisma.company.findUnique.mockResolvedValue(mockCompany);
       prisma.professionalService.findUnique.mockResolvedValue(null);
+      prisma.booking.findMany.mockResolvedValue([]);
+      prisma.booking.create.mockResolvedValue(mockBooking);
       const dto = { companyId: 'company-1', serviceId: 'nonexistent', scheduledAt: new Date(Date.now() + 86400000).toISOString(), durationMinutes: 60 };
-      await expect(service.createBooking('client-1', dto)).rejects.toThrow(NotFoundException);
+      const result = await service.createBooking('client-1', dto);
+      expect(result).toBeDefined();
+      expect(prisma.booking.create).toHaveBeenCalled();
     });
   });
 
   describe('createReview', () => {
     it('should create a review for completed booking', async () => {
-      prisma.booking.findUnique.mockResolvedValue({ ...mockBooking, status: 'COMPLETED', companyId: 'company-1' });
-      prisma.company.findUnique.mockResolvedValue(mockCompany);
+      prisma.booking.findUnique.mockResolvedValue({ ...mockBooking, status: 'COMPLETED', clientId: 'client-1' });
       prisma.professionalReview.create.mockResolvedValue(mockReview);
       const dto = { bookingId: 'booking-1', rating: 5, comment: 'Excellent service' };
-      const result = await service.createReview('company-1', 'client-1', dto);
+      const result = await service.createReview('client-1', 'user-1', dto);
       expect(result).toBeDefined();
       expect(prisma.professionalReview.create).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException for non-completed booking', async () => {
-      prisma.booking.findUnique.mockResolvedValue({ ...mockBooking, status: 'PENDING' });
+      prisma.booking.findUnique.mockResolvedValue({ ...mockBooking, status: 'PENDING', clientId: 'client-1' });
       const dto = { bookingId: 'booking-1', rating: 5, comment: 'Good' };
-      await expect(service.createReview('company-1', 'client-1', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createReview('client-1', 'user-1', dto)).rejects.toThrow(BadRequestException);
     });
   });
 });

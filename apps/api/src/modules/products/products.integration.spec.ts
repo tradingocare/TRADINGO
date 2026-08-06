@@ -3,7 +3,13 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
+import { ProductAttributeDisplayService } from './services/product-attribute-display.service';
+import { ReviewsService } from './reviews.service';
+import { WishlistService } from './wishlist.service';
+import { QaService } from './qa.service';
+import { BestsellerService } from './bestseller.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 const mockPrisma = {
   product: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
@@ -12,7 +18,9 @@ const mockPrisma = {
   companyOwner: { findUnique: jest.fn() },
   user: { findUnique: jest.fn() },
   auditLog: { create: jest.fn() },
+  $transaction: jest.fn(),
 };
+mockPrisma.$transaction.mockImplementation((cb: any) => cb(mockPrisma));
 const mockSearch = { indexDocument: jest.fn(), search: jest.fn(), deleteDocument: jest.fn() };
 
 jest.mock('uuid', () => ({ v4: jest.fn().mockReturnValue('mock-uuid') }));
@@ -40,6 +48,12 @@ describe('Product Flow Integration', () => {
         ProductsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: SearchService, useValue: mockSearch },
+        { provide: ProductAttributeDisplayService, useValue: { getDisplayAttributes: jest.fn().mockResolvedValue([]), enrichProduct: jest.fn() } },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+        { provide: ReviewsService, useValue: { findAll: jest.fn(), create: jest.fn() } },
+        { provide: WishlistService, useValue: { findAll: jest.fn(), toggle: jest.fn() } },
+        { provide: QaService, useValue: { findQuestions: jest.fn(), createQuestion: jest.fn(), answerQuestion: jest.fn() } },
+        { provide: BestsellerService, useValue: { getBestsellers: jest.fn() } },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -203,6 +217,7 @@ describe('Product Flow Integration', () => {
         company: { id: 'c1', name: 'C1', slug: 'c1', trustScore: 80, verificationLevel: 'LEVEL_2' },
         category: null, industry: null, media: [], specifications: [], variants: [], inventory: null, priceSlabs: [],
       });
+      mockPrisma.product.update.mockResolvedValue({ id: 'p1', viewCount: 1 });
 
       const result = await controller.findBySlug('product');
 
@@ -401,6 +416,7 @@ describe('Product Flow Integration', () => {
 
     it('returns empty when no hits', async () => {
       mockSearch.search.mockResolvedValue({ hits: [], total: 0, page: 1, limit: 50 });
+      mockPrisma.product.findMany.mockResolvedValue([]);
 
       const result = await controller.search('nothing');
 

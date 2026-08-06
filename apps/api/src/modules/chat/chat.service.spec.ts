@@ -4,6 +4,7 @@ import { ChatService } from './chat.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatFilterService } from './chat-filter.service';
 import { StorageService } from '../storage/storage.service';
+import { NotificationService } from '../notification/notification.service';
 
 const makePrisma = () => {
   const prisma = {
@@ -14,8 +15,10 @@ const makePrisma = () => {
     blockedUser: { findUnique: jest.fn(), create: jest.fn() },
     reportedMessage: { create: jest.fn() },
     companyOwner: { findMany: jest.fn(), findFirst: jest.fn() },
+    user: { findUnique: jest.fn(), findMany: jest.fn() },
+    auditLog: { create: jest.fn().mockResolvedValue(undefined) },
     rfq: { findFirst: jest.fn() },
-    rfqVendorMatch: { findMany: jest.fn() },
+    rfqVendorMatch: { findMany: jest.fn(), findFirst: jest.fn() },
   };
   return prisma;
 };
@@ -36,6 +39,7 @@ describe('ChatService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: ChatFilterService, useValue: filterService },
         { provide: StorageService, useValue: storageService },
+        { provide: NotificationService, useValue: { create: jest.fn().mockResolvedValue(undefined), createWithTemplate: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

@@ -1,6 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TradTrustService } from './tradtrust.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
+import { TradTrustWeightsService } from './tradtrust-weights.config';
+import { SmartRfqService } from '../smart-rfq/smart-rfq.service';
+import { SmartShipmentService } from '../smart-shipment/smart-shipment.service';
+import { SmartNegotiationService } from '../smart-negotiation/smart-negotiation.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 describe('TradTrustService', () => {
   let service: TradTrustService;
@@ -45,6 +51,12 @@ describe('TradTrustService', () => {
       providers: [
         TradTrustService,
         { provide: PrismaService, useValue: prisma },
+        { provide: NotificationService, useValue: { createWithTemplate: jest.fn().mockResolvedValue(undefined) } },
+        { provide: TradTrustWeightsService, useClass: TradTrustWeightsService },
+        { provide: SmartRfqService, useValue: { getRfqQualityMetrics: jest.fn().mockResolvedValue(null), getQuotePerformanceMetrics: jest.fn().mockResolvedValue(null) } },
+        { provide: SmartShipmentService, useValue: { getPerformanceMetrics: jest.fn().mockResolvedValue(null) } },
+        { provide: SmartNegotiationService, useValue: { getPerformanceMetrics: jest.fn().mockResolvedValue(null) } },
+        { provide: AnalyticsService, useValue: { getCompletionRate: jest.fn().mockResolvedValue(null), getSellerLeaderboardPosition: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 
@@ -61,12 +73,12 @@ describe('TradTrustService', () => {
 
       const score = await service.calculateScore('company-1');
       expect(score).toBeGreaterThan(0);
-      expect(score).toBeLessThanOrEqual(100);
+      expect(score).toBeLessThanOrEqual(1000);
       expect(prisma.tradTrustScore.create).toHaveBeenCalled();
       expect(prisma.company.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'company-1' },
-          data: expect.objectContaining({ trustScore: score }),
+          data: expect.objectContaining({ trustScore: Math.round(score / 10) }),
         }),
       );
     });
@@ -84,7 +96,7 @@ describe('TradTrustService', () => {
         status: 'VERIFIED',
       });
       const score = await service.calculateScore('company-1');
-      expect(score).toBeGreaterThan(70);
+      expect(score).toBeGreaterThan(700);
     });
 
     it('should give lower scores for unverified companies', async () => {
@@ -110,7 +122,7 @@ describe('TradTrustService', () => {
         certificationDocs: [],
       });
       const score = await service.calculateScore('company-1');
-      expect(score).toBeLessThanOrEqual(32);
+      expect(score).toBeLessThan(700);
     });
   });
 

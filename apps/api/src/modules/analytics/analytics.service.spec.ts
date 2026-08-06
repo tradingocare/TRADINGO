@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AnalyticsService } from './analytics.service';
 import { ClickhouseService } from './clickhouse.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 describe('AnalyticsService', () => {
   let service: AnalyticsService;
@@ -18,6 +19,7 @@ describe('AnalyticsService', () => {
       providers: [
         AnalyticsService,
         { provide: ClickhouseService, useValue: clickhouse },
+        { provide: PrismaService, useValue: {} },
       ],
     }).compile();
 

@@ -91,7 +91,7 @@ describe('CatalogImportController', () => {
     it('should import CSV file', async () => {
       const result = { jobId: 'job-1', status: 'COMPLETED', productsCreated: 100 };
       orchestrator.runFullImport.mockResolvedValue(result);
-      const file = { buffer: Buffer.from('csv,data') } as any;
+      const file = { buffer: Buffer.from('csv,data'), originalname: 'test.csv', mimetype: 'text/csv', size: 10 } as any;
       const response = await controller.importCsv(file, 'company-1', { companyId: 'company-1' });
       expect(orchestrator.runFullImport).toHaveBeenCalledWith(file.buffer, 'company-1');
       expect(response).toEqual(result);
@@ -100,18 +100,18 @@ describe('CatalogImportController', () => {
     it('should use user companyId when not provided', async () => {
       const result = { jobId: 'job-1', status: 'COMPLETED' };
       orchestrator.runFullImport.mockResolvedValue(result);
-      const file = { buffer: Buffer.from('csv,data') } as any;
+      const file = { buffer: Buffer.from('csv,data'), originalname: 'test.csv', mimetype: 'text/csv', size: 10 } as any;
       const response = await controller.importCsv(file, undefined, { companyId: 'user-company' });
       expect(orchestrator.runFullImport).toHaveBeenCalledWith(file.buffer, 'user-company');
     });
 
     it('should throw BadRequestException when no companyId', async () => {
-      const file = { buffer: Buffer.from('csv,data') } as any;
+      const file = { buffer: Buffer.from('csv,data'), originalname: 'test.csv', mimetype: 'text/csv', size: 10 } as any;
       await expect(controller.importCsv(file, undefined, {} as any)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when no file', async () => {
-      await expect(controller.importCsv(null as any, 'company-1', {} as any)).rejects.toThrow('CSV file is required');
+      await expect(controller.importCsv(null as any, 'company-1', {} as any)).rejects.toThrow('File is required');
     });
   });
 
@@ -149,7 +149,7 @@ describe('CatalogImportController', () => {
         errors: [{ row: 10, message: 'Invalid' }],
       });
 
-      const file = { buffer: Buffer.from('csv') } as any;
+      const file = { buffer: Buffer.from('csv'), originalname: 'test.csv', mimetype: 'text/csv', size: 10 } as any;
       const response = await controller.previewCsv(file);
 
       expect(response.totalRows).toBe(100);
@@ -159,7 +159,7 @@ describe('CatalogImportController', () => {
     });
 
     it('should throw when no file', async () => {
-      await expect(controller.previewCsv(null as any)).rejects.toThrow('CSV file is required');
+      await expect(controller.previewCsv(null as any)).rejects.toThrow('File is required');
     });
   });
 

@@ -12,6 +12,7 @@ const mockRedis = {
   ttl: jest.fn(),
   on: jest.fn(),
   disconnect: jest.fn(),
+  connect: jest.fn().mockResolvedValue(undefined),
 };
 
 jest.mock('ioredis', () => ({

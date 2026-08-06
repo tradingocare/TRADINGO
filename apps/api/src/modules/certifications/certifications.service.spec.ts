@@ -1,21 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CertificationsService } from './certifications.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 
 describe('CertificationsService', () => {
   let service: CertificationsService;
-  let prisma: Record<string, Record<string, jest.Mock>>;
+  let prisma: Record<string, any>;
 
   beforeEach(async () => {
     prisma = {
       companyCertification: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), updateMany: jest.fn() },
-      auditLog: { create: jest.fn() },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CertificationsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: NotificationService, useValue: { createWithTemplate: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -71,6 +73,7 @@ describe('CertificationsService', () => {
 
   describe('expireOutdated', () => {
     it('should expire outdated certifications', async () => {
+      prisma.companyCertification.findMany.mockResolvedValue([{ id: 'cert1' }, { id: 'cert2' }, { id: 'cert3' }]);
       prisma.companyCertification.updateMany.mockResolvedValue({ count: 3 } as any);
       const count = await service.expireOutdated();
       expect(count).toBe(3);

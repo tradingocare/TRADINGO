@@ -3,6 +3,8 @@ import { UsersService } from './users.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Role } from '../../common/enums/role.enum';
+import { NotificationService } from '../notification/notification.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 interface MockPrisma {
   user: Record<string, jest.Mock>;
@@ -33,6 +35,8 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: PrismaService, useValue: prisma },
+        { provide: NotificationService, useValue: { create: jest.fn().mockResolvedValue(undefined), createWithTemplate: jest.fn().mockResolvedValue(undefined) } },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
@@ -184,7 +188,7 @@ describe('UsersService', () => {
       const result = await service.updateRole('1', Role.ADMIN, 'admin-1');
       expect(result.role).toBe(Role.ADMIN);
       expect(prisma.auditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ action: 'UPDATE_USER_ROLE' }) }),
+        expect.objectContaining({ data: expect.objectContaining({ action: 'SECURITY_PRIVILEGE_ESCALATION' }) }),
       );
     });
 

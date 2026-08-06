@@ -69,10 +69,16 @@ describe('ReferralService', () => {
       expect(prisma.referralCode.create).toHaveBeenCalled();
     });
 
-    it('should throw if user has an active code of same type', async () => {
+    it('should create a new code even when an active code exists', async () => {
       prisma.referralCode.findFirst.mockResolvedValue(mockReferralCode);
-      await expect(service.createReferralCode({ userId: 'user-1', type: 'BUYER' as any }))
-        .rejects.toThrow(ConflictException);
+      prisma.referralCode.create.mockResolvedValue({ ...mockReferralCode, code: 'TRADnew123' });
+      prisma.referralAudit.create.mockResolvedValue({ id: 'audit-1' });
+
+      const result = await service.createReferralCode({ userId: 'user-1', type: 'BUYER' as any });
+
+      expect(result).toBeDefined();
+      expect(result.code).not.toBe(mockReferralCode.code);
+      expect(prisma.referralAudit.create).toHaveBeenCalled();
     });
   });
 
@@ -108,6 +114,7 @@ describe('ReferralService', () => {
       prisma.referralCode.findUnique.mockResolvedValue(mockReferralCode);
       prisma.referralUsage.findFirst.mockResolvedValue(null);
       prisma.referralBlacklist.findFirst.mockResolvedValue(null);
+      prisma.referralUsage.count.mockResolvedValue(0);
       prisma.referralUsage.create.mockResolvedValue(mockUsage);
       prisma.referralReward.create.mockResolvedValue({ id: 'reward-1', usageId: 'usage-1', amount: 100, status: 'PENDING' });
       prisma.referralCode.update.mockResolvedValue({ ...mockReferralCode, currentUsage: 1 });
@@ -155,6 +162,8 @@ describe('ReferralService', () => {
     it('should return referral statistics', async () => {
       prisma.referralCode.findMany.mockResolvedValue([mockReferralCode]);
       prisma.referralUsage.findMany.mockResolvedValue([mockUsage]);
+      prisma.referralUsage.count.mockResolvedValue(1);
+      prisma.referralReward.aggregate.mockResolvedValue({ _sum: { amount: 100 } } as any);
       const result = await service.getReferralStatistics('user-1');
       expect(result).toBeDefined();
       expect(result.totalCodes).toBeGreaterThanOrEqual(0);
@@ -163,6 +172,8 @@ describe('ReferralService', () => {
     it('should return zero stats when no codes exist', async () => {
       prisma.referralCode.findMany.mockResolvedValue([]);
       prisma.referralUsage.findMany.mockResolvedValue([]);
+      prisma.referralUsage.count.mockResolvedValue(0);
+      prisma.referralReward.aggregate.mockResolvedValue({ _sum: { amount: null } } as any);
       const result = await service.getReferralStatistics('user-1');
       expect(result.totalCodes).toBe(0);
       expect(result.totalRewardsEarned).toBe(0);

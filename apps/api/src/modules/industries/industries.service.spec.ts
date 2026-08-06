@@ -5,7 +5,7 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('IndustriesService', () => {
   let service: IndustriesService;
-  let prisma: Record<string, Record<string, jest.Mock>>;
+  let prisma: Record<string, any>;
 
   const mockIndustry = {
     id: 'ind-1', name: 'Technology', slug: 'technology',
@@ -14,6 +14,7 @@ describe('IndustriesService', () => {
 
   beforeEach(async () => {
     prisma = {
+      $transaction: jest.fn(),
       industry: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
@@ -23,8 +24,9 @@ describe('IndustriesService', () => {
         delete: jest.fn(),
         count: jest.fn(),
       },
-      auditLog: { create: jest.fn() },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
     };
+    prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -54,7 +56,7 @@ describe('IndustriesService', () => {
     });
 
     it('should throw ConflictException if slug already exists', async () => {
-      prisma.industry.findUnique.mockResolvedValue({ id: 'existing' });
+      prisma.industry.findFirst.mockResolvedValue({ id: 'existing' });
       await expect(service.create({ name: 'Technology', slug: 'tech' }, 'user-1')).rejects.toThrow(ConflictException);
     });
   });

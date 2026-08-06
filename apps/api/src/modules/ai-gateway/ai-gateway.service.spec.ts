@@ -7,35 +7,61 @@ import { ProviderRegistryService } from './provider-registry.service';
 import { ProviderRouterService } from './provider-router.service';
 import { ProviderHealthService } from './provider-health.service';
 import { PromptManagerService } from './prompt-manager.service';
-import { ModelRegistryService } from './model-registry.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../common/services/redis.service';
+import { AuditLogService } from '../../modules/audit-log/audit-log.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('AiGatewayService', () => {
   let service: AiGatewayService;
-  let mockProvider: { complete: jest.Mock; stream: jest.Mock };
+  let mockProvider: { complete: jest.Mock; name: string };
 
   const mockPrisma = {
-    aiCreditUsage: { findUnique: jest.fn(), upsert: jest.fn(), findMany: jest.fn() },
+    aiUsage: { findUnique: jest.fn().mockResolvedValue(null) },
   };
-  const mockRedis = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
-  const mockCredits = { checkCredits: jest.fn(), deductCredits: jest.fn() };
-  const mockUsage = { track: jest.fn() };
-  const mockCost = { calculate: jest.fn().mockReturnValue({ totalCost: 0.001 }) };
-  const mockRegistry = { getProvider: jest.fn() };
-  const mockRouter = { getFallbackProviders: jest.fn().mockReturnValue([]) };
-  const mockHealth = { isHealthy: jest.fn().mockResolvedValue(true) };
-  const mockPrompt = { getPrompt: jest.fn().mockResolvedValue({ systemPrompt: 'test', temperature: 0.3, maxTokens: 1024 }) };
-  const mockModel = { getModel: jest.fn().mockReturnValue({ modelId: 'gpt-4o-mini', provider: 'openrouter' }) };
-  const mockConfig = { get: jest.fn().mockReturnValue({}) };
+  const mockRedis = { get: jest.fn().mockResolvedValue(undefined), set: jest.fn(), del: jest.fn() };
+  const mockCredits = { checkCredits: jest.fn(), deductCredits: jest.fn().mockResolvedValue(undefined) };
+  const mockUsage = { track: jest.fn().mockResolvedValue(undefined) };
+  const mockCost = { calculateCost: jest.fn().mockResolvedValue({ totalCost: 0.001, currency: 'USD' }) };
+  const mockRegistry = { getProviderInstance: jest.fn(), getProvider: jest.fn(), getBestProviderForTask: jest.fn() };
+  const mockRouter = {
+    route: jest.fn().mockResolvedValue({ provider: { name: 'openrouter', complete: jest.fn() }, providerConfig: { id: 'cfg-1' }, model: 'openai/gpt-4o-mini' }),
+    getFallbackProviders: jest.fn().mockReturnValue([]),
+  };
+  const mockHealth = {
+    isCircuitOpen: jest.fn().mockResolvedValue(false),
+    recordSuccess: jest.fn().mockResolvedValue(undefined),
+    recordFailure: jest.fn().mockResolvedValue(undefined),
+  };
+  const mockPrompt = {
+    getPrompt: jest.fn().mockResolvedValue({ version: 1, systemPrompt: 'test', userPrompt: '', temperature: 0.3, maxTokens: 1024 }),
+    renderPrompt: jest.fn((p: any, vars: any) => ({
+      systemPrompt: p.systemPrompt,
+      userPrompt: JSON.stringify(vars),
+    })),
+  };
+  const mockConfig = { get: jest.fn().mockReturnValue('true') };
+  const mockAuditLog = { log: jest.fn() };
+  const mockEventEmitter = { emit: jest.fn() };
 
   beforeEach(async () => {
     mockProvider = {
-      complete: jest.fn().mockResolvedValue({ content: 'ai response', usage: { totalTokens: 150 } }),
-      stream: jest.fn(),
+      name: 'openrouter',
+      complete: jest.fn().mockResolvedValue({
+        content: 'ai response',
+        model: 'openai/gpt-4o-mini',
+        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+      }),
     };
-    mockRegistry.getProvider.mockResolvedValue(mockProvider);
+    jest.clearAllMocks();
+    mockRedis.get.mockResolvedValue(undefined);
+    mockRouter.getFallbackProviders.mockReturnValue([]);
+    mockRouter.route.mockResolvedValue({
+      provider: mockProvider,
+      providerConfig: { id: 'cfg-1' },
+      model: 'openai/gpt-4o-mini',
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,13 +75,21 @@ describe('AiGatewayService', () => {
         { provide: ProviderRouterService, useValue: mockRouter },
         { provide: ProviderHealthService, useValue: mockHealth },
         { provide: PromptManagerService, useValue: mockPrompt },
-        { provide: ModelRegistryService, useValue: mockModel },
         { provide: ConfigService, useValue: mockConfig },
+        { provide: AuditLogService, useValue: mockAuditLog },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 
     service = module.get<AiGatewayService>(AiGatewayService);
     jest.clearAllMocks();
+    mockRedis.get.mockResolvedValue(undefined);
+    mockRouter.getFallbackProviders.mockReturnValue([]);
+    mockRouter.route.mockResolvedValue({
+      provider: mockProvider,
+      providerConfig: { id: 'cfg-1' },
+      model: 'openai/gpt-4o-mini',
+    });
   });
 
   it('should be defined', () => {
@@ -73,31 +107,25 @@ describe('AiGatewayService', () => {
       mockCredits.checkCredits.mockResolvedValue({ sufficient: true, available: 50, required: 10 });
       const result = await service.process({ taskType: 'SEARCH_ANALYSIS' as any, payload: { action: 'test' } }, 'company-1', 'user-1');
       expect(result).toBeDefined();
-      expect(mockRegistry.getProvider).toHaveBeenCalled();
-    });
-
-    it('should use prompt context when provided', async () => {
-      mockCredits.checkCredits.mockResolvedValue({ sufficient: true, available: 50, required: 10 });
-      mockPrompt.getPrompt.mockResolvedValue({ systemPrompt: 'You are a helpful assistant', temperature: 0.5, maxTokens: 2048 });
-      const result = await service.process({
-        taskType: 'SEARCH_ANALYSIS' as any,
-        payload: { action: 'test', query: 'find products' },
-        promptContext: { userQuery: 'find products' },
-      }, 'company-1', 'user-1');
-      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(mockRouter.route).toHaveBeenCalled();
     });
 
     it('should fallback to alternative providers on failure', async () => {
       mockCredits.checkCredits.mockResolvedValue({ sufficient: true, available: 50, required: 10 });
-      const failingProvider = { complete: jest.fn().mockRejectedValue(new Error('Provider error')) };
-      const fallbackProvider = { complete: jest.fn().mockResolvedValue({ content: 'fallback response', usage: { totalTokens: 50 } }) };
-      mockRegistry.getProvider
-        .mockResolvedValueOnce(failingProvider)
-        .mockResolvedValueOnce(fallbackProvider);
-      mockRouter.getFallbackProviders.mockReturnValue(['gemini', 'groq']);
+      const fallbackProvider = {
+        name: 'gemini',
+        complete: jest.fn().mockResolvedValue({ content: 'fallback response', model: 'gemini-2.0-flash', usage: { promptTokens: 10, completionTokens: 10, totalTokens: 20 } }),
+      };
+      mockProvider.complete.mockRejectedValue(new Error('Provider error'));
+      mockRouter.getFallbackProviders.mockReturnValue([
+        { provider: fallbackProvider, providerConfig: { id: 'cfg-2' }, model: 'gemini-2.0-flash' },
+      ]);
 
       const result = await service.process({ taskType: 'SEARCH_ANALYSIS' as any, payload: { action: 'test' } }, 'company-1', 'user-1');
       expect(result).toBeDefined();
+      expect(result.content).toBe('fallback response');
+      expect(result.model).toBe('gemini-2.0-flash');
       expect(mockRouter.getFallbackProviders).toHaveBeenCalled();
     });
 
@@ -123,23 +151,27 @@ describe('AiGatewayService', () => {
     it('should calculate cost for the request', async () => {
       mockCredits.checkCredits.mockResolvedValue({ sufficient: true, available: 50, required: 10 });
       await service.process({ taskType: 'SEARCH_ANALYSIS' as any, payload: { action: 'test' } }, 'company-1', 'user-1');
-      expect(mockCost.calculate).toHaveBeenCalled();
+      expect(mockCost.calculateCost).toHaveBeenCalledWith('openrouter', 'openai/gpt-4o-mini', 100, 50);
     });
 
     it('should check provider health before routing', async () => {
       mockCredits.checkCredits.mockResolvedValue({ sufficient: true, available: 50, required: 10 });
-      mockHealth.isHealthy.mockResolvedValue(true);
       await service.process({ taskType: 'SEARCH_ANALYSIS' as any, payload: { action: 'test' } }, 'company-1', 'user-1');
-      expect(mockHealth.isHealthy).toHaveBeenCalled();
+      expect(mockHealth.isCircuitOpen).toHaveBeenCalledWith('openrouter');
     });
 
     it('should return cached response when available', async () => {
       mockCredits.checkCredits.mockResolvedValue({ sufficient: true, available: 50, required: 10 });
-      const cachedResponse = { content: 'cached response', cached: true, usage: { totalTokens: 0 } };
+      const cachedResponse = { success: true, content: 'cached response', cached: true, provider: 'openrouter' };
       mockRedis.get.mockResolvedValue(JSON.stringify(cachedResponse));
       const result = await service.process({ taskType: 'SEARCH_ANALYSIS' as any, payload: { action: 'test' } }, 'company-1', 'user-1');
       expect(result).toBeDefined();
+      expect(result.cached).toBe(true);
       expect(mockRedis.get).toHaveBeenCalled();
+    });
+
+    it('should throw when taskType missing', async () => {
+      await expect(service.process({ payload: { action: 'test' } } as any, 'company-1')).rejects.toThrow('taskType is required');
     });
   });
 });

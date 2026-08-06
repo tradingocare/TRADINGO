@@ -1,8 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { SearchService } from '../../search/search.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { createMockPrisma } from '../../../common/test/test-utils';
 import { GeoSearchService } from './geo-search.service';
 import { SearchRankingService } from './search-ranking.service';
+import { UnifiedRankingService } from './unified-ranking.service';
+import { SearchAnalyticsService } from './search-analytics.service';
 import { ProductSearchService } from './product-search.service';
 import { SearchSort } from '../enums/search.enums';
 
@@ -24,7 +28,10 @@ describe('ProductSearchService', () => {
         ProductSearchService,
         GeoSearchService,
         SearchRankingService,
+        UnifiedRankingService,
         SearchService,
+        { provide: PrismaService, useValue: createMockPrisma() },
+        { provide: SearchAnalyticsService, useValue: { trackSearch: jest.fn() } },
         {
           provide: ConfigService,
           useValue: {

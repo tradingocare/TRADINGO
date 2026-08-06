@@ -10,7 +10,7 @@ import { NotFoundException, ConflictException, ForbiddenException } from '@nestj
 
 describe('CompaniesService', () => {
   let service: CompaniesService;
-  let prisma: Record<string, Record<string, jest.Mock>>;
+  let prisma: Record<string, any>;
   let searchService: Record<string, jest.Mock>;
 
   const mockCompany = {
@@ -46,7 +46,9 @@ describe('CompaniesService', () => {
       auditLog: { create: jest.fn() },
       companyOnboardingLog: { create: jest.fn(), findFirst: jest.fn() },
       subscriptionEvent: { create: jest.fn() },
+      $transaction: jest.fn(),
     };
+    prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
     searchService = {
       indexDocument: jest.fn(),
       search: jest.fn(),

@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CompanyLocationsController } from './company-locations.controller';
 import { CompanyLocationsService } from './company-locations.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CanActivate } from '@nestjs/common';
 
 describe('CompanyLocationsController', () => {
@@ -21,9 +23,14 @@ describe('CompanyLocationsController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CompanyLocationsController],
-      providers: [{ provide: CompanyLocationsService, useValue: service }],
+      providers: [
+        { provide: CompanyLocationsService, useValue: service },
+        { provide: PrismaService, useValue: { companyOwner: { findFirst: jest.fn() } } },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(CompanyOwnerGuard)
       .useValue(mockGuard)
       .compile();
 

@@ -3,6 +3,7 @@ import { ForbiddenException, BadRequestException, NotFoundException } from '@nes
 import { RfqService } from './rfq.service';
 import { RfqNumberService } from './rfq-number.service';
 import { RfqAnalyticsService } from './rfq-analytics.service';
+import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRfqDto } from './dto/create-rfq.dto';
 import { UpdateRfqDto } from './dto/update-rfq.dto';
@@ -32,6 +33,11 @@ const mockAnalyticsService = {
   trackMatchEvent: jest.fn().mockResolvedValue(undefined),
 };
 
+const mockNotificationService = {
+  createWithTemplate: jest.fn().mockResolvedValue(undefined),
+  create: jest.fn().mockResolvedValue(undefined),
+};
+
 const mockDate = new Date('2026-06-10T12:00:00Z');
 
 describe('RfqService', () => {
@@ -58,6 +64,7 @@ describe('RfqService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: RfqNumberService, useValue: mockRfqNumberService },
         { provide: RfqAnalyticsService, useValue: mockAnalyticsService },
+        { provide: NotificationService, useValue: mockNotificationService },
       ],
     }).compile();
 

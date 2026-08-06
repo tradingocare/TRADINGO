@@ -1,6 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
+import { ReviewsService } from './reviews.service';
+import { WishlistService } from './wishlist.service';
+import { QaService } from './qa.service';
+import { BestsellerService } from './bestseller.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CanActivate } from '@nestjs/common';
 
@@ -27,7 +32,14 @@ describe('ProductsController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProductsController],
-      providers: [{ provide: ProductsService, useValue: service }],
+      providers: [
+        { provide: ProductsService, useValue: service },
+        { provide: ReviewsService, useValue: { findAll: jest.fn(), create: jest.fn() } },
+        { provide: WishlistService, useValue: { findAll: jest.fn(), toggle: jest.fn() } },
+        { provide: QaService, useValue: { findQuestions: jest.fn(), createQuestion: jest.fn(), answerQuestion: jest.fn() } },
+        { provide: BestsellerService, useValue: { getBestsellers: jest.fn() } },
+        { provide: PrismaService, useValue: { product: { findUnique: jest.fn() } } },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue(mockGuard)

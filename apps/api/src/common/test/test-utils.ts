@@ -6,7 +6,15 @@ export type DeepMockProxy<T> = {
 
 export function createMockPrisma() {
   return {
-    $transaction: jest.fn((fn: (tx: any) => any) => fn(createMockTx())),
+    $transaction: jest.fn((arg: any) => {
+      if (typeof arg === 'function') return arg(createMockTx());
+      if (Array.isArray(arg)) return Promise.all(arg.map((op: any) => op(createMockTx())));
+      return Promise.resolve([]);
+    }),
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    $queryRawUnsafe: jest.fn().mockResolvedValue([]),
+    $executeRaw: jest.fn().mockResolvedValue(1),
+    $executeRawUnsafe: jest.fn().mockResolvedValue(1),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
     user: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
@@ -27,14 +35,14 @@ export function createMockPrisma() {
     dispute: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
     referralCode: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
     referralUsage: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
-    referralReward: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn() },
+    referralReward: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
     referralAudit: { create: jest.fn(), findMany: jest.fn(), count: jest.fn() },
     referralBlacklist: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), delete: jest.fn() },
     referralRule: { findMany: jest.fn(), findFirst: jest.fn() },
     campaign: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
     campaignRule: { create: jest.fn(), findMany: jest.fn() },
     campaignTarget: { create: jest.fn(), findMany: jest.fn() },
-    campaignClaim: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
+    campaignClaim: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), deleteMany: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
     campaignAnalytics: { findUnique: jest.fn(), upsert: jest.fn(), findMany: jest.fn() },
     membership: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
     plan: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
@@ -52,11 +60,16 @@ export function createMockPrisma() {
     professionalService: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
     professionalCertification: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
     professionalPortfolio: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
-    professionalAvailability: { findMany: jest.fn(), create: jest.fn(), deleteMany: jest.fn() },
+    professionalAvailability: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), upsert: jest.fn(), deleteMany: jest.fn() },
+    professionalLanguage: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), upsert: jest.fn(), delete: jest.fn() },
+    professionalServiceArea: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), delete: jest.fn() },
+    companyOwner: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), deleteMany: jest.fn() },
     booking: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
-    professionalReview: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn() },
+    professionalReview: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
     proposal: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
     notification: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn(), count: jest.fn() },
+    notificationDelivery: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn(), count: jest.fn() },
+    notificationPreference: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), upsert: jest.fn(), createMany: jest.fn(), count: jest.fn() },
     notificationTemplate: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     auditLog: { create: jest.fn(), findMany: jest.fn() },
     eventLog: { create: jest.fn(), findMany: jest.fn() },

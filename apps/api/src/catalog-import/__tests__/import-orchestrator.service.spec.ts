@@ -64,6 +64,35 @@ describe('ImportOrchestratorService', () => {
       serviceMaster: {
         upsert: jest.fn().mockImplementation(({ create }) => ({ id: `sm-${create.slug}`, ...create })),
       },
+      catalogCategory: {
+        upsert: jest.fn().mockImplementation(({ create }) => ({ id: `cc-${create.slug}`, ...create })),
+        findUnique: jest.fn().mockImplementation(({ where }) => {
+          const slug = where?.slug;
+          const name = slug === 'electronics' ? 'Electronics' :
+                       slug === 'clothing' ? 'Clothing' :
+                       slug === 'accounting' ? 'Accounting' : null;
+          if (!name) return null;
+          return { id: `cc-${slug}-id`, name };
+        }),
+      },
+      catalogSubcategory: {
+        upsert: jest.fn().mockImplementation(({ create }) => ({ id: `cs-${create.slug}`, ...create })),
+        findUnique: jest.fn().mockImplementation(({ where }) => {
+          const slug = where?.slug ?? where?.categoryId_slug?.slug;
+          const name = slug === 'mobiles' ? 'Mobiles' :
+                       slug === 'laptops' ? 'Laptops' :
+                       slug === 'shirts' ? 'Shirts' :
+                       slug === 'tax-consulting' ? 'Tax Consulting' : null;
+          if (!name) return null;
+          return { id: `cs-${slug}-id`, name };
+        }),
+      },
+      catalogItem: {
+        upsert: jest.fn().mockImplementation(({ create }) => ({ id: `ci-${create.slug}`, ...create })),
+      },
+      catalogUnit: {
+        upsert: jest.fn().mockImplementation(({ create }) => ({ id: `cu-${create.slug}`, ...create })),
+      },
       product: {
         create: jest.fn().mockImplementation(({ data }) => ({ id: `prod-${data.slug}`, ...data })),
         findUnique: jest.fn().mockResolvedValue({
