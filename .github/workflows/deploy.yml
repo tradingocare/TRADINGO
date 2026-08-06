@@ -6,21 +6,42 @@ on:
     types: [completed]
     branches: [main]
 
+# Environment protection — prevents auto-deploy without approval
+# Requires GitHub environment "production" with required reviewers configured
+concurrency:
+  group: production
+  cancel-in-progress: false
+
 env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY_API: tradingo-api
-  ECR_REPOSITORY_WEB: tradingo-web
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY_API: tradingo-production-api
+  ECR_REPOSITORY_WEB: tradingo-production-web
   ECS_CLUSTER: tradingo-production
-  ECS_SERVICE_API: tradingo-api-production
-  ECS_SERVICE_WEB: tradingo-web-production
-  TASK_DEFINITION_API: tradingo-api-production
-  TASK_DEFINITION_WEB: tradingo-web-production
+  ECS_SERVICE_API: tradingo-production-api
+  ECS_SERVICE_WEB: tradingo-production-web
+  TASK_DEFINITION_API: tradingo-production-api
+  TASK_DEFINITION_WEB: tradingo-production-web
 
 jobs:
+  validate:
+    name: Validate Secrets
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check AWS_ACCOUNT_ID is configured
+        run: |
+          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
+            echo "::error::AWS_ACCOUNT_ID secret is not configured. Set it in GitHub secrets."
+            exit 1
+          fi
+          echo "AWS_ACCOUNT_ID is configured: OK"
+
   deploy:
     name: Build & Deploy
+    needs: [validate]
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,12 +78,36 @@ jobs:
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.ref_name }}
 
+      - name: Run database migrations (before service deploy)
+        run: |
+          aws ecs run-task \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --task-definition tradingo-production-migration \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNETS }}],securityGroups=[${{ secrets.SECURITY_GROUPS }}],assignPublicIp=ENABLED}"
+          # Wait for migration completion
+          TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --family tradingo-production-migration --query 'taskArns[0]' --output text)
+          aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN
+          TASK_INFO=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN)
+          EXIT_CODE=$(echo $TASK_INFO | jq -r '.tasks[0].containers[0].exitCode')
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration failed with exit code $EXIT_CODE — aborting deployment"
+            exit 1
+          fi
+          echo "Database migrations completed successfully"
+
+      - name: Substitute __AWS_ACCOUNT_ID__ in task definitions
+        run: |
+          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.api.json
+          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.web.json
+          echo "Task definition placeholders substituted"
+
       - name: Render API task definition
         id: render-api
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: infrastructure/ecs/task-definition.api.json
-          container-name: tradingo-api
+          container-name: api
           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:${{ github.sha }}
 
       - name: Render Web task definition
@@ -70,7 +115,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: infrastructure/ecs/task-definition.web.json
-          container-name: tradingo-web
+          container-name: web
           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
 
       - name: Deploy API to ECS
@@ -91,38 +136,15 @@ jobs:
           wait-for-service-stability: true
           wait-for-minutes: 10
 
-      - name: Health check - API
+      - name: Health check - API (via ALB)
         run: |
-          TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --service-name ${{ env.ECS_SERVICE_API }} --query 'taskArns[0]' --output text)
-          ENI=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text)
-          PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
-          curl -f --retry 10 --retry-delay 10 --retry-max-time 120 "http://$PUBLIC_IP:3001/api/v1/health"
+          API_URL="${{ vars.API_URL }}"
+          curl -f --retry 10 --retry-delay 10 --retry-max-time 120 "${API_URL:-https://api.tradingo.in}/live"
 
-      - name: Health check - Web
+      - name: Health check - Web (via ALB)
         run: |
-          TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --service-name ${{ env.ECS_SERVICE_WEB }} --query 'taskArns[0]' --output text)
-          ENI=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text)
-          PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
-          curl -f --retry 10 --retry-delay 10 --retry-max-time 120 "http://$PUBLIC_IP:3000"
-
-      - name: Run database migrations
-        run: |
-          aws ecs run-task \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --task-definition tradingo-api-migration \
-            --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNETS }}],securityGroups=[${{ secrets.SECURITY_GROUPS }}],assignPublicIp=ENABLED}"
-
-      - name: Wait for migration completion
-        run: |
-          TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --family tradingo-api-migration --query 'taskArns[0]' --output text)
-          aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN
-          TASK_INFO=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN)
-          EXIT_CODE=$(echo $TASK_INFO | jq -r '.tasks[0].containers[0].exitCode')
-          if [ "$EXIT_CODE" != "0" ]; then
-            echo "Migration failed with exit code $EXIT_CODE"
-            exit 1
-          fi
+          WEB_URL="${{ vars.WEB_URL }}"
+          curl -f --retry 10 --retry-delay 10 --retry-max-time 120 "${WEB_URL:-https://tradingo.in}"
 
       - name: Notify Slack
         if: always()
@@ -133,4 +155,47 @@ jobs:
           payload: |
             {
               "text": "Deployment ${{ job.status == 'success' && 'succeeded' || 'failed' }} — `${{ github.sha }}`"
+            }
+
+  rollback:
+    name: Rollback
+    if: failure()
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Rollback API service to previous task definition
+        run: |
+          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} --query 'services[0].taskDefinition' --output text)
+          echo "Rolling back API to: $PREVIOUS_TASK_DEF"
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_API }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
+
+      - name: Rollback Web service to previous task definition
+        run: |
+          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_WEB }} --query 'services[0].taskDefinition' --output text)
+          echo "Rolling back Web to: $PREVIOUS_TASK_DEF"
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_WEB }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
+
+      - name: Wait for rollback stability
+        run: |
+          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} ${{ env.ECS_SERVICE_WEB }}
+
+      - name: Notify Slack rollback
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🔄 Production rollback completed — ${{ github.sha }}"
             }

@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tradingo
+
+resources:
+  - tradingo-namespace.yaml
+  - tradingo-configmap.yaml
+  - tradingo-secrets-template.yaml
+  - api-deployment.yaml
+  - api-service.yaml
+  - api-hpa.yaml
+  - web-deployment.yaml
+  - web-service.yaml
+  - web-hpa.yaml
+  - ingress.yaml
+  - postgres-statefulset.yaml
+  - redis-deployment.yaml
+  - pdb.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: tradingo-platform
+
+commonAnnotations:
+  app.kubernetes.io/description: "TRADINGO B2B Commerce Platform"
+
+images:
+  - name: tradingo-api
+    newTag: latest
+  - name: tradingo-web
+    newTag: latest

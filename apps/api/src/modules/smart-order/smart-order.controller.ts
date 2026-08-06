@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { SmartOrderService } from './smart-order.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,6 +10,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UpdateOrderDto, CancelOrderDto, CreateReturnDto, UpdateStatusDto } from './dto/smart-order.dto';
 
 @ApiTags('Smart Order Management Engine')
+@Throttle(RateLimits.ORDER_CREATE)
 @UseGuards(JwtAuthGuard)
 @Controller('smart-order')
 export class SmartOrderController {

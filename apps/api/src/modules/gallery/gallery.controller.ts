@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { GalleryService } from './gallery.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
@@ -12,6 +13,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 @ApiTags('Gallery')
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/gallery')
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 export class GalleryController {
   constructor(private readonly galleryService: GalleryService) {}
 

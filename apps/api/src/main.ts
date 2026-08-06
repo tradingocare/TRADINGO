@@ -1,5 +1,7 @@
 import helmet from '@fastify/helmet';
 import csrf from '@fastify/csrf-protection';
+import cookie from '@fastify/cookie';
+import compress from '@fastify/compress';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -10,30 +12,239 @@ import { createServer } from 'http';
 import * as Sentry from '@sentry/nestjs';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
 import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 import { RedisIoAdapter } from './modules/chat/redis-io-adapter';
+import { PinoLoggerService } from './common/services/pino-logger.service';
+import { bootstrapTracing } from './tracing';
+import { MetricsRegistryService } from './common/services/metrics-registry.service';
+import { BusinessMetricsService } from './common/services/business-metrics.service';
+import { QueueMetricsService } from './common/services/queue-metrics.service';
+import { RedisService } from './common/services/redis.service';
+import { PrismaService } from './prisma/prisma.service';
+import { logger, createRequestContext } from './common/logger';
 
 async function bootstrap() {
+  // Global process-level error handlers — prevent Node.js crashes on unhandled rejections
+  process.on('unhandledRejection', (reason: unknown) => {
+    logger.error({ err: reason }, 'UNHANDLED PROMISE REJECTION — application will continue, but investigate the cause');
+    Sentry.captureException(reason instanceof Error ? reason : new Error(String(reason)));
+  });
+  process.on('uncaughtException', (error: Error) => {
+    logger.error({ err: error }, 'UNCAUGHT EXCEPTION — application may become unstable');
+    Sentry.captureException(error);
+    // Graceful shutdown — give time for cleanup
+    setTimeout(() => process.exit(1), 3000).unref();
+  });
+
+  // Attempt OpenTelemetry bootstrap (no-op if OTEL packages not installed)
+  await bootstrapTracing();
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: true, bodyLimit: 100 * 1024 * 1024 }),
+    new FastifyAdapter({
+      logger: {
+        level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+        transport: process.env.NODE_ENV !== 'production'
+          ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard' } }
+          : undefined,
+      },
+      bodyLimit: 100 * 1024 * 1024,
+      // Production only-entry is nginx (loopback-bound); Cloudflare sets X-Forwarded-For
+      // at the edge and nginx appends it. Formerly unset, req.ip returned the nginx/edge
+      // IP, making the per-IP throttler (5-100 req/min) ineffective behind the proxy.
+      trustProxy: true,
+    }),
   );
 
-  // Sentry initialization
+  app.enableShutdownHooks();
+
+  // Replace NestJS ConsoleLogger with Pino (structured JSON in production)
+  app.useLogger(new PinoLoggerService());
+
   const configService = app.get(ConfigService);
-  const sentryDsn = configService.get<string>('sentry.dsn', '');
-  const sentryEnabled = configService.get<boolean>('sentry.enabled', false);
-  if (sentryDsn && sentryEnabled) {
-    Sentry.init({ dsn: sentryDsn, environment: configService.get<string>('NODE_ENV', 'development') });
+
+  const PLACEHOLDER_PATTERNS = ['change-me', 'change_me', 'replace', 'your_', 'your-', 'yours', '<your-', '<secret', 'dummy', 'founder', 'xxxxxx'];
+  const isPlaceholder = (value?: string): boolean => {
+    if (!value) return true;
+    const v = value.toLowerCase();
+    return PLACEHOLDER_PATTERNS.some((p) => v.includes(p));
+  };
+
+  // Validate JWT secrets are not placeholders
+  const jwtSecret = configService.get<string>('jwt.secret', '');
+  const jwtRefreshSecret = configService.get<string>('jwt.refreshSecret', '');
+  if (!jwtSecret || isPlaceholder(jwtSecret) || jwtSecret.length < 32) {
+    throw new Error('JWT_SECRET is invalid, missing, or still a placeholder. Set a strong 64-char random secret in your .env file.');
+  }
+  if (!jwtRefreshSecret || isPlaceholder(jwtRefreshSecret) || jwtRefreshSecret.length < 32) {
+    throw new Error('JWT_REFRESH_SECRET is invalid, missing, or still a placeholder. Set a strong 64-char random secret in your .env file.');
   }
 
-  // Security headers
-  await app.register(helmet);
+  const isProduction = configService.get<string>('NODE_ENV') === 'production';
+  const paymentMode = configService.get<string>('PAYMENT_MODE', 'test');
 
-  // CSRF protection
-  await app.register(csrf);
+  // Sentry flags are resolved once and reused by the initialization block below
+  const sentryDsn = configService.get<string>('sentry.dsn', '');
+  const sentryEnabled = configService.get<boolean>('sentry.enabled', false);
+
+  // Production credential validation
+  if (isProduction) {
+    const errors: string[] = [];
+
+    // AWS credentials (SES + S3) — warn only, not fatal (supports deployments without email)
+    const awsKeyId = process.env.AWS_ACCESS_KEY_ID || '';
+    const awsSecret = process.env.AWS_SECRET_ACCESS_KEY || '';
+    if (!awsKeyId || !awsSecret || isPlaceholder(awsKeyId) || isPlaceholder(awsSecret)) {
+      logger.warn('AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY not set or still placeholders — SES email and S3 backups will fail at runtime');
+    }
+
+    // Razorpay keys — fail-fast when PAYMENT_MODE=live (prevents silent payment failures), lenient warnings in test mode
+    const rpKeyId = configService.get<string>('razorpay.keyId', '');
+    const rpKeySecret = configService.get<string>('razorpay.keySecret', '');
+    const rpWebhookSecret = configService.get<string>('razorpay.webhookSecret', '');
+    if (paymentMode === 'live') {
+      if (!rpKeyId || rpKeyId.startsWith('rzp_test_') || isPlaceholder(rpKeyId) || rpKeyId === 'rzp_live_YOUR_KEY_ID_HERE') {
+        errors.push('RAZORPAY_KEY_ID is missing or still a placeholder. Set a valid LIVE key (rzp_live_*) or use PAYMENT_MODE=test.');
+      }
+      if (!rpKeySecret || isPlaceholder(rpKeySecret) || rpKeySecret === 'rzp_secret_YOUR_KEY_SECRET') {
+        errors.push('RAZORPAY_KEY_SECRET is missing or still a placeholder');
+      }
+      if (!rpWebhookSecret || isPlaceholder(rpWebhookSecret) || rpWebhookSecret === 'rzp_webhook_YOUR_WEBHOOK_SECRET') {
+        errors.push('RAZORPAY_WEBHOOK_SECRET is missing or still a placeholder — live webhooks will be rejected');
+      }
+    } else if (isPlaceholder(rpKeyId) || isPlaceholder(rpKeySecret) || isPlaceholder(rpWebhookSecret)) {
+      logger.warn('RAZORPAY_KEY_ID / KEY_SECRET / WEBHOOK_SECRET are missing or placeholders — payment flows will be unavailable in test mode');
+    }
+
+    // Email from address
+    const emailFrom = configService.get<string>('EMAIL_FROM', '');
+    if (!emailFrom) {
+      errors.push('EMAIL_FROM must be set in production');
+    } else {
+      const fromDomain = emailFrom.split('@')[1]?.toLowerCase() || '';
+      if (!fromDomain || ['example.com', 'tradingotech.com', 'yourdomain.com', 'yourdomain.in', 'localhost'].includes(fromDomain)) {
+        errors.push(`EMAIL_FROM domain "${fromDomain}" is not a verified send domain — create the SES identity for it and use that domain`);
+      }
+    }
+
+    // Sentry — fatal when claimed enabled but DSN is a placeholder (prevents silent report loss)
+    if (sentryEnabled && (!sentryDsn || isPlaceholder(sentryDsn))) {
+      errors.push('SENTRY_ENABLED=true but SENTRY_DSN is missing or a placeholder — set the project DSN or set SENTRY_ENABLED=false');
+    }
+
+    // AI provider keys (warn only) — at least one real configured key required for AI features
+    const aiKeys = ['OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'GEMINI_API_KEY', 'GROQ_API_KEY', 'TAVILY_API_KEY', 'FIRECRAWL_API_KEY'];
+    const hasAiKey = aiKeys.some((k) => process.env[k] && !isPlaceholder(process.env[k]));
+    if (!hasAiKey) {
+      logger.warn('No AI provider keys configured (or all placeholders) — AI features will be unavailable. Set at least one of: ' + aiKeys.join(', '));
+    }
+
+    if (errors.length > 0) {
+      logger.error('Production environment validation failed:');
+      for (const err of errors) {
+        logger.error(`  ✗ ${err}`);
+      }
+      throw new Error(`Production environment validation failed:\n  ${errors.join('\n  ')}`);
+    }
+
+    logger.info(`Production environment validation passed (PAYMENT_MODE=${paymentMode})`);
+  }
+
+  // Sentry initialization (dsn/enabled resolved during credential validation above)
+  if (sentryDsn && sentryEnabled) {
+    Sentry.init({
+      dsn: sentryDsn,
+      environment: configService.get<string>('NODE_ENV', 'development'),
+      tracesSampleRate: isProduction ? 0.1 : 1.0,
+      beforeSend: (event) => {
+        const sensitivePatterns = ['password', 'token', 'otp', 'secret', 'authorization', 'cookie'];
+        if (event.exception?.values) {
+          for (const value of event.exception.values) {
+            if (value.value && sensitivePatterns.some((p) => value.value!.toLowerCase().includes(p))) {
+              value.value = '[REDACTED BY Sentry beforeSend]';
+            }
+          }
+        }
+        return event;
+      },
+    });
+  }
+
+  // Security headers (CSP, HSTS, X-Frame, etc.)
+  const scriptSrc = ["'self'", "*.cloudfront.net"];
+  const styleSrc = ["'self'"];
+  if (!isProduction) {
+    scriptSrc.push("'unsafe-inline'", "'unsafe-eval'");
+    styleSrc.push("'unsafe-inline'");
+  }
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc,
+        styleSrc,
+        imgSrc: ["'self'", "*.s3.amazonaws.com", "*.cloudfront.net", "data:"],
+        connectSrc: ["'self'", "ws:", "wss:", "*.sentry.io"],
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+      },
+    },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    frameguard: { action: 'deny' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    noSniff: true,
+    xssFilter: true,
+  });
+
+  // CSRF protection — provides generateCsrf() utility + csrfProtection preHandler
+  await app.register(cookie, { secret: configService.get<string>('JWT_SECRET', 'change-me-to-a-random-64-char-string') });
+  await app.register(csrf, { cookieOpts: { signed: true, path: '/', sameSite: true, httpOnly: true } });
+  const fastifyApp: any = app.getHttpAdapter().getInstance();
+
+  // Correlation ID — propagate x-request-id from incoming headers, set response headers
+  fastifyApp.addHook('onRequest', (request: any, _reply: any, done: () => void) => {
+    const incomingId = request.headers['x-request-id'] || request.headers['x-correlation-id'];
+    const ctx = createRequestContext(incomingId as string | undefined);
+    request.reqId = ctx.reqId;
+    request.correlationId = ctx.correlationId;
+    done();
+  });
+  fastifyApp.addHook('onSend', (request: any, reply: any, _payload: any, done: () => void) => {
+    void reply.header('x-request-id', request.reqId);
+    void reply.header('x-correlation-id', request.correlationId);
+    done();
+  });
+
+  fastifyApp.addHook('preHandler', (request: any, reply: any, done: (err?: Error) => void) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      try { reply.generateCsrf?.(); } catch (e) { logger.warn({ err: e }, 'CSRF token generation failed'); }
+      return done();
+    }
+    if (String(request.url).includes('/payments/webhook/')) return done();
+    if (String(request.url).endsWith('/membership/webhook')) return done();
+    if (request.headers?.authorization) return done();
+    if (typeof fastifyApp.csrfProtection === 'function') {
+      fastifyApp.csrfProtection(request, reply, (err?: any) => {
+        if (err) {
+          logger.warn({ err }, 'CSRF validation failed — request blocked');
+          return done(new Error('CSRF validation failed'));
+        }
+        done();
+      });
+    } else {
+      done();
+    }
+  });
+
+  // Response compression (gzip/brotli)
+  await app.register(compress, { threshold: 1024 });
 
   // Redis Socket.io adapter for horizontal scaling
   const redisIoAdapter = new RedisIoAdapter(app);
@@ -46,8 +257,8 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Global prefix
-  app.setGlobalPrefix('api/v1');
+  // Global prefix (exclude k8s probes)
+  app.setGlobalPrefix('api/v1', { exclude: ['live', 'ready', 'health'] });
 
   // Global pipes
   app.useGlobalPipes(
@@ -71,46 +282,101 @@ async function bootstrap() {
     }),
   );
 
+  // Prometheus metrics — registry must exist before interceptors
+  const register = new Registry();
+  collectDefaultMetrics({ register });
+  const prismaService = app.get(PrismaService);
+  prismaService.registerMetrics(register);
+
+  // Initialize distributed metrics services (business, queue, cache)
+  const registryService = app.get(MetricsRegistryService);
+  registryService.register = register;
+  const redisService = app.get(RedisService);
+  redisService.registerMetrics(register);
+  const businessMetrics = app.get(BusinessMetricsService);
+  businessMetrics.start();
+  const queueMetrics = app.get(QueueMetricsService);
+  queueMetrics.start();
+
   // Global filters & interceptors
-  app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalInterceptors(new SentryInterceptor(), new TransformInterceptor(), new LoggingInterceptor());
+  app.useGlobalFilters(new AllExceptionsFilter(), new PrismaClientExceptionFilter());
+  app.useGlobalInterceptors(new SentryInterceptor(), new MetricsInterceptor(register), new TransformInterceptor(), new LoggingInterceptor());
 
   // Swagger (dev only)
   if (configService.get<string>('NODE_ENV') !== 'production') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('Tradingo API')
-      .setDescription('Tradingo backend API')
+      .setTitle('Tradingo API — TradHexa Platform')
+      .setDescription(`
+        Tradingo is the enterprise B2B commerce platform powering TradHexa.
+        This API provides access to marketplace, AI, TradeServ, TradeTalk,
+        GOCASH wallet, advertising, and platform administration features.
+
+        ## Authentication
+        - **JWT Bearer Token** (short-lived, 15 min) — required for most endpoints
+        - **Refresh Token** (long-lived, 7 days) — used via POST /auth/refresh
+
+        ## Response Envelope
+        All responses follow: { success, data, meta, timestamp }
+
+        ## Error Format
+        Errors follow: { statusCode, message, error, timestamp, path }
+
+        ## Rate Limiting
+        - Auth endpoints: 5 req/min per IP
+        - Search endpoints: 30 req/min
+        - General endpoints: 100 req/min
+
+        ## Pagination
+        List endpoints return: { data, meta: { total, page, limit, totalPages, hasNext, hasPrevious } }
+
+        Environment: ` + (configService.get<string>('NODE_ENV') || 'development') + `
+      `)
       .setVersion('1.0.0')
-      .addBearerAuth()
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Standard JWT access token (expires in 15 min)' },
+        'JWT-auth',
+      )
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Refresh token for obtaining new access tokens (expires in 7 days)' },
+        'Refresh-auth',
+      )
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  // Prometheus metrics on separate internal HTTP server (port 9100)
-  const register = new Registry();
-  collectDefaultMetrics({ register });
+  // Serve metrics on the main API server (for Prometheus scraping)
+  const fastifyInstance = app.getHttpAdapter().getInstance();
+  fastifyInstance.get('/api/v1/metrics', async (_req: any, reply: any) => {
+    reply.header('Content-Type', register.contentType);
+    return reply.send(await register.metrics());
+  });
+
+  // Internal metrics server for local debugging (loopback only)
   const metricsServer = createServer(async (_req, res) => {
     res.writeHead(200, { 'Content-Type': register.contentType });
     res.end(await register.metrics());
   });
-  metricsServer.listen(9100, '0.0.0.0');
+  metricsServer.listen(9100, '127.0.0.1');
 
   // Start main server
   const port = configService.get<number>('PORT', 3001);
   await app.listen(port, '0.0.0.0');
-  console.log(`API running on http://0.0.0.0:${port}`);
-  console.log(`Swagger docs at http://0.0.0.0:${port}/api/docs`);
-  console.log(`Metrics at http://0.0.0.0:9100/metrics`);
+  logger.info(`API running on http://0.0.0.0:${port}`);
+  logger.info(`Swagger docs at http://0.0.0.0:${port}/api/docs`);
+  logger.info(`Metrics at http://0.0.0.0:9100/metrics`);
 
-  // Graceful shutdown
-  const gracefulShutdown = async (signal: string) => {
-    console.log(`Received ${signal}, shutting down gracefully...`);
+  // Graceful shutdown — enableShutdownHooks() at line 27 handles NestJS lifecycle
+  // Prisma $disconnect() is called automatically via OnModuleDestroy
+  process.on('SIGTERM', async () => {
+    logger.info('Received SIGTERM, shutting down gracefully...');
     metricsServer.close();
     await app.close();
-    process.exit(0);
-  };
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  });
+  process.on('SIGINT', async () => {
+    logger.info('Received SIGINT, shutting down gracefully...');
+    metricsServer.close();
+    await app.close();
+  });
 }
 bootstrap();

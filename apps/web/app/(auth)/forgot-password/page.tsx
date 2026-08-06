@@ -6,11 +6,13 @@ import Image              from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mail, ArrowLeft, CheckCircle2,
-  Loader2, Lock, Eye, EyeOff,
+  Lock, Eye, EyeOff,
   RefreshCw, ShieldCheck,
 } from 'lucide-react'
+import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 import apiClient from '@/lib/api/client'
-import toast from 'react-hot-toast'
+import { toast } from '@/components/ui/use-toast'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 type ForgotStep =
   | 'enter_email'
@@ -31,12 +33,13 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading]       = useState(false)
   const [error, setError]           = useState('')
   const [countdown, setCountdown]   = useState(0)
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const sendOtp = async () => {
     if (!email.trim()) { setError('Enter your registered email or mobile'); return }
     setLoading(true); setError('')
     try {
-      await apiClient.post('/auth/forgot-password', { identifier: email.trim() })
+      await apiClient.post('/auth/forgot-password', { identifier: email.trim(), turnstileToken })
       setStep('otp_sent')
       setCountdown(60)
       toast.success('Reset OTP sent!')
@@ -77,12 +80,12 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center
-                    px-4 py-12" style={{ background:'#1D0001' }}>
+                    px-4 py-12" style={{ background:'var(--bg-base)' }}>
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px]
                         h-[600px] rounded-full opacity-12"
-          style={{ background:'radial-gradient(circle,#FF4D0018,transparent 70%)',
+          style={{ background:'radial-gradient(circle,#f59e0b18,transparent 70%)',
                    filter:'blur(80px)' }} />
       </div>
 
@@ -90,16 +93,16 @@ export default function ForgotPasswordPage() {
 
         <div className="text-center mb-8">
           <Link href="/">
-            <Image src="/logo/trdn.png" alt="TRADINGO"
+            <Image src="/logo/trdn6.png" alt="TRADINGO"
               width={44} height={44} className="object-contain mx-auto mb-3" />
           </Link>
         </div>
 
         <div className="rounded-3xl p-7 sm:p-8"
           style={{
-            background:'rgba(255,255,255,0.045)',
+            backgroundColor:'var(--bg-elevated)',
             backdropFilter:'blur(28px)',
-            border:'1px solid rgba(255,255,255,0.09)',
+            border:'1px solid var(--border-color)',
             boxShadow:'0 24px 72px rgba(0,0,0,0.45)',
           }}>
 
@@ -110,33 +113,31 @@ export default function ForgotPasswordPage() {
                 initial={{ opacity:0 }} animate={{ opacity:1 }}
                 exit={{ opacity:0 }} className="space-y-5">
                 <div>
-                  <h2 className="text-white font-black text-2xl">
-                    Forgot Password?
+                  <h2 className="text-text-primary font-black text-2xl">                    Forgot Password?
                   </h2>
-                  <p className="text-white/45 text-sm mt-1">
+                  <p className="text-text-tertiary text-sm mt-1">
                     No worries. We'll send a reset OTP to your
                     registered email or mobile.
                   </p>
                 </div>
                 <div>
-                  <label className="block text-white/60 text-xs
-                                    font-semibold mb-1.5">
+<label className="block text-text-secondary text-xs
+                                  font-semibold mb-1.5">
                     Email or Mobile Number
                   </label>
                   <div className="relative">
                     <Mail size={15} className="absolute left-3.5 top-1/2
-                      -translate-y-1/2 text-white/30" />
+                      -translate-y-1/2 text-gray-400" />
                     <input
                       value={email}
                       onChange={e => { setEmail(e.target.value); setError('') }}
                       placeholder="your@email.com or 9876543210"
-                      className="w-full pl-10 pr-4 py-3.5 rounded-xl text-white
-                                 text-sm placeholder-white/25 focus:outline-none"
+                      className="w-full pl-10 pr-4 py-3.5 rounded-xl text-text-primary text-sm placeholder-white/35 focus:outline-none"
                       style={{
-                        background:'rgba(255,255,255,0.07)',
+                        backgroundColor:'var(--bg-elevated)',
                         border: error
                           ? '1px solid rgba(239,68,68,0.4)'
-                          : '1px solid rgba(255,255,255,0.12)',
+                          : '1px solid var(--border-color)',
                       }}
                     />
                   </div>
@@ -144,6 +145,8 @@ export default function ForgotPasswordPage() {
                     <p className="text-red-400 text-[10px] mt-1.5">? {error}</p>
                   )}
                 </div>
+                <TurnstileWidget onToken={setTurnstileToken} />
+
                 <motion.button
                   onClick={sendOtp}
                   disabled={loading}
@@ -153,19 +156,19 @@ export default function ForgotPasswordPage() {
                              flex items-center justify-center gap-2
                              disabled:opacity-50"
                   style={{
-                    background:'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+                    background:'linear-gradient(135deg,#f59e0b,#fbbf24)',
                     color:'#fff',
-                    boxShadow:'0 6px 20px rgba(255,77,0,0.3)',
+                    boxShadow:'0 6px 20px rgba(245, 158, 11, 0.3)',
                   }}>
                   {loading
-                    ? <><Loader2 size={15} className="animate-spin" />
+                    ? <><LoadingSpinner size="xs" />
                         Sending OTP...</>
-                    : <>Send Reset OTP ?</>
+                    : <>Send Reset OTP →</>
                   }
                 </motion.button>
                 <Link href="/login"
                   className="flex items-center justify-center gap-1.5
-                             text-xs text-white/35 hover:text-white/60">
+                             text-xs text-text-tertiary hover:text-text-secondary">
                   <ArrowLeft size={12} /> Back to Sign In
                 </Link>
               </motion.div>
@@ -176,12 +179,11 @@ export default function ForgotPasswordPage() {
                 initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }}
                 exit={{ opacity:0, x:-20 }} className="space-y-5">
                 <div>
-                  <h2 className="text-white font-black text-2xl">
-                    Enter OTP
+                  <h2 className="text-text-primary font-black text-2xl">  Enter OTP
                   </h2>
-                  <p className="text-white/45 text-sm mt-1">
+                  <p className="text-text-tertiary text-sm mt-1">
                     We sent a 6-digit OTP to{' '}
-                    <strong className="text-white">{email}</strong>
+                    <strong className="text-text-primary">{email}</strong>
                   </p>
                 </div>
                 <div>
@@ -194,16 +196,15 @@ export default function ForgotPasswordPage() {
                     placeholder="Enter 6-digit OTP"
                     maxLength={6}
                     inputMode="numeric"
-                    className="w-full text-center py-4 rounded-xl text-white
-                               font-black text-2xl tracking-[0.5em]
-                               placeholder-white/20 placeholder:text-base
+                    className="w-full text-center py-4 rounded-xl text-text-primary font-black text-2xl tracking-[0.5em]
+                               placeholder-white/35 placeholder:text-base
                                placeholder:font-normal placeholder:tracking-normal
                                focus:outline-none"
                     style={{
-                      background:'rgba(255,255,255,0.07)',
+                      backgroundColor:'var(--bg-elevated)',
                       border: error
                         ? '1px solid rgba(239,68,68,0.4)'
-                        : '1px solid rgba(255,255,255,0.12)',
+                        : '1px solid var(--border-color)',
                     }}
                   />
                   {error && (
@@ -215,7 +216,7 @@ export default function ForgotPasswordPage() {
                     <div key={i} className="w-2 h-2 rounded-full transition-all"
                       style={{
                         background: i < otp.length
-                          ? '#FF4D00' : 'rgba(255,255,255,0.1)',
+                          ? '#f59e0b' : 'rgba(255,255,255,0.1)',
                       }} />
                   ))}
                 </div>
@@ -228,28 +229,25 @@ export default function ForgotPasswordPage() {
                              flex items-center justify-center gap-2
                              disabled:opacity-40"
                   style={{
-                    background:'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+                    background:'linear-gradient(135deg,#f59e0b,#fbbf24)',
                     color:'#fff',
                   }}>
                   {loading
-                    ? <><Loader2 size={15} className="animate-spin" />
+                    ? <><LoadingSpinner size="xs" />
                         Verifying...</>
                     : <>Verify OTP ?</>
                   }
                 </motion.button>
                 <div className="flex items-center justify-between text-xs">
                   <button onClick={() => setStep('enter_email')}
-                    className="text-white/30 hover:text-white/60
-                               flex items-center gap-1">
+                    className="text-text-tertiary hover:text-text-secondary flex items-center gap-1">
                     <ArrowLeft size={11} /> Change email
                   </button>
                   {countdown > 0
-                    ? <span className="text-white/25">
-                        Resend in {countdown}s
+                      ? <span className="text-text-tertiary">  Resend in {countdown}s
                       </span>
                     : <button onClick={sendOtp}
-                        className="font-semibold flex items-center gap-1"
-                        style={{ color:'#FF4D00' }}>
+                        className="font-semibold flex items-center gap-1 text-accent-500">
                         <RefreshCw size={11} /> Resend OTP
                       </button>
                   }
@@ -269,8 +267,7 @@ export default function ForgotPasswordPage() {
                     <ShieldCheck size={18} className="text-green-400" />
                   </div>
                   <div>
-                    <h2 className="text-white font-black text-xl">
-                      Set New Password
+                    <h2 className="text-text-primary font-black text-xl">  Set New Password
                     </h2>
                     <p className="text-green-400 text-[10px] font-semibold">
                       ? OTP Verified Successfully
@@ -279,39 +276,38 @@ export default function ForgotPasswordPage() {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-white/60 text-xs
-                                      font-semibold mb-1.5">
+<label className="block text-text-secondary text-xs
+                                     font-semibold mb-1.5">
                       New Password
                     </label>
                     <div className="relative">
                       <Lock size={14} className="absolute left-3.5 top-1/2
-                        -translate-y-1/2 text-white/30" />
+                        -translate-y-1/2 text-gray-400" />
                       <input
                         type={showPwd ? 'text' : 'password'}
                         value={newPwd}
                         onChange={e => { setNewPwd(e.target.value); setError('') }}
                         placeholder="Min 8 chars with number + symbol"
-                        className="w-full pl-10 pr-11 py-3.5 rounded-xl text-white
-                                   text-sm placeholder-white/25 focus:outline-none"
-                        style={{ background:'rgba(255,255,255,0.07)',
-                                 border:'1px solid rgba(255,255,255,0.12)' }}
+                        className="w-full pl-10 pr-11 py-3.5 rounded-xl text-text-primary text-sm placeholder-white/35 focus:outline-none"
+                        style={{ backgroundColor:'var(--bg-elevated)',
+                                 border:'1px solid var(--border-color)' }}
                       />
                       <button type="button"
                         onClick={() => setShowPwd(p => !p)}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2
-                                   text-white/30 hover:text-white/70">
+                                   text-text-tertiary hover:text-text-secondary">
                         {showPwd ? <EyeOff size={15}/> : <Eye size={15}/>}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-white/60 text-xs
-                                      font-semibold mb-1.5">
+<label className="block text-text-secondary text-xs
+                                     font-semibold mb-1.5">
                       Confirm New Password
                     </label>
                     <div className="relative">
                       <Lock size={14} className="absolute left-3.5 top-1/2
-                        -translate-y-1/2 text-white/30" />
+                        -translate-y-1/2 text-gray-400" />
                       <input
                         type="password"
                         value={confirmPwd}
@@ -319,13 +315,12 @@ export default function ForgotPasswordPage() {
                           setConfirmPwd(e.target.value); setError('')
                         }}
                         placeholder="Re-enter new password"
-                        className="w-full pl-10 pr-4 py-3.5 rounded-xl text-white
-                                   text-sm placeholder-white/25 focus:outline-none"
+                        className="w-full pl-10 pr-4 py-3.5 rounded-xl text-text-primary text-sm placeholder-white/35 focus:outline-none"
                         style={{
-                          background:'rgba(255,255,255,0.07)',
+                          backgroundColor:'var(--bg-elevated)',
                           border: confirmPwd && confirmPwd === newPwd
                             ? '1px solid rgba(74,222,128,0.4)'
-                            : '1px solid rgba(255,255,255,0.12)',
+                            : '1px solid var(--border-color)',
                         }}
                       />
                       {confirmPwd && confirmPwd === newPwd && (
@@ -352,7 +347,7 @@ export default function ForgotPasswordPage() {
                     boxShadow:'0 6px 20px rgba(74,222,128,0.25)',
                   }}>
                   {loading
-                    ? <><Loader2 size={15} className="animate-spin" />
+                    ? <><LoadingSpinner size="xs" />
                         Resetting...</>
                     : <><ShieldCheck size={15} />
                         Reset Password</>
@@ -376,11 +371,9 @@ export default function ForgotPasswordPage() {
                   <CheckCircle2 size={32} className="text-green-400" />
                 </motion.div>
                 <div>
-                  <h2 className="text-white font-black text-2xl mb-1">
-                    Password Reset!
+                  <h2 className="text-text-primary font-black text-2xl mb-1">  Password Reset!
                   </h2>
-                  <p className="text-white/45 text-sm">
-                    Your password has been reset successfully.
+                  <p className="text-text-tertiary text-sm">  Your password has been reset successfully.
                     You can now sign in with your new password.
                   </p>
                 </div>
@@ -390,7 +383,7 @@ export default function ForgotPasswordPage() {
                   whileTap={{ scale:0.97 }}
                   className="w-full py-3.5 rounded-xl font-bold text-sm"
                   style={{
-                    background:'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+                    background:'linear-gradient(135deg,#f59e0b,#fbbf24)',
                     color:'#fff',
                   }}>
                   Go to Sign In ?
@@ -402,19 +395,19 @@ export default function ForgotPasswordPage() {
         </div>
 
         {step !== 'success' && (
-          <div className="flex items-center justify-center gap-3 mt-5
-                          text-[10px] text-white/25 flex-wrap">
-            <Link href="/login" className="hover:text-white/50">
+<div className="flex items-center justify-center gap-3 mt-5
+                        text-[10px] text-text-tertiary flex-wrap">
+            <Link href="/login" className="hover:text-text-secondary">
               ? Back to Sign In
             </Link>
             <span>�</span>
             <a href="mailto:support@tradingo.in"
-              className="hover:text-white/50">
+              className="hover:text-text-secondary">
               Support: support@tradingo.in
             </a>
             <span>�</span>
             <a href="tel:+911800000000"
-              className="hover:text-white/50">
+              className="hover:text-text-secondary">
               1800-XXX-XXXX
             </a>
           </div>

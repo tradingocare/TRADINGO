@@ -1,17 +1,22 @@
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
   @IsString()
-  identifier: string;  // email | mobile | PAN
+  @ApiProperty({ description: 'Email, mobile number, or PAN' })
+  identifier: string;
 
   @IsString()
+  @ApiProperty({ description: 'User password' })
   password: string;
 
   @IsOptional()
   @IsString()
-  role?: string;  // buyer | vendor | admin
+  @ApiPropertyOptional({ description: 'Login role (buyer, vendor, admin)' })
+  role?: string;
 
   @IsOptional()
   @IsBoolean()
+  @ApiPropertyOptional({ description: 'Remember me flag' })
   rememberMe?: boolean;
 }

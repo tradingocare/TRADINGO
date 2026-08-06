@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { SmartNegotiationController } from './smart-negotiation.controller';
 import { SmartNegotiationService } from './smart-negotiation.service';
 import { AiNegotiationController } from './ai-negotiation.controller';
@@ -8,9 +8,9 @@ import { QuoteModule } from '../quote/quote.module';
 import { TradTrustModule } from '../tradtrust/tradtrust.module';
 
 @Module({
-  imports: [AiGatewayModule, QuoteModule, TradTrustModule],
+  imports: [AiGatewayModule, forwardRef(() => QuoteModule), forwardRef(() => TradTrustModule)],
   controllers: [SmartNegotiationController, AiNegotiationController],
   providers: [SmartNegotiationService, AiNegotiationService],
-  exports: [SmartNegotiationService],
+  exports: [SmartNegotiationService, AiNegotiationService],
 })
 export class SmartNegotiationModule {}

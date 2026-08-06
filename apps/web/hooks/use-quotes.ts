@@ -4,6 +4,10 @@ import {
   getQuote,
   createQuote,
   acceptQuote,
+  submitQuote,
+  withdrawQuote,
+  reviseQuote,
+  updateQuote,
   type GetQuotesParams,
 } from '@/lib/api/quotes';
 import type { Quote } from '@/lib/api/types';
@@ -38,6 +42,50 @@ export function useAcceptQuote() {
   return useMutation({
     mutationFn: ({ companyId, rfqId, quoteId, comment }: { companyId: string; rfqId: string; quoteId: string; comment?: string }) =>
       acceptQuote(companyId, rfqId, quoteId, comment),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+    },
+  });
+}
+
+export function useSubmitQuote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ companyId, rfqId, quoteId }: { companyId: string; rfqId: string; quoteId: string }) =>
+      submitQuote(companyId, rfqId, quoteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+    },
+  });
+}
+
+export function useWithdrawQuote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ companyId, rfqId, quoteId, reason }: { companyId: string; rfqId: string; quoteId: string; reason?: string }) =>
+      withdrawQuote(companyId, rfqId, quoteId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+    },
+  });
+}
+
+export function useReviseQuote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ companyId, rfqId, quoteId, data }: { companyId: string; rfqId: string; quoteId: string; data: Record<string, unknown> }) =>
+      reviseQuote(companyId, rfqId, quoteId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+    },
+  });
+}
+
+export function useUpdateQuote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ companyId, rfqId, quoteId, data }: { companyId: string; rfqId: string; quoteId: string; data: Record<string, unknown> }) =>
+      updateQuote(companyId, rfqId, quoteId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
     },

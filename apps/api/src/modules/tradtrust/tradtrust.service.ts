@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
+import { gracefulCatch } from '../../common/utils/graceful-catch';
 import { SmartRfqService } from '../smart-rfq/smart-rfq.service';
 import { SmartShipmentService } from '../smart-shipment/smart-shipment.service';
 import { SmartNegotiationService } from '../smart-negotiation/smart-negotiation.service';
@@ -39,7 +40,6 @@ export class TradTrustService {
     }
 
     const w = this.weightsService.weights;
-    const maxPos = this.weightsService.getMaxPositiveWeight();
 
     const profileFactors = {
       verificationLevelScore: this.calculateVerificationLevelScore(company.verificationLevel),
@@ -120,14 +120,14 @@ export class TradTrustService {
       reputationSummary,
       rankData,
     ] = await Promise.all([
-      this.analyticsService.getCompletionRate().catch(() => null),
-      this.smartRfqService.getRfqQualityMetrics(companyId).catch(() => null),
-      this.smartRfqService.getQuotePerformanceMetrics(companyId).catch(() => null),
-      this.smartNegotiationService.getPerformanceMetrics(companyId).catch(() => null),
-      this.smartShipmentService.getPerformanceMetrics(companyId).catch(() => null),
+      this.analyticsService.getCompletionRate().catch(gracefulCatch('tradTrust.computeBehavioralScore.completionRate', null)),
+      this.smartRfqService.getRfqQualityMetrics(companyId).catch(gracefulCatch('tradTrust.computeBehavioralScore.rfqQualityMetrics', null)),
+      this.smartRfqService.getQuotePerformanceMetrics(companyId).catch(gracefulCatch('tradTrust.computeBehavioralScore.quotePerformanceMetrics', null)),
+      this.smartNegotiationService.getPerformanceMetrics(companyId).catch(gracefulCatch('tradTrust.computeBehavioralScore.negotiationMetrics', null)),
+      this.smartShipmentService.getPerformanceMetrics(companyId).catch(gracefulCatch('tradTrust.computeBehavioralScore.shipmentMetrics', null)),
       this.fetchWalletSignals(companyId),
       this.fetchReputationSignals(userIds),
-      this.analyticsService.getSellerLeaderboardPosition(companyId).catch(() => null),
+      this.analyticsService.getSellerLeaderboardPosition(companyId).catch(gracefulCatch('tradTrust.computeBehavioralScore.leaderboardPosition', null)),
     ]);
 
     const completionScore = completionRates?.completionRate
@@ -197,7 +197,8 @@ export class TradTrustService {
       if (wallet.status === 'LOCKED' || wallet.status === 'SUSPENDED') base -= 40;
       if (wallet.status === 'EXPIRED') base -= 20;
       return Math.max(0, Math.min(100, base));
-    } catch {
+    } catch (error) {
+      this.logger.warn({ error }, `Graceful degradation in tradTrust.fetchWalletSignals.walletLookup`);
       return null;
     }
   }
@@ -221,7 +222,8 @@ export class TradTrustService {
         + (eventMap.get('DISPUTE_OPENED') ?? 0) * 4;
       const net = positive - negative;
       return Math.max(0, Math.min(100, 50 + Math.round(net / 2)));
-    } catch {
+    } catch (error) {
+      this.logger.warn({ error }, `Graceful degradation in tradTrust.fetchReputationSignals.reputationEvents`);
       return null;
     }
   }
@@ -238,7 +240,9 @@ export class TradTrustService {
         },
       });
       penalty += openDisputes * (w.disputePenalty / 5);
-    } catch { /* ignore */ }
+    } catch (error) {
+      gracefulCatch('tradTrust.computePenaltyScore.openDisputes', undefined)(error);
+    }
 
     try {
       const cancelledOrders = await this.prisma.order.count({
@@ -248,14 +252,18 @@ export class TradTrustService {
         },
       });
       penalty += cancelledOrders * (w.disputePenalty / 20);
-    } catch { /* ignore */ }
+    } catch (error) {
+      gracefulCatch('tradTrust.computePenaltyScore.cancelledOrders', undefined)(error);
+    }
 
     try {
       const fraudWallets = await this.prisma.gOCASH_Wallet.count({
         where: { companyId, status: { in: ['SUSPENDED', 'LOCKED'] } },
       });
       if (fraudWallets > 0) penalty += w.fraudPenalty;
-    } catch { /* ignore */ }
+    } catch (error) {
+      gracefulCatch('tradTrust.computePenaltyScore.fraudWallets', undefined)(error);
+    }
 
     return Math.min(penalty, w.fraudPenalty + w.disputePenalty);
   }

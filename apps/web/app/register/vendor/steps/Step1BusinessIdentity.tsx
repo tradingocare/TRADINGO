@@ -4,14 +4,15 @@ import { useState } from 'react'
 import type { BusinessIdentityForm } from '@/types/vendor-registration'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
+import { Select } from '@/components/ui/select'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
 
 const BUSINESS_TYPES = [
   { value: 'sole_proprietorship', label: 'Sole Proprietorship', desc: 'Single owner' },
@@ -87,8 +88,8 @@ export default function Step1BusinessIdentity({ data, onNext }: Props) {
           <button key={item.value} type="button" onClick={() => onChange(item.value)}
             className="text-left p-3 rounded-xl transition-all duration-200"
             style={{
-              background: selected ? 'rgba(255,77,0,0.1)' : 'rgba(255,255,255,0.03)',
-              border: selected ? '1px solid rgba(255,77,0,0.5)' : '1px solid rgba(255,255,255,0.07)',
+              background: selected ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-elevated)',
+              border: selected ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
             }}>
             <p className="text-white text-xs font-semibold">{item.label}</p>
             <p className="text-white/40 text-[10px] mt-0.5">{item.desc}</p>
@@ -121,28 +122,25 @@ export default function Step1BusinessIdentity({ data, onNext }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Year Established" required error={touched.yearEstablished ? errors.yearEstablished : undefined}>
-            <select className={INPUT_CLASS} style={inputStyle(!!errors.yearEstablished && touched.yearEstablished)}
-              value={yearEstablished} onChange={e => { setYearEstablished(e.target.value); markTouched('yearEstablished') }}>
-              <option value="" className="bg-[#1D0001]">Select year</option>
-              {YEARS.map(y => <option key={y} value={y} className="bg-[#1D0001]">{y}</option>)}
-            </select>
+            <Select value={yearEstablished} onChange={e => { setYearEstablished(e.target.value); markTouched('yearEstablished') }}>
+              <option value="">Select year</option>
+              {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+            </Select>
           </FormField>
 
           <FormField label="Total Employees" required error={touched.totalEmployees ? errors.totalEmployees : undefined}>
-            <select className={INPUT_CLASS} style={inputStyle(!!errors.totalEmployees && touched.totalEmployees)}
-              value={totalEmployees} onChange={e => { setTotalEmployees(e.target.value); markTouched('totalEmployees') }}>
-              <option value="" className="bg-[#1D0001]">Select range</option>
-              {EMPLOYEE_OPTIONS.map(o => <option key={o} value={o} className="bg-[#1D0001]">{o}</option>)}
-            </select>
+            <Select value={totalEmployees} onChange={e => { setTotalEmployees(e.target.value); markTouched('totalEmployees') }}>
+              <option value="">Select range</option>
+              {EMPLOYEE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+            </Select>
           </FormField>
         </div>
 
         <FormField label="Annual Turnover" required error={touched.annualTurnover ? errors.annualTurnover : undefined}>
-          <select className={INPUT_CLASS} style={inputStyle(!!errors.annualTurnover && touched.annualTurnover)}
-            value={annualTurnover} onChange={e => { setAnnualTurnover(e.target.value); markTouched('annualTurnover') }}>
-            <option value="" className="bg-[#1D0001]">Select turnover range</option>
-            {TURNOVER_OPTIONS.map(o => <option key={o} value={o} className="bg-[#1D0001]">{o}</option>)}
-          </select>
+          <Select value={annualTurnover} onChange={e => { setAnnualTurnover(e.target.value); markTouched('annualTurnover') }}>
+            <option value="">Select turnover range</option>
+            {TURNOVER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+          </Select>
         </FormField>
 
         <FormField label="Website" error={touched.website ? errors.website : undefined}>

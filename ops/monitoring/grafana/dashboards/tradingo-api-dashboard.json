@@ -1,0 +1,50 @@
+{
+  "uid": "tradingo-api",
+  "title": "TRADINGO API",
+  "version": 2,
+  "panels": [
+    {
+      "title": "Request Rate",
+      "type": "graph",
+      "targets": [{ "expr": "rate(api_http_requests_total[5m])", "legendFormat": "{{method}} {{path}}" }],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Error Rate",
+      "type": "graph",
+      "targets": [{ "expr": "rate(api_http_requests_total{status=~\"5..\"}[5m])", "legendFormat": "5xx" }],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "P50/P95/P99 Latency",
+      "type": "graph",
+      "targets": [
+        { "expr": "job:http_request_duration_seconds:p50", "legendFormat": "P50" },
+        { "expr": "job:http_request_duration_seconds:p95", "legendFormat": "P95" },
+        { "expr": "job:http_request_duration_seconds:p99", "legendFormat": "P99" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "title": "Active Connections",
+      "type": "graph",
+      "targets": [{ "expr": "sum(api_http_connections_active)", "legendFormat": "active" }],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+    },
+    {
+      "title": "Error Budget (30d)",
+      "type": "singlestat",
+      "targets": [{ "expr": "job:error_budget_30d" }],
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 16 },
+      "format": "percent",
+      "thresholds": "99.9,99.99",
+      "colors": ["#d44", "#fa0", "#0a0"]
+    },
+    {
+      "title": "Top Endpoints by Latency",
+      "type": "table",
+      "targets": [{ "expr": "topk(10, endpoint:http_request_duration_seconds:p95)", "legendFormat": "{{path}}" }],
+      "gridPos": { "h": 8, "w": 12, "x": 8, "y": 16 }
+    }
+  ]
+}

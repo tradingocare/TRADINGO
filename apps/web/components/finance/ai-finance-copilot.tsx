@@ -1,28 +1,35 @@
 'use client'
 import { useState } from 'react'
-import { Sparkles, Loader2, TrendingUp, Target, AlertTriangle, MessageSquare, FileText, BarChart3, Lightbulb, DollarSign, Shield, CreditCard, Receipt, AlertOctagon, FileEdit } from 'lucide-react'
+import { Sparkles, TrendingUp, Target, AlertTriangle, MessageSquare, FileText, BarChart3, Lightbulb, DollarSign, Shield, CreditCard, Receipt, AlertOctagon, FileEdit } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Input } from '@/components/ui/input'
+import { Tabs, type Tab } from '@/components/ui/tabs'
+
+interface CollectionDraftRequest {
+  customerName: string; outstandingAmount: number; daysOverdue: number
+}
 
 interface AiFinanceCopilotProps {
   isGenerating: boolean
-  onCreditRisk: (data: any) => Promise<any>
-  onPaymentDelay: (data: any) => Promise<any>
-  onCashFlowForecast: (data: any) => Promise<any>
-  onCollectionStrategy: (data: any) => Promise<any>
-  onFinancialHealth: (data: any) => Promise<any>
-  onCreditLimit: (data: any) => Promise<any>
-  onInvoiceIntelligence: (data: any) => Promise<any>
-  onFraudSignals: (data: any) => Promise<any>
-  onCollectionDraft: (data: any) => Promise<any>
+  onCreditRisk: (data: Record<string, unknown>) => Promise<unknown>
+  onPaymentDelay: (data: Record<string, unknown>) => Promise<unknown>
+  onCashFlowForecast: (data: Record<string, unknown>) => Promise<unknown>
+  onCollectionStrategy: (data: Record<string, unknown>) => Promise<unknown>
+  onFinancialHealth: (data: Record<string, unknown>) => Promise<unknown>
+  onCreditLimit: (data: Record<string, unknown>) => Promise<unknown>
+  onInvoiceIntelligence: (data: Record<string, unknown>) => Promise<unknown>
+  onFraudSignals: (data: Record<string, unknown>) => Promise<unknown>
+  onCollectionDraft: (data: CollectionDraftRequest) => Promise<unknown>
   contextData?: Record<string, unknown>
 }
 
 type CopilotTab = 'credit' | 'cashflow' | 'collections' | 'risk'
 
-const TABS: { key: CopilotTab; label: string; icon: typeof TrendingUp }[] = [
-  { key: 'credit', label: 'Credit', icon: CreditCard },
-  { key: 'cashflow', label: 'Cash Flow', icon: DollarSign },
-  { key: 'collections', label: 'Collect.', icon: Shield },
-  { key: 'risk', label: 'Risk', icon: AlertTriangle },
+const tabs: Tab[] = [
+  { value: 'credit', label: 'Credit', icon: <CreditCard className="h-3.5 w-3.5" /> },
+  { value: 'cashflow', label: 'Cash Flow', icon: <DollarSign className="h-3.5 w-3.5" /> },
+  { value: 'collections', label: 'Collect.', icon: <Shield className="h-3.5 w-3.5" /> },
+  { value: 'risk', label: 'Risk', icon: <AlertTriangle className="h-3.5 w-3.5" /> },
 ]
 
 export function AiFinanceCopilot({
@@ -38,49 +45,38 @@ export function AiFinanceCopilot({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <Sparkles className="h-4 w-4 text-orange-400" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+        <Sparkles className="h-4 w-4 text-accent-500" />
         AI Finance Copilot
       </div>
 
-      <div className="flex gap-1 border-b border-white/[0.06] text-xs overflow-x-auto">
-        {TABS.map(t => {
-          const Icon = t.icon
-          return (
-            <button key={t.key} onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-1 px-2 py-1.5 border-b-2 whitespace-nowrap transition-colors ${activeTab === t.key ? 'border-orange-400 text-orange-300' : 'border-transparent text-white/40 hover:text-white/60'}`}>
-              <Icon className="h-3 w-3" />
-              {t.label}
-            </button>
-          )
-        })}
-      </div>
+      <Tabs tabs={tabs} value={activeTab} onChange={v => setActiveTab(v as CopilotTab)} />
 
       {activeTab === 'credit' && (
         <div className="space-y-2">
-          <p className="text-xs text-white/50">Credit risk, limit recommendations, and financial health.</p>
+          <p className="text-xs text-text-secondary">Credit risk, limit recommendations, and financial health.</p>
           <button onClick={() => onCreditRisk(contextData)}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-orange-500/10 hover:border-orange-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shield className="h-3.5 w-3.5 text-orange-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-accent-500/10 hover:border-accent-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <Shield className="h-3.5 w-3.5 text-accent-500" />}
             Credit Risk Assessment
           </button>
           <button onClick={() => onCreditLimit(contextData)}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-green-500/10 hover:border-green-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TrendingUp className="h-3.5 w-3.5 text-green-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-green-500/10 hover:border-green-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <TrendingUp className="h-3.5 w-3.5 text-green-400" />}
             Credit Limit Recommendation
           </button>
           <button onClick={() => onFinancialHealth(contextData)}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-blue-500/10 hover:border-blue-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BarChart3 className="h-3.5 w-3.5 text-blue-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-blue-500/10 hover:border-blue-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <BarChart3 className="h-3.5 w-3.5 text-blue-400" />}
             Financial Health Assessment
           </button>
           <button onClick={() => onPaymentDelay(contextData)}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-amber-500/10 hover:border-amber-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Target className="h-3.5 w-3.5 text-amber-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-accent-500/10 hover:border-accent-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <Target className="h-3.5 w-3.5 text-accent-500" />}
             Payment Delay Prediction
           </button>
         </div>
@@ -88,17 +84,17 @@ export function AiFinanceCopilot({
 
       {activeTab === 'cashflow' && (
         <div className="space-y-2">
-          <p className="text-xs text-white/50">Cash flow forecasting and invoice analysis.</p>
+          <p className="text-xs text-text-secondary">Cash flow forecasting and invoice analysis.</p>
           <button onClick={() => onCashFlowForecast(contextData)}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-purple-500/10 hover:border-purple-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DollarSign className="h-3.5 w-3.5 text-purple-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-purple-500/10 hover:border-purple-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <DollarSign className="h-3.5 w-3.5 text-purple-400" />}
             Cash Flow Forecast
           </button>
           <button onClick={() => onInvoiceIntelligence(contextData)}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-cyan-500/10 hover:border-cyan-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Receipt className="h-3.5 w-3.5 text-cyan-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-cyan-500/10 hover:border-cyan-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <Receipt className="h-3.5 w-3.5 text-cyan-400" />}
             Invoice Intelligence
           </button>
         </div>
@@ -106,11 +102,11 @@ export function AiFinanceCopilot({
 
       {activeTab === 'collections' && (
         <div className="space-y-2">
-          <p className="text-xs text-white/50">Collection strategies and draft generation.</p>
+          <p className="text-xs text-text-secondary">Collection strategies and draft generation.</p>
           <button onClick={() => onCollectionStrategy(contextData)}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AlertTriangle className="h-3.5 w-3.5 text-red-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <AlertTriangle className="h-3.5 w-3.5 text-red-400" />}
             Collection Strategy
           </button>
           <div className="space-y-1.5 pt-1">
@@ -121,8 +117,8 @@ export function AiFinanceCopilot({
             </div>
             <button onClick={() => onCollectionDraft({ customerName, outstandingAmount: Number(outstandingAmount) || 0, daysOverdue: Number(daysOverdue) || 0 })}
               disabled={isGenerating || !customerName}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-indigo-500/10 hover:border-indigo-500/30 disabled:opacity-50 transition-colors">
-              {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileEdit className="h-3.5 w-3.5 text-indigo-400" />}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-indigo-500/10 hover:border-indigo-500/30 disabled:opacity-50 transition-colors">
+              {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <FileEdit className="h-3.5 w-3.5 text-indigo-400" />}
               Generate Collection Draft
             </button>
           </div>
@@ -131,17 +127,17 @@ export function AiFinanceCopilot({
 
       {activeTab === 'risk' && (
         <div className="space-y-2">
-          <p className="text-xs text-white/50">Fraud detection and risk signals.</p>
+          <p className="text-xs text-text-secondary">Fraud detection and risk signals.</p>
           <button onClick={() => onFraudSignals(contextData)}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AlertOctagon className="h-3.5 w-3.5 text-red-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <AlertOctagon className="h-3.5 w-3.5 text-red-400" />}
             Fraud Signal Detection
           </button>
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-[10px] text-white/30 pt-2">
+      <div className="flex items-center gap-2 text-[10px] text-text-tertiary pt-2">
         <Lightbulb className="h-3 w-3" />
         Powered by AI Gateway (FINANCE_ANALYSIS)
       </div>
@@ -149,6 +145,4 @@ export function AiFinanceCopilot({
   )
 }
 
-function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement> & { className?: string }) {
-  return <input className={`w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/50 ${className}`} {...props} />
-}
+

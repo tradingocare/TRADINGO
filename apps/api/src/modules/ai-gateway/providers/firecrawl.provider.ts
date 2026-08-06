@@ -41,6 +41,18 @@ export class FirecrawlProvider extends BaseAiProvider {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       return { content: 'Invalid URL. Please provide a valid HTTP or HTTPS URL.', model: 'firecrawl-scrape', usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } }
     }
+    try {
+      const parsed = new URL(url)
+      const hostname = parsed.hostname.toLowerCase()
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' ||
+          hostname.startsWith('10.') || hostname.startsWith('172.16.') || hostname.startsWith('192.168.') ||
+          hostname.endsWith('.internal') || hostname.endsWith('.local') ||
+          hostname === 'metadata.google.internal' || hostname === '169.254.169.254') {
+        return { content: 'Blocked: internal or private URL', model: 'firecrawl-scrape', usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } }
+      }
+    } catch {
+      return { content: 'Invalid URL format', model: 'firecrawl-scrape', usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 } }
+    }
 
     const response = await this.fetchWithRetry(`${this.baseUrl}/scrape`, {
       method: 'POST',

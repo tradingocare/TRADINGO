@@ -2,9 +2,18 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import api from '@/lib/api/client'
-import { Loader2, ChevronLeft, Sparkles } from 'lucide-react'
+import { ChevronLeft, Sparkles, BarChart3, Award, TrendingUp } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToast } from '@/components/ui/use-toast'
 import { CopilotPanel } from '@/components/ai/copilot-panel'
+import { BrandSelect } from '@/components/enterprise-catalog/brand-select'
+import { QualityBadge } from '@/components/enterprise-catalog/quality-badge'
+import { CompletenessSummary } from '@/components/enterprise-catalog/completeness-summary'
+import { SeoSummary } from '@/components/enterprise-catalog/seo-summary'
+import { DuplicateStatus } from '@/components/enterprise-catalog/duplicate-status'
+import { CommerceConfidence } from '@/components/enterprise-catalog/commerce-confidence'
+import { AiImprovements } from '@/components/enterprise-catalog/ai-improvements'
+import { useScore } from '@/hooks/use-catalog-quality'
 import {
   useGenerateDescription, useGenerateSeo, useSuggestSpecs, useSuggestImages,
   useTranslateProduct, useAiCache, useAcceptSuggestion,
@@ -27,6 +36,7 @@ export default function EditProductPage() {
   const translateProd = useTranslateProduct()
   const { data: aiCache, refetch: refetchCache } = useAiCache(id as string)
   const acceptSuggestion = useAcceptSuggestion()
+  const { data: qualityScore } = useScore(id as string)
 
   useEffect(() => {
     if (!id) return
@@ -99,89 +109,102 @@ export default function EditProductPage() {
   const handleSuggestImages = () => wrapAiAction('images', () => suggestImages.mutateAsync({ productId: id as string }))
   const handleTranslate = (locale: string) => wrapAiAction('translate', () => translateProd.mutateAsync({ productId: id as string, targetLocale: locale }))
 
-  if (loading) return <div className="flex items-center justify-center min-h-[400px]"><Loader2 size={24} className="animate-spin text-orange-500" /></div>
+  if (loading) return <LoadingSpinner size="xl" />
   if (!product) return null
 
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-gray-100"><ChevronLeft size={18} className="text-gray-600" /></button>
+        <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-surface-secondary" aria-label="Back to products"><ChevronLeft size={18} className="text-text-secondary" /></button>
         <div className="flex-1">
-          <h1 className="text-xl font-black text-gray-900">Edit Product</h1>
-          <p className="text-sm text-gray-500">{product.slug}</p>
+          <h1 className="text-xl font-black text-text-primary">Edit Product</h1>
+          <p className="text-sm text-text-tertiary">{product.slug}</p>
         </div>
-        <button onClick={() => setShowCopilot(!showCopilot)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-            showCopilot ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-          }`}>
+        <button onClick={() => setShowCopilot(!showCopilot)} aria-label="Toggle AI Copilot"
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${showCopilot ? 'bg-accent-500 text-text-primary' : 'bg-accent-500/10 text-accent-500 hover:bg-accent-500/20'
+            }`}>
           <Sparkles className="h-4 w-4" /> AI Copilot
         </button>
       </div>
 
       <div className="flex gap-6">
         <div className={`flex-1 space-y-6 transition-all ${showCopilot ? 'max-w-3xl' : 'max-w-3xl mx-auto'}`}>
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+          <div className="rounded-[22px] p-6 space-y-5 bg-bg-elevated border border-border">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Product Name</label>
-                <input value={name} onChange={e => setName(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400" />
+                <label htmlFor="product-name" className="text-xs font-semibold text-text-tertiary mb-1 block">Product Name</label>
+                <input id="product-name" value={name} onChange={e => setName(e.target.value)} placeholder="Enter product name" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none text-white placeholder:text-white/35 bg-surface" style={{ border: '1px solid var(--border-color)' }} />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Brand</label>
-                <input value={brand} onChange={e => setBrand(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400" />
+                <label htmlFor="product-brand" className="text-xs font-semibold text-text-tertiary mb-1 block">Brand</label>
+                <BrandSelect value={brand} onChange={(_, name) => setBrand(name)} placeholder="Enter brand" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Model</label>
-                <input value={model} onChange={e => setModel(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400" />
+                <label htmlFor="product-model" className="text-xs font-semibold text-white/50 mb-1 block">Model</label>
+                <input id="product-model" value={model} onChange={e => setModel(e.target.value)} placeholder="Enter model" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none text-white placeholder:text-white/35 bg-surface" style={{ border: '1px solid var(--border-color)' }} />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">SKU</label>
-                <input value={sku} onChange={e => setSku(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400" />
+                <label htmlFor="product-sku" className="text-xs font-semibold text-white/50 mb-1 block">SKU</label>
+                <input id="product-sku" value={sku} onChange={e => setSku(e.target.value)} placeholder="Enter SKU" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none text-white placeholder:text-white/35 bg-surface" style={{ border: '1px solid var(--border-color)' }} />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Price (₹)</label>
-                <input type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400" />
+                <label htmlFor="product-price" className="text-xs font-semibold text-white/50 mb-1 block">Price (?)</label>
+                <input id="product-price" type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0.00" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none text-white placeholder:text-white/35 bg-surface" style={{ border: '1px solid var(--border-color)' }} />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">MOQ</label>
-                <input type="number" value={moq} onChange={e => setMoq(Number(e.target.value))} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400" />
+                <label htmlFor="product-moq" className="text-xs font-semibold text-white/50 mb-1 block">MOQ</label>
+                <input id="product-moq" type="number" value={moq} onChange={e => setMoq(Number(e.target.value))} placeholder="1" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none text-white placeholder:text-white/35 bg-surface" style={{ border: '1px solid var(--border-color)' }} />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Unit</label>
-                <input value={unit} onChange={e => setUnit(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400" />
+                <label htmlFor="product-unit" className="text-xs font-semibold text-white/50 mb-1 block">Unit</label>
+                <input id="product-unit" value={unit} onChange={e => setUnit(e.target.value)} placeholder="e.g., piece, kg" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none text-white placeholder:text-white/35 bg-surface" style={{ border: '1px solid var(--border-color)' }} />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Short Description</label>
-              <textarea value={shortDescription} onChange={e => setShortDescription(e.target.value)} rows={2}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 resize-none" />
+              <label htmlFor="product-short-desc" className="text-xs font-semibold text-white/50 mb-1 block">Short Description</label>
+              <textarea id="product-short-desc" value={shortDescription} onChange={e => setShortDescription(e.target.value)} rows={2}
+                placeholder="Brief overview" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none text-white placeholder:text-white/35 bg-surface resize-none" style={{ border: '1px solid var(--border-color)' }} />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Full Description</label>
-              <textarea value={description} onChange={e => setDescription(e.target.value)} rows={5}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-orange-400 resize-none" />
+              <label htmlFor="product-desc" className="text-xs font-semibold text-white/50 mb-1 block">Full Description</label>
+              <textarea id="product-desc" value={description} onChange={e => setDescription(e.target.value)} rows={5}
+                placeholder="Detailed product description" className="w-full rounded-xl px-4 py-2.5 text-sm outline-none text-white placeholder:text-white/35 bg-surface resize-none" style={{ border: '1px solid var(--border-color)' }} />
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
-                status === 'ACTIVE' ? 'bg-green-50 text-green-700' :
-                status === 'PENDING_APPROVAL' ? 'bg-yellow-50 text-yellow-700' :
-                status === 'REJECTED' ? 'bg-red-50 text-red-700' :
-                status === 'DRAFT' ? 'bg-gray-100 text-gray-600' :
-                'bg-gray-100 text-gray-500'
-              }`}>{status}</span>
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${status === 'ACTIVE' ? 'bg-green-500/15 text-green-400' :
+                  status === 'PENDING_APPROVAL' ? 'bg-yellow-500/15 text-yellow-400' :
+                    status === 'REJECTED' ? 'bg-red-500/15 text-red-400' :
+                      status === 'DRAFT' ? 'bg-surface-secondary text-text-secondary' :
+                        'bg-surface text-text-tertiary'
+                }`}>{status}</span>
               <button onClick={handleSave} disabled={saving || !name.trim()}
-                className="px-6 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 disabled:opacity-50 flex items-center gap-2">
-                {saving && <Loader2 size={14} className="animate-spin" />} Save Changes
+                className="px-6 py-2.5 rounded-xl bg-accent-500 text-white text-sm font-semibold hover:bg-accent-500/90 disabled:opacity-50 flex items-center gap-2">
+                {saving && <LoadingSpinner size="xs" />} Save Changes
               </button>
             </div>
           </div>
         </div>
 
         {showCopilot && (
-          <div className="w-72 shrink-0 space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+          <div className="w-80 shrink-0 space-y-4">
+            {qualityScore && (
+              <div className="rounded-[22px] p-3 bg-surface border border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <Award className="h-4 w-4 text-accent" />
+                  <span className="text-xs font-semibold text-text-secondary">Product Intelligence</span>
+                </div>
+                <div className="flex items-center gap-3 mb-2">
+                  <QualityBadge score={qualityScore.total} size="md" showLabel />
+                  <div className="flex-1 h-1.5 bg-bg-base rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${qualityScore.total >= 70 ? 'bg-emerald-500' : qualityScore.total >= 40 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${qualityScore.total}%` }} />
+                  </div>
+                </div>
+                <CompletenessSummary productId={id as string} compact />
+              </div>
+            )}
+            <div className="rounded-[22px] p-4 bg-surface border border-border">
               <CopilotPanel
                 productId={id as string}
                 onGenerateDescription={handleGenerateDescription}
@@ -193,17 +216,23 @@ export default function EditProductPage() {
                 generatingAction={generatingAction}
               />
             </div>
+            <SeoSummary productId={id as string} />
+            <CommerceConfidence productId={id as string} />
+            <div className="rounded-[22px] p-3 bg-surface border border-border">
+              <DuplicateStatus productId={id as string} />
+            </div>
+            <AiImprovements productId={id as string} />
             {aiCache && aiCache.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Recent Suggestions</h3>
+              <div className="rounded-[22px] p-4 bg-surface border border-border">
+                <h3 className="text-xs font-semibold text-text-tertiary uppercase mb-3">Recent Suggestions</h3>
                 <div className="space-y-2">
                   {aiCache.slice(0, 5).map(c => (
-                    <div key={c.id} className="rounded-lg border border-gray-100 p-2.5">
+                    <div key={c.id} className="rounded-lg p-2.5 bg-surface-secondary border border-border">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-semibold text-orange-600 uppercase">{c.cacheType.replace(/_/g, ' ')}</span>
-                        {c.accepted && <span className="text-[10px] text-green-600 font-medium">Accepted</span>}
+                        <span className="text-[10px] font-semibold text-accent uppercase">{c.cacheType.replace(/_/g, ' ')}</span>
+                        {c.accepted && <span className="text-[10px] text-emerald-400 font-medium">Accepted</span>}
                       </div>
-                      <p className="text-[11px] text-gray-500 truncate">{JSON.stringify(c.response).slice(0, 60)}...</p>
+                      <p className="text-[11px] text-text-tertiary truncate">{JSON.stringify(c.response).slice(0, 60)}...</p>
                     </div>
                   ))}
                 </div>

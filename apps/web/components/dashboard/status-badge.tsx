@@ -9,7 +9,7 @@ const statusStyles: Record<string, string> = {
   pending: 'border-amber-500/40 bg-amber-500/10 text-amber-400',
   completed: 'border-blue-500/40 bg-blue-500/10 text-blue-400',
   cancelled: 'border-red-500/40 bg-red-500/10 text-red-400',
-  draft: 'border-white/10 bg-white/[0.04] text-white/50',
+  draft: 'border-border bg-surface text-text-secondary',
   verified: 'border-accent-500/40 bg-accent-500/10 text-accent-400',
   rejected: 'border-red-500/40 bg-red-500/10 text-red-400',
   approved: 'border-accent-500/40 bg-accent-500/10 text-accent-400',
@@ -20,7 +20,7 @@ const statusStyles: Record<string, string> = {
   bug: 'border-red-500/40 bg-red-500/10 text-red-400',
   feature: 'border-blue-500/40 bg-blue-500/10 text-blue-400',
   nps: 'border-purple-500/40 bg-purple-500/10 text-purple-400',
-  general: 'border-white/10 bg-white/[0.04] text-white/50',
+  general: 'border-border bg-surface text-text-secondary',
   'negotiation-started': 'border-purple-500/40 bg-purple-500/10 text-purple-400',
   'buyer-counter': 'border-blue-500/40 bg-blue-500/10 text-blue-400',
   'seller-counter': 'border-amber-500/40 bg-amber-500/10 text-amber-400',
@@ -51,7 +51,7 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const style = statusStyles[normalizeStatus(status)] || 'border-white/10 bg-white/[0.04] text-white/50';
+  const style = statusStyles[normalizeStatus(status)] || 'border-border bg-surface text-text-secondary';
   return (
     <span
       className={cn(

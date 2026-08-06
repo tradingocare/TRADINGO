@@ -1,6 +1,14 @@
 import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { v4 as uuid } from 'uuid';
+import { Prisma } from '@prisma/client';
+
+type ExportProduct = Prisma.ProductGetPayload<{
+  include: {
+    media: { where: { isPrimary: true }; take: 1 };
+    inventory: true;
+    category: { select: { name: true } };
+  };
+}>;
 
 @Injectable()
 export class ProductExportService {
@@ -20,7 +28,7 @@ export class ProductExportService {
       include: { media: { where: { isPrimary: true }, take: 1 }, inventory: true, category: { select: { name: true } } },
     });
 
-    const formatProduct = (p: any) => ({
+    const formatProduct = (p: ExportProduct) => ({
       name: p.name, slug: p.slug, category: p.category?.name || '', brand: p.brand || '', model: p.model || '',
       sku: p.sku || '', price: p.originalPrice || 0, moq: p.moq, unit: p.unit || '',
       stock: p.inventory?.availableQuantity || 0, status: p.status, views: p.viewCount,
@@ -34,7 +42,6 @@ export class ProductExportService {
       csv += Object.values(formatProduct(p)).map(v => `"${String(v).replace(/"/g, '""')}"`).join(',') + '\n';
     }
 
-    const exportId = `${company.id.slice(0, 8)}-${Date.now()}`;
     const fileUrl = `data:text/csv;base64,${Buffer.from(csv).toString('base64')}`;
 
     const job = await this.prisma.productExportJob.create({

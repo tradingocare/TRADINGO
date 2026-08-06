@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TurnstileService } from '../../common/services/turnstile.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -19,6 +20,7 @@ import { QueueNames } from '../../jobs/queues';
         secret: configService.get<string>('jwt.secret'),
         signOptions: {
           expiresIn: configService.get<string>('jwt.expiresIn', '15m') as JwtSignOptions['expiresIn'],
+          algorithm: 'HS256',
         },
       }),
       inject: [ConfigService],
@@ -26,7 +28,7 @@ import { QueueNames } from '../../jobs/queues';
     BullModule.registerQueue({ name: QueueNames.EMAIL }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy, GoogleStrategy, LinkedInStrategy],
+  providers: [AuthService, TurnstileService, JwtStrategy, RefreshTokenStrategy, GoogleStrategy, LinkedInStrategy],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

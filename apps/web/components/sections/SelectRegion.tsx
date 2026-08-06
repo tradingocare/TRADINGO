@@ -18,14 +18,14 @@ export default function SelectRegion() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#0B1220] py-20">
+    <section className="relative overflow-hidden bg-[var(--bg-base)] py-20">
       <style>{`@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}`}</style>
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-40 top-1/3 h-[400px] w-[400px] rounded-full bg-[rgba(212,175,55,0.04)] blur-[120px]" />
-        <div className="absolute -right-40 bottom-1/3 h-[300px] w-[300px] rounded-full bg-[rgba(212,175,55,0.03)] blur-[100px]" />
+        <div className="absolute -left-40 top-1/3 h-[400px] w-[400px] rounded-full bg-[rgba(0,255,255,0.04)] blur-[120px]" />
+        <div className="absolute -right-40 bottom-1/3 h-[300px] w-[300px] rounded-full bg-[rgba(0,255,255,0.03)] blur-[100px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -47,17 +47,17 @@ export default function SelectRegion() {
             >
               🌍
             </span>
-            <span className="text-[48px] font-black leading-none text-white sm:text-[72px] lg:text-[96px]">
+            <span className="text-[48px] font-black leading-none text-primary sm:text-[72px] lg:text-[96px]">
               Select{' '}
-              <span className="bg-gradient-to-r from-[#FFD54A] to-[#D4AF37] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-accent-500 to-[#00CCCC] bg-clip-text text-transparent">
                 Region
               </span>
             </span>
           </h2>
-          <p className="mt-2 text-sm text-white/40">
-            Born in India <span className="mx-2 text-white/20">•</span> Built for Global Trade{' '}
-            <span className="mx-2 text-white/20">•</span> Powered by{' '}
-            <span className="font-semibold text-[#D4AF37]/70">TRADHEXA</span>
+          <p className="mt-2 text-sm text-text-tertiary">
+            Born in India <span className="mx-2 text-text-secondary">|</span> Built for Global Trade{' '}
+            <span className="mx-2 text-text-secondary">|</span> Powered by{' '}
+            <span className="font-semibold text-accent-500">TRADHEXA</span>
           </p>
         </motion.div>
 
@@ -66,9 +66,9 @@ export default function SelectRegion() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.15 }}
-          className="mx-auto max-w-5xl rounded-[32px] border border-[rgba(212,175,55,0.18)] p-6 sm:p-8"
+          className="mx-auto max-w-5xl rounded-[32px] border border-[rgba(0,255,255,0.18)] p-6 sm:p-8 glow-card"
           style={{
-            background: 'rgba(11,18,32,0.55)',
+            background: 'var(--bg-elevated)',
             backdropFilter: 'blur(25px)',
           }}
         >
@@ -91,8 +91,8 @@ export default function SelectRegion() {
                     {isSelected && (
                       <motion.span
                         layoutId="gold-ring"
-                        className="absolute inset-0 rounded-full border-2 border-[#D4AF37]"
-                        style={{ boxShadow: '0 0 20px rgba(212,175,55,0.3)' }}
+                        className="absolute inset-0 rounded-full border-2 border-accent-500"
+                        style={{ boxShadow: '0 0 20px rgba(0,255,255,0.3)' }}
                         animate={{ scale: [1, 1.04, 1] }}
                         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                       />
@@ -107,14 +107,14 @@ export default function SelectRegion() {
                     {isSelected && (
                       <motion.span
                         layoutId="active-dot"
-                        className="absolute -bottom-1.5 h-1.5 w-1.5 rounded-full bg-[#D4AF37]"
-                        style={{ boxShadow: '0 0 8px rgba(212,175,55,0.6)' }}
+                        className="absolute -bottom-1.5 h-1.5 w-1.5 rounded-full bg-accent-500"
+                        style={{ boxShadow: '0 0 8px rgba(0,255,255,0.6)' }}
                       />
                     )}
                   </div>
                   <span
                     className={`text-[11px] font-semibold transition-all duration-300 ${
-                      isSelected ? 'text-[#D4AF37]' : 'text-white/50 group-hover:text-white/80'
+                      isSelected ? 'text-accent-500' : 'text-gray-400 group-hover:text-primary'
                     }`}
                   >
                     {country.name}
@@ -140,19 +140,19 @@ export default function SelectRegion() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 24 }}
               transition={{ type: 'spring', duration: 0.6, bounce: 0.3 }}
-              className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-[rgba(212,175,55,0.15)] p-0 shadow-2xl"
+              className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-[rgba(0,255,255,0.15)] p-0 shadow-2xl"
               style={{
-                background: 'linear-gradient(135deg, rgba(11,18,32,0.95), rgba(11,18,32,0.98))',
+                background: 'var(--bg-elevated)',
                 backdropFilter: 'blur(30px)',
               }}
             >
               <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -left-24 -top-24 h-48 w-48 rounded-full bg-[rgba(212,175,55,0.06)] blur-[80px]" />
-                <div className="absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-[rgba(212,175,55,0.04)] blur-[80px]" />
+                <div className="absolute -left-24 -top-24 h-48 w-48 rounded-full bg-[rgba(0,255,255,0.06)] blur-[80px]" />
+                <div className="absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-[rgba(0,255,255,0.04)] blur-[80px]" />
                 <div
                   className="absolute inset-0 opacity-[0.015]"
                   style={{
-                    backgroundImage: 'radial-gradient(circle, #D4AF37 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(circle, rgba(0,255,255,0.4) 1px, transparent 1px)',
                     backgroundSize: '32px 32px',
                   }}
                 />
@@ -160,7 +160,7 @@ export default function SelectRegion() {
 
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute right-5 top-5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.05] text-white/40 transition-all hover:bg-white/[0.1] hover:text-white"
+                className="absolute right-5 top-5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-primary/60 transition-all hover:bg-black/90 hover:text-primary"
               >
                 <X size={14} />
               </button>
@@ -169,10 +169,10 @@ export default function SelectRegion() {
                 <motion.div
                   animate={{ rotate: [0, 8, -8, 0] }}
                   transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                  className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[rgba(212,175,55,0.08)]"
-                  style={{ border: '1px solid rgba(212,175,55,0.15)' }}
+                  className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[rgba(0,255,255,0.08)]"
+                  style={{ border: '1px solid rgba(0,255,255,0.15)' }}
                 >
-                  <Globe className="h-10 w-10 text-[#D4AF37]" />
+                  <Globe className="h-10 w-10 text-accent-500" />
                 </motion.div>
 
                 <motion.div
@@ -180,49 +180,49 @@ export default function SelectRegion() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 }}
                 >
-                  <h3 className="mt-5 text-xl font-black text-white sm:text-2xl">
+                  <h3 className="mt-5 text-xl font-black text-primary sm:text-2xl">
                     Welcome to the TRADINGO Family
                   </h3>
-                  <p className="mt-1 text-xs font-semibold text-[#D4AF37]/70">
+                  <p className="mt-1 text-xs font-semibold text-accent-500">
                     Global Expansion in Progress
                   </p>
 
-                  <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-white/50">
+                  <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-primary/50">
                     Thank you for your interest in TRADINGO.
                   </p>
 
-                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-white/40">
-                    TRADINGO – The Global Smart TRADHEXA B2B Marketplace is currently launched in
+                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-primary/40">
+                    TRADINGO &mdash; The Global Smart TRADHEXA B2B Marketplace is currently launched in
                     India and is progressively expanding into international markets.
                   </p>
 
-                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-white/40">
+                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-primary/40">
                     We are actively preparing localized experiences for your region and look forward
                     to welcoming you very soon.
                   </p>
 
-                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-white/40">
+                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-primary/40">
                     We sincerely appreciate your patience and support.
                   </p>
                 </motion.div>
 
                 <div className="mt-6 flex flex-col gap-2.5">
-                  <button className="group flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#C9A84C] px-6 py-2.5 text-sm font-bold text-[#0B1220] transition-all hover:shadow-lg hover:shadow-[rgba(212,175,55,0.25)]">
+                  <button className="group flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[var(--accent-dark)] to-[var(--accent)] px-6 py-2.5 text-sm font-bold text-primary transition-all hover:shadow-lg hover:shadow-[rgba(0,255,255,0.25)]">
                     <Bell size={14} /> Notify Me
                   </button>
-                  <button className="group flex items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-6 py-2.5 text-sm font-semibold text-white/60 transition-all hover:bg-white/[0.08] hover:text-white">
+                  <button className="btn-glass group flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-all hover:scale-102">
                     <Mail size={14} /> Join Waitlist
                   </button>
-                  <Link href="/browse">
-                    <button className="group flex w-full items-center justify-center gap-2 rounded-full border border-[rgba(212,175,55,0.15)] bg-[rgba(212,175,55,0.06)] px-6 py-2.5 text-sm font-semibold text-[#D4AF37] transition-all hover:bg-[rgba(212,175,55,0.1)]">
+                  <Link href="/products">
+                    <button className="group flex w-full items-center justify-center gap-2 rounded-full border border-[rgba(0,255,255,0.15)] bg-[rgba(0,255,255,0.06)] px-6 py-2.5 text-sm font-semibold text-accent-500 transition-all hover:bg-[rgba(0,255,255,0.1)]">
                       <Store size={14} /> Explore India Marketplace
                     </button>
                   </Link>
                 </div>
 
-                <div className="mt-6 flex items-center justify-center gap-4 text-[10px] text-white/20">
-                  <span className="flex items-center gap-1">🌍 Expanding Globally</span>
-                  <span className="h-3 w-px bg-white/[0.06]" />
+                <div className="mt-6 flex items-center justify-center gap-4 text-[10px] text-primary/20">
+                  <span className="flex items-center gap-1">🌐 Expanding Globally</span>
+                  <span className="h-3 w-px bg-surface-tertiary" />
                   <span className="flex items-center gap-1">🚀 Launching Soon</span>
                 </div>
               </div>
@@ -233,3 +233,8 @@ export default function SelectRegion() {
     </section>
   );
 }
+
+
+
+
+

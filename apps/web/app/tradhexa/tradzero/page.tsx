@@ -5,7 +5,7 @@ import EngineDetailPage from '@/components/shared/engine-detail-page';
 const engine = engines.find(e => e.id === 'tradzero')!;
 
 export const metadata: Metadata = {
-  title: 'TRADZERO — Zero-Risk Transaction Engine | TRADINGO',
+  title: 'TRADZERO — Zero-Commission Trading Engine | TRADINGO',
   description: engine.description,
 };
 

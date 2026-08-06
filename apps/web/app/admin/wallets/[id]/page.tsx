@@ -217,7 +217,7 @@ export default function AdminWalletDetailPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-white/[0.06] text-left">
+                      <tr className="border-b border-border text-left">
                         <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">Date</th>
                         <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">Type</th>
                         <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">Direction</th>
@@ -229,9 +229,9 @@ export default function AdminWalletDetailPage() {
                     </thead>
                     <tbody>
                       {ledgerTxns.map((txn) => (
-                        <tr key={txn.id} className="border-b border-white/[0.06] last:border-0">
+                        <tr key={txn.id} className="border-b border-border last:border-0">
                           <td className="py-2 text-xs text-white/50">{new Date(txn.createdAt).toLocaleDateString()}</td>
-                          <td className="py-2"><span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-white/70">{txn.type.replace(/_/g, ' ')}</span></td>
+                          <td className="py-2"><span className="rounded-full bg-surface-secondary px-2 py-0.5 text-xs text-text-secondary">{txn.type.replace(/_/g, ' ')}</span></td>
                           <td className="py-2">
                             <span className={`text-xs font-medium ${txn.direction === 'CREDIT' ? 'text-green-400' : 'text-red-400'}`}>{txn.direction}</span>
                           </td>
@@ -245,7 +245,7 @@ export default function AdminWalletDetailPage() {
                               txn.status === 'SUCCESS' ? 'bg-green-500/10 text-green-400' :
                               txn.status === 'FAILED' ? 'bg-red-500/10 text-red-400' :
                               txn.status === 'REVERSED' ? 'bg-yellow-500/10 text-yellow-400' :
-                              'bg-white/5 text-white/40'
+                              'bg-surface text-text-tertiary'
                             }`}>{txn.status}</span>
                           </td>
                         </tr>
@@ -284,8 +284,8 @@ export default function AdminWalletDetailPage() {
             ) : (
               <div className="space-y-2">
                 {auditEntries.slice(0, 20).map((entry, i) => (
-                  <div key={i} className="flex items-start gap-3 rounded-lg border border-white/[0.06] p-3">
-                    <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-white/30" />
+                  <div key={i} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                    <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-white/40" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-white">{(entry as any).action ?? 'Unknown action'}</p>
                       <p className="text-xs text-white/40">

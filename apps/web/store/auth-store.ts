@@ -12,14 +12,20 @@ interface AuthState {
   clearAuth: () => void;
   setRememberMe: (value: boolean) => void;
   setTwoFactorEnabled: (value: boolean) => void;
+  hydrateFromStorage: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   accessToken: null,
   isAuthenticated: false,
-  rememberMe: typeof window !== 'undefined' ? localStorage.getItem('rememberMe') === 'true' : false,
+  rememberMe: false,
   twoFactorEnabled: false,
+  hydrateFromStorage: () => {
+    set({
+      rememberMe: localStorage.getItem('rememberMe') === 'true',
+    });
+  },
   setAuth: (user, accessToken) =>
     set({ user, accessToken, isAuthenticated: true }),
   setUser: (user) => set({ user }),

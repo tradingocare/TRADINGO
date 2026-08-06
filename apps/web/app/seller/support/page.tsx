@@ -1,97 +1,239 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PageHeader } from '@/components/shared/page-header';
-import { MessageSquare, Phone, Mail, FileText, ChevronRight, Loader2 } from 'lucide-react';
-import api from '@/lib/api/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Modal } from '@/components/ui/modal';
+import { Pagination } from '@/components/ui/pagination';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/components/ui/use-toast';
+import { useTickets, useCreateTicket } from '@/hooks/use-support';
+import { TicketPlus, MessageSquare } from 'lucide-react';
+import type { SupportTicket } from '@/lib/api/support';
 
-const supportTopics = [
-  { icon: FileText, title: 'Order Issues', description: 'Problems with orders, deliveries, or payments', articles: 12 },
-  { icon: MessageSquare, title: 'Product Listings', description: 'Help with creating and managing product listings', articles: 8 },
-  { icon: Phone, title: 'Account & Billing', description: 'Account settings, subscription, and payment issues', articles: 6 },
-  { icon: Mail, title: 'KYC & Verification', description: 'Help with identity and business verification', articles: 5 },
-];
+const STATUS_TABS = [
+  { label: 'All', value: '' },
+  { label: 'Open', value: 'OPEN' },
+  { label: 'In Progress', value: 'IN_PROGRESS' },
+  { label: 'Resolved', value: 'RESOLVED' },
+  { label: 'Closed', value: 'CLOSED' },
+] as const;
 
-export default function SellerSupportPage() {
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+const PRIORITY_CONFIG: Record<string, { label: string; variant: 'default' | 'warning' | 'destructive' | 'success' }> = {
+  LOW: { label: 'Low', variant: 'default' },
+  MEDIUM: { label: 'Medium', variant: 'warning' },
+  HIGH: { label: 'High', variant: 'destructive' },
+  URGENT: { label: 'Urgent', variant: 'destructive' },
+};
 
-  useEffect(() => {
-    api.get('/buyer/notifications?type=support&limit=5')
-      .then(res => setTickets((res.data?.data || res.data || []).slice(0, 5)))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'warning' | 'success' | 'secondary' }> = {
+  OPEN: { label: 'Open', variant: 'warning' },
+  IN_PROGRESS: { label: 'In Progress', variant: 'default' },
+  WAITING: { label: 'Waiting', variant: 'secondary' },
+  RESOLVED: { label: 'Resolved', variant: 'success' },
+  CLOSED: { label: 'Closed', variant: 'secondary' },
+};
 
+function TicketSkeleton() {
   return (
-    <div className="min-h-screen pt-24 pb-16" style={{ background: '#1D0001' }}>
-      <div className="max-w-6xl mx-auto px-4">
-        <PageHeader title="Seller Support" description="Get help with your seller account and resolve issues quickly." />
-
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          {supportTopics.map((topic) => (
-            <div key={topic.title}
-              className="group rounded-3xl p-6 transition-all duration-300 hover:border-[#FF4D00]/20"
-              style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.09)' }}>
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FF4D00]/10 text-[#FF4D00]">
-                  <topic.icon className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-white">{topic.title}</h3>
-                  <p className="mt-1 text-xs text-white/50">{topic.description}</p>
-                  <p className="mt-2 text-xs text-white/40">{topic.articles} articles</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-white/20 transition-colors group-hover:text-[#FF4D00]" />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8 rounded-3xl p-6" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.09)' }}>
-          <h2 className="text-lg font-semibold text-white">Recent Tickets</h2>
-          <p className="mt-1 text-sm text-white/50">Track your support requests</p>
-          {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-white/40" /></div>
-          ) : tickets.length === 0 ? (
-            <p className="py-8 text-center text-sm text-white/40">No support tickets yet</p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {tickets.map((ticket: any) => (
-                <div key={ticket.id || Math.random()}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.04] p-4 backdrop-blur-md transition-all duration-200 hover:border-[#FF4D00]/10 hover:bg-white/[0.06]">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-mono text-white/40">#{ticket.id?.slice(0, 8)}</p>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${ticket.status === 'open' || ticket.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-green-500/10 text-green-400'}`}>
-                        {ticket.status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm font-medium text-white">{ticket.title || ticket.message || ticket.subject}</p>
-                  </div>
-                  <p className="text-xs text-white/40">{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('en-IN') : ''}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 rounded-3xl p-6" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.09)' }}>
-          <h2 className="text-lg font-semibold text-white">Contact Support</h2>
-          <p className="mt-1 text-sm text-white/50">Can&apos;t find what you&apos;re looking for? Reach out directly.</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button className="flex items-center gap-2 rounded-2xl bg-[#FF4D00] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#FF4D00]/90">
-              <MessageSquare className="h-4 w-4" /> Live Chat
-            </button>
-            <button className="flex items-center gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white backdrop-blur-md transition-colors hover:border-[#FF4D00]/30 hover:text-[#FF4D00]">
-              <Mail className="h-4 w-4" /> Email Support
-            </button>
-            <button className="flex items-center gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white backdrop-blur-md transition-colors hover:border-[#FF4D00]/30 hover:text-[#FF4D00]">
-              <Phone className="h-4 w-4" /> Call Us
-            </button>
+    <div className="rounded-xl border border-border bg-surface p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-3">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-4 w-full max-w-sm" />
+          <div className="flex gap-2">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-16 rounded-full" />
           </div>
+        </div>
+        <div className="text-right space-y-2">
+          <Skeleton className="h-4 w-20 ml-auto" />
+          <Skeleton className="h-4 w-12 ml-auto" />
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+function TicketCard({ ticket, onClick }: { ticket: SupportTicket; onClick: () => void }) {
+  const priorityConf = PRIORITY_CONFIG[ticket.priority] || PRIORITY_CONFIG.LOW;
+  const statusConf = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.OPEN;
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full rounded-xl border border-border bg-surface p-5 text-left transition-all duration-200 hover:border-accent/20 hover:bg-bg-elevated"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold text-text-primary truncate">{ticket.subject}</h3>
+          <p className="mt-1 text-xs text-text-tertiary line-clamp-2">{ticket.description}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge variant={statusConf.variant}>{statusConf.label}</Badge>
+            <Badge variant={priorityConf.variant}>{priorityConf.label}</Badge>
+            {ticket.category && (
+              <span className="text-[11px] text-text-tertiary uppercase tracking-wider">{ticket.category}</span>
+            )}
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-xs text-text-tertiary">
+            {new Date(ticket.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+          </p>
+          {ticket._count && (
+            <p className="mt-1 flex items-center justify-end gap-1 text-xs text-text-tertiary">
+              <MessageSquare className="h-3 w-3" />
+              {ticket._count.messages}
+            </p>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+export default function SellerSupportPage() {
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [priority, setPriority] = useState('MEDIUM');
+
+  const { data, isLoading, isError, refetch } = useTickets({ status: statusFilter || undefined, page, limit: 10 });
+  const createMutation = useCreateTicket();
+
+  const tickets: SupportTicket[] = data?.data ?? data ?? [];
+  const meta = data?.meta ?? { total: 0, page: 1, limit: 10, totalPages: 1, hasNext: false, hasPrevious: false };
+
+  const handleCreate = async () => {
+    if (!subject.trim() || !description.trim()) {
+      toast({ title: 'Please fill in subject and description', variant: 'destructive' });
+      return;
+    }
+    try {
+      await createMutation.mutateAsync({ subject: subject.trim(), description: description.trim(), category: category || undefined, priority });
+      toast.success('Ticket created successfully');
+      setCreateOpen(false);
+      setSubject('');
+      setDescription('');
+      setCategory('');
+      setPriority('MEDIUM');
+    } catch {
+      toast.error('Failed to create ticket');
+    }
+  };
+
+  return (
+    <div className="min-h-screen pt-24 pb-16" style={{ background: 'var(--bg-base)' }}>
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="flex items-start justify-between gap-4">
+          <PageHeader title="Support" description="Track and manage your support requests" />
+          <Button onClick={() => setCreateOpen(true)} className="mt-24 shrink-0">
+            <TicketPlus className="mr-2 h-4 w-4" />
+            Create Ticket
+          </Button>
+        </div>
+
+        <div className="mt-6 flex gap-1 rounded-xl bg-surface p-1 border border-border overflow-x-auto">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => { setStatusFilter(tab.value); setPage(1); }}
+              className={`rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                statusFilter === tab.value
+                  ? 'bg-accent text-btn-primary-text'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <TicketSkeleton key={i} />)
+          ) : isError ? (
+            <EmptyState
+              variant="error"
+              title="Failed to load tickets"
+              description="Unable to fetch your support tickets. Please try again."
+              action={<Button variant="outline" onClick={() => refetch()}>Retry</Button>}
+            />
+          ) : tickets.length === 0 ? (
+            <EmptyState
+              icon={MessageSquare}
+              title="No tickets found"
+              description={statusFilter ? `No ${STATUS_TABS.find(t => t.value === statusFilter)?.label} tickets` : 'Create a support ticket to get help'}
+              action={
+                <Button onClick={() => setCreateOpen(true)}>
+                  <TicketPlus className="mr-2 h-4 w-4" />
+                  Create Ticket
+                </Button>
+              }
+            />
+          ) : (
+            tickets.map((ticket: SupportTicket) => (
+              <TicketCard key={ticket.id} ticket={ticket} onClick={() => {}} />
+            ))
+          )}
+        </div>
+
+        {meta.totalPages > 1 && (
+          <div className="mt-6">
+            <Pagination meta={meta} onPageChange={setPage} />
+          </div>
+        )}
+
+        <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create Support Ticket" size="lg">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">Subject *</label>
+              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Brief summary of your issue" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">Description *</label>
+              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your issue in detail" rows={5} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">Category</label>
+                <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <option value="">Select category</option>
+                  <option value="ORDER">Order Issues</option>
+                  <option value="LISTING">Product Listings</option>
+                  <option value="ACCOUNT">Account & Billing</option>
+                  <option value="KYC">KYC & Verification</option>
+                  <option value="TECHNICAL">Technical Issue</option>
+                  <option value="OTHER">Other</option>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">Priority</label>
+                <Select value={priority} onChange={(e) => setPriority(e.target.value)}>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+              <Button onClick={handleCreate} disabled={createMutation.isPending}>
+                {createMutation.isPending ? 'Creating...' : 'Create Ticket'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    </div>
+  );
 }

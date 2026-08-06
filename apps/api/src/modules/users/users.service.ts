@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 import { Role } from '../../common/enums/role.enum';
 import { PaginatedResult } from '../../common/dto/pagination.dto';
 import { UserDto, UpdateUserDto, UserFilterDto } from './dto/user.dto';
@@ -9,7 +11,11 @@ import { UserDto, UpdateUserDto, UserFilterDto } from './dto/user.dto';
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notification: NotificationService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findAll(
     query: UserFilterDto & { cursor?: string; limit?: number },
@@ -151,11 +157,31 @@ export class UsersService {
     await this.prisma.auditLog.create({
       data: {
         userId: requesterId,
-        action: 'UPDATE_USER_ROLE',
+        action: 'SECURITY_PRIVILEGE_ESCALATION',
         resource: `user:${id}`,
-        metadata: { newRole: role },
+        metadata: { newRole: role, oldRole: user.role, requesterId } as any,
+        ipAddress: null,
       },
     });
+
+    this.eventEmitter.emit('security.privilege.escalation', {
+      userId: id,
+      action: 'SECURITY_PRIVILEGE_ESCALATION',
+      resource: `user:${id}`,
+      metadata: { newRole: role, oldRole: user.role, requesterId },
+    });
+
+    if (role === Role.ADMIN || role === Role.SUPER_ADMIN) {
+      this.notification.create(user.id, {
+        userId: id,
+        type: 'SYSTEM_ANNOUNCEMENT' as any,
+        channel: 'IN_APP',
+        title: 'Role Updated',
+        body: `Your account role has been changed to ${role}. If you did not authorize this change, please contact support immediately.`,
+        metadata: { role, updatedBy: requesterId } as any,
+        sourceModule: 'users',
+      }).catch((err) => this.logger.error('Failed to send role change notification', err));
+    }
 
     return updated as unknown as UserDto;
   }

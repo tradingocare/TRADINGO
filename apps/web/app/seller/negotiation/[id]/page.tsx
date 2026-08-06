@@ -21,6 +21,7 @@ import { useState } from 'react';
 import {
   ArrowLeft, DollarSign, Clock, Shield, Package, FileText, Check, X, Send, Sparkles, History, Activity, Building2, CheckCircle, XCircle
 } from 'lucide-react';
+import { Select } from '@/components/ui/select';
 
 const formatStatus = (s: string) => s.replace(/_/g, ' ').toLowerCase();
 
@@ -146,9 +147,9 @@ export default function SellerNegotiationDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {/* Current Offer */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-white/60">
+              <div className="flex items-center gap-2 text-text-secondary">
                 <DollarSign className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Current Offer</span>
               </div>
@@ -156,7 +157,7 @@ export default function SellerNegotiationDetailPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <p className="text-xs text-white/40">Price</p>
+                <p className="text-xs text-text-tertiary">Price</p>
                 <p className="text-lg font-bold text-white">
                   {n.quote?.currency || 'INR'} {n.quote?.totalAmount?.toLocaleString('en-IN') || '-'}
                 </p>
@@ -191,9 +192,9 @@ export default function SellerNegotiationDetailPage() {
               </div>
             </div>
             {n.notes && (
-              <div className="mt-3 rounded-lg bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">Notes</p>
-                <p className="text-sm text-white/70">{n.notes}</p>
+              <div className="mt-3 rounded-lg bg-surface p-3">
+                <p className="text-xs text-text-tertiary">Notes</p>
+                <p className="text-sm text-text-secondary">{n.notes}</p>
               </div>
             )}
           </div>
@@ -210,67 +211,65 @@ export default function SellerNegotiationDetailPage() {
                   <Label className="text-xs text-white/60">Price ({n.quote?.currency || 'INR'})</Label>
                   <Input type="number" min={0} step={0.01} value={form.proposedPrice ?? ''}
                     onChange={(e) => setForm({ ...form, proposedPrice: parseFloat(e.target.value) || 0 })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">MOQ</Label>
+                  <Label className="text-xs text-text-secondary">MOQ</Label>
                   <Input type="number" min={1} value={form.proposedMoq ?? ''}
                     onChange={(e) => setForm({ ...form, proposedMoq: parseInt(e.target.value) || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">Lead Time (days)</Label>
+                  <Label className="text-xs text-text-secondary">Lead Time (days)</Label>
                   <Input type="number" min={1} value={form.proposedLeadTimeDays ?? ''}
                     onChange={(e) => setForm({ ...form, proposedLeadTimeDays: parseInt(e.target.value) || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">Delivery Terms</Label>
-                  <select value={form.proposedDeliveryTerms ?? ''}
-                    onChange={(e) => setForm({ ...form, proposedDeliveryTerms: e.target.value || undefined })}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50">
-                    <option value="" className="bg-gray-900 text-white/60">No change</option>
-                    {DELIVERY_TERMS.map((t) => <option key={t} value={t} className="bg-gray-900 text-white">{t.replace(/_/g, ' ')}</option>)}
-                  </select>
+                  <Label className="text-xs text-text-secondary">Delivery Terms</Label>
+                  <Select value={form.proposedDeliveryTerms ?? ''}
+                    onChange={(e) => setForm({ ...form, proposedDeliveryTerms: e.target.value || undefined })}>
+                    <option value="">No change</option>
+                    {DELIVERY_TERMS.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-white/60">Payment Terms</Label>
-                  <select value={form.proposedPaymentTerms ?? ''}
-                    onChange={(e) => setForm({ ...form, proposedPaymentTerms: e.target.value || undefined })}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50">
-                    <option value="" className="bg-gray-900 text-white/60">No change</option>
-                    {PAYMENT_TERMS_LIST.map((t) => <option key={t} value={t} className="bg-gray-900 text-white">{t.replace(/_/g, ' ')}</option>)}
-                  </select>
+                  <Select value={form.proposedPaymentTerms ?? ''}
+                    onChange={(e) => setForm({ ...form, proposedPaymentTerms: e.target.value || undefined })}>
+                    <option value="">No change</option>
+                    {PAYMENT_TERMS_LIST.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-white/60">Discount %</Label>
                   <Input type="number" min={0} max={100} step={0.01} value={form.proposedDiscountPercent ?? ''}
                     onChange={(e) => setForm({ ...form, proposedDiscountPercent: parseFloat(e.target.value) || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">Warranty</Label>
+                  <Label className="text-xs text-text-secondary">Warranty</Label>
                   <Input value={form.proposedWarranty ?? ''}
                     onChange={(e) => setForm({ ...form, proposedWarranty: e.target.value || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" placeholder="e.g. 12 months" />
+                    className="bg-surface border-border text-text-primary" placeholder="e.g. 12 months" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-white/60">Freight</Label>
+                  <Label className="text-xs text-text-secondary">Freight</Label>
                   <Input value={form.proposedFreight ?? ''}
                     onChange={(e) => setForm({ ...form, proposedFreight: e.target.value || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" placeholder="e.g. Included" />
+                    className="bg-surface border-border text-text-primary" placeholder="e.g. Included" />
                 </div>
                 <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-xs text-white/60">Validity Date</Label>
+                  <Label className="text-xs text-text-secondary">Validity Date</Label>
                   <Input type="date" value={form.proposedValidityDate ?? ''}
                     onChange={(e) => setForm({ ...form, proposedValidityDate: e.target.value || undefined })}
-                    className="bg-white/[0.04] border-white/[0.06] text-white" />
+                    className="bg-surface border-border text-text-primary" />
                 </div>
                 <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-xs text-white/60">Notes</Label>
+                  <Label className="text-xs text-text-secondary">Notes</Label>
                   <textarea value={form.notes ?? ''} onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     rows={2}
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                     placeholder="Explain your revised offer..."
                   />
                 </div>
@@ -290,7 +289,7 @@ export default function SellerNegotiationDetailPage() {
               <p className="text-sm font-medium text-red-400 mb-2">Reject Negotiation</p>
               <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
                 rows={2} placeholder="Reason for rejection (optional)..."
-                className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50"
               />
               <div className="mt-2 flex gap-2">
                 <Button variant="destructive" size="sm" onClick={handleReject}>
@@ -305,22 +304,22 @@ export default function SellerNegotiationDetailPage() {
         {/* Right sidebar */}
         <div className="space-y-4">
           {/* Version History */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <History className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Version History</span>
             </div>
             {Array.isArray(versions) && versions.length > 0 ? (
               <div className="space-y-2">
                 {[...versions].reverse().map((v: any) => (
-                  <div key={v.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
+                  <div key={v.id} className="rounded-lg border border-border bg-surface p-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-white">v{v.version}</span>
+                      <span className="text-xs font-medium text-text-primary">v{v.version}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                         v.proposedBy === 'SELLER' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'
                       }`}>{v.proposedBy}</span>
                     </div>
-                    <p className="text-[10px] text-white/40 mt-1">
+                    <p className="text-[10px] text-text-tertiary mt-1">
                       {v.createdAt ? new Date(v.createdAt).toLocaleString('en-IN') : '-'}
                     </p>
                     {Array.isArray(v.changedFields) && v.changedFields.length > 0 && (
@@ -338,17 +337,17 @@ export default function SellerNegotiationDetailPage() {
           </div>
 
           {/* Timeline */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <Activity className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Timeline</span>
             </div>
             {Array.isArray(timeline) && timeline.length > 0 ? (
               <div className="space-y-2">
                 {[...timeline].reverse().map((e: any) => (
-                  <div key={e.id} className="flex items-start gap-2 border-l-2 border-white/[0.06] pl-3 pb-2">
+                  <div key={e.id} className="flex items-start gap-2 border-l-2 border-border pl-3 pb-2">
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-white capitalize">{e.eventType.replace(/_/g, ' ').toLowerCase()}</p>
+                      <p className="text-xs font-medium text-text-primary capitalize">{e.eventType.replace(/_/g, ' ').toLowerCase()}</p>
                       <p className="text-[10px] text-white/40">{new Date(e.createdAt).toLocaleString('en-IN')}</p>
                     </div>
                   </div>
@@ -362,7 +361,7 @@ export default function SellerNegotiationDetailPage() {
           {/* AI Copilot / Quote Info */}
           {showAi ? (
             <>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+              <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
                 <AiNegotiationCopilot
                   negotiationId={id}
                   negotiationData={n || {}}
@@ -399,8 +398,8 @@ export default function SellerNegotiationDetailPage() {
               )}
 
               {isAiGenerating && (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-xl">
-                  <div className="flex items-center gap-2 text-sm text-white/50">
+                <div className="rounded-xl border border-border bg-surface p-4 backdrop-blur-xl">
+                  <div className="flex items-center gap-2 text-sm text-text-tertiary">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
                     AI is analysing...
                   </div>
@@ -408,16 +407,16 @@ export default function SellerNegotiationDetailPage() {
               )}
             </>
           ) : (
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-              <div className="flex items-center gap-2 text-white/60 mb-3">
+            <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+              <div className="flex items-center gap-2 text-text-secondary mb-3">
                 <FileText className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Quote Info</span>
               </div>
               {n.quote && (
                 <dl className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <dt className="text-white/40">Line Items</dt>
-                    <dd className="text-white">{n.quote.lineItems?.length || 0}</dd>
+                    <dt className="text-text-tertiary">Line Items</dt>
+                    <dd className="text-text-primary">{n.quote.lineItems?.length || 0}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-white/40">Total</dt>

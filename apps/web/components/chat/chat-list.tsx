@@ -2,8 +2,9 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from './chat-message';
-import { Loader2, ChevronUp } from 'lucide-react';
+import { ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ChatListProps {
   messages: Array<{
@@ -61,7 +62,7 @@ export function ChatList({ messages, onLoadMore, hasMore, currentUserId, loading
         <div className="sticky top-0 z-10 flex justify-center py-2">
           <Button variant="outline" size="sm" onClick={onLoadMore} disabled={loading} className="text-xs">
             {loading ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              <LoadingSpinner size="xs" color="accent" className="mr-1" />
             ) : (
               <ChevronUp className="mr-1 h-3 w-3" />
             )}

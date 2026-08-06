@@ -1,18 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import api from '@/lib/api/client'
 import type { ContactCredentialsForm } from '@/types/vendor-registration'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
+import { Select } from '@/components/ui/select'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 const DISPOSABLE_DOMAINS = ['mailinator.com', 'tempmail.com', 'guerrillamail.com', 'throwamail.com', 'yopmail.com', 'trashmail.com', 'guerrillamailblock.com', 'sharklasers.com', 'grr.la', 'dispostable.com']
 
@@ -99,39 +101,53 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }))
 
-  const sendMobileOtp = () => {
+  const sendMobileOtp = async () => {
     if (!isMobileValid) return
     setShowMobileOtp(true)
     setMobileCountdown(60)
     setMobileOtp('')
     setMobileOtpError('')
-  }
-
-  const verifyMobileOtp = () => {
-    if (mobileOtp === '123456') {
-      setMobileVerified(true)
-      setShowMobileOtp(false)
-      setMobileOtp('')
-    } else {
-      setMobileOtpError('Invalid OTP. Try 123456 for demo.')
+    try {
+      await api.post('/auth/send-otp', { type: 'mobile', value: mobileNumber })
+    } catch {
+      setMobileOtpError('Failed to send OTP. Please try again.')
     }
   }
 
-  const sendEmailOtp = () => {
+  const verifyMobileOtp = async () => {
+    if (!mobileOtp) return
+    try {
+      await api.post('/auth/verify-otp', { type: 'mobile', value: mobileNumber, otp: mobileOtp })
+      setMobileVerified(true)
+      setShowMobileOtp(false)
+      setMobileOtp('')
+    } catch {
+      setMobileOtpError('Invalid OTP. Please try again.')
+    }
+  }
+
+  const sendEmailOtp = async () => {
     if (!isEmailValid || isEmailDisposable) return
     setShowEmailOtp(true)
     setEmailCountdown(60)
     setEmailOtp('')
     setEmailOtpError('')
+    try {
+      await api.post('/auth/send-otp', { type: 'email', value: email })
+    } catch {
+      setEmailOtpError('Failed to send OTP. Please try again.')
+    }
   }
 
-  const verifyEmailOtp = () => {
-    if (emailOtp === '123456') {
+  const verifyEmailOtp = async () => {
+    if (!emailOtp) return
+    try {
+      await api.post('/auth/verify-otp', { type: 'email', value: email, otp: emailOtp })
       setEmailVerified(true)
       setShowEmailOtp(false)
       setEmailOtp('')
-    } else {
-      setEmailOtpError('Invalid OTP. Try 123456 for demo.')
+    } catch {
+      setEmailOtpError('Invalid OTP. Please try again.')
     }
   }
 
@@ -152,16 +168,15 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
         </FormField>
 
         <FormField label="Designation" required error={touched.designation ? errors.designation : undefined}>
-          <select className={INPUT_CLASS} style={inputStyle(!!errors.designation && touched.designation)}
-            value={designation} onChange={e => { setDesignation(e.target.value); markTouched('designation') }}>
-            <option value="" className="bg-[#1D0001]">Select</option>
-            {DESIGNATIONS.map(d => <option key={d} value={d} className="bg-[#1D0001]">{d}</option>)}
-          </select>
+          <Select value={designation} onChange={e => { setDesignation(e.target.value); markTouched('designation') }}>
+            <option value="">Select</option>
+            {DESIGNATIONS.map(d => <option key={d} value={d}>{d}</option>)}
+          </Select>
         </FormField>
 
         <FormField label="Mobile Number" required error={touched.mobileNumber ? errors.mobileNumber : undefined}>
           <div className="flex gap-2">
-            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
               +91
             </div>
             <input className={INPUT_CLASS} style={{ ...inputStyle(!!errors.mobileNumber && touched.mobileNumber), flex: 1 }} placeholder="9876543210" maxLength={10}
@@ -174,7 +189,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
           </div>
           {mobileVerified && <p className="text-green-400 text-xs flex items-center gap-1 mt-1">✓ Mobile Verified</p>}
           {showMobileOtp && !mobileVerified && (
-            <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
               <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to +91 {mobileNumber}</p>
               <div className="flex gap-2 items-center">
                 <input className={INPUT_CLASS} style={{ ...inputStyle(false), letterSpacing: '0.3em', textAlign: 'center', maxWidth: 160 }} placeholder="000000" maxLength={6}
@@ -193,7 +208,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
 
         <FormField label="Alternate Mobile" error={touched.alternateMobile ? errors.alternateMobile : undefined}>
           <div className="flex gap-2">
-            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>+91</div>
+            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>+91</div>
             <input className={INPUT_CLASS} style={{ ...inputStyle(false), flex: 1 }} placeholder="Optional" maxLength={10}
               value={alternateMobile} onChange={e => setAlternateMobile(e.target.value.replace(/\D/g, '').slice(0, 10))} />
           </div>
@@ -209,7 +224,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
             <button type="button" onClick={sendEmailOtp} className="mt-2 px-4 py-2 rounded-xl text-xs font-bold hover:opacity-90" style={btnPrimary}>Send Email OTP</button>
           )}
           {showEmailOtp && !emailVerified && (
-            <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
               <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to {email}</p>
               <div className="flex gap-2 items-center">
                 <input className={INPUT_CLASS} style={{ ...inputStyle(false), letterSpacing: '0.3em', textAlign: 'center', maxWidth: 160 }} placeholder="000000" maxLength={6}
@@ -238,7 +253,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
           </div>
           {password.length > 0 && (
             <div className="mt-2">
-              <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div className="h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-elevated)' }}>
                 <div className="h-full rounded-full transition-all duration-300" style={{ width: strength.width, background: strength.color }} />
               </div>
               <p className="text-[10px] mt-1" style={{ color: strength.color }}>{strength.label}</p>
@@ -257,7 +272,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
           </div>
         </FormField>
 
-        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
           Your Login ID on TRADINGO will be your PAN Number — entered in Step 3.
         </div>
 

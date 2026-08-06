@@ -1,10 +1,14 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpCode, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { RequirementService } from './requirement.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CreateRequirementDto, UpdateRequirementDto, AddRequirementItemDto, UpdateRequirementItemDto } from './dto';
 
 @ApiTags('Buyer — Requirements')
+@Throttle(RateLimits.WRITE_GENERAL)
 @UseGuards(JwtAuthGuard)
 @Controller('buyer/requirements')
 export class RequirementController {
@@ -24,13 +28,13 @@ export class RequirementController {
 
   @Post()
   @ApiOperation({ summary: 'Create requirement list' })
-  create(@CurrentUser('sub') userId: string, @Body() body: any) {
+  create(@CurrentUser('sub') userId: string, @Body() body: CreateRequirementDto) {
     return this.service.create(userId, body);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update requirement list' })
-  update(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() body: any) {
+  update(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() body: UpdateRequirementDto) {
     return this.service.update(userId, id, body);
   }
 
@@ -43,13 +47,13 @@ export class RequirementController {
 
   @Post(':id/items')
   @ApiOperation({ summary: 'Add item to requirement list' })
-  addItem(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() body: any) {
+  addItem(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() body: AddRequirementItemDto) {
     return this.service.addItem(userId, id, body);
   }
 
   @Patch(':id/items/:itemId')
   @ApiOperation({ summary: 'Update requirement list item' })
-  updateItem(@CurrentUser('sub') userId: string, @Param('id') id: string, @Param('itemId') itemId: string, @Body() body: any) {
+  updateItem(@CurrentUser('sub') userId: string, @Param('id') id: string, @Param('itemId') itemId: string, @Body() body: UpdateRequirementItemDto) {
     return this.service.updateItem(userId, id, itemId, body);
   }
 

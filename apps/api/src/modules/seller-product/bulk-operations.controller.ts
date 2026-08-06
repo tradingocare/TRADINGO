@@ -1,5 +1,6 @@
-import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { BulkOperationsService } from './bulk-operations.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -7,6 +8,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @ApiTags('Seller Bulk Operations')
 @UseGuards(JwtAuthGuard)
 @Controller('seller/bulk')
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class BulkOperationsController {
   constructor(private readonly service: BulkOperationsService) {}
 

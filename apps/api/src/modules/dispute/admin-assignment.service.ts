@@ -1,6 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+interface AvailableAdmin {
+  id: string;
+  name: string;
+  email: string;
+  activeDisputeCount: number;
+}
+
+interface AssignedAdmin extends AvailableAdmin {
+  reason: string;
+}
+
 @Injectable()
 export class AdminAssignmentService {
   private readonly logger = new Logger(AdminAssignmentService.name);
@@ -30,7 +41,7 @@ export class AdminAssignmentService {
     return { adminId: admin.id, reason: admin.reason };
   }
 
-  async getAvailableAdmins(): Promise<any[]> {
+  async getAvailableAdmins(): Promise<AvailableAdmin[]> {
     const activeDisputes = await this.prisma.dispute.groupBy({
       by: ['assignedAdminId'],
       where: {
@@ -67,7 +78,7 @@ export class AdminAssignmentService {
     }));
   }
 
-  async getLeastBusyAdmin(): Promise<any> {
+  async getLeastBusyAdmin(): Promise<AssignedAdmin | null> {
     const admins = await this.getAvailableAdmins();
     if (admins.length === 0) return null;
     return this.getLeastBusyFromList(admins);
@@ -82,17 +93,17 @@ export class AdminAssignmentService {
         type: 'ARBITRATOR_ASSIGNED',
         description: `Admin ${adminId} assigned (round-robin, load: ${currentLoad})`,
         createdBy: 'system',
-        metadata: { adminId, currentLoad } as any,
+        metadata: { adminId, currentLoad },
       },
     });
   }
 
-  private getLeastBusyFromList(admins: any[]): any {
+  private getLeastBusyFromList(admins: AvailableAdmin[]): AssignedAdmin {
     const sorted = [...admins].sort((a, b) => a.activeDisputeCount - b.activeDisputeCount);
     return { ...sorted[0], reason: 'least-active' };
   }
 
-  private getNextRoundRobin(admins: any[]): any {
+  private getNextRoundRobin(admins: AvailableAdmin[]): AssignedAdmin {
     const index = this.roundRobinIndex % admins.length;
     this.roundRobinIndex = (this.roundRobinIndex + 1) % admins.length;
     return { ...admins[index], reason: 'round-robin' };

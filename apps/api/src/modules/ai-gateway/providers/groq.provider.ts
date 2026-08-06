@@ -104,7 +104,9 @@ export class GroqProvider extends BaseAiProvider {
             const parsed = JSON.parse(data)
             const content = parsed.choices?.[0]?.delta?.content || ''
             yield { content, done: false }
-          } catch {}
+          } catch {
+            this.logger.warn(`Groq: failed to parse streaming chunk: ${data.substring(0, 100)}`)
+          }
         }
       }
     }

@@ -51,7 +51,7 @@ export function IsFileArray(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: any) {
-          return Array.isArray(value) && value.every((f) => f && f.buffer && f.originalname);
+          return Array.isArray(value) && value.every((f) => f?.buffer && f.originalname);
         },
         defaultMessage() {
           return 'Must be an array of files';

@@ -33,6 +33,8 @@ export class SearchService {
         password: this.configService.get<string>('opensearch.password')!,
       },
       ssl: { rejectUnauthorized: this.configService.get<boolean>('opensearch.rejectUnauthorized', true) },
+      maxRetries: 3,
+      requestTimeout: 10000,
     });
   }
 
@@ -41,8 +43,27 @@ export class SearchService {
       index,
       id,
       body,
-      refresh: 'wait_for',
+      refresh: false,
     });
+  }
+
+  async bulkIndex(
+    index: string,
+    docs: { id: string; body: Record<string, unknown> }[],
+  ): Promise<{ indexed: number; failed: number }> {
+    if (docs.length === 0) return { indexed: 0, failed: 0 };
+    const operations: Record<string, unknown>[] = [];
+    for (const doc of docs) {
+      operations.push({ index: { _index: index, _id: doc.id } });
+      operations.push(doc.body);
+    }
+    const response = await this.client.bulk({
+      body: operations,
+      refresh: false,
+    });
+    const items = (response.body.items ?? []) as { index?: { error?: unknown } }[];
+    const failed = items.filter((item) => item.index?.error).length;
+    return { indexed: docs.length - failed, failed };
   }
 
   async search<T>(
@@ -55,51 +76,51 @@ export class SearchService {
     const limit = pagination.limit || 20;
     const from = (page - 1) * limit;
 
-    const must: Record<string, unknown>[] = [];
-    if (query) {
-      must.push({
-        multi_match: {
-          query,
-          fields: ['*'],
-          type: 'best_fields',
-        },
-      });
-    }
+    try {
+      const must: Record<string, unknown>[] = [];
+      if (query) {
+        must.push({
+          multi_match: {
+            query,
+            fields: ['*'],
+            type: 'best_fields',
+          },
+        });
+      }
 
-    const filterClauses = Object.entries(filters)
-      .filter(([_, value]) => value !== undefined)
-      .map(([key, value]) => ({
-        term: { [key]: value } as Record<string, SearchFiltersValue>,
-      }));
+      const filterClauses = Object.entries(filters)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key, value]) => ({
+          term: { [key]: value } as Record<string, SearchFiltersValue>,
+        }));
 
-    const response = await this.client.search({
-      index,
-      from,
-      size: limit,
-      body: {
-        query: {
-          bool: {
-            must: must.length > 0 ? must : [{ match_all: {} }],
-            filter: filterClauses,
+      const response = await this.client.search({
+        index,
+        from,
+        size: limit,
+        body: {
+          query: {
+            bool: {
+              must: must.length > 0 ? must : [{ match_all: {} }],
+              filter: filterClauses,
+            },
           },
         },
-      },
-    });
+      });
 
-    const hits = response.body.hits.hits.map((hit: { _id: string; _source: Record<string, unknown> }) => ({
-      id: hit._id,
-      ...hit._source,
-    })) as unknown as T[];
+      const hits = response.body.hits.hits.map((hit: { _id: string; _source: Record<string, unknown> }) => ({
+        id: hit._id,
+        ...hit._source,
+      })) as unknown as T[];
 
-    const totalInfo = response.body.hits.total;
-    const total = typeof totalInfo === 'number' ? totalInfo : (totalInfo?.value ?? 0);
+      const totalInfo = response.body.hits.total;
+      const total = typeof totalInfo === 'number' ? totalInfo : (totalInfo?.value ?? 0);
 
-    return {
-      hits,
-      total,
-      page,
-      limit,
-    };
+      return { hits, total, page, limit };
+    } catch (err) {
+      this.logger.warn(`OpenSearch search failed for index=${index}: ${(err as Error).message}`);
+      return { hits: [], total: 0, page, limit };
+    }
   }
 
   async deleteDocument(index: string, id: string): Promise<void> {
@@ -107,5 +128,29 @@ export class SearchService {
       index,
       id,
     });
+  }
+
+  async indexExists(index: string): Promise<boolean> {
+    const response = await this.client.indices.exists({ index });
+    return response.body as boolean;
+  }
+
+  async createIndex(index: string, body: Record<string, unknown>): Promise<void> {
+    const exists = await this.indexExists(index);
+    if (!exists) {
+      await this.client.indices.create({
+        index,
+        body,
+      });
+    }
+  }
+
+  async deleteIndex(index: string): Promise<void> {
+    const exists = await this.indexExists(index);
+    if (exists) {
+      await this.client.indices.delete({
+        index,
+      });
+    }
   }
 }

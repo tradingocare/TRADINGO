@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { NotificationController } from './notification.controller';
+import { PublicNotificationController } from './public-notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationGateway } from './notification.gateway';
 import { NotificationProcessor } from './notification.processor';
@@ -16,7 +17,7 @@ import { QueueNames } from '../../jobs/queues';
     BullModule.registerQueue({ name: QueueNames.EMAIL }),
     AnalyticsModule,
   ],
-  controllers: [NotificationController],
+  controllers: [NotificationController, PublicNotificationController],
   providers: [
     NotificationService,
     NotificationGateway,

@@ -8,9 +8,9 @@ interface RankBadgeProps {
 }
 
 const rankColors: Record<number, { bg: string; text: string; label: string }> = {
-  1: { bg: 'bg-amber-500', text: 'text-white', label: 'Gold' },
-  2: { bg: 'bg-slate-400', text: 'text-white', label: 'Silver' },
-  3: { bg: 'bg-amber-700', text: 'text-white', label: 'Bronze' },
+  1: { bg: 'bg-accent-500', text: 'text-black', label: 'Gold' },
+  2: { bg: 'bg-slate-400', text: 'text-gray-900', label: 'Silver' },
+  3: { bg: 'bg-accent-500/80', text: 'text-black', label: 'Bronze' },
 }
 
 const sizeClasses = {

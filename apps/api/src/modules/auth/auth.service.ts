@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException, Logger, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import * as bcrypt from 'bcrypt';
@@ -8,7 +9,9 @@ import { v4 as uuid } from 'uuid';
 import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../common/services/redis.service';
-import { SmsProviderFactory } from '../sms/sms-provider.factory';
+import { SmsService } from '../sms/sms.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { NotificationService } from '../notification/notification.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -29,7 +32,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
-    private readonly smsProviderFactory: SmsProviderFactory,
+    private readonly smsService: SmsService,
+    private readonly auditLog: AuditLogService,
+    private readonly notification: NotificationService,
+    private readonly eventEmitter: EventEmitter2,
     @InjectQueue(QueueNames.EMAIL) private readonly emailQueue: Queue,
   ) {}
 
@@ -50,12 +56,13 @@ export class AuthService {
     const verificationToken = randomBytes(32).toString('hex');
     await this.redisService.set(`verify:email:${verificationToken}`, user.id, 86400);
 
+    const verificationUrl = `${this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000')}/verify-email`;
     await this.emailQueue.add(QueueNames.EMAIL, {
       type: EmailJobTypes.SEND_WELCOME_EMAIL,
       to: user.email,
       subject: 'Welcome to Trading',
       template: 'welcome',
-      context: { name: user.name, verificationToken },
+      context: { name: user.name, verificationToken, verificationUrl },
     });
 
     return {
@@ -85,8 +92,8 @@ export class AuthService {
     }
 
     const user = await this.findUserByIdentifier(dto.identifier);
-    if (!user || !user.isActive) {
-      await this.handleFailedLogin(dto.identifier);
+    if (!user?.isActive) {
+      await this.handleFailedLogin(dto.identifier, ipAddress);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -103,11 +110,11 @@ export class AuthService {
 
     // Status checks (using isActive + lockedUntil for now)
     if (!user.isActive)
-      throw new ForbiddenException('Account suspended. Contact support@tradingo.in');
+      throw new ForbiddenException('Account suspended. Contact support@tradingo.com');
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) {
-      await this.handleFailedLogin(dto.identifier);
+      await this.handleFailedLogin(dto.identifier, ipAddress);
       throw new UnauthorizedException('Incorrect password');
     }
 
@@ -119,16 +126,19 @@ export class AuthService {
     await this.redisService.del(lockKey);
 
     if (userAgent) {
-      await this.prisma.session.deleteMany({
-        where: { userId: user.id, userAgent },
+      await this.prisma.session.updateMany({
+        where: { userId: user.id, userAgent, isActive: true },
+        data: { isActive: false },
       });
     }
+
+    // Prime Redis JWT cache to avoid DB hit on next request
+    await this.redisService.set(`user:active:${user.id}`, 'true', 300);
 
     const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
     await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, userAgent, ipAddress);
 
     // Update rememberMe expiry for refresh token
-    const rememberMeExpiry = dto.rememberMe ? 30 : 7;
     const cookieMaxAge = dto.rememberMe ? 30 * 24 * 60 * 60 : 15 * 60;
 
     return {
@@ -164,11 +174,14 @@ export class AuthService {
       data: { passwordHash },
     });
 
-    // Revoke all other sessions on password change
+    // Revoke all sessions on password change (forces re-login)
     await this.prisma.session.updateMany({
-      where: { userId, id: { not: undefined } },
+      where: { userId, isActive: true },
       data: { isActive: false },
     });
+
+    // Immediately invalidate Redis JWT cache — forces next request to re-validate
+    await this.redisService.del(`user:active:${userId}`);
 
     this.logger.log(`Password changed for user: ${userId}`);
   }
@@ -191,7 +204,7 @@ export class AuthService {
     });
     if (!session) throw new NotFoundException('Session not found');
 
-    await this.prisma.session.delete({ where: { id: sessionId } });
+    await this.prisma.session.update({ where: { id: sessionId }, data: { isActive: false } });
     this.logger.log(`Session revoked: ${sessionId} for user: ${userId}`);
   }
 
@@ -205,12 +218,13 @@ export class AuthService {
     const verificationToken = randomBytes(32).toString('hex');
     await this.redisService.set(`verify:email:${verificationToken}`, user.id, 86400);
 
+    const verificationUrl = `${this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000')}/verify-email`;
     await this.emailQueue.add(QueueNames.EMAIL, {
-      type: EmailJobTypes.SEND_WELCOME_EMAIL,
+      type: EmailJobTypes.SEND_NOTIFICATION,
       to: user.email,
       subject: 'Verify your email - TRADINGO',
-      template: 'welcome',
-      context: { name: user.name, verificationToken },
+      template: 'email-verification',
+      context: { name: user.name, verificationToken, verificationUrl },
     });
 
     return { message: 'Verification email sent', expiresIn: 86400 };
@@ -226,28 +240,40 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const session = await this.prisma.session.findUnique({
+    // Atomic two-phase rotation: mark inactive first, then create new
+    const now = new Date();
+    const deactivated = await this.prisma.session.updateMany({
+      where: { id: payload.sessionId, isActive: true },
+      data: { isActive: false },
+    });
+
+    // If 0 rows affected → already rotated (race condition defeated)
+    if (deactivated.count === 0) {
+      throw new UnauthorizedException('Session already refreshed');
+    }
+
+    const oldSession = await this.prisma.session.findUnique({
       where: { id: payload.sessionId },
       include: { user: true },
     });
 
-    if (!session || !session.isActive || session.expiresAt < new Date()) {
-      throw new UnauthorizedException('Session expired or not found');
+    if (!oldSession?.user) {
+      throw new UnauthorizedException('Session not found');
     }
 
-    // Rotate: delete old session
-    await this.prisma.session.delete({ where: { id: session.id } });
+    if (oldSession.expiresAt < now) {
+      throw new UnauthorizedException('Session expired');
+    }
 
     const tokens = await this.generateTokens(
-      session.user.id,
-      session.user.email,
-      session.user.role,
-      session.user.permissions,
+      oldSession.user.id,
+      oldSession.user.email,
+      oldSession.user.role,
+      oldSession.user.permissions,
     );
-    await this.saveRefreshToken(session.user.id, tokens.refreshToken, tokens.sessionId, session.userAgent, session.ipAddress);
+    await this.saveRefreshToken(oldSession.user.id, tokens.refreshToken, tokens.sessionId, oldSession.userAgent, oldSession.ipAddress);
 
-    // Update lastUsedAt for tracking
-    this.logger.log(`Token refreshed for user: ${session.user.id}, new session: ${tokens.sessionId}`);
+    this.logger.log(`Token refreshed for user: ${oldSession.user.id}, new session: ${tokens.sessionId}`);
 
     return tokens;
   }
@@ -277,9 +303,12 @@ export class AuthService {
         data: { isActive: false },
       });
     }
+
+    // Evict Redis JWT cache for this user
+    await this.redisService.del(`user:active:${userId}`);
   }
 
-  private async handleFailedLogin(identifier: string) {
+  private async handleFailedLogin(identifier: string, ipAddress?: string) {
     const key = `lock:user:${identifier}`;
     const attempts = await this.redisService.incr(key);
 
@@ -287,11 +316,28 @@ export class AuthService {
       await this.redisService.expire(key, LOCK_WINDOW_SECONDS);
     }
 
+    const user = await this.findUserByIdentifier(identifier);
+
+    await this.auditLog.create({
+      userId: user?.id,
+      action: 'SECURITY_LOGIN_FAILURE',
+      resource: `auth/login/${identifier}`,
+      metadata: { attempt: attempts, identifier, userFound: !!user },
+      ipAddress,
+    });
+
+    this.eventEmitter.emit('security.login.failed', {
+      userId: user?.id,
+      action: 'SECURITY_LOGIN_FAILURE',
+      resource: `auth/login/${identifier}`,
+      metadata: { attempt: attempts, identifier, userFound: !!user },
+      ipAddress,
+    });
+
     if (attempts >= MAX_LOGIN_ATTEMPTS) {
       await this.redisService.expire(key, LOCK_DURATION_MINUTES * 60);
 
       // Also lock in DB if user exists
-      const user = await this.findUserByIdentifier(identifier);
       if (user) {
         const lockedUntil = new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000);
         await this.prisma.user.update({
@@ -299,6 +345,26 @@ export class AuthService {
           data: { loginAttempts: attempts, lockedUntil },
         });
       }
+
+      if (user) {
+        this.notification.create(user.id, {
+          userId: user.id,
+          type: 'SYSTEM_ANNOUNCEMENT' as any,
+          channel: 'IN_APP',
+          title: 'Account Locked',
+          body: `Your account has been locked due to ${MAX_LOGIN_ATTEMPTS} failed login attempts. Please try again after ${LOCK_DURATION_MINUTES} minutes or reset your password.`,
+          metadata: { reason: 'multiple_failed_logins', lockDurationMinutes: LOCK_DURATION_MINUTES } as any,
+          sourceModule: 'auth',
+        }).catch((err) => this.logger.error('Failed to send lock notification', err));
+      }
+
+      await this.auditLog.create({
+        userId: user?.id,
+        action: 'SECURITY_ACCOUNT_LOCKED',
+        resource: `auth/lock/${identifier}`,
+        metadata: { reason: 'max_login_attempts', attempts, lockDurationMinutes: LOCK_DURATION_MINUTES, identifier },
+        ipAddress,
+      });
 
       this.logger.warn(`Account locked: ${identifier} for ${LOCK_DURATION_MINUTES} minutes`);
     }
@@ -343,11 +409,38 @@ export class AuthService {
   }
 
   // ── OTP Login ──
-  async sendLoginOtp(identifier: string) {
-    // Always return success to avoid revealing if account exists
+  async sendLoginOtp(identifier: string, ipAddress?: string) {
+    const ipKey = `otp:ip:${ipAddress || 'unknown'}:send`;
+    const ipCount = await this.redisService.incr(ipKey);
+    if (ipCount === 1) await this.redisService.expire(ipKey, 60);
+    if (ipCount > 10) {
+      this.logger.warn(`OTP rate limit exceeded for IP: ${ipAddress}`);
+      return { success: true, message: 'If account exists, OTP sent', expiresIn: 300 };
+    }
+
+    const lockKey = `lock:user:${identifier}`;
+    if (await this.redisService.exists(lockKey)) {
+      return { success: true, message: 'If account exists, OTP sent', expiresIn: 300 };
+    }
+    const user = await this.findUserByIdentifier(identifier);
+    if (user?.lockedUntil && user.lockedUntil > new Date()) {
+      return { success: true, message: 'If account exists, OTP sent', expiresIn: 300 };
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await this.redisService.set(`login:otp:${identifier}`, otp, 300);
-    this.logger.log(`Login OTP sent for ${identifier}`);
+    const isPhone = /^\+?[1-9]\d{9,14}$/.test(identifier);
+    if (isPhone) {
+      await this.smsService.sendOtp(identifier, otp, 'OTP_LOGIN');
+    } else {
+      await this.emailQueue.add(QueueNames.EMAIL, {
+        type: EmailJobTypes.SEND_NOTIFICATION,
+        to: identifier,
+        subject: 'Your Login OTP',
+        template: 'otp-login',
+        context: { name: user?.name || identifier, otp },
+      }).catch((err) => this.logger.warn(`Failed to queue login OTP email: ${(err as Error).message}`));
+    }
     return { success: true, message: 'If account exists, OTP sent', expiresIn: 300 };
   }
 
@@ -376,11 +469,38 @@ export class AuthService {
   }
 
   // ── Forgot Password ──
-  async sendResetOtp(identifier: string) {
-    // Always return success to avoid revealing if account exists
+  async sendResetOtp(identifier: string, ipAddress?: string) {
+    const ipKey = `otp:ip:${ipAddress || 'unknown'}:send`;
+    const ipCount = await this.redisService.incr(ipKey);
+    if (ipCount === 1) await this.redisService.expire(ipKey, 60);
+    if (ipCount > 10) {
+      this.logger.warn(`OTP rate limit exceeded for IP: ${ipAddress}`);
+      return { success: true, message: 'If account exists, reset OTP sent', expiresIn: 300 };
+    }
+
+    const lockKey = `lock:user:${identifier}`;
+    if (await this.redisService.exists(lockKey)) {
+      return { success: true, message: 'If account exists, reset OTP sent', expiresIn: 300 };
+    }
+    const user = await this.findUserByIdentifier(identifier);
+    if (user?.lockedUntil && user.lockedUntil > new Date()) {
+      return { success: true, message: 'If account exists, reset OTP sent', expiresIn: 300 };
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await this.redisService.set(`reset:otp:${identifier}`, otp, 300);
-    this.logger.log(`Reset OTP sent for ${identifier}`);
+    const isPhone = /^\+?[1-9]\d{9,14}$/.test(identifier);
+    if (isPhone) {
+      await this.smsService.sendOtp(identifier, otp, 'OTP_RESET_PASSWORD');
+    } else {
+      await this.emailQueue.add(QueueNames.EMAIL, {
+        type: EmailJobTypes.SEND_PASSWORD_RESET,
+        to: identifier,
+        subject: 'Password Reset OTP',
+        template: 'password-reset',
+        context: { name: user?.name || identifier, otp },
+      }).catch((err) => this.logger.warn(`Failed to queue password reset OTP email: ${(err as Error).message}`));
+    }
     return { success: true, message: 'If account exists, reset OTP sent', expiresIn: 300 };
   }
 
@@ -410,6 +530,10 @@ export class AuthService {
 
     await this.redisService.del(`reset:token:${b.resetToken}`);
     await this.redisService.del(`lock:user:${identifier}`);
+
+    // Invalidate Redis JWT cache — forces re-authentication after password reset
+    await this.redisService.del(`user:active:${user.id}`);
+
     this.logger.log(`Password reset complete for ${identifier}`);
     return { success: true, message: 'Password reset successfully' };
   }
@@ -677,18 +801,31 @@ export class AuthService {
     };
   }
 
-  async sendOtp(type: 'mobile' | 'email', value: string) {
+  async sendOtp(type: 'mobile' | 'email', value: string, ipAddress?: string) {
+    const ipKey = `otp:ip:${ipAddress || 'unknown'}:send`;
+    const ipCount = await this.redisService.incr(ipKey);
+    if (ipCount === 1) await this.redisService.expire(ipKey, 60);
+    if (ipCount > 10) {
+      this.logger.warn(`OTP rate limit exceeded for IP: ${ipAddress}`);
+      return { success: true, message: `OTP sent to ${value}`, expiresIn: 300 };
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const key = `otp:${type}:${value}`;
 
     await this.redisService.set(key, otp, 300); // 5 min expiry
 
     if (type === 'mobile') {
-      const smsProvider = this.smsProviderFactory.getProvider();
-      await smsProvider.sendOtp(value, otp);
+      await this.smsService.sendOtp(value, otp, 'OTP_VERIFY_MOBILE');
+    } else {
+      await this.emailQueue.add(QueueNames.EMAIL, {
+        type: EmailJobTypes.SEND_NOTIFICATION,
+        to: value,
+        subject: 'Your Verification OTP',
+        template: 'otp-verify',
+        context: { name: value, otp, type: 'Email' },
+      }).catch((err) => this.logger.warn(`Failed to queue verification OTP email: ${(err as Error).message}`));
     }
-
-    this.logger.log(`OTP sent to ${type}: ${value}`);
     return { success: true, message: `OTP sent to ${value}`, expiresIn: 300 };
   }
 

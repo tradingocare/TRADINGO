@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueryFinanceDashboardDto } from './dto';
-import { PaymentStatus, PaymentType, InvoiceStatus } from '@prisma/client';
+import { PaymentStatus, InvoiceStatus } from '@prisma/client';
 
 @Injectable()
 export class FinanceDashboardService {
@@ -10,7 +10,6 @@ export class FinanceDashboardService {
   async getDashboard(query: QueryFinanceDashboardDto) {
     const endDate = query.endDate ? new Date(query.endDate) : new Date();
     const startDate = query.startDate ? new Date(query.startDate) : new Date(endDate.getTime() - 365 * 86400000);
-    const months = query.months || 12;
 
     const [totalRevenue, totalReceivable, totalPayable, totalOutstanding, collectionAgg, paymentCounts] = await Promise.all([
       this.prisma.payment.aggregate({ _sum: { amount: true }, where: { status: PaymentStatus.CAPTURED, paidAt: { gte: startDate, lte: endDate } } }),

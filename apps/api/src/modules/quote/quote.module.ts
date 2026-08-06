@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { QuoteController } from './quote.controller';
 import { MyQuotesController } from './my-quotes.controller';
 import { AdminQuotesController } from './admin-quotes.controller';
@@ -9,7 +9,7 @@ import { AiGatewayModule } from '../ai-gateway/ai-gateway.module';
 import { TradTrustModule } from '../tradtrust/tradtrust.module';
 
 @Module({
-  imports: [AiGatewayModule, TradTrustModule],
+  imports: [AiGatewayModule, forwardRef(() => TradTrustModule)],
   controllers: [QuoteController, MyQuotesController, AdminQuotesController, AiQuoteController],
   providers: [QuoteService, AiQuoteService],
   exports: [QuoteService, AiQuoteService],

@@ -11,7 +11,7 @@ export class PoPdfService {
     const border = '#2a2a2a';
     const text = '#e5e5e5';
     const muted = '#888';
-    const accent = '#FF4D00';
+    const accent = '#f59e0b';
 
     const lineItems = (p.lineItems || []).map((li: any) => `
       <tr>

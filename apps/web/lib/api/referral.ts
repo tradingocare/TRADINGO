@@ -92,6 +92,10 @@ export function validateReferral(code: string, data?: { refereeEmail?: string; i
   return apiClient.post<{ valid: boolean; reason?: string }>('/referrals/validate', { code, ...data }).then(r => r.data);
 }
 
+export function applyReferral(data: { code: string; refereeUserId?: string; refereeEmail?: string; ipAddress?: string; userAgent?: string; deviceId?: string }) {
+  return apiClient.post<ReferralUsage>('/referrals/apply', data).then(r => r.data);
+}
+
 export function getReferralHistory() {
   return apiClient.get<ReferralHistory>('/referrals/history').then(r => r.data);
 }

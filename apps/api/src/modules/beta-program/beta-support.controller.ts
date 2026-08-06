@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BetaProgramService } from './beta-program.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
@@ -16,10 +17,12 @@ import { AddMessageDto } from './dto/add-message.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TicketStatus } from '@prisma/client';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Beta Support')
 @Controller('beta-support')
 @UseGuards(JwtAuthGuard)
+@Throttle(RateLimits.WRITE_GENERAL)
 @ApiBearerAuth()
 export class BetaSupportController {
   constructor(private readonly betaProgramService: BetaProgramService) {}

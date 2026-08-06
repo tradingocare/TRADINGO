@@ -6,6 +6,7 @@ import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import {
   getTemplate, updateTemplate, deleteSection, addField, updateField, deleteField,
@@ -245,16 +246,16 @@ export default function TemplateBuilderPage() {
                             <span className="font-medium truncate">{field.label}</span>
                             <span className="ml-2 text-xs text-text-tertiary">{field.key} &middot; {field.type}</span>
                           </div>
-                          <select
+                          <Select
                             value={field.type}
                             onChange={(e) => handleChangeFieldType(field, e.target.value)}
-                            className="text-xs rounded border border-border bg-surface px-1.5 py-0.5"
+                            className="text-xs w-24"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {FIELD_TYPE_OPTIONS.map((t) => (
                               <option key={t} value={t}>{t}</option>
                             ))}
-                          </select>
+                          </Select>
                           <button
                             onClick={() => handleToggleFieldRequired(field)}
                             className={`text-xs px-1.5 py-0.5 rounded ${field.isRequired ? 'bg-red-100 text-red-700' : 'bg-surface-tertiary text-text-tertiary'}`}

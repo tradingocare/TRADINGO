@@ -1,378 +1,354 @@
-/* ═══════════════════════════════════════════════════════════════
-   RECOVERY: components/shared/navbar.tsx
-   Source: Partial reconstruction from working tree + design system
-   Confidence: MEDIUM
-   Assumptions:
-     - Working tree had an intermediate glass-pill version with OLD
-        brand colors (now design system tokens)
-     - These were replaced with the new design system colors:
-       #1D0001 (bg), #FF4D00 (accent), rgba(255,255,255,0.04) (glass)
-     - The glass-nav class from globals.css handles positioning/backdrop
-     - framer-motion is available (added to package.json)
-   ═══════════════════════════════════════════════════════════════ */
-
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Mail, Phone } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Mail, Menu, Phone, X } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { TradingoLogoIcon } from './tradingo-logo';
 import { cn } from '@/lib/utils';
+import { FacebookIcon, LinkedInIcon, InstagramIcon, YoutubeIcon } from './social-icons';
 
-/* ───────── Social SVG icons (minimal, premium) ───────── */
-
-function FacebookIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-    </svg>
-  );
+interface NavItem {
+  label: string;
+  subtitle: string;
+  href: string;
 }
 
-function TwitterIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 4l6.5 8.5L4 20h2.5l5-5.5L16 20h4l-7-9.5L20 4h-2.5l-4.5 5L8 4H4z" />
-    </svg>
-  );
-}
-
-function LinkedInIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="4" />
-      <path d="M8 11v5" />
-      <path d="M8 8v0" />
-      <circle cx="8" cy="8" r="0.5" fill="currentColor" stroke="none" />
-      <path d="M12 16v-5" />
-      <path d="M16 16v-3a2 2 0 0 0-4 0" />
-    </svg>
-  );
-}
-
-function TelegramIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21.5 2.5l-19 7.5 5 2 3 6 3-4 6 3z" />
-      <path d="M10.5 13.5l4-4" />
-    </svg>
-  );
-}
-
-function YoutubeIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="4" />
-      <polygon points="10,9 16,12 10,15" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-const socialLinks = [
-  { href: 'https://facebook.com/tradingo', label: 'Facebook', icon: FacebookIcon },
-  { href: 'https://x.com/tradingo', label: 'X (Twitter)', icon: TwitterIcon },
-  { href: 'https://linkedin.com/company/tradingo', label: 'LinkedIn', icon: LinkedInIcon },
-  { href: 'https://t.me/tradingo', label: 'Telegram', icon: TelegramIcon },
-  { href: 'https://youtube.com/@tradingo', label: 'YouTube', icon: YoutubeIcon },
+const NAV_ITEMS: NavItem[] = [
+  { label: 'Trading', subtitle: 'PRODUCTS', href: '/products' },
+  { label: 'TradeServ', subtitle: 'SERVICES', href: '/tradeserv' },
+  { label: 'Tradors', subtitle: 'BUSINESS DIRECTORY', href: '/companies' },
+  { label: 'TradeTalk', subtitle: 'BUSINESS NETWORK', href: '/tradetalk' },
+  { label: 'GoStart', subtitle: 'CREATE ACCOUNT', href: '/register/vendor' },
+  { label: 'GoLive', subtitle: 'VENDORS SIGNUP', href: '/login' },
+  { label: 'GoJoin', subtitle: 'LOGIN', href: '/register' },
 ];
 
-/* ───────── Top Bar ───────── */
+const segmentBase =
+  'group relative isolate flex min-h-[46px] flex-col items-center justify-center rounded-full px-3.5 py-2 text-center outline-none transition-[border-color,background-color,box-shadow,color] duration-300 focus-visible:ring-2 focus-visible:ring-[#FF8A00] focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base lg:px-4';
+
+const labelClass =
+  'relative z-10 text-[13px] font-semibold leading-none tracking-normal transition-colors duration-300';
+
+const subtitleClass =
+  'relative z-10 mt-1 text-[9px] font-medium uppercase leading-none tracking-[0.12em] transition-colors duration-300';
+
+const themeToggleClass =
+  'h-11 w-11 rounded-full border border-border bg-surface text-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:bg-accent-500/15 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111111]';
+
+const capsuleStyle = {
+  background:
+    'linear-gradient(180deg, rgba(255,255,255,0.05), transparent 44%), radial-gradient(circle at 16% 0%, rgba(255,77,0,0.10), transparent 34%), radial-gradient(circle at 84% 100%, rgba(245,158,11,0.08), transparent 30%), rgba(8, 10, 18, 0.94)',
+  boxShadow:
+    '0 24px 80px rgba(0,0,0,0.55), 0 8px 28px rgba(0,0,0,0.40), 0 0 80px -16px rgba(255,77,0,0.15), 0 0 60px -20px rgba(245,158,11,0.12), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(255,255,255,0.04)',
+  backdropFilter: 'blur(32px) saturate(1.15)',
+  WebkitBackdropFilter: 'blur(32px) saturate(1.15)',
+} satisfies CSSProperties;
+
+function SegmentSeparator() {
+  return <span aria-hidden className="hidden h-8 w-px bg-gradient-to-b from-transparent via-white/[0.12] to-transparent md:block" />;
+}
+
+function ActiveTreatment() {
+  return (
+    <span
+      aria-hidden
+      className="absolute inset-0 rounded-full bg-[linear-gradient(180deg,rgba(255,77,0,0.14),rgba(255,77,0,0.04))] shadow-[0_0_26px_rgba(255,77,0,0.18)]"
+    />
+  );
+}
 
 function TopBar() {
   return (
-    <div className="hidden h-9 items-center justify-center bg-[#0B1220] border-b border-white/[0.04] md:flex">
+    <div className="hidden h-9 items-center justify-center border-b border-border md:flex" style={{ background: 'var(--bg-elevated)' }}>
       <div className="flex w-full max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-5">
           <a
             href="mailto:tradingocare@gmail.com"
-            className="group flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-white/50 transition-colors duration-200 hover:text-white"
+            className="group flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-text-secondary transition-colors duration-200 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
-            <Mail className="h-3 w-3 text-white/40 group-hover:text-white transition-colors duration-200" />
+            <Mail className="h-3 w-3 text-accent-500 transition-colors duration-200 group-hover:text-[#FF7A33]" />
             <span>GoConect</span>
-            <span className="text-white/20 mx-1">/</span>
-            <span className="text-white/50 group-hover:text-white transition-colors duration-200">
+            <span className="mx-1 text-text-tertiary">/</span>
+            <span className="text-text-secondary transition-colors duration-200 group-hover:text-accent-500">
               tradingocare@gmail.com
             </span>
           </a>
-          <span className="h-3 w-px bg-white/[0.06]" />
+          <span className="h-3 w-px bg-border" />
           <a
             href="tel:+919999988888"
-            className="group flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-white/50 transition-colors duration-200 hover:text-white"
+            className="group flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-text-secondary transition-colors duration-200 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
-            <Phone className="h-3 w-3 text-white/40 group-hover:text-white transition-colors duration-200" />
+            <Phone className="h-3 w-3 text-accent-500 transition-colors duration-200 group-hover:text-[#FF7A33]" />
             <span>Goquary</span>
-            <span className="text-white/20 mx-1">/</span>
-            <span className="text-white/50 group-hover:text-white transition-colors duration-200">
+            <span className="mx-1 text-text-tertiary">/</span>
+            <span className="text-text-secondary transition-colors duration-200 group-hover:text-accent-500">
               +91 99999-88888
             </span>
           </a>
         </div>
-
         <div className="flex items-center gap-1">
-          <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/30 mr-2">
+          <span className="mr-2 text-[10px] font-medium uppercase tracking-[0.18em] text-text-tertiary">
             GoSocial
           </span>
-          <span className="h-3 w-px bg-white/[0.06] mr-2" />
-          {socialLinks.map(({ href, label, icon: Icon }) => (
-            <a
-              key={label}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={label}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-white/40 transition-all duration-200 hover:bg-white/[0.08] hover:text-white hover:scale-110"
-            >
-              <Icon className="h-3.5 w-3.5" />
-            </a>
-          ))}
+          <span className="mr-2 h-3 w-px bg-border" />
+          <a href="https://linkedin.com/company/tradingo" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="flex h-7 w-7 items-center justify-center rounded-full border border-transparent text-text-tertiary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/25 hover:bg-accent-500/15 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"><LinkedInIcon className="h-3.5 w-3.5" /></a>
+          <a href="https://facebook.com/tradingo" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="flex h-7 w-7 items-center justify-center rounded-full border border-transparent text-text-tertiary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/25 hover:bg-accent-500/15 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"><FacebookIcon className="h-3.5 w-3.5" /></a>
+          <a href="https://instagram.com/tradingo" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="flex h-7 w-7 items-center justify-center rounded-full border border-transparent text-text-tertiary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/25 hover:bg-accent-500/15 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"><InstagramIcon className="h-3.5 w-3.5" /></a>
+          <a href="https://www.youtube.com/@TradingoIndia" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="flex h-7 w-7 items-center justify-center rounded-full border border-transparent text-text-tertiary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-500/25 hover:bg-accent-500/15 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"><YoutubeIcon className="h-3.5 w-3.5" /></a>
         </div>
       </div>
     </div>
   );
 }
 
-/* ───────── Navbar ───────── */
+function HomeSegment({ active, onClick }: { active: boolean; onClick?: () => void }) {
+  const logoCapsule = cn(
+    segmentBase,
+    'nav-capsule-rainbow min-h-[46px] min-w-[50px] border border-border bg-surface px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
+  );
 
-interface NavItem {
-  label: string;
-  subtitle: string;
-  href: string;
-  cta?: boolean;
-  emoji?: string;
+  const textCapsule = cn(
+    segmentBase,
+    'nav-capsule-rainbow hidden min-h-[46px] border border-border bg-surface px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:flex',
+    active && 'bg-accent-500/10 shadow-[0_0_30px_rgba(255,77,0,0.16)]'
+  );
+
+  return (
+    <div className="flex items-center gap-2">
+      <Link
+        href="/"
+        onClick={onClick}
+        aria-label="TRADINGO Home"
+        className={logoCapsule}
+      >
+        <span className="relative z-10 flex h-8 items-center">
+          <TradingoLogoIcon height={38} priority className="drop-shadow-[0_0_12px_rgba(255,77,0,0.20)]" />
+        </span>
+      </Link>
+      <Link
+        href="/"
+        onClick={onClick}
+        aria-label="TRADINGO Trading Home"
+        className={textCapsule}
+      >
+        {active && <ActiveTreatment />}
+        <span className="relative z-10 flex flex-col leading-none">
+          <span className="bg-gradient-to-r from-accent-500 via-[#FF7A33] to-[#f59e0b] bg-clip-text text-[15px] font-bold leading-none tracking-normal text-transparent">
+            TRADINGO
+          </span>
+          <span className="mt-1 text-[9px] font-medium uppercase leading-none tracking-[0.14em] text-text-tertiary">
+            TRADING HOME
+          </span>
+        </span>
+      </Link>
+    </div>
+  );
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Trading', subtitle: 'Marketplace', href: '/products', emoji: '\u{1F6D2}' },
-  { label: 'Tradors', subtitle: 'Supplier Directory', href: '/companies', emoji: '\u{1F3E2}' },
-  { label: 'GoLive', subtitle: 'Customers Login', href: '/login', emoji: '\u{1F513}' },
-  { label: 'GoStart', subtitle: 'Vendors Login', href: '/login', emoji: '\u{1F3EA}' },
-  { label: 'GoJoin', subtitle: 'Create Account', href: '/register', emoji: '\u2728' },
-];
-
-const ITEM_BASE =
-  'group relative flex flex-col items-center justify-center rounded-full ' +
-  'px-4 py-[10px] transition-all duration-300 ' +
-  'cursor-pointer';
-
-const LABEL_CLASS =
-  'text-sm font-semibold tracking-tight transition-colors duration-300';
-
-const SUBTITLE_CLASS =
-  'text-[10px] font-medium uppercase tracking-[0.14em] transition-colors duration-300';
-
-function Indicator({ active, cta }: { active: boolean; cta?: boolean }) {
+function MobileHomeItem({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
-    <span
-      aria-hidden
+    <Link
+      href="/"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      aria-label="TRADINGO Trading Home"
       className={cn(
-        'block h-1.5 w-1.5 rounded-full transition-all duration-300',
-        active
-          ? cta ? 'bg-[#1D0001]/40' : 'bg-[#FF4D00] animate-nav-active-pulse'
-          : cta
-            ? 'bg-[#1D0001]/15 group-hover:bg-[#1D0001]/30'
-            : 'bg-white/35 group-hover:bg-[#FF4D00]/70'
+        segmentBase,
+        'nav-capsule-rainbow min-h-[54px] flex-row items-center justify-start gap-3 border border-border bg-surface-secondary/50 px-5 text-left',
+        active && 'bg-accent-500/10 shadow-[0_0_26px_rgba(255,77,0,0.14)]'
       )}
-    />
+    >
+      {active && <ActiveTreatment />}
+      <TradingoLogoIcon height={28} priority className="relative z-10 drop-shadow-[0_0_10px_rgba(255,77,0,0.20)]" />
+      <span className="relative z-10 flex flex-col leading-none">
+        <span className="bg-gradient-to-r from-accent-500 via-[#FF7A33] to-[#f59e0b] bg-clip-text text-[13px] font-bold leading-none tracking-normal text-transparent">
+          TRADINGO
+        </span>
+        <span className="mt-1 text-[9px] font-medium uppercase leading-none tracking-[0.14em] text-text-tertiary">
+          TRADING HOME
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+function DesktopNavItem({ item, active }: { item: NavItem; active: boolean }) {
+  const shouldReduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      className="flex items-center"
+      whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.015 }}
+      whileTap={shouldReduceMotion ? undefined : { scale: 0.985 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+    >
+      <Link
+        href={item.href}
+        aria-label={`${item.label} ${item.subtitle}`}
+        aria-current={active ? 'page' : undefined}
+        className={cn(
+          segmentBase,
+          'nav-capsule-rainbow min-w-[100px] border border-border bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
+          active && 'bg-accent-500/10 shadow-[0_0_30px_rgba(255,77,0,0.16)]'
+        )}
+      >
+        {active && <ActiveTreatment />}
+        <span className={cn(labelClass, active ? 'text-accent-500' : 'text-text-secondary group-hover:text-text-primary')}>
+          {item.label}
+        </span>
+        <span className={cn(subtitleClass, active ? 'text-[#FF7A33]' : 'text-text-tertiary group-hover:text-[#FF7A33]')}>
+          {item.subtitle}
+        </span>
+      </Link>
+    </motion.div>
+  );
+}
+
+function MobileNavItem({ item, active, onClick }: { item: NavItem; active: boolean; onClick: () => void }) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      aria-label={`${item.label} ${item.subtitle}`}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        segmentBase,
+        'nav-capsule-rainbow min-h-[54px] items-start border border-border bg-surface-secondary/50 px-5 text-left',
+        active && 'bg-accent-500/10 shadow-[0_0_26px_rgba(255,77,0,0.14)]'
+      )}
+    >
+      {active && <ActiveTreatment />}
+      <span className={cn(labelClass, active ? 'text-accent-500' : 'text-text-secondary')}>
+        {item.label}
+      </span>
+      <span className={cn(subtitleClass, active ? 'text-[#FF7A33]' : 'text-text-tertiary')}>
+        {item.subtitle}
+      </span>
+    </Link>
   );
 }
 
 function NavbarInner() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false);
+    };
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [mobileOpen]);
 
   const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <>
-      <nav className="glass-nav">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4">
-          <Link
-            href="/"
-            aria-label="TRADINGO — home"
-            className="group relative z-10 flex shrink-0 items-center"
+      <nav className="glass-nav" aria-label="Global navigation">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4">
+          <div
+            className="premium-nav-capsule pointer-events-auto relative isolate flex min-h-14 items-center justify-between gap-2 overflow-hidden rounded-full border border-border px-2 py-2 md:min-h-16"
+            style={capsuleStyle}
           >
-            <span className={cn(ITEM_BASE, 'pr-0.5')}>
-              <span className="flex items-center gap-[120px]">
-                <TradingoLogoIcon height={48} priority />
-                <span className="relative flex flex-col items-center leading-tight">
-                  <Indicator active />
-                  <span className={cn(LABEL_CLASS, 'font-display text-[#FF4D00]')}>
-                    <span className="text-lg leading-none align-middle mr-0.5" aria-hidden>{'\u{1F48E}'}</span>TRADINGO
-                  </span>
-                  <span className={cn(SUBTITLE_CLASS, 'text-white/55 group-hover:text-[#FF4D00]/80')}>
-                    Trading Home
-                  </span>
-                </span>
-              </span>
-            </span>
-          </Link>
-
-          <ul className="relative z-10 hidden flex-1 items-center justify-center gap-0.5 md:flex lg:gap-1">
-            {NAV_ITEMS.map((item) => {
-              const active = isActive(item.href);
-
-              if (item.cta) {
-                return (
-                  <li key={item.label} className="flex items-center"><Link
-                      href={item.href}
-                      className="btn-accent text-sm px-5 py-2"
-                    >
-                      <Indicator active={active} cta={item.cta} />
-                      <span className="flex flex-col items-center leading-tight">
-                        <span className={cn(LABEL_CLASS, 'text-[#1D0001]')}>
-                          {item.emoji} {item.label}
-                        </span>
-                        <span className={cn(SUBTITLE_CLASS, 'text-[#1D0001]/60')}>
-                          {item.subtitle}
-                        </span>
-                      </span>
-                    </Link>
-                  </li>
-                );
-              }
-
-              return (
-                <li key={item.label} className="flex items-center"><Link
-                    href={item.href}
-                    className={cn(
-                      ITEM_BASE,
-                      'hover:bg-white/[0.04] hover:shadow-[0_0_20px_rgba(255,77,0,0.12)] hover:scale-105',
-                      active && 'bg-white/[0.05]'
-                    )}
-                  >
-                    <Indicator active={active} />
-                    <span className="flex flex-col items-center leading-tight">
-                      <span
-                        className={cn(
-                          LABEL_CLASS,
-                          active ? 'text-[#FF4D00]' : 'text-white group-hover:text-[#FF4D00]'
-                        )}
-                      >
-                        {item.emoji} {item.label}
-                      </span>
-                      <span
-                        className={cn(
-                          SUBTITLE_CLASS,
-                          active ? 'text-[#FF4D00]/80' : 'text-white/55 group-hover:text-[#FF4D00]/80'
-                        )}
-                      >
-                        {item.subtitle}
-                      </span>
-                    </span>
-
-                    {active && (
-                      <motion.span
-                        layoutId="nav-active-underline"
-                        className="animate-nav-underline absolute -bottom-0.5 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full"
-                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                      />
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-
-          <div className="relative z-10 flex items-center gap-1">
-            <div className="hidden sm:block">
-              <ThemeToggle />
+            <div className="relative z-10 flex items-center gap-2">
+              <motion.div
+                whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.01 }}
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.985 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+              >
+                <HomeSegment active={isActive('/')} />
+              </motion.div>
             </div>
-            <button
-              type="button"
-              onClick={() => setMobileOpen((v) => !v)}
-              aria-label="Toggle menu"
-              aria-expanded={mobileOpen}
-              className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-full text-white transition-all duration-300',
-                'hover:scale-105 hover:bg-white/[0.06] md:hidden'
-              )}
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+
+            <ul className="relative z-10 hidden flex-1 items-center justify-center gap-2 md:flex">
+              {NAV_ITEMS.map((item, index) => (
+                <li key={item.label} className="flex items-center gap-2">
+                  {index > 0 && <SegmentSeparator />}
+                  <DesktopNavItem item={item} active={isActive(item.href)} />
+                </li>
+              ))}
+            </ul>
+
+            <div className="relative z-10 flex items-center gap-1.5">
+              <div className="hidden sm:block" aria-label="Dark Mode">
+                <ThemeToggle className={themeToggleClass} />
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileOpen((value) => !value)}
+                aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-global-navigation"
+                className={cn(
+                  'flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-text-primary transition-all duration-300',
+                  'hover:-translate-y-0.5 hover:border-accent-500/35 hover:bg-accent-500/15 hover:text-[#FF7A33]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#080b12] md:hidden'
+                )}
+              >
+                {mobileOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
+              </button>
+            </div>
           </div>
         </div>
       </nav>
 
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            key="mobile-pill"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="fixed left-3 right-3 top-20 z-40 mx-auto max-w-7xl overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0B1220]/95 backdrop-blur-[30px] p-2 shadow-[0_15px_50px_rgba(0,0,0,0.55)] md:hidden"
-          >
-            <div className="flex flex-col gap-1 px-1 py-1">
-              {NAV_ITEMS.map((item) => {
-                const active = isActive(item.href);
-
-                if (item.cta) {
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="btn-accent w-full justify-center py-3"
-                    >
-                      <Indicator active={active} cta />
-                      <span className="flex flex-col leading-tight">
-                        <span className="text-sm font-semibold text-[#1D0001]">
-                          {item.emoji} {item.label}
-                        </span>
-                        <span className="text-[10px] uppercase tracking-[0.14em] text-[#1D0001]/60">
-                          {item.subtitle}
-                        </span>
-                      </span>
-                    </Link>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close navigation menu"
+              className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm md:hidden"
+              onClick={() => setMobileOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
+            />
+            <motion.div
+              id="mobile-global-navigation"
+              role="dialog"
+              aria-modal="true"
+              aria-label="TRADINGO mobile navigation"
+              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 34, scale: 0.98 }}
+              animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.26, ease: 'easeOut' }}
+              className="fixed inset-x-3 bottom-3 z-50 overflow-hidden rounded-[2rem] border border-border bg-bg-elevated/95 p-3 shadow-[0_28px_90px_rgba(0,0,0,0.62)] backdrop-blur-[30px] md:hidden"
+            >
+              <div aria-hidden className="mx-auto mb-3 h-1 w-12 rounded-full bg-surface" />
+              <div className="grid gap-2">
+                <MobileHomeItem active={isActive('/')} onClick={() => setMobileOpen(false)} />
+                {NAV_ITEMS.map((item) => (
+                  <MobileNavItem
+                    key={item.label}
+                    item={item}
+                    active={isActive(item.href)}
                     onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      'group flex items-center gap-3 rounded-full px-4 py-3 transition-all duration-300',
-                      'hover:bg-white/[0.04]',
-                      active && 'bg-white/[0.05]'
-                    )}
-                  >
-                    <Indicator active={active} />
-                    <span className="flex flex-col leading-tight">
-                      <span
-                        className={cn(
-                          'text-sm font-semibold',
-                          active ? 'text-[#FF4D00]' : 'text-white'
-                        )}
-                      >
-                        {item.emoji} {item.label}
-                      </span>
-                      <span className="text-[10px] uppercase tracking-[0.14em] text-white/50">
-                        {item.subtitle}
-                      </span>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-            <div className="mt-1 flex items-center justify-between border-t border-white/[0.06] px-2 pb-1 pt-3">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-white/35">Menu</span>
-              <ThemeToggle />
-            </div>
-          </motion.div>
+                  />
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-between rounded-full border border-border bg-surface-secondary/50 px-4 py-2">
+                <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-tertiary">
+                  Dark Mode
+                </span>
+                <ThemeToggle className="h-11 w-11" />
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>
   );
 }
-
-/* ───────── Combined Header ───────── */
 
 export function Navbar() {
   return (

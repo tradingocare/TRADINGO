@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { CompaniesService } from './companies.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
@@ -11,6 +13,7 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
 @ApiTags('Companies')
+@Throttle(RateLimits.MARKETPLACE_READ)
 @Controller('companies')
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
@@ -25,6 +28,7 @@ export class CompaniesController {
   // ── Public Directory (page-based, before :slug) ──
   @Get('directory')
   @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Company directory (paginated, filterable)' })
   async findDirectory(
     @Query('q')           q:          string,
@@ -39,13 +43,15 @@ export class CompaniesController {
     @Query('page')        page = '1',
     @Query('limit')       limit = '24',
   ) {
+    const ALLOWED_SORT = ['trustScore', 'newest', 'name'] as const;
+    const validatedSortBy = ALLOWED_SORT.includes(sortBy as typeof ALLOWED_SORT[number]) ? sortBy : 'trustScore';
     return this.companiesService.findDirectory({
       q, category, city, state,
       verified: verified === 'true',
       elite: elite === 'true',
       sellerType,
       minTrust: minTrust ? parseInt(minTrust) : undefined,
-      sortBy: sortBy as any,
+      sortBy: validatedSortBy,
       page: parseInt(page),
       limit: Math.min(parseInt(limit), 48),
     });
@@ -53,6 +59,7 @@ export class CompaniesController {
 
   @Get()
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: 'List companies (cursor-based)' })
   async findAll(@Query() query: {
     cursor?: string;
@@ -69,6 +76,7 @@ export class CompaniesController {
 
   @Get('search')
   @Public()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Search companies' })
   async search(@Query('q') query: string, @Query('businessType') businessType?: string, @Query('city') city?: string, @Query('state') state?: string) {
     return this.companiesService.searchCompanies(query, { businessType, city, state });
@@ -83,6 +91,7 @@ export class CompaniesController {
 
   @Get(':slug')
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: 'Get company by slug' })
   async findBySlug(@Param('slug') slug: string) {
     return this.companiesService.findBySlug(slug);
@@ -90,6 +99,7 @@ export class CompaniesController {
 
   @Get(':slug/products')
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: "Get company's products" })
   async getProducts(@Param('slug') slug: string, @Query('page') page = '1', @Query('limit') limit = '12') {
     return this.companiesService.getProducts(slug, parseInt(page), parseInt(limit));
@@ -97,6 +107,7 @@ export class CompaniesController {
 
   @Get(':slug/reviews')
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: "Get company's reviews" })
   async getReviews(@Param('slug') slug: string, @Query('page') page = '1', @Query('limit') limit = '6') {
     return this.companiesService.getReviews(slug, parseInt(page), parseInt(limit));
@@ -104,6 +115,7 @@ export class CompaniesController {
 
   @Get(':slug/similar')
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: 'Get similar companies' })
   async getSimilar(@Param('slug') slug: string) {
     return this.companiesService.getSimilar(slug, 6);
@@ -139,25 +151,11 @@ export class CompaniesController {
     await this.companiesService.removeOwner(id, ownerUserId, userId);
   }
 
-  @Get(':id/profile-completion')
-  @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
-  @ApiOperation({ summary: 'Get profile completion percentage' })
-  async getProfileCompletion(@Param('id') id: string) {
-    return this.companiesService.getProfileCompletion(id);
-  }
-
   @Get(':id/profile-completion/details')
   @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
   @ApiOperation({ summary: 'Get profile completion details' })
   async getProfileCompletionDetails(@Param('id') id: string) {
     return this.companiesService.getProfileCompletionDetails(id);
-  }
-
-  @Get(':id/onboarding')
-  @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
-  @ApiOperation({ summary: 'Get onboarding status' })
-  async getOnboarding(@Param('id') id: string) {
-    return this.companiesService.getOnboardingStatus(id);
   }
 
   @Patch(':id/subscription')
@@ -176,6 +174,7 @@ export class CompaniesController {
 
   @Get(':id/rank')
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: 'Get company rank position' })
   async getCompanyRank(@Param('id') id: string) {
     return this.companiesService.getCompanyRank(id);

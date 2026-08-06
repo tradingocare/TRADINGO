@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -8,11 +8,16 @@ import { QueueNames, NotificationJobTypes, NotificationJobData } from '../../job
 import { CreateNotificationDto, CreateBulkNotificationDto } from './dto/create-notification.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 import { UpsertPreferenceDto } from './dto/notification-preference.dto';
+import { CreateNewsletterCampaignDto, UpdateNewsletterCampaignDto, NewsletterQueryDto, SubscribeDto, SendNewsletterDto } from './dto/create-newsletter.dto';
+import { CreateWorkflowDto, UpdateWorkflowDto, WorkflowQueryDto } from './dto/marketing-workflow.dto';
 import {
   NotificationType,
   NotificationChannel,
   NotificationPriority,
   NotificationStatus,
+  NewsletterSubscriberStatus,
+  NewsletterCampaignStatus,
+  MarketingWorkflowStatus,
 } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
@@ -414,5 +419,282 @@ export class NotificationService {
     return typePrefs.length > 0
       ? typePrefs.map((p) => p.channel)
       : defaultChannels;
+  }
+
+  // ─── Newsletter Subscribers ────────────────────────────────
+
+  async subscribe(dto: SubscribeDto) {
+    const existing = await this.prisma.newsletterSubscriber.findUnique({ where: { email: dto.email } });
+    if (existing) {
+      if (existing.status === 'UNSUBSCRIBED') {
+        return this.prisma.newsletterSubscriber.update({
+          where: { id: existing.id },
+          data: { status: NewsletterSubscriberStatus.ACTIVE, unsubscribedAt: null },
+        });
+      }
+      return existing;
+    }
+    return this.prisma.newsletterSubscriber.create({
+      data: {
+        email: dto.email,
+        name: dto.name,
+        companyId: dto.companyId,
+      },
+    });
+  }
+
+  async unsubscribe(email: string) {
+    const sub = await this.prisma.newsletterSubscriber.findUnique({ where: { email } });
+    if (!sub) throw new NotFoundException('Subscriber not found');
+    return this.prisma.newsletterSubscriber.update({
+      where: { id: sub.id },
+        data: { status: NewsletterSubscriberStatus.UNSUBSCRIBED, unsubscribedAt: new Date() },
+    });
+  }
+
+  async listSubscribers(query: { status?: string; search?: string; page?: number; limit?: number }) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+    const where: Prisma.NewsletterSubscriberWhereInput = {};
+
+    if (query.status) where.status = query.status as NewsletterSubscriberStatus;
+    if (query.search) {
+      where.OR = [
+        { email: { contains: query.search, mode: 'insensitive' } },
+        { name: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.newsletterSubscriber.findMany({ where, skip, take: limit, orderBy: { subscribedAt: 'desc' } }),
+      this.prisma.newsletterSubscriber.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit), hasNext: page * limit < total, hasPrevious: page > 1 } };
+  }
+
+  async getSubscriberStats() {
+    const [active, unsubscribed, bounced, spam] = await Promise.all([
+      this.prisma.newsletterSubscriber.count({ where: { status: NewsletterSubscriberStatus.ACTIVE } }),
+      this.prisma.newsletterSubscriber.count({ where: { status: NewsletterSubscriberStatus.UNSUBSCRIBED } }),
+      this.prisma.newsletterSubscriber.count({ where: { status: NewsletterSubscriberStatus.BOUNCED } }),
+      this.prisma.newsletterSubscriber.count({ where: { status: NewsletterSubscriberStatus.SPAM } }),
+    ]);
+    return { active, unsubscribed, bounced, spam, total: active + unsubscribed + bounced + spam };
+  }
+
+  // ─── Newsletter Campaigns ──────────────────────────────────
+
+  async createNewsletterCampaign(dto: CreateNewsletterCampaignDto, userId: string) {
+    return this.prisma.newsletterCampaign.create({
+      data: {
+        name: dto.name,
+        subject: dto.subject,
+        body: dto.body,
+        template: dto.template,
+        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
+        createdBy: userId,
+      },
+    });
+  }
+
+  async listNewsletterCampaigns(query: NewsletterQueryDto) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+    const where: Prisma.NewsletterCampaignWhereInput = {};
+
+    if (query.status) where.status = query.status as NewsletterCampaignStatus;
+    if (query.search) {
+      where.OR = [
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { subject: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.newsletterCampaign.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+      this.prisma.newsletterCampaign.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit), hasNext: page * limit < total, hasPrevious: page > 1 } };
+  }
+
+  async getNewsletterCampaign(id: string) {
+    const campaign = await this.prisma.newsletterCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Newsletter campaign not found');
+    return campaign;
+  }
+
+  async updateNewsletterCampaign(id: string, dto: UpdateNewsletterCampaignDto) {
+    const campaign = await this.prisma.newsletterCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Newsletter campaign not found');
+
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.subject !== undefined) data.subject = dto.subject;
+    if (dto.body !== undefined) data.body = dto.body;
+    if (dto.template !== undefined) data.template = dto.template;
+    if (dto.scheduledAt !== undefined) data.scheduledAt = new Date(dto.scheduledAt);
+
+    return this.prisma.newsletterCampaign.update({ where: { id }, data });
+  }
+
+  async sendNewsletterCampaign(id: string, dto?: SendNewsletterDto) {
+    const campaign = await this.prisma.newsletterCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Newsletter campaign not found');
+
+    const activeSubs = await this.prisma.newsletterSubscriber.findMany({
+      where: { status: NewsletterSubscriberStatus.ACTIVE },
+      select: { email: true, name: true },
+    });
+
+    await this.prisma.newsletterCampaign.update({
+      where: { id },
+        data: { status: NewsletterCampaignStatus.SENDING, sentAt: new Date(), sentCount: activeSubs.length },
+    });
+
+    const subject = dto?.subject || campaign.subject;
+    for (const sub of activeSubs) {
+      try {
+        await this.notificationQueue.add(NotificationJobTypes.SEND_NOTIFICATION, {
+          type: NotificationJobTypes.SEND_NOTIFICATION,
+          notificationId: `newsletter-${id}-${sub.email}`,
+          companyId: 'SYSTEM',
+          channel: NotificationChannel.EMAIL,
+          title: subject,
+          message: campaign.body,
+          metadata: { newsletterId: id, subscriberEmail: sub.email, subscriberName: sub.name },
+          attemptCount: 0,
+        } as NotificationJobData);
+      } catch (err) {
+        this.logger.error(`Failed to enqueue newsletter email to ${sub.email}: ${(err as Error).message}`);
+      }
+    }
+
+    return this.prisma.newsletterCampaign.update({
+      where: { id },
+        data: { status: NewsletterCampaignStatus.SENT },
+    });
+  }
+
+  // ─── Marketing Automation Workflows ────────────────────────
+
+  async createWorkflow(dto: CreateWorkflowDto, userId: string) {
+    return this.prisma.marketingWorkflow.create({
+      data: {
+        name: dto.name,
+        description: dto.description,
+        trigger: dto.trigger,
+        conditions: dto.conditions as Prisma.InputJsonValue,
+        actions: dto.actions as Prisma.InputJsonValue,
+        createdBy: userId,
+      },
+    });
+  }
+
+  async listWorkflows(query: WorkflowQueryDto) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+    const where: Prisma.MarketingWorkflowWhereInput = {};
+
+    if (query.trigger) where.trigger = query.trigger;
+    if (query.status) where.status = query.status;
+
+    const [data, total] = await Promise.all([
+      this.prisma.marketingWorkflow.findMany({
+        where, skip, take: limit, orderBy: { updatedAt: 'desc' },
+        include: { _count: { select: { logs: true } } },
+      }),
+      this.prisma.marketingWorkflow.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit), hasNext: page * limit < total, hasPrevious: page > 1 } };
+  }
+
+  async getWorkflow(id: string) {
+    const workflow = await this.prisma.marketingWorkflow.findUnique({
+      where: { id },
+      include: { logs: { orderBy: { executedAt: 'desc' }, take: 50 } },
+    });
+    if (!workflow) throw new NotFoundException('Workflow not found');
+    return workflow;
+  }
+
+  async updateWorkflow(id: string, dto: UpdateWorkflowDto) {
+    const workflow = await this.prisma.marketingWorkflow.findUnique({ where: { id } });
+    if (!workflow) throw new NotFoundException('Workflow not found');
+
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.trigger !== undefined) data.trigger = dto.trigger;
+    if (dto.status !== undefined) data.status = dto.status;
+    if (dto.conditions !== undefined) data.conditions = dto.conditions as Prisma.InputJsonValue;
+    if (dto.actions !== undefined) data.actions = dto.actions as Prisma.InputJsonValue;
+
+    return this.prisma.marketingWorkflow.update({ where: { id }, data });
+  }
+
+  async deleteWorkflow(id: string) {
+    const workflow = await this.prisma.marketingWorkflow.findUnique({ where: { id } });
+    if (!workflow) throw new NotFoundException('Workflow not found');
+    return this.prisma.marketingWorkflow.delete({ where: { id } });
+  }
+
+  async executeWorkflow(workflowId: string, triggerId: string, context: Record<string, unknown>) {
+    const workflow = await this.prisma.marketingWorkflow.findUnique({ where: { id: workflowId } });
+    if (workflow?.status !== 'ACTIVE') return { executed: false, reason: 'Workflow not active' };
+
+    try {
+      const actions = workflow.actions as Record<string, unknown>[];
+      for (const action of actions) {
+        const actionType = action['type'] as string;
+        if (actionType === 'send_notification' && action['template']) {
+          const companyId = (action['companyId'] as string) || (context['companyId'] as string) || 'SYSTEM';
+          const userId = context['userId'] as string;
+          if (userId) {
+            await this.createWithTemplate(
+              companyId,
+              userId,
+              NotificationType.GENERIC,
+              { ...context, ...(action['context'] as Record<string, unknown> || {}) },
+              { link: action['link'] as string, sourceModule: 'marketing_automation', sourceId: triggerId },
+            );
+          }
+        }
+      }
+
+      await this.prisma.marketingWorkflow.update({
+        where: { id: workflowId },
+        data: { runCount: { increment: 1 }, lastRunAt: new Date() },
+      });
+
+      await this.prisma.marketingWorkflowLog.create({
+        data: { workflowId, triggerId, status: 'SUCCESS' },
+      });
+
+      return { executed: true };
+    } catch (err) {
+      await this.prisma.marketingWorkflowLog.create({
+        data: { workflowId, triggerId, status: 'FAILED', result: (err as Error).message },
+      });
+      return { executed: false, reason: (err as Error).message };
+    }
+  }
+
+  async getWorkflowStats() {
+    const [total, active, byTrigger, recentLogs] = await Promise.all([
+      this.prisma.marketingWorkflow.count(),
+      this.prisma.marketingWorkflow.count({ where: { status: MarketingWorkflowStatus.ACTIVE } }),
+      this.prisma.marketingWorkflow.groupBy({ by: ['trigger'], _count: true }),
+      this.prisma.marketingWorkflowLog.findMany({
+        take: 20, orderBy: { executedAt: 'desc' },
+        include: { workflow: { select: { name: true } } },
+      }),
+    ]);
+    return { totalWorkflows: total, activeWorkflows: active, byTrigger: byTrigger.map(t => ({ trigger: t.trigger, count: t._count })), recentLogs };
   }
 }

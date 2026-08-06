@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException, Logger, Inject, forwardRef } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentGateway, PlanVisibility } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { InvoiceService } from '../billing/invoice.service';
 import { TaxService } from '../billing/tax.service';
+import { verifySignature } from '../payment/utils/signature';
 
 const PLAN_FEATURES: Record<string, string[]> = {
   trade_start:   ['Buyer Visibility','GO Reach','Chat','RFQ (5/mo)','Basic Profile','1 Product','GOCASH Earning'],
@@ -26,6 +28,7 @@ export class MembershipService {
     private readonly invoiceService: InvoiceService,
     @Inject(forwardRef(() => TaxService))
     private readonly taxService: TaxService,
+    private readonly configService: ConfigService,
   ) {}
 
   // Launch mode: only plans with LAUNCH visibility
@@ -338,7 +341,7 @@ export class MembershipService {
     const existing = await this.prisma.membershipPlan.findUnique({ where: { planId: newPlanId } });
     if (existing) throw new BadRequestException(`Plan '${newPlanId}' already exists`);
 
-    const plan = await this.prisma.membershipPlan.create({
+    await this.prisma.membershipPlan.create({
       data: {
         planId: newPlanId,
         name: newName,
@@ -894,9 +897,19 @@ export class MembershipService {
     return { success: true, paymentId: payment.id, invoiceNumber };
   }
 
-  async handleWebhook(gateway: string, payload: any) {
+  async handleWebhook(gateway: string, rawBody: string, signature: string) {
     this.logger.log(`Webhook from ${gateway}`);
-    // Stub: In production, verify webhook signature
+    const secretKey = `WEBHOOK_SECRET_${gateway.toUpperCase()}`;
+    const webhookSecret = this.configService.get<string>(secretKey);
+    if (webhookSecret && signature) {
+      if (!verifySignature(rawBody, signature, webhookSecret)) {
+        throw new UnauthorizedException('Invalid webhook signature');
+      }
+    } else if (webhookSecret && !signature) {
+      throw new UnauthorizedException('Missing webhook signature');
+    }
+    let payload: any;
+    try { payload = JSON.parse(rawBody); } catch { payload = {}; }
     if (payload.event === 'payment.captured' || payload.event === 'payment.success') {
       const paymentId = payload.paymentId || payload.id;
       if (paymentId) {
@@ -1088,5 +1101,405 @@ export class MembershipService {
 
   async getInvoice(invoiceId: string) {
     return this.invoiceService.getInvoiceWithDetails(invoiceId);
+  }
+
+  // ── Trial Enrollment ──────────────────────────────────
+  async enrollTrial(companyId: string, planId: string) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    if (company.subscriptionStatus !== 'TRIAL' && company.subscriptionStatus !== 'EXPIRED') {
+      throw new BadRequestException('Company is not eligible for trial');
+    }
+
+    const plan = await this.prisma.membershipPlan.findUnique({ where: { planId } });
+    if (!plan) throw new NotFoundException('Plan not found');
+
+    const now = new Date();
+    const trialEnd = new Date(now);
+    trialEnd.setDate(trialEnd.getDate() + (plan.trialPeriodDays || 14));
+
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        subscriptionStatus: 'TRIAL',
+        subscriptionPlan: planId as any,
+        currentPlanId: planId,
+        subscriptionActivatedAt: now,
+        subscriptionExpiresAt: trialEnd,
+      },
+    });
+
+    await this.prisma.subscriptionEvent.create({
+      data: {
+        companyId,
+        status: 'TRIAL',
+        planType: planId as any,
+        metadata: { trialDays: plan.trialPeriodDays || 14, expiresAt: trialEnd.toISOString() },
+      },
+    });
+
+    await this.prisma.planHistory.create({
+      data: {
+        companyId,
+        planId,
+        changeType: 'RENEWAL',
+        toStatus: 'TRIAL',
+        metadata: { trialDays: plan.trialPeriodDays || 14, expiresAt: trialEnd.toISOString() },
+      },
+    });
+
+    return { success: true, status: 'TRIAL', trialEnd };
+  }
+
+  // ── Upgrade Subscription ──────────────────────────────
+  async upgradeSubscription(companyId: string, newPlanId: string, planTier: string, amount: number, paymentId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      include: { currentPlan: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    if (company.subscriptionStatus !== 'ACTIVE' && company.subscriptionStatus !== 'TRIAL') {
+      throw new BadRequestException('No active subscription to upgrade');
+    }
+
+    const oldPlanId = company.subscriptionPlan as string || 'none';
+    const proratedRefund = await this.calculateProratedRefund(company);
+
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        subscriptionPlan: newPlanId as any,
+        currentPlanId: newPlanId,
+        subscriptionActivatedAt: new Date(),
+      },
+    });
+
+    await this.prisma.subscriptionEvent.create({
+      data: {
+        companyId,
+        status: 'ACTIVE',
+        planType: newPlanId as any,
+        metadata: { upgradeFrom: oldPlanId, planTier, amount, paymentId, proratedRefund },
+      },
+    });
+
+    await this.prisma.planHistory.create({
+      data: {
+        companyId,
+        planId: newPlanId,
+        changeType: 'UPGRADE',
+        fromStatus: company.subscriptionStatus,
+        toStatus: 'ACTIVE',
+        amount,
+        metadata: { oldPlanId, planTier, paymentId, proratedRefund },
+      },
+    });
+
+    return { success: true, oldPlanId, newPlanId, proratedRefund };
+  }
+
+  // ── Downgrade Subscription ────────────────────────────
+  async downgradeSubscription(companyId: string, newPlanId: string, effectiveAt?: string) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    if (company.subscriptionStatus !== 'ACTIVE') {
+      throw new BadRequestException('No active subscription to downgrade');
+    }
+
+    const effective = effectiveAt ? new Date(effectiveAt) : new Date(company.subscriptionExpiresAt || new Date());
+
+    await this.prisma.planHistory.create({
+      data: {
+        companyId,
+        planId: newPlanId,
+        changeType: 'DOWNGRADE',
+        fromStatus: 'ACTIVE',
+        toStatus: 'ACTIVE',
+        metadata: { oldPlanId: company.subscriptionPlan, effectiveAt: effective.toISOString(), scheduled: true },
+      },
+    });
+
+    await this.prisma.subscriptionEvent.create({
+      data: {
+        companyId,
+        status: 'ACTIVE',
+        planType: newPlanId as any,
+        metadata: { downgradeFrom: company.subscriptionPlan, effectiveAt: effective.toISOString(), scheduled: true },
+      },
+    });
+
+    return { success: true, currentPlan: company.subscriptionPlan, requestedPlan: newPlanId, effectiveAt: effective.toISOString(), scheduled: true };
+  }
+
+  // ── Renew Subscription ────────────────────────────────
+  async renewSubscription(companyId: string, amount: number, paymentId: string) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    if (company.subscriptionStatus !== 'ACTIVE' && company.subscriptionStatus !== 'EXPIRED') {
+      throw new BadRequestException('Subscription not eligible for renewal');
+    }
+
+    const planId = company.currentPlanId || company.subscriptionPlan as string;
+    if (!planId) throw new BadRequestException('No plan associated with company');
+
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        subscriptionStatus: 'ACTIVE',
+        subscriptionActivatedAt: now,
+        subscriptionExpiresAt: expiresAt,
+      },
+    });
+
+    await this.prisma.subscriptionEvent.create({
+      data: {
+        companyId,
+        status: 'ACTIVE',
+        planType: planId as any,
+        metadata: { action: 'renewal', amount, paymentId, expiresAt: expiresAt.toISOString() },
+      },
+    });
+
+    await this.prisma.planHistory.create({
+      data: {
+        companyId,
+        planId,
+        changeType: 'RENEWAL',
+        fromStatus: company.subscriptionStatus,
+        toStatus: 'ACTIVE',
+        amount,
+        metadata: { paymentId, expiresAt: expiresAt.toISOString() },
+      },
+    });
+
+    return { success: true, planId, expiresAt };
+  }
+
+  // ── Suspend Subscription ──────────────────────────────
+  async suspendSubscription(companyId: string, reason: string) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    if (company.subscriptionStatus !== 'ACTIVE' && company.subscriptionStatus !== 'TRIAL') {
+      throw new BadRequestException('Subscription is not active');
+    }
+
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: { subscriptionStatus: 'SUSPENDED' },
+    });
+
+    await this.prisma.subscriptionEvent.create({
+      data: {
+        companyId,
+        status: 'SUSPENDED',
+        planType: company.subscriptionPlan,
+        metadata: { reason, suspendedAt: new Date().toISOString() },
+      },
+    });
+
+    await this.prisma.planHistory.create({
+      data: {
+        companyId,
+        planId: company.subscriptionPlan as string || 'unknown',
+        changeType: 'CANCEL',
+        fromStatus: company.subscriptionStatus,
+        toStatus: 'SUSPENDED',
+        metadata: { reason },
+      },
+    });
+
+    return { success: true, status: 'SUSPENDED', reason };
+  }
+
+  // ── Reactivate Subscription ───────────────────────────
+  async reactivateSubscription(companyId: string) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    if (company.subscriptionStatus !== 'SUSPENDED' && company.subscriptionStatus !== 'EXPIRED') {
+      throw new BadRequestException('Subscription is not in a reactivatable state');
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        subscriptionStatus: 'ACTIVE',
+        subscriptionActivatedAt: now,
+        subscriptionExpiresAt: expiresAt,
+      },
+    });
+
+    await this.prisma.subscriptionEvent.create({
+      data: {
+        companyId,
+        status: 'ACTIVE',
+        planType: company.subscriptionPlan,
+        metadata: { action: 'reactivation', previousStatus: company.subscriptionStatus },
+      },
+    });
+
+    await this.prisma.planHistory.create({
+      data: {
+        companyId,
+        planId: company.subscriptionPlan as string || 'unknown',
+        changeType: 'RENEWAL',
+        fromStatus: company.subscriptionStatus,
+        toStatus: 'ACTIVE',
+        metadata: { action: 'reactivation' },
+      },
+    });
+
+    return { success: true, status: 'ACTIVE', expiresAt };
+  }
+
+  // ── Get Detailed Subscription ─────────────────────────
+  async getSubscriptionDetail(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        id: true,
+        subscriptionStatus: true,
+        subscriptionPlan: true,
+        subscriptionActivatedAt: true,
+        subscriptionExpiresAt: true,
+        subscriptionGraceStart: true,
+        currentPlanId: true,
+        currentPlan: {
+          select: {
+            planId: true, name: true, pricePlanA: true, pricePlanB: true, pricePlanC: true,
+            duration: true, isFree: true, badgeText: true, features: true,
+          },
+        },
+      },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const daysLeft = company.subscriptionExpiresAt
+      ? Math.max(0, Math.ceil((company.subscriptionExpiresAt.getTime() - Date.now()) / 86400000))
+      : 0;
+
+    const recentEvents = await this.prisma.subscriptionEvent.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    return { ...company, daysLeft, recentEvents };
+  }
+
+  // ── Process Expired Subscriptions ─────────────────────
+  async processExpiredSubscriptions() {
+    const now = new Date();
+    const expired = await this.prisma.company.findMany({
+      where: {
+        subscriptionExpiresAt: { lte: now, not: null },
+        subscriptionStatus: { in: ['ACTIVE', 'TRIAL', 'SUSPENDED'] },
+      },
+    });
+
+    const results = { expired: 0, graced: 0 };
+    for (const company of expired) {
+      const graceStart = company.subscriptionGraceStart
+        ? new Date(company.subscriptionGraceStart)
+        : null;
+      const graceEnd = graceStart ? new Date(graceStart.getTime() + 7 * 86400000) : null;
+
+      if (graceEnd && now < graceEnd) {
+        continue;
+      }
+
+      await this.prisma.company.update({
+        where: { id: company.id },
+        data: { subscriptionStatus: 'EXPIRED' },
+      });
+
+      await this.prisma.subscriptionEvent.create({
+        data: {
+          companyId: company.id,
+          status: 'EXPIRED',
+          planType: company.subscriptionPlan,
+          metadata: { expiredAt: now.toISOString(), previousStatus: company.subscriptionStatus },
+        },
+      });
+
+      results.expired++;
+    }
+
+    return results;
+  }
+
+  // ── Admin: List All Subscriptions ────────────────────
+  async adminGetAllSubscriptions(page = 1, limit = 20, filters?: { status?: string; planId?: string; search?: string }) {
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (filters?.status) where.subscriptionStatus = filters.status;
+    if (filters?.planId) where.subscriptionPlan = filters.planId;
+    if (filters?.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { email: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where,
+        orderBy: { subscriptionExpiresAt: { sort: 'asc', nulls: 'last' } },
+        skip,
+        take: limit,
+        select: {
+          id: true, name: true, email: true, slug: true,
+          subscriptionStatus: true, subscriptionPlan: true,
+          subscriptionActivatedAt: true, subscriptionExpiresAt: true,
+          currentPlanId: true, trustScore: true, totalProducts: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.company.count({ where }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
+  // ── Admin: Subscription Summary ──────────────────────
+  async adminGetSubscriptionSummary() {
+    const [total, active, trial, expired, suspended, cancelled, revenue] = await Promise.all([
+      this.prisma.company.count(),
+      this.prisma.company.count({ where: { subscriptionStatus: 'ACTIVE' } }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'TRIAL' } }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'EXPIRED' } }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'SUSPENDED' } }),
+      this.prisma.company.count({ where: { subscriptionStatus: 'CANCELLED' } }),
+      this.prisma.payment.aggregate({
+        where: { type: 'SUBSCRIPTION', status: 'CAPTURED' },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      total,
+      active,
+      trial,
+      expired,
+      suspended,
+      cancelled,
+      totalSubscriptionRevenue: Number(revenue._sum.amount || 0) / 100,
+    };
+  }
+
+  // ── Proration Calculator ──────────────────────────────
+  private async calculateProratedRefund(company: any): Promise<number> {
+    if (!company.subscriptionActivatedAt || !company.subscriptionExpiresAt) return 0;
+    const totalMs = company.subscriptionExpiresAt.getTime() - company.subscriptionActivatedAt.getTime();
+    const elapsedMs = Date.now() - company.subscriptionActivatedAt.getTime();
+    const remainingRatio = Math.max(0, 1 - elapsedMs / totalMs);
+    return Math.round(remainingRatio * 100);
   }
 }

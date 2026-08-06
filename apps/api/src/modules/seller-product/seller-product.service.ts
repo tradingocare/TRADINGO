@@ -1,8 +1,11 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
-import { ProductStatus, Prisma } from '@prisma/client';
+import { buildProductIndexDoc } from '../products/product-index.doc';
+import { ProductStatus, ProductType, MediaType, Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
+import { CreateProductDto, SpecificationDto, PriceSlabDto, MediaDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 const PRODUCT_INDEX = 'products';
 
@@ -37,11 +40,49 @@ export class SellerProductService {
     return owner.company;
   }
 
+  private async syncOpenSearch(productId: string) {
+    try {
+      const product = await this.prisma.product.findFirst({
+        where: { id: productId, deletedAt: null },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              trustScore: true,
+              verificationLevel: true,
+              businessType: true,
+              establishedYear: true,
+              gstNumber: true,
+              certifications: true,
+              locations: {
+                select: { city: true, state: true, country: true, isPrimary: true },
+                where: { deletedAt: null },
+              },
+            },
+          },
+          category: { select: { id: true, name: true, slug: true } },
+          industry: { select: { id: true, name: true, slug: true } },
+          inventory: { select: { availableQuantity: true, stockStatus: true } },
+          media: { select: { url: true, type: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
+          specifications: { select: { key: true, value: true } },
+          priceSlabs: { select: { minQty: true, maxQty: true, price: true, currency: true }, orderBy: { minQty: 'asc' } },
+          catalogItem: { select: { id: true, slug: true, subcategory: { select: { name: true } } } },
+        },
+      });
+      if (!product) return;
+      await this.searchService.indexDocument(PRODUCT_INDEX, product.id, buildProductIndexDoc(product as any));
+    } catch (err) {
+      this.logger.warn(`Search index failed for product ${productId}: ${err}`);
+    }
+  }
+
   async checkMembershipLimit(companyId: string): Promise<{ allowed: boolean; current: number; max: number }> {
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!company) throw new NotFoundException('Company not found');
 
-    const plan = company.subscriptionPlan || 'trade_start';
+    const plan = (company.subscriptionPlan || 'trade_start').toLowerCase();
     const limits = MEMBERSHIP_LIMITS[plan] || MEMBERSHIP_LIMITS.trade_start;
 
     const current = await this.prisma.product.count({
@@ -124,7 +165,7 @@ export class SellerProductService {
     return product;
   }
 
-  async createProduct(userId: string, dto: any) {
+  async createProduct(userId: string, dto: CreateProductDto) {
     const company = await this.resolveCompany(userId);
     const limit = await this.checkMembershipLimit(company.id);
     if (!limit.allowed) throw new BadRequestException(`Membership limit reached: ${limit.max} products`);
@@ -142,7 +183,7 @@ export class SellerProductService {
         slug,
         shortDescription: dto.shortDescription,
         description: dto.description,
-        productType: dto.productType || 'PHYSICAL',
+        productType: (dto.productType as ProductType) || ProductType.PHYSICAL,
         status: 'DRAFT',
         brand: dto.brand,
         brandId: dto.brandId,
@@ -160,19 +201,19 @@ export class SellerProductService {
 
     if (dto.specifications) {
       await this.prisma.productSpecification.createMany({
-        data: dto.specifications.map((s: any) => ({ productId: product.id, key: s.key, value: s.value, sortOrder: s.sortOrder || 0 })),
+        data: dto.specifications.map((s: SpecificationDto) => ({ productId: product.id, key: s.key, value: s.value, sortOrder: s.sortOrder || 0 })),
       });
     }
 
     if (dto.priceSlabs) {
       await this.prisma.productPriceSlab.createMany({
-        data: dto.priceSlabs.map((p: any) => ({ productId: product.id, minQty: p.minQty, maxQty: p.maxQty, price: Number(p.price), currency: p.currency || 'INR' })),
+        data: dto.priceSlabs.map((p: PriceSlabDto) => ({ productId: product.id, minQty: p.minQty, maxQty: p.maxQty, price: Number(p.price), currency: p.currency || 'INR' })),
       });
     }
 
     if (dto.media) {
       await this.prisma.productMedia.createMany({
-        data: dto.media.map((m: any) => ({ productId: product.id, type: m.type || 'IMAGE', url: m.url, title: m.title, altText: m.altText, isPrimary: m.isPrimary || false, sortOrder: m.sortOrder || 0 })),
+        data: dto.media.map((m: MediaDto) => ({ productId: product.id, type: (m.type as MediaType) || MediaType.IMAGE, url: m.url, title: m.title, altText: m.altText, isPrimary: m.isPrimary || false, sortOrder: m.sortOrder || 0 })),
       });
     }
 
@@ -182,12 +223,38 @@ export class SellerProductService {
       });
     }
 
-    try { await this.searchService.indexDocument(PRODUCT_INDEX, product.id, { name: product.name, slug: product.slug }); } catch (e) { this.logger.warn('Search index failed', e); }
+    await this.syncOpenSearch(product.id);
 
     return this.getProduct(userId, product.id);
   }
 
-  async updateProduct(userId: string, productId: string, dto: any) {
+  async quickCreateProduct(userId: string, dto: { name: string; categoryId?: string; price?: number }) {
+    const company = await this.resolveCompany(userId);
+    const limit = await this.checkMembershipLimit(company.id);
+    if (!limit.allowed) {
+      throw new BadRequestException(`Product limit reached (${limit.current}/${limit.max}). Upgrade your plan to add more products.`);
+    }
+
+    const slug = slugify(dto.name);
+    const product = await this.prisma.product.create({
+      data: {
+        name: dto.name,
+        slug,
+        companyId: company.id,
+        createdBy: userId,
+        status: 'DRAFT',
+        categoryId: dto.categoryId || undefined,
+        ...(dto.price ? { priceSlabs: [{ price: dto.price, minQuantity: 1 }] as any } : {}),
+      },
+    });
+
+    await this.syncOpenSearch(product.id);
+
+    this.logger.log(`Quick product created: ${product.id} for company ${company.id}`);
+    return product;
+  }
+
+  async updateProduct(userId: string, productId: string, dto: UpdateProductDto) {
     const company = await this.resolveCompany(userId);
     const product = await this.prisma.product.findFirst({
       where: { id: productId, companyId: company.id, deletedAt: null },
@@ -196,8 +263,9 @@ export class SellerProductService {
 
     const updateData: any = { updatedBy: userId };
     const fields = ['name', 'shortDescription', 'description', 'productType', 'brand', 'model', 'sku', 'moq', 'unit', 'categoryId', 'industryId', 'originalPrice', 'videoUrl', 'returnPolicy', 'brandId'];
+    const dtoAny = dto as Record<string, unknown>;
     for (const f of fields) {
-      if (dto[f] !== undefined) updateData[f] = dto[f];
+      if (dtoAny[f] !== undefined) updateData[f] = dtoAny[f];
     }
     if (dto.slug && dto.slug !== product.slug) {
       const existing = await this.prisma.product.findUnique({ where: { slug: dto.slug } });
@@ -211,7 +279,7 @@ export class SellerProductService {
       await this.prisma.productSpecification.deleteMany({ where: { productId } });
       if (dto.specifications.length) {
         await this.prisma.productSpecification.createMany({
-          data: dto.specifications.map((s: any) => ({ productId, key: s.key, value: s.value, sortOrder: s.sortOrder || 0 })),
+          data: dto.specifications.map((s: SpecificationDto) => ({ productId, key: s.key, value: s.value, sortOrder: s.sortOrder || 0 })),
         });
       }
     }
@@ -220,7 +288,7 @@ export class SellerProductService {
       await this.prisma.productPriceSlab.deleteMany({ where: { productId } });
       if (dto.priceSlabs.length) {
         await this.prisma.productPriceSlab.createMany({
-          data: dto.priceSlabs.map((p: any) => ({ productId, minQty: p.minQty, maxQty: p.maxQty, price: Number(p.price), currency: p.currency || 'INR' })),
+          data: dto.priceSlabs.map((p: PriceSlabDto) => ({ productId, minQty: p.minQty, maxQty: p.maxQty, price: Number(p.price), currency: p.currency || 'INR' })),
         });
       }
     }
@@ -229,7 +297,7 @@ export class SellerProductService {
       await this.prisma.productMedia.deleteMany({ where: { productId } });
       if (dto.media.length) {
         await this.prisma.productMedia.createMany({
-          data: dto.media.map((m: any) => ({ productId, type: m.type || 'IMAGE', url: m.url, title: m.title, altText: m.altText, isPrimary: m.isPrimary || false, sortOrder: m.sortOrder || 0 })),
+          data: dto.media.map((m: MediaDto) => ({ productId, type: (m.type as MediaType) || MediaType.IMAGE, url: m.url, title: m.title, altText: m.altText, isPrimary: m.isPrimary || false, sortOrder: m.sortOrder || 0 })),
         });
       }
     }
@@ -242,7 +310,7 @@ export class SellerProductService {
       });
     }
 
-    try { await this.searchService.indexDocument(PRODUCT_INDEX, product.id, { name: product.name, slug: product.slug }); } catch (e) { this.logger.warn('Search index failed', e); }
+    await this.syncOpenSearch(product.id);
 
     return this.getProduct(userId, product.id);
   }

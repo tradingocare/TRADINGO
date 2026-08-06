@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DashboardPageHeader } from '@/components/dashboard/page-header';
 import { LocationForm } from '@/components/seller-locations/location-form';
 import { getCompanyAddress, updateProductLocation, getSellerProductLocations } from '@/lib/api/product-locations';
@@ -78,7 +79,7 @@ export default function SingleProductLocationPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-text-tertiary dark:text-dark-text-tertiary" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

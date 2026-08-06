@@ -1,7 +1,10 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CategoryTemplatesService } from './category-templates.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateTemplateDto } from './dto/create-template.dto';
@@ -10,9 +13,13 @@ import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateFieldDto } from './dto/create-field.dto';
 import { UpdateFieldDto } from './dto/update-field.dto';
+import { ImportTemplateDto } from './dto/import-template.dto';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Category Templates')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'SUPER_ADMIN')
+@Throttle(RateLimits.ADMIN_WRITE)
 @Controller('admin/templates')
 export class CategoryTemplatesController {
   constructor(private readonly service: CategoryTemplatesService) {}
@@ -68,8 +75,8 @@ export class CategoryTemplatesController {
 
   @Post('import/:categoryId')
   @ApiOperation({ summary: 'Import template from JSON' })
-  async importJson(@Param('categoryId') categoryId: string, @Body() data: any, @CurrentUser('sub') userId: string) {
-    return this.service.importJson(categoryId, userId, data);
+  async importJson(@Param('categoryId') categoryId: string, @Body() dto: ImportTemplateDto, @CurrentUser('sub') userId: string) {
+    return this.service.importJson(categoryId, userId, dto);
   }
 
   // ─── Sections ────────────────────────────────────────────────────
@@ -116,6 +123,7 @@ export class CategoryTemplatesController {
 }
 
 @ApiTags('Category Templates')
+@Throttle(RateLimits.MARKETPLACE_READ)
 @Controller('categories')
 export class PublicTemplateController {
   constructor(private readonly service: CategoryTemplatesService) {}

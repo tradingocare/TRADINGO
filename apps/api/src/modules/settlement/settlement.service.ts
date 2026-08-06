@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { SettlementAnalyticsService } from './settlement-analytics.service';
+import { PayoutService } from '../payout/payout.service';
 import { QuerySettlementDto } from './dto/settlement.dto';
 import { NotificationType, SettlementEventType, SettlementStatus } from '@prisma/client';
 
@@ -13,6 +14,7 @@ export class SettlementService {
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
     private readonly settlementAnalyticsService: SettlementAnalyticsService,
+    private readonly payoutService: PayoutService,
   ) {}
 
   async create(escrowId: string, companyId: string, userId: string) {
@@ -141,6 +143,12 @@ export class SettlementService {
       );
     } catch (err) {
       this.logger.warn(`Failed to send SETTLEMENT_PROCESSED: ${(err as Error).message}`);
+    }
+
+    try {
+      await this.payoutService.createFromSettlement(settlementId, userId);
+    } catch (err) {
+      this.logger.warn(`Failed to auto-create payout for settlement ${settlementId}: ${(err as Error).message}`);
     }
 
     return updated;

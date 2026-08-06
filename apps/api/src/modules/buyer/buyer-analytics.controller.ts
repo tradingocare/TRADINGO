@@ -1,10 +1,13 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { BuyerAnalyticsService } from './buyer-analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Buyer — Analytics')
+@Throttle(RateLimits.ADMIN_ANALYTICS)
 @UseGuards(JwtAuthGuard)
 @Controller('buyer/analytics')
 export class BuyerAnalyticsController {

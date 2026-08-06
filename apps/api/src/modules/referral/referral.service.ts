@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GocashService } from '../gocash/gocash.service';
 import * as crypto from 'crypto';
@@ -12,6 +12,8 @@ const DISPOSABLE_DOMAINS = [
 @Injectable()
 export class ReferralService {
   private readonly REFERRAL_CODE_LENGTH = 10;
+
+  private readonly logger = new Logger(ReferralService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -172,6 +174,7 @@ export class ReferralService {
     try {
       await this.processReferralReward(usage, referralCode);
     } catch (error) {
+      this.logger.error('Referral reward processing failed', (error as Error).stack);
       await this.audit(usage.id, 'FAILED', `Reward processing failed: ${(error as Error).message}`, null);
     }
 
@@ -468,6 +471,6 @@ export class ReferralService {
         details,
         actorId,
       },
-    }).catch(() => {});
+    }).catch((err) => { this.logger.error(`Failed to create referral audit entry: ${err.message}`); });
   }
 }

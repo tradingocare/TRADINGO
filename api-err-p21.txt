@@ -1,0 +1,539 @@
+[31m[Nest] 2072  - [39m20/07/2026, 8:58:56 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/company-verifications 409 - A verification request is already pending for this company[39m
+ConflictException: A verification request is already pending for this company
+    at CompanyVerificationService.submit (E:\tradingo\apps\api\dist\modules\company-verification\company-verification.service.js:49:19)
+[31m[Nest] 2072  - [39m20/07/2026, 8:58:57 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO 1C1C0000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T15:28:57.325Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: '71c48fbd-4ba1-4fa1-9ac1-39de345fba1e',
+  query_id: 'f9289277-bff2-4cb4-89e6-b6f79994fd77',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 2072  - [39m20/07/2026, 8:58:57 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 2072  - [39m20/07/2026, 8:58:57 pm [31m  ERROR[39m [38;5;3m[ProductSearchService] [39m[31mProduct search failed: write EPROTO 1C1C0000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:openssl\ssl\record\methods\tlsany_meth.c:78:
+[39m
+[2026-07-20T15:28:57.341Z][ERROR][@clickhouse/client][Connection] Insert: HTTP request error. 
+Arguments: {
+  operation: 'Insert',
+  connection_id: '71c48fbd-4ba1-4fa1-9ac1-39de345fba1e',
+  query_id: 'b8b7aedd-135c-46e0-a276-9f14589286c0',
+  with_abort_signal: false,
+  session_id: undefined,
+  clickhouse_settings: {}
+} 
+Caused by: ClickHouseError: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. 
+    at parseError (E:\tradingo\node_modules\.pnpm\@clickhouse+client-common@1.20.0\node_modules\@clickhouse\client-common\dist\error\error.js:28:16)
+    at ClientRequest.onResponse (E:\tradingo\node_modules\.pnpm\@clickhouse+client@1.20.0\node_modules\@clickhouse\client\dist\connection\socket_pool.js:239:107)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  code: '516',
+  type: 'AUTHENTICATION_FAILED'
+}
+[31m[Nest] 2072  - [39m20/07/2026, 8:58:57 pm [31m  ERROR[39m [38;5;3m[SearchAnalyticsService] [39m[31mFailed to track search analytics: default: Authentication failed: password is incorrect, or there is no user with such name.
+
+If you have installed ClickHouse and forgot password you can reset it in the configuration file.
+The password for default user is typically located at /etc/clickhouse-server/users.d/default-password.xml
+and deleting this file will reset the password.
+See also /etc/clickhouse-server/users.xml on the server where ClickHouse is installed.
+
+. [39m
+[31m[Nest] 2072  - [39m20/07/2026, 8:58:57 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/companies/cmp-seller-001/rfq/43b7d601-a501-4182-81d5-b29675e33dcf/quotes 403 - Only matched vendors can quote[39m
+ForbiddenException: Only matched vendors can quote
+    at QuoteService.create (E:\tradingo\apps\api\dist\modules\quote\quote.service.js:56:19)
+[31m[Nest] 2072  - [39m20/07/2026, 8:58:58 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/buyer/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+[31m[Nest] 2072  - [39m20/07/2026, 8:58:58 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /api/v1/wallet/seller/summary 404 - Wallet not found for user[39m
+NotFoundException: Wallet not found for user
+    at GocashService.getWalletByUserId (E:\tradingo\apps\api\dist\modules\gocash\gocash.service.js:340:19)
+    at async WalletApiService.getBuyerWallet (E:\tradingo\apps\api\dist\modules\wallet-api\wallet-api.service.js:24:24)
+Error: write EPIPE
+    at afterWriteDispatched (node:internal/stream_base_commons:159:15)
+    at writeGeneric (node:internal/stream_base_commons:150:3)
+    at Socket._writeGeneric (node:net:1025:11)
+    at Socket._write (node:net:1037:8)
+    at writeOrBuffer (node:internal/streams/writable:570:12)
+    at _write (node:internal/streams/writable:499:10)
+    at Writable.write (node:internal/streams/writable:508:10)
+    at EventEmitter.sendCommand (E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\Redis.js:406:29)
+    at EventEmitter.client (E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\utils\Commander.js:90:25)
+    at E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\redis\event_handler.js:65:22 {
+  errno: -4047,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+Error: write EPIPE
+    at afterWriteDispatched (node:internal/stream_base_commons:159:15)
+    at writeGeneric (node:internal/stream_base_commons:150:3)
+    at Socket._writeGeneric (node:net:1025:11)
+    at Socket._write (node:net:1037:8)
+    at writeOrBuffer (node:internal/streams/writable:570:12)
+    at _write (node:internal/streams/writable:499:10)
+    at Writable.write (node:internal/streams/writable:508:10)
+    at EventEmitter.sendCommand (E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\Redis.js:406:29)
+    at EventEmitter.client (E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\utils\Commander.js:90:25)
+    at E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\redis\event_handler.js:65:22 {
+  errno: -4047,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+Error: write EPIPE
+    at afterWriteDispatched (node:internal/stream_base_commons:159:15)
+    at writeGeneric (node:internal/stream_base_commons:150:3)
+    at Socket._writeGeneric (node:net:1025:11)
+    at Socket._write (node:net:1037:8)
+    at writeOrBuffer (node:internal/streams/writable:570:12)
+    at _write (node:internal/streams/writable:499:10)
+    at Writable.write (node:internal/streams/writable:508:10)
+    at EventEmitter.sendCommand (E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\Redis.js:406:29)
+    at EventEmitter.client (E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\utils\Commander.js:90:25)
+    at E:\tradingo\node_modules\.pnpm\ioredis@5.10.1\node_modules\ioredis\built\redis\event_handler.js:65:22 {
+  errno: -4047,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[31m[Nest] 2072  - [39m20/07/2026, 9:30:20 pm [31m  ERROR[39m [38;5;3m[RedisService] [39m[31mRedis error[39m
+[31m[Nest] 2072  - [39m20/07/2026, 9:30:20 pm [31m  ERROR[39m [38;5;3m[RedisService] [39mError: read ECONNRESET
+[90m    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)[39m {
+  errno: [33m-4077[39m,
+  code: [32m'ECONNRESET'[39m,
+  syscall: [32m'read'[39m
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[31m[Nest] 2072  - [39m20/07/2026, 9:30:21 pm [31m  ERROR[39m [38;5;3m[SettlementProcessor] [39m[31mSettlement job repeat:settlement-process-every-30min:1784563200000 failed: 
+Invalid `this.prisma.settlement.findMany()` invocation in
+E:\tradingo\apps\api\dist\modules\settlement\settlement.service.js:246:54
+
+  243     return updated;
+  244 }
+  245 async processSettlements() {
+→ 246     const pending = await this.prisma.settlement.findMany(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.[39m
+[31m[Nest] 2072  - [39m20/07/2026, 9:43:38 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /live 404 - Cannot GET /live[39m
+NotFoundException: Cannot GET /live
+    at callback (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\routes-resolver.js:77:19)
+    at Object.<anonymous> (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\router-proxy.js:9:23)
+    at preHandlerCallbackInner (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:168:24)
+    at preHandlerCallback (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:134:5)
+    at next (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:236:9)
+    at Object.<anonymous> (E:\tradingo\apps\api\dist\main.js:117:20)
+    at hookIterator (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:408:10)
+    at next (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:242:18)
+    at hookRunner (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:264:5)
+    at validationCompleted (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:117:5)
+[31m[Nest] 2072  - [39m20/07/2026, 9:52:15 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /live 404 - Cannot GET /live[39m
+NotFoundException: Cannot GET /live
+    at callback (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\routes-resolver.js:77:19)
+    at Object.<anonymous> (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\router-proxy.js:9:23)
+    at preHandlerCallbackInner (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:168:24)
+    at preHandlerCallback (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:134:5)
+    at next (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:236:9)
+    at Object.<anonymous> (E:\tradingo\apps\api\dist\main.js:117:20)
+    at hookIterator (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:408:10)
+    at next (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:242:18)
+    at hookRunner (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:264:5)
+    at validationCompleted (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:117:5)
+[31m[Nest] 2072  - [39m20/07/2026, 9:52:15 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mGET /ready 404 - Cannot GET /ready[39m
+NotFoundException: Cannot GET /ready
+    at callback (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\routes-resolver.js:77:19)
+    at Object.<anonymous> (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\router-proxy.js:9:23)
+    at preHandlerCallbackInner (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:168:24)
+    at preHandlerCallback (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:134:5)
+    at next (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:236:9)
+    at Object.<anonymous> (E:\tradingo\apps\api\dist\main.js:117:20)
+    at hookIterator (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:408:10)
+    at next (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:242:18)
+    at hookRunner (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\hooks.js:264:5)
+    at validationCompleted (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\handle-request.js:117:5)

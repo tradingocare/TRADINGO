@@ -6,11 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, Building2, Phone, Hash, Briefcase } from 'lucide-react';
+import { Building2, Phone, Hash, Briefcase } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { TradingoLogo } from '@/components/shared/tradingo-logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { usePageTracking, useTracking } from '@/hooks/use-tracking';
+import { TrackingEvent } from '@/lib/tracking/events';
 
 const sellerSchema = z.object({
   companyName: z.string().min(1, 'Company name is required'),
@@ -23,7 +26,9 @@ type SellerForm = z.infer<typeof sellerSchema>;
 
 export default function SellerRegistrationPage() {
   const router = useRouter();
+  const { track } = useTracking();
   const [serverError, setServerError] = useState<string | null>(null);
+  usePageTracking(TrackingEvent.REGISTRATION_START, { role: 'seller', step: 'company_details' });
 
   const {
     register,
@@ -43,6 +48,7 @@ export default function SellerRegistrationPage() {
         gstNumber: data.gst,
         mobile: data.phone,
       });
+      track(TrackingEvent.REGISTRATION_COMPLETE, { properties: { role: 'seller', businessType: data.businessType } });
       router.push('/dashboard');
     } catch (err: any) {
       setServerError(err?.response?.data?.message || err.message || 'Submission failed');
@@ -54,7 +60,7 @@ export default function SellerRegistrationPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="items-center space-y-4 text-center">
           <Link href="/">
-            <TradingoLogo height={36} showText />
+            <TradingoLogo height={36} />
           </Link>
           <div>
             <CardTitle>Seller details</CardTitle>
@@ -116,7 +122,7 @@ export default function SellerRegistrationPage() {
             <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <LoadingSpinner size="sm" />
                   Saving...
                 </>
               ) : (

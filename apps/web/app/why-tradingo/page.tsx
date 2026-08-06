@@ -50,11 +50,11 @@ export default function WhyTradingoPage() {
               <AnimatedSection key={item.title} delay={i * 100}>
                 <div className="grid gap-8 lg:grid-cols-2">
                   <div className={i % 2 === 1 ? 'lg:order-2' : ''}>
-                    <div className="sticky top-24">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                        <item.icon className="h-7 w-7" />
-                      </div>
-                      <h2 className="mt-4 text-2xl font-bold text-text-primary dark:text-dark-text-primary">{item.title}</h2>
+                      <div className="sticky top-24">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
+                          <item.icon className="h-7 w-7" />
+                        </div>
+                        <h2 className="mt-4 text-2xl font-bold text-text-primary dark:text-dark-text-primary">{item.title}</h2>
                       <p className="mt-3 text-text-secondary dark:text-dark-text-secondary leading-relaxed">{item.description}</p>
                     </div>
                   </div>
@@ -78,7 +78,7 @@ export default function WhyTradingoPage() {
       <Separator />
 
       {/* Comparison Table */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 dark:bg-dark-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <SectionHeader
@@ -145,7 +145,7 @@ export default function WhyTradingoPage() {
                   const Icon = item.icon;
                   return (
                     <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                         <Icon className="h-5 w-5" />
                       </div>
                       <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">{item.label}</h3>

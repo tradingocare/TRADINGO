@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, CheckCircle, Smartphone } from 'lucide-react';
+import { CheckCircle, Smartphone } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { TradingoLogo } from '@/components/shared/tradingo-logo';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -62,7 +63,7 @@ export default function VerifyMobilePage() {
         <Card className="w-full max-w-md">
           <CardHeader className="items-center space-y-4 text-center">
             <Link href="/">
-              <TradingoLogo height={36} showText />
+              <TradingoLogo height={36} />
             </Link>
             <div className="flex flex-col items-center gap-2">
               <CheckCircle className="h-12 w-12 text-accent-500" />
@@ -85,7 +86,7 @@ export default function VerifyMobilePage() {
       <Card className="w-full max-w-md">
         <CardHeader className="items-center space-y-4 text-center">
           <Link href="/">
-            <TradingoLogo height={36} showText />
+            <TradingoLogo height={36} />
           </Link>
           <div>
             <CardTitle>Verify your mobile</CardTitle>
@@ -117,7 +118,7 @@ export default function VerifyMobilePage() {
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <LoadingSpinner size="sm" />
                 Verifying...
               </>
             ) : (

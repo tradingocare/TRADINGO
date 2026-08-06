@@ -12,7 +12,22 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/$1',
   },
   testEnvironment: 'jsdom',
-  collectCoverageFrom: ['middleware.ts', 'lib/auth/**/*.ts', 'components/shared/error-state.tsx', 'components/shared/not-found-state.tsx'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  collectCoverageFrom: [
+    'middleware.ts',
+    'lib/auth/**/*.ts',
+    'lib/api/**/*.ts',
+    'components/shared/**/*.{ts,tsx}',
+    'components/ui/**/*.{ts,tsx}',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 60,
+      functions: 60,
+      lines: 60,
+      statements: 60,
+    },
+  },
 };
 
 export default config;

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -7,6 +8,7 @@ import { CreatePaymentOrderDto } from './dto/create-payment-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { CreateRefundDto } from './dto/create-refund.dto';
 
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 @ApiTags('Payments')
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/payments')
@@ -48,6 +50,15 @@ export class PaymentController {
     @Param('id') id: string,
   ) {
     return this.paymentService.findOne(companyId, id);
+  }
+
+  @Post(':id/retry')
+  @ApiOperation({ summary: 'Retry a failed payment' })
+  async retryPaymentOrder(
+    @Param('companyId') companyId: string,
+    @Param('id') id: string,
+  ) {
+    return this.paymentService.retryPaymentOrder(companyId, id);
   }
 
   @Post(':id/refund')

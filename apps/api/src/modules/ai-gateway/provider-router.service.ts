@@ -32,6 +32,7 @@ export class ProviderRouterService {
     [TaskType.SEARCH_ANALYSIS]: 'openrouter',
     [TaskType.ADMIN_INTELLIGENCE]: 'openrouter',
     [TaskType.GENERAL_CHAT]: 'groq',
+    [TaskType.COMMUNITY_ANALYSIS]: 'openrouter',
   }
 
   constructor(private readonly registry: ProviderRegistryService) {}

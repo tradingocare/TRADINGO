@@ -1,41 +1,47 @@
 {
-  "family": "tradingo-web",
+  "family": "tradingo-production-web",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "executionRoleArn": "arn:aws:iam::__AWS_ACCOUNT_ID__:role/tradingo-production-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::__AWS_ACCOUNT_ID__:role/tradingo-production-ecs-task-role",
   "containerDefinitions": [
     {
-      "name": "tradingo-web",
-      "image": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/tradingo-web:latest",
+      "name": "web",
+      "image": "__AWS_ACCOUNT_ID__.dkr.ecr.ap-south-1.amazonaws.com/tradingo-production-web:latest",
       "essential": true,
       "portMappings": [
-        {
-          "containerPort": 3000,
-          "protocol": "tcp"
-        }
+        { "containerPort": 3000, "hostPort": 3000, "protocol": "tcp" }
       ],
       "environment": [
-        { "name": "NODE_ENV", "value": "production" }
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "NEXT_PUBLIC_API_URL", "value": "https://api.tradingo.in/api/v1" },
+        { "name": "NEXT_PUBLIC_SITE_URL", "value": "https://tradingo.in" },
+        { "name": "NEXT_PUBLIC_APP_URL", "value": "https://tradingo.in" },
+        { "name": "NEXT_PUBLIC_SOCKET_URL", "value": "https://tradingo.in" },
+        { "name": "NEXT_PUBLIC_APP_ENV", "value": "production" },
+        { "name": "NEXT_PUBLIC_APP_VERSION", "value": "v1.0.0" }
       ],
       "secrets": [
-        { "name": "NEXT_PUBLIC_API_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/NEXT_PUBLIC_API_URL" }
+        { "name": "NEXT_PUBLIC_RAZORPAY_KEY_ID", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/RAZORPAY_KEY_ID" },
+        { "name": "SENTRY_DSN", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/SENTRY_DSN" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/tradingo-web",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "web"
+          "awslogs-group": "/ecs/tradingo-production-web",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "web",
+          "awslogs-create-group": "true"
         }
       },
       "healthCheck": {
-        "command": ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"],
+        "command": ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"],
         "interval": 30,
         "timeout": 5,
-        "retries": 3
+        "retries": 3,
+        "startPeriod": 60
       }
     }
   ]

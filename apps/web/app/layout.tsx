@@ -13,7 +13,11 @@ import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 import { Providers } from '@/components/providers/providers';
 import { ServiceWorkerRegister } from '@/components/shared/service-worker-register';
 import { PwaInstallPrompt } from '@/components/shared/pwa-install-prompt';
+import { Toaster } from '@/components/ui/toaster';
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
 import CompareBar from '@/components/product/compare-bar';
+import { GlowTracker } from '@/components/shared/glow-tracker';
+import { WebVitalsTracker } from '@/components/web-vitals-tracker';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800', '900'], variable: '--font-display' });
@@ -23,7 +27,9 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL
   : 'http://localhost:3000';
 
 export const viewport: Viewport = {
-  themeColor: '#0B1220',
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#080b12',
 };
 
 export const metadata: Metadata = {
@@ -57,11 +63,11 @@ export const metadata: Metadata = {
   applicationName: 'TRADINGO',
   icons: {
     icon: [
-      { url: '/logo/trdn.png', type: 'image/png', sizes: '792x547' },
+      { url: '/logo/trdn6.png', type: 'image/png', sizes: '792x547' },
       { url: '/favicon.ico', sizes: 'any' },
     ],
     apple: [
-      { url: '/logo/trdn.png', sizes: '792x547', type: 'image/png' },
+      { url: '/logo/trdn6.png', sizes: '792x547', type: 'image/png' },
     ],
   },
   openGraph: {
@@ -71,14 +77,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: 'TRADINGO',
-    images: [{ url: '/logo/trdn.png', width: 792, height: 547, alt: 'TRADINGO' }],
+    images: [{ url: '/logo/trdn6.png', width: 792, height: 547, alt: 'TRADINGO' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: "TRADINGO | The Global Smart Trade System",
     description:
       "TRADINGO is a Global Smart Trade System powered by TRADHEXA, enabling businesses worldwide to discover, connect, negotiate, and grow.",
-    images: ['/logo/trdn.png'],
+    images: ['/logo/trdn6.png'],
   },
   alternates: {
     canonical: 'https://www.tradingo.com',
@@ -90,15 +96,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} min-h-screen antialiased`}>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-accent focus:text-btn-primary-text focus:rounded-lg focus:outline-none">
+          Skip to main content
+        </a>
         <Providers>
           <Navbar />
-          <main className="pt-16">{children}</main>
+          <main id="main-content" className="pt-16">{children}</main>
           <ClaimYourGrowth />
           <Footer />
         </Providers>
         <CompareBar />
         <ServiceWorkerRegister />
         <PwaInstallPrompt />
+        <Toaster />
+        <ScrollToTop />
+        <GlowTracker />
+        <WebVitalsTracker />
       </body>
     </html>
   );

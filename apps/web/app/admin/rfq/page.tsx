@@ -5,6 +5,7 @@ import { DashboardPageHeader, StatCard, TableSkeleton, StatusBadge, StatCardSkel
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAdminRfqOverview, useAdminRfqs, useAdminFlaggedRfqs, useAdminRfqAuditTrail } from '@/hooks/use-smart-rfq';
+import { Tabs } from '@/components/ui/tabs';
 import { Search, FileText, AlertCircle, Flag, ScrollText, RefreshCw, Eye } from 'lucide-react';
 
 type Tab = 'overview' | 'rfqs' | 'flagged' | 'audit';
@@ -21,22 +22,7 @@ export default function AdminRfqPage() {
     <div className="space-y-6">
       <DashboardPageHeader title="RFQ Management" description="Administer all platform RFQs" />
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
-        {(['overview', 'rfqs', 'flagged', 'audit'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              tab === t ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'
-            }`}
-          >
-            {t === 'overview' && 'Overview'}
-            {t === 'rfqs' && 'All RFQs'}
-            {t === 'flagged' && 'Flagged'}
-            {t === 'audit' && 'Audit Trail'}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={[{ value: 'overview', label: 'Overview' }, { value: 'rfqs', label: 'All RFQs' }, { value: 'flagged', label: 'Flagged' }, { value: 'audit', label: 'Audit Trail' }]} value={tab} onChange={(v) => setTab(v as Tab)} className="rounded-xl border border-border bg-surface p-1" />
 
       {tab === 'overview' && (
         <>
@@ -61,21 +47,21 @@ export default function AdminRfqPage() {
         <>
           <div className="relative max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-            <Input placeholder="Search RFQs..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-white/[0.04] border-white/[0.06] text-white" />
+            <Input placeholder="Search RFQs..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-surface border-border text-text-primary" />
           </div>
           {rfqsLoading ? <TableSkeleton /> : (
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-              <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
+            <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+              <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-tertiary lg:grid">
                 <div className="col-span-4">RFQ / Buyer</div>
                 <div className="col-span-3">Products</div>
                 <div className="col-span-2">Created</div>
                 <div className="col-span-3">Status</div>
               </div>
               {(rfqsData?.items ?? []).length === 0 ? (
-                <div className="p-12 text-center text-sm text-white/40">No RFQs found</div>
+                <div className="p-12 text-center text-sm text-text-tertiary">No RFQs found</div>
               ) : (
                 (rfqsData?.items ?? []).map((rfq: any) => (
-                  <div key={rfq.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
+                  <div key={rfq.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
                     <div className="lg:col-span-4">
                       <p className="text-sm font-medium text-white">{rfq.title || 'Untitled'}</p>
                       <p className="text-xs text-white/40">{rfq.company?.name || 'N/A'}</p>
@@ -93,17 +79,17 @@ export default function AdminRfqPage() {
 
       {tab === 'flagged' && (
         flaggedLoading ? <TableSkeleton /> : (
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-            <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
+          <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+            <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-tertiary lg:grid">
               <div className="col-span-5">RFQ / Buyer</div>
               <div className="col-span-3">Reason</div>
               <div className="col-span-4">Created</div>
             </div>
             {(flagged?.items ?? []).length === 0 ? (
-              <div className="p-12 text-center text-sm text-white/40">No flagged RFQs</div>
+              <div className="p-12 text-center text-sm text-text-tertiary">No flagged RFQs</div>
             ) : (
               (flagged?.items ?? []).map((rfq: any) => (
-                <div key={rfq.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
+                <div key={rfq.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
                   <div className="lg:col-span-5">
                     <p className="text-sm font-medium text-white">{rfq.title || 'Untitled'}</p>
                     <p className="text-xs text-white/40">{rfq.company?.name || 'N/A'}</p>
@@ -119,17 +105,17 @@ export default function AdminRfqPage() {
 
       {tab === 'audit' && (
         auditLoading ? <TableSkeleton /> : (
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-            <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
+          <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+            <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-tertiary lg:grid">
               <div className="col-span-4">Event</div>
               <div className="col-span-4">RFQ</div>
               <div className="col-span-4">Date</div>
             </div>
             {(audit?.items ?? []).length === 0 ? (
-              <div className="p-12 text-center text-sm text-white/40">No audit events</div>
+              <div className="p-12 text-center text-sm text-text-tertiary">No audit events</div>
             ) : (
               (audit?.items ?? []).map((event: any) => (
-                <div key={event.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
+                <div key={event.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
                   <p className="text-sm text-white lg:col-span-4">{event.event || event.type || 'Event'}</p>
                   <p className="text-sm text-white/60 lg:col-span-4">{event.rfq?.title || event.rfq?.rfqNumber || event.rfqId?.slice(0, 8)}</p>
                   <p className="text-sm text-white/60 lg:col-span-4">{new Date(event.createdAt).toLocaleString('en-IN')}</p>

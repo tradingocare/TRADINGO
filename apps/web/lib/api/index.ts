@@ -15,3 +15,4 @@ export * from './beta';
 export * from './launch';
 export * from './buyer';
 export * from './communication';
+export * from './tradetalk';

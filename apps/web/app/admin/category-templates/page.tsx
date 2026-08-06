@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Plus, FileJson, Upload, Eye, Copy, Trash2, CheckCircle, Archive } from 'lucide-react';
 import { getTemplates, deleteTemplate, duplicateTemplate, activateTemplate } from '@/lib/api/category-templates';
 import type { CategoryTemplate } from '@/lib/product-onboarding/types';
@@ -108,15 +109,7 @@ export default function AdminCategoryTemplatesPage() {
       {loading ? (
         <TableSkeleton />
       ) : templates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-12 text-center">
-          <Archive className="mb-3 h-12 w-12 text-text-tertiary" />
-          <h3 className="text-lg font-medium text-text-primary">No templates yet</h3>
-          <p className="mt-1 text-sm text-text-tertiary">Create your first category template to get started.</p>
-          <Button className="mt-4" onClick={() => router.push('/admin/category-templates/new')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Template
-          </Button>
-        </div>
+        <EmptyState icon={Archive} title="No templates yet" description="Create your first category template to get started." action={<Button onClick={() => router.push('/admin/category-templates/new')}><Plus className="mr-2 h-4 w-4" /> Create Template</Button>} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {templates.map((tpl) => (

@@ -1,0 +1,15 @@
+[31m[Nest] 12456  - [39m20/07/2026, 4:30:09 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/auth/login 400 - Body is not valid JSON but content-type is set to 'application/json'[39m
+HttpException: Body is not valid JSON but content-type is set to 'application/json'
+    at RoutesResolver.mapExternalException (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\routes-resolver.js:102:24)
+    at callback (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\routes-resolver.js:86:24)
+    at Object.<anonymous> (E:\tradingo\node_modules\.pnpm\@nestjs+core@11.1.26_@nestjs+common@11.1.26_class-transformer@0.5.1_class-validator@0.14.4_re_7jqsigfo4dxvu2s6b7zfjptqai\node_modules\@nestjs\core\router\router-proxy.js:21:23)
+    at handleError (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\error-handler.js:69:20)
+    at onErrorHook (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\reply.js:893:5)
+    at Reply.send (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\reply.js:151:5)
+    at onDone (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\content-type-parser.js:225:13)
+    at AsyncResource.runInAsyncScope (node:async_hooks:227:14)
+    at bound (node:async_hooks:258:16)
+    at defaultJsonParser (E:\tradingo\node_modules\.pnpm\fastify@5.8.5\node_modules\fastify\lib\content-type-parser.js:319:7)
+[31m[Nest] 12456  - [39m20/07/2026, 4:30:26 pm [31m  ERROR[39m [38;5;3m[Exceptions] [39m[31mPOST /api/v1/auth/login 401 - Invalid credentials[39m
+UnauthorizedException: Invalid credentials
+    at AuthService.login (E:\tradingo\apps\api\dist\modules\auth\auth.service.js:136:19)

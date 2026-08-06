@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BetaProgramService } from './beta-program.service';
 import { CreateInviteDto } from './dto/create-invite.dto';
@@ -16,8 +17,10 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Beta Invites')
+@Throttle(RateLimits.ADMIN_WRITE)
 @Controller('beta-invites')
 export class BetaInvitesController {
   constructor(private readonly betaProgramService: BetaProgramService) {}

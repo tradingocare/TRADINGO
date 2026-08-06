@@ -4,7 +4,8 @@ import { DashboardPageHeader, StatCard, DashboardSkeleton, StatCardSkeleton } fr
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTradgoRaces, useTradgoBadges, useLeaderboard } from '@/hooks';
-import { Trophy, Medal, Zap, TrendingUp, Flame, Crown, Star, Users } from 'lucide-react';
+import { Trophy, Medal, Zap, TrendingUp, Flame, Crown, Star, Users, AlertCircle } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { TradgoRace, TradgoBadge, LeaderboardEntry } from '@/lib/api/types';
 
 const iconMap: Record<string, typeof Zap> = {
@@ -59,9 +60,9 @@ export default function SellerTradgoPage() {
           </CardHeader>
           <CardContent>
             {racesError ? (
-              <p className="text-sm text-text-secondary">Failed to load races.</p>
+              <EmptyState icon={AlertCircle} variant="error" title="Failed to load races" />
             ) : !races?.length ? (
-              <p className="text-sm text-text-secondary">No races available.</p>
+              <EmptyState icon={Trophy} title="No races available" />
             ) : (
               <div className="space-y-3">
                 {races.map((race: TradgoRace) => (
@@ -88,7 +89,7 @@ export default function SellerTradgoPage() {
           </CardHeader>
           <CardContent>
             {!leaderboard?.length ? (
-              <p className="text-sm text-text-secondary">No leaderboard data yet.</p>
+              <EmptyState icon={Users} title="No leaderboard data yet" />
             ) : (
               <div className="space-y-3">
                 {leaderboard.map((entry: LeaderboardEntry, index: number) => (
@@ -98,7 +99,7 @@ export default function SellerTradgoPage() {
                   >
                     <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
                       index === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                      index === 1 ? 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' :
+                      index === 1 ? 'bg-surface text-text-secondary dark:bg-bg-base/30 dark:text-gray-400' :
                       index === 2 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
                       'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary'
                     }`}>
@@ -130,7 +131,7 @@ export default function SellerTradgoPage() {
                 const IconComponent = iconMap[badge.icon] || Trophy;
                 return (
                   <div key={badge.id} className="rounded-xl border border-border bg-surface-secondary/50 p-4 dark:border-dark-border dark:bg-dark-surface-secondary/50">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 text-white shadow-sm">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-accent-600 to-accent-500 text-white shadow-sm">
                       <IconComponent className="h-6 w-6" />
                     </div>
                     <h3 className="mt-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">{badge.name}</h3>

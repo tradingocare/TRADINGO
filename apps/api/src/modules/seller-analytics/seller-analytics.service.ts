@@ -57,6 +57,7 @@ export class SellerAnalyticsService {
 
     const events = await this.prisma.sellerAnalyticsEvent.findMany({
       where: { companyId, createdAt: { gte: start, lte: end } },
+      take: 500,
     });
 
     const profileViews = events.filter((e) => e.eventType === 'PROFILE_VIEW').length;
@@ -70,6 +71,7 @@ export class SellerAnalyticsService {
 
     const goCashEvents = await this.prisma.goCashTransaction.findMany({
       where: { companyId, createdAt: { gte: start, lte: end } },
+      take: 500,
     });
     const goCashEarned = goCashEvents
       .filter((t) => ['EARNED', 'BONUS', 'REFERRAL'].includes(t.type))
@@ -100,6 +102,7 @@ export class SellerAnalyticsService {
     const events = await this.prisma.sellerAnalyticsEvent.findMany({
       where: { companyId, createdAt: { gte: start, lte: end } },
       orderBy: { createdAt: 'asc' },
+      take: 1000,
     });
 
     const dailyMap = new Map<string, Record<string, number>>();
@@ -142,6 +145,7 @@ export class SellerAnalyticsService {
     const transactions = await this.prisma.goCashTransaction.findMany({
       where: { companyId, createdAt: { gte: start, lte: end } },
       orderBy: { createdAt: 'asc' },
+      take: 500,
     });
     return { data: transactions };
   }

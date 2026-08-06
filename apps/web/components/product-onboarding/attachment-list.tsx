@@ -72,7 +72,7 @@ export function AttachmentList({ attachments, onChange, types }: AttachmentListP
             className={cn(
               'rounded-lg px-3 py-1 text-xs font-medium transition-colors',
               activeFilter === type
-                ? 'bg-primary-500/10 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400'
+                ? 'bg-accent-500/10 text-accent-600 dark:bg-accent-500/20 dark:text-accent-400'
                 : 'bg-surface-secondary text-text-secondary hover:bg-surface-tertiary dark:bg-dark-surface-secondary dark:text-dark-text-secondary dark:hover:bg-dark-surface-tertiary',
             )}
           >

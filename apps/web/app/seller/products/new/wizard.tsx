@@ -18,13 +18,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { BrandSelect } from '@/components/enterprise-catalog/brand-select';
 import { apiClient } from '@/lib/api-client';
 import { WIZARD_STEPS, type ProductDraft, type AttributeTemplate, type ProductCompletenessScore, type ProductDraftSpec, type ProductDraftVariant, type ProductDraftMedia, type ProductDraftAttachment, type ProductDraftCertification, type ProductDraftMultiLangDesc, type ProductDraftPriceSlab, type AttributeTemplateField } from '@/lib/product-onboarding/types';
 import { getTemplateForCategory } from '@/lib/product-onboarding/attribute-template-engine';
 import { validateStep, validateAll } from '@/lib/product-onboarding/validation-engine';
 import { createInitialFormState, type FormState } from '@/lib/product-onboarding/form-engine';
 import { WizardCopilot, useWizardAi } from '@/components/ai/wizard-copilot';
-import { Loader2, CheckCircle, Image as ImageIcon, Send, Eye, Sparkles } from 'lucide-react';
+import { CheckCircle, Image as ImageIcon, Send, Eye, Sparkles, TrendingUp as TrendingUpIcon, AlertTriangle } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 function buildApiPayload(formState: FormState, extras: {
   specs: ProductDraftSpec[]; variants: ProductDraftVariant[]; media: ProductDraftMedia[];
@@ -250,7 +254,7 @@ export function NewProductWizard() {
   if (loading) return (
     <div className="space-y-6">
       <DashboardPageHeader title="New Product" description="Add a new product to your catalog" />
-      <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-text-tertiary" /></div>
+      <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
     </div>
   );
 
@@ -282,26 +286,36 @@ export function NewProductWizard() {
                     </div>
                     <div>
                       <Label>Category *</Label>
-                      <select value={v.categoryId || ''} onChange={(e) => handleFieldChange('categoryId', e.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary">
+                      <Select value={v.categoryId || ''} onChange={(e) => handleFieldChange('categoryId', e.target.value)}>
                         <option value="">Select category</option>
                         {categories.map(c => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
-                      </select>
+                      </Select>
                       {errors.categoryId && <p className="mt-1 text-xs text-red-500">{errors.categoryId[0]}</p>}
                     </div>
                     <div>
                       <Label>Product Type *</Label>
-                      <select value={v.productType || 'PHYSICAL'} onChange={(e) => handleFieldChange('productType', e.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary">
+                      <Select value={v.productType || 'PHYSICAL'} onChange={(e) => handleFieldChange('productType', e.target.value)}>
                         <option value="PHYSICAL">Physical Product</option>
                         <option value="DIGITAL">Digital Product</option>
                         <option value="SERVICE">Service</option>
                         <option value="RAW_MATERIAL">Raw Material</option>
                         <option value="MACHINERY">Machinery</option>
                         <option value="EQUIPMENT">Equipment</option>
-                      </select>
+                      </Select>
                     </div>
-                    <div><Label>Brand</Label><Input value={v.brand || ''} onChange={(e) => handleFieldChange('brand', e.target.value)} placeholder="e.g., Tata Steel" /></div>
+                    <div>
+                      <Label>Brand</Label>
+                      <BrandSelect
+                        value={v.brand || ''}
+                        onChange={(brandId, brandName) => {
+                          handleFieldChange('brand', brandName);
+                          handleFieldChange('brandId', brandId);
+                        }}
+                        placeholder="e.g., Tata Steel"
+                      />
+                    </div>
                     <div><Label>Model / Grade</Label><Input value={v.model || ''} onChange={(e) => handleFieldChange('model', e.target.value)} placeholder="e.g., 316L" /></div>
                     <div className="sm:col-span-2"><Label>Short Description</Label><Textarea value={v.shortDescription || ''} onChange={(e) => handleFieldChange('shortDescription', e.target.value)} placeholder="Brief summary (max 200 chars)" rows={2} /></div>
                     <div className="sm:col-span-2"><Label>Full Description</Label><Textarea value={v.description || ''} onChange={(e) => handleFieldChange('description', e.target.value)} placeholder="Detailed product description" rows={4} /></div>
@@ -310,10 +324,10 @@ export function NewProductWizard() {
                     <div><Label>GTIN / EAN</Label><Input value={v.gtin || ''} onChange={(e) => handleFieldChange('gtin', e.target.value)} placeholder="Global Trade Item Number" /></div>
                     <div>
                       <Label>Unit</Label>
-                      <select value={v.unit || ''} onChange={(e) => handleFieldChange('unit', e.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary">
+                      <Select value={v.unit || ''} onChange={(e) => handleFieldChange('unit', e.target.value)}>
                         <option value="">Select unit</option>
                         {['kg','ton','pcs','m','l','box','roll','sheet','set','pair'].map(u => <option key={u} value={u}>{u}</option>)}
-                      </select>
+                      </Select>
                     </div>
                     <div><Label>Minimum Order Qty (MOQ)</Label><Input type="number" min={1} value={v.moq ?? ''} onChange={(e) => handleFieldChange('moq', parseInt(e.target.value) || '')} placeholder="e.g., 100" /></div>
                   </div>
@@ -324,25 +338,25 @@ export function NewProductWizard() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <Label>Geographic Reach</Label>
-                      <select value={v.visibilityRadius || ''} onChange={(e) => handleFieldChange('visibilityRadius', e.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary">
+                      <Select value={v.visibilityRadius || ''} onChange={(e) => handleFieldChange('visibilityRadius', e.target.value)}>
                         <option value="">Select reach</option>
                         <option value="LOCAL">Local</option><option value="DISTRICT">District</option><option value="STATE">State</option><option value="PAN_INDIA">Pan India</option><option value="GLOBAL">Global</option>
-                      </select>
+                      </Select>
                     </div>
                     <div className="flex items-end gap-2">
                       <div className="flex-1"><Label>Latitude</Label><Input type="number" step="any" value={v.latitude ?? ''} onChange={(e) => handleFieldChange('latitude', parseFloat(e.target.value) || '')} placeholder="e.g., 19.0760" /></div>
                       <div className="flex-1"><Label>Longitude</Label><Input type="number" step="any" value={v.longitude ?? ''} onChange={(e) => handleFieldChange('longitude', parseFloat(e.target.value) || '')} placeholder="e.g., 72.8777" /></div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <Label className="flex items-center gap-2"><input type="checkbox" checked={!!v.isSampleOrder} onChange={(e) => handleFieldChange('isSampleOrder', e.target.checked)} className="rounded border-border" /> Sample Order Available</Label>
-                      <Label className="flex items-center gap-2"><input type="checkbox" checked={!!v.exportSupported} onChange={(e) => handleFieldChange('exportSupported', e.target.checked)} className="rounded border-border" /> Export Supported</Label>
+                      <Checkbox checked={!!v.isSampleOrder} onChange={(e) => handleFieldChange('isSampleOrder', e.target.checked)} label="Sample Order Available" />
+                      <Checkbox checked={!!v.exportSupported} onChange={(e) => handleFieldChange('exportSupported', e.target.checked)} label="Export Supported" />
                     </div>
                   </div>
                   {v.exportSupported && (
                     <div><Label>Export Countries (comma separated)</Label><Input value={(v.exportCountries || []).join(', ')} onChange={(e) => handleFieldChange('exportCountries', e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean))} placeholder="e.g., UAE, USA, UK, Singapore" /></div>
                   )}
                 </CardContent></Card>
-                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} />
               </div>
             )}
 
@@ -355,7 +369,7 @@ export function NewProductWizard() {
                     <p className="text-sm text-text-secondary">Select a category first to see dynamic specification fields.</p>
                   )}
                 </CardContent></Card>
-                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} />
               </div>
             )}
 
@@ -370,7 +384,7 @@ export function NewProductWizard() {
                         <div key={m.id || i} className="relative aspect-square rounded-lg border border-border bg-surface-secondary overflow-hidden">
                           {m.type === 'IMAGE' ? <img src={m.url} alt={m.title || ''} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-text-tertiary"><ImageIcon className="h-8 w-8" /></div>}
                           <button onClick={() => setMedia((prev) => prev.filter((_, j) => j !== i))} className="absolute right-1 top-1 rounded-full bg-red-500 p-0.5 text-white"><svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-                          {m.isPrimary && <span className="absolute bottom-1 left-1 rounded bg-accent-500 px-1 py-0.5 text-[10px] text-white">Primary</span>}
+                          {m.isPrimary && <span className="absolute bottom-1 left-1 rounded bg-accent-500 px-1 py-0.5 text-[10px] text-text-primary">Primary</span>}
                         </div>
                       ))}
                     </div>
@@ -381,7 +395,7 @@ export function NewProductWizard() {
                   <FileUploadZone accept=".pdf,.doc,.docx,.xls,.xlsx" multiple maxFiles={20} maxSize={20} files={[]} onFilesChange={() => {}} type="attachment" />
                   <AttachmentList attachments={attachments} onChange={setAttachments} types={['pdf','brochure','datasheet','msds','other']} />
                 </CardContent></Card>
-                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} />
               </div>
             )}
 
@@ -390,7 +404,7 @@ export function NewProductWizard() {
                 <Card><CardContent className="pt-6">
                   <PricingSlabsEditor slabs={priceSlabs} onSlabsChange={setPriceSlabs} moq={v.moq || 0} onMoqChange={(val) => handleFieldChange('moq', val)} unit={v.unit || ''} onUnitChange={(val) => handleFieldChange('unit', val)} />
                 </CardContent></Card>
-                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} />
               </div>
             )}
 
@@ -404,14 +418,14 @@ export function NewProductWizard() {
               <div className="space-y-6">
                 <Card><CardContent className="pt-6"><h3 className="mb-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Certifications</h3><CertificationEditor certifications={certifications} onChange={setCertifications} /></CardContent></Card>
                 <Card><CardContent className="pt-6"><h3 className="mb-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Multi-Language Descriptions</h3><MultiLangEditor entries={multiLangDesc} onChange={setMultiLangDesc} primaryName={v.name || ''} /></CardContent></Card>
-                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} />
+                <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} />
               </div>
             )}
 
             {currentStep === 7 && (
               <div className="space-y-6">
                 <Card><CardContent className="pt-6">
-                  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Completeness Check</h3><div className="flex gap-2"><Button variant="outline" size="sm" onClick={handleRecalculateCompleteness}><Eye className="mr-1.5 h-3.5 w-3.5" /> Refresh</Button><WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} /></div></div>
+                  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Completeness Check</h3><div className="flex gap-2"><Button variant="outline" size="sm" onClick={handleRecalculateCompleteness}><Eye className="mr-1.5 h-3.5 w-3.5" /> Refresh</Button><WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} /></div></div>
                   <CompletenessGauge score={completeness} draft={draft} />
                 </CardContent></Card>
 
@@ -424,9 +438,34 @@ export function NewProductWizard() {
                   </div>
                 </CardContent></Card>
 
+                <Card><CardContent className="pt-6">
+                  <h3 className="mb-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">AI Quality Assessment</h3>
+                  <div className="space-y-3">
+                    <p className="text-xs text-text-tertiary">Use the AI buttons above to calculate quality score, check for duplicates, generate highlights, or analyze commerce potential.</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => handleAiGenerate('calculateScore', () => apiClient.post(`/ai/quality/calculate/${draftId || ''}`, {}), (data) => {})}
+                        className="flex items-center gap-2 rounded-lg border border-border bg-surface-secondary hover:bg-surface px-3 py-2 text-xs text-text-primary transition-colors">
+                        <Sparkles className="h-3.5 w-3.5 text-accent" /> Calculate Quality Score
+                      </button>
+                      <button onClick={() => handleAiGenerate('checkDuplicates', () => apiClient.post('/ai/quality/detect-duplicates', { productId: draftId || '' }), (data) => {})}
+                        className="flex items-center gap-2 rounded-lg border border-border bg-surface-secondary hover:bg-surface px-3 py-2 text-xs text-text-primary transition-colors">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-400" /> Check Duplicates
+                      </button>
+                      <button onClick={() => handleAiGenerate('generateHighlights', () => apiClient.post('/ai/products/generate-highlights', { productId: draftId || '' }), (data) => {})}
+                        className="flex items-center gap-2 rounded-lg border border-border bg-surface-secondary hover:bg-surface px-3 py-2 text-xs text-text-primary transition-colors">
+                        <Sparkles className="h-3.5 w-3.5 text-purple-400" /> Generate Highlights
+                      </button>
+                      <button onClick={() => handleAiGenerate('suggestCommerce', () => apiClient.get(`/ai/commerce/full-insights/${draftId || ''}`), (data) => {})}
+                        className="flex items-center gap-2 rounded-lg border border-border bg-surface-secondary hover:bg-surface px-3 py-2 text-xs text-text-primary transition-colors">
+                        <TrendingUpIcon className="h-3.5 w-3.5 text-emerald-400" /> Commerce Intel
+                      </button>
+                    </div>
+                  </div>
+                </CardContent></Card>
+
                 <div className="flex justify-center">
                   <Button size="lg" onClick={handleSubmit} disabled={submitting || (completeness !== null && completeness.total < 40)}>
-                    {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    {submitting ? <LoadingSpinner size="sm" /> : <Send className="mr-2 h-4 w-4" />}
                     {submitting ? 'Publishing...' : 'Publish Product'}
                   </Button>
                 </div>
@@ -446,7 +485,7 @@ export function NewProductWizard() {
                 return (
                   <li key={s.id}>
                     <button onClick={() => handleStepChange(s.id)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${isActive ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/20 dark:text-accent-400' : isPast ? 'text-text-primary hover:bg-surface-secondary dark:text-dark-text-primary dark:hover:bg-dark-surface-secondary' : 'text-text-tertiary'}`}>
-                      {isPast ? <CheckCircle className="h-4 w-4 text-accent-500" /> : <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${isActive ? 'bg-accent-500 text-white' : 'bg-surface-secondary text-text-tertiary dark:bg-dark-surface-secondary'}`}>{s.id}</span>}
+                      {isPast ? <CheckCircle className="h-4 w-4 text-accent-500" /> : <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${isActive ? 'bg-accent-500 text-text-primary' : 'bg-surface-secondary text-text-tertiary dark:bg-dark-surface-secondary'}`}>{s.id}</span>}
                       <span className="truncate">{s.title}</span>
                     </button>
                   </li>

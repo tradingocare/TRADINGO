@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsNumber, IsObject, Min, Max, IsEnum } from 'class-validator'
+import { IsString, IsOptional, IsArray, IsNumber, IsObject } from 'class-validator'
 
 export class NaturalLanguageRfqDto {
   @IsString()

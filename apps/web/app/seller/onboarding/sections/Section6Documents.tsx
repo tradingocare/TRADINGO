@@ -52,15 +52,15 @@ export default function Section6Documents({ vendor, onSave, onNext, onBack }: Se
           const uploaded = !!docs[doc.key]
           return (
             <div key={doc.key}
-              className="flex items-center gap-4 p-4 rounded-xl transition-all"
+              className="flex items-center gap-4 p-4 rounded-xl transition-all bg-surface"
               style={{
-                background: uploaded ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.03)',
-                border: uploaded ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.08)',
+                background: uploaded ? 'rgba(34,197,94,0.05)' : '',
+                border: uploaded ? '1px solid rgba(34,197,94,0.2)' : '1px solid var(--border-color)',
               }}>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-white text-sm font-medium">{doc.label}</span>
-                  {doc.mandatory && <span className="text-[#FF4D00] text-[10px]">*</span>}
+                  {doc.mandatory && <span className="text-[#f59e0b] text-[10px]">*</span>}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   {uploaded ? (
@@ -98,7 +98,7 @@ export default function Section6Documents({ vendor, onSave, onNext, onBack }: Se
         <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
           onClick={save} disabled={saving}
           className="px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-40"
-          style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', color:'#fff' }}>
+          style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff' }}>
           {saving ? 'Saving...' : `Save (${count} docs) & Continue`}
         </motion.button>
       </div>

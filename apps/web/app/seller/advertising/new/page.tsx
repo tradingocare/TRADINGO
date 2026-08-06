@@ -11,6 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useCreateAd } from '@/hooks/use-advertising';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Plus, X } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import type { AdType, AdPricingModel, AdTargetType, CreateAdData } from '@/lib/api/advertising';
 
@@ -140,17 +142,17 @@ export default function NewAdvertisingPage() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Ad Type *</Label>
-              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.type} onChange={e => update('type', e.target.value)}>
+              <Select value={form.type} onChange={e => update('type', e.target.value)}>
                 <option value="">Select type</option>
                 {AD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Pricing Model *</Label>
-              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.pricingModel} onChange={e => update('pricingModel', e.target.value)}>
+              <Select value={form.pricingModel} onChange={e => update('pricingModel', e.target.value)}>
                 <option value="">Select pricing</option>
                 {PRICING_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Title</Label>
@@ -203,18 +205,9 @@ export default function NewAdvertisingPage() {
               <Input type="date" value={form.endDate} onChange={e => update('endDate', e.target.value)} />
             </div>
             <div className="space-y-2 flex items-end gap-4">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={form.autoPause} onChange={e => update('autoPause', e.target.checked)} />
-                <span className="text-sm">Auto Pause</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={form.autoResume} onChange={e => update('autoResume', e.target.checked)} />
-                <span className="text-sm">Auto Resume</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={form.autoStop} onChange={e => update('autoStop', e.target.checked)} />
-                <span className="text-sm">Auto Stop</span>
-              </label>
+              <Checkbox checked={form.autoPause} onChange={e => update('autoPause', e.target.checked)} label="Auto Pause" />
+              <Checkbox checked={form.autoResume} onChange={e => update('autoResume', e.target.checked)} label="Auto Resume" />
+              <Checkbox checked={form.autoStop} onChange={e => update('autoStop', e.target.checked)} label="Auto Stop" />
             </div>
           </CardContent>
         </Card>
@@ -249,19 +242,19 @@ export default function NewAdvertisingPage() {
           <CardHeader><CardTitle>Targeting</CardTitle></CardHeader>
           <CardContent>
             <div className="flex gap-2 mb-4">
-              <select className="flex h-10 w-40 rounded-md border border-input bg-background px-3 py-2 text-sm" value={newTargetType} onChange={e => setNewTargetType(e.target.value as AdTargetType)}>
+              <Select value={newTargetType} onChange={e => setNewTargetType(e.target.value as AdTargetType)} className="w-40">
                 <option value="">Type</option>
                 {TARGET_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              </Select>
               <Input value={newTargetValue} onChange={e => setNewTargetValue(e.target.value)} placeholder="Value" className="flex-1" />
               <Button type="button" variant="outline" onClick={addTarget}><Plus className="h-4 w-4" /></Button>
             </div>
             {targets.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {targets.map((t, i) => (
-                  <span key={i} className="flex items-center gap-1 bg-gray-800 px-3 py-1 rounded-full text-sm">
+                  <span key={i} className="flex items-center gap-1 bg-surface px-3 py-1 rounded-full text-sm">
                     {t.targetType}: {t.targetValue}
-                    <button type="button" onClick={() => removeTarget(i)} className="text-gray-400 hover:text-white"><X className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => removeTarget(i)} className="text-white/40 hover:text-white"><X className="h-3 w-3" /></button>
                   </span>
                 ))}
               </div>

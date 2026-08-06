@@ -44,3 +44,14 @@ export function getCashFlow(params?: any) { return api.get('/finance/dashboard/c
 
 export function getRmFinanceDashboard() { return api.get('/finance/rm/dashboard'); }
 export function getRmFinancePerformance() { return api.get('/finance/rm/performance'); }
+
+// Finance Ops Aggregator (Sprint 6J)
+export function getFinanceOpsDashboard() { return api.get('/finance/ops/dashboard'); }
+export function getRevenueAnalytics(params?: { period?: string; startDate?: string; endDate?: string }) { return api.get('/finance/ops/revenue', { params }); }
+export function getSettlements(params?: any) { return api.get('/finance/ops/settlements', { params }); }
+export function getRefundList(params?: any) { return api.get('/finance/ops/refunds', { params }); }
+export function getDisputeList(params?: any) { return api.get('/finance/ops/disputes', { params }); }
+export function getCommissionSummary() { return api.get('/finance/ops/commissions'); }
+export function getReconciliation(params?: any) { return api.get('/finance/ops/reconciliation', { params }); }
+export function searchFinance(q: string) { return api.get('/finance/ops/search', { params: { q } }); }
+export function exportFinanceData(entity: string, params?: any) { return api.get(`/finance/ops/export/${entity}`, { params, responseType: 'blob' }); }

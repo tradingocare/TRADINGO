@@ -53,7 +53,9 @@ export class CostEngineService {
     try {
       const provider = await this.prisma.aiProvider.findUnique({ where: { name: providerName } })
       if (provider) return { costPer1kInput: provider.costPer1kInput, costPer1kOutput: provider.costPer1kOutput }
-    } catch {}
+    } catch (err) {
+      this.logger.warn(`Failed to fetch cost config for '${providerName}': ${(err as Error).message} — using defaults`)
+    }
     return { costPer1kInput: 0.001, costPer1kOutput: 0.002 }
   }
 

@@ -59,15 +59,15 @@ export default function Section7WebsiteSocial({ vendor, onSave, onNext, onBack }
       <h2 className="text-white font-bold text-xl mb-1">Website & Social Media</h2>
       <p className="text-white/40 text-sm mb-6">Connect your online presence</p>
 
-      <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
+      <div className="mb-6 p-4 rounded-xl bg-surface border border-border">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-white/60 text-xs font-semibold">Digital Presence Score</span>
+          <span className="text-text-secondary text-xs font-semibold">Digital Presence Score</span>
           <span className="text-xs font-bold" style={{ color: presenceColor }}>{presenceLabel}</span>
         </div>
-        <div className="w-full h-2 rounded-full overflow-hidden bg-white/10">
+        <div className="w-full h-2 rounded-full overflow-hidden bg-surface-secondary">
           <div className="h-full rounded-full transition-all" style={{ width: `${(count / 9) * 100}%`, background: presenceColor }} />
         </div>
-        <p className="text-white/30 text-[10px] mt-2">Vendors with 3+ social links get 1.8x more buyer inquiries</p>
+        <p className="text-text-tertiary text-[10px] mt-2">Vendors with 3+ social links get 1.8x more buyer inquiries</p>
       </div>
 
       <div className="space-y-3">
@@ -77,7 +77,7 @@ export default function Section7WebsiteSocial({ vendor, onSave, onNext, onBack }
             <input value={links[link.key]}
               onChange={e => setLinks(prev => ({ ...prev, [link.key]: e.target.value }))}
               placeholder={link.placeholder}
-              className="flex-1 px-4 py-3 rounded-xl text-white text-sm bg-white/5 border border-white/10 focus:outline-none focus:border-[#FF4D00] transition-colors"
+              className="flex-1 px-4 py-3 rounded-xl text-text-primary text-sm bg-surface border border-border focus:outline-none focus:border-[#f59e0b] transition-colors"
             />
             {links[link.key] && <span className="text-green-400 text-xs">✓</span>}
           </div>
@@ -85,11 +85,11 @@ export default function Section7WebsiteSocial({ vendor, onSave, onNext, onBack }
       </div>
 
       <div className="flex items-center gap-3 mt-8">
-        {onBack && <button onClick={onBack} className="px-4 py-2 text-sm text-white/50 hover:text-white/80">Back</button>}
+        {onBack && <button onClick={onBack} className="px-4 py-2 text-sm text-text-tertiary hover:text-text-secondary">Back</button>}
         <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
           onClick={save} disabled={saving}
           className="px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-40"
-          style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', color:'#fff' }}>
+          style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff' }}>
           {saving ? 'Saving...' : `Save (${count} links) & Continue`}
         </motion.button>
       </div>

@@ -127,46 +127,52 @@ export class CompaniesService {
     organizationId?: string;
     ownerId?: string;
   }) {
-    const { cursor, limit = 20, search, businessType, status, verificationLevel, organizationId, ownerId } = query;
-    const where: Prisma.CompanyWhereInput = { deletedAt: null };
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    if (businessType) where.businessType = businessType as Prisma.EnumBusinessTypeNullableFilter['equals'];
-    if (status) where.status = status as Prisma.EnumCompanyStatusFilter['equals'];
-    if (verificationLevel) where.verificationLevel = verificationLevel as Prisma.EnumVerificationLevelFilter['equals'];
-    if (organizationId) where.organizationId = organizationId;
-    if (ownerId) {
-      where.owners = { some: { userId: ownerId } };
-    }
+    try {
+      const { cursor, search, businessType, status, verificationLevel, organizationId, ownerId } = query || {};
+      const limit = Math.min(Math.max(Number(query?.limit) || 20, 1), 100);
+      const where: Prisma.CompanyWhereInput = { deletedAt: null };
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { slug: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+      if (businessType) where.businessType = businessType as any;
+      if (status && ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'].includes(status.toUpperCase())) where.status = status.toUpperCase() as any;
+      if (verificationLevel && verificationLevel.startsWith('LEVEL_')) where.verificationLevel = verificationLevel as Prisma.EnumVerificationLevelFilter['equals'];
+      if (organizationId) where.organizationId = organizationId;
+      if (ownerId) {
+        where.owners = { some: { userId: ownerId } };
+      }
 
-    const findArgs: Prisma.CompanyFindManyArgs = {
-      where,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        owners: { include: { user: { select: { id: true, email: true, name: true } } } },
-        locations: { where: { deletedAt: null }, take: 1 },
-        categories: { include: { category: true } },
-        _count: { select: { locations: true, verifications: true } },
-      },
-    };
-    if (cursor) {
-      findArgs.cursor = { id: cursor };
-      findArgs.skip = 1;
+      const findArgs: Prisma.CompanyFindManyArgs = {
+        where,
+        take: limit + 1,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+          locations: { where: { deletedAt: null }, take: 1 },
+          categories: { include: { category: true } },
+          _count: { select: { locations: true, verifications: true } },
+        },
+      };
+      if (cursor) {
+        findArgs.cursor = { id: cursor };
+        findArgs.skip = 1;
+      }
+      const data = await this.prisma.company.findMany(findArgs);
+      const hasMore = data.length > limit;
+      if (hasMore) data.pop();
+      const total = await this.prisma.company.count({ where });
+      return {
+        data,
+        meta: { total, limit, cursor: data.length > 0 ? data[data.length - 1].id : undefined },
+      };
+    } catch (err) {
+      this.logger.error(`Error in CompaniesService.findAll: ${err instanceof Error ? err.message : String(err)}`);
+      return { data: [], meta: { total: 0, limit: 20, cursor: undefined } };
     }
-    const [data, total] = await Promise.all([
-      this.prisma.company.findMany(findArgs),
-      this.prisma.company.count({ where }),
-    ]);
-    return {
-      data,
-      meta: { total, limit, cursor: data.length > 0 ? data[data.length - 1].id : undefined },
-    };
   }
 
   // ── Public Directory (page-based, filterable) ──
@@ -183,10 +189,10 @@ export class CompaniesService {
     page:        number
     limit:       number
   }) {
-    const { q, category, city, state, verified, sellerType, minTrust, sortBy, page, limit } = params
+    const { q, category, city, verified, elite, sellerType, minTrust, sortBy, page, limit } = params
     const skip = (page - 1) * limit
 
-    const where: Prisma.CompanyWhereInput = { deletedAt: null, status: { not: 'INACTIVE' as any } }
+    const where: Prisma.CompanyWhereInput = { deletedAt: null, status: { not: 'INACTIVE' } }
 
     if (q?.trim()) {
       where.OR = [
@@ -195,30 +201,58 @@ export class CompaniesService {
       ]
     }
     if (sellerType) where.businessType = sellerType as any
-    if (minTrust)  where.trustScore = { gte: minTrust }
+    if (minTrust)   where.trustScore = { gte: minTrust }
+    if (city)       where.locations = { some: { city: { contains: city, mode: 'insensitive' }, deletedAt: null } }
+    if (verified)   where.verificationLevel = { not: 'LEVEL_0' as any }
+    if (category)   where.categories = { some: { category: { slug: category } } }
+    if (elite)      where.subscriptionPlan = 'TRADE_ELITE' as any
 
-    const orderBy: any = {
-      trustScore: { trustScore: 'desc' },
-      newest:     { createdAt: 'desc' },
-      name:       { name: 'asc' },
-    }[sortBy || 'trustScore'] ?? { trustScore: 'desc' }
+    const orderBy: Prisma.CompanyOrderByWithRelationInput =
+      sortBy === 'name' ? { name: 'asc' } :
+      sortBy === 'newest' ? { createdAt: 'desc' } :
+      { trustScore: 'desc' };
 
-    const [companies, total] = await Promise.all([
-      this.prisma.company.findMany({
-        where,
-        orderBy,
-        skip,
-        take: limit,
-        include: {
-          locations: { where: { deletedAt: null }, take: 1 },
-          _count: { select: { products: true } },
-        },
-      }),
+    const companies = await this.prisma.company.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: {
+        locations: { where: { deletedAt: null }, take: 1 },
+        _count: { select: { products: true } },
+      },
+    })
+
+    const companyIds = companies.map(c => c.id)
+
+    const [total, statsData, reviewAgg, orderAgg] = await Promise.all([
       this.prisma.company.count({ where }),
+      this.getDirectoryStats(),
+      companyIds.length > 0
+        ? this.prisma.productReview.groupBy({
+            by: ['companyId'],
+            where: { companyId: { in: companyIds }, status: 'APPROVED' },
+            _avg: { rating: true },
+            _count: { _all: true },
+          })
+        : Promise.resolve([]),
+      companyIds.length > 0
+        ? this.prisma.order.groupBy({
+            by: ['sellerCompanyId'],
+            where: { sellerCompanyId: { in: companyIds }, deletedAt: null },
+            _count: { _all: true },
+          })
+        : Promise.resolve([]),
     ])
+
+    const ratingMap = new Map(reviewAgg.map(r => [r.companyId, { avg: r._avg?.rating ?? 0, count: r._count._all }]))
+    const orderMap = new Map(orderAgg.map(o => [o.sellerCompanyId, o._count._all]))
 
     const mapped = companies.map(c => {
       const loc = c.locations?.[0] || {}
+      const rating = ratingMap.get(c.id)
+      const certs = Array.isArray(c.certifications) ? (c.certifications as unknown[]) : []
+      const isoCertified = certs.some(x => typeof x === 'string' && /iso/i.test(x))
       return {
         id: c.id,
         name: c.name,
@@ -233,12 +267,16 @@ export class CompaniesService {
         categories: [],
         sellerType: c.businessType,
         isVerified: c.verificationLevel !== 'LEVEL_0',
-        isTradgoElite: false,
+        isTradgoElite: c.subscriptionPlan === 'TRADE_ELITE',
         trustScore: c.trustScore,
-        rating: 0,
-        reviewCount: 0,
-        orderCount: 0,
+        rating: rating ? parseFloat(rating.avg.toFixed(1)) : 0,
+        reviewCount: rating?.count ?? 0,
+        orderCount: orderMap.get(c.id) ?? 0,
+        responseRate: c.responseRate,
         responseTime: c.responseRate ? `< ${c.responseRate}h` : undefined,
+        gstNumber: c.gstNumber,
+        establishedYear: c.establishedYear,
+        isoCertified,
         productCount: c._count?.products || 0,
         yearsActive: c.establishedYear
           ? new Date().getFullYear() - c.establishedYear
@@ -255,6 +293,26 @@ export class CompaniesService {
         pages: Math.ceil(total / limit),
         hasNext: page * limit < total,
       },
+      stats: statsData,
+    }
+  }
+
+  private async getDirectoryStats() {
+    const [totalCompanies, verifiedCompanies, eliteCompanies, citiesResult, totalProducts, ratingResult] = await Promise.all([
+      this.prisma.company.count({ where: { deletedAt: null, status: { not: 'INACTIVE' } } }),
+      this.prisma.company.count({ where: { deletedAt: null, verificationLevel: { not: 'LEVEL_0' as any } } }),
+      this.prisma.company.count({ where: { deletedAt: null, subscriptionPlan: 'TRADE_ELITE' as any } }),
+      this.prisma.companyLocation.findMany({ where: { deletedAt: null }, select: { city: true }, distinct: ['city'] }),
+      this.prisma.product.count({ where: { status: 'ACTIVE', deletedAt: null } }),
+      this.prisma.productReview.aggregate({ _avg: { rating: true }, where: { status: 'APPROVED' } }),
+    ])
+    return {
+      totalCompanies,
+      verifiedCompanies,
+      eliteCompanies,
+      totalCities: citiesResult.length,
+      totalProducts,
+      averageRating: ratingResult._avg.rating ? Math.round(ratingResult._avg.rating * 10) / 10 : 0,
     }
   }
 
@@ -269,12 +327,16 @@ export class CompaniesService {
     const skip = (page - 1) * limit
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
-        where: { companyId: company.id, status: 'ACTIVE' as any },
+        where: { companyId: company.id, status: 'ACTIVE' },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          media: { where: { type: 'IMAGE' }, take: 3, orderBy: { sortOrder: 'asc' } },
+        },
       }),
-      this.prisma.product.count({ where: { companyId: company.id, status: 'ACTIVE' as any } }),
+      this.prisma.product.count({ where: { companyId: company.id, status: 'ACTIVE' } }),
     ])
 
     return {
@@ -294,12 +356,12 @@ export class CompaniesService {
     const skip = (page - 1) * limit
     const [reviews, total] = await Promise.all([
       this.prisma.productReview.findMany({
-        where: { companyId: company.id, status: 'APPROVED' as any },
+        where: { companyId: company.id, status: 'APPROVED' },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.productReview.count({ where: { companyId: company.id } }),
+      this.prisma.productReview.count({ where: { companyId: company.id, status: 'APPROVED' } }),
     ])
 
     const stars: Record<number, number> = { 1:0, 2:0, 3:0, 4:0, 5:0 }
@@ -334,8 +396,8 @@ export class CompaniesService {
       where: {
         NOT: { slug },
         deletedAt: null,
-        status: { not: 'INACTIVE' as any },
-        businessType: company.businessType as any,
+        status: { not: 'INACTIVE' },
+        businessType: company.businessType,
       },
       orderBy: { trustScore: 'desc' },
       take,
@@ -541,12 +603,34 @@ export class CompaniesService {
     if (filters.businessType) searchFilters.businessType = filters.businessType;
     if (filters.status) searchFilters.status = filters.status;
 
-    const result = await this.searchService.search<Record<string, unknown>>(
-      COMPANY_INDEX,
-      query,
-      searchFilters,
-      { page: 1, limit: 20 },
-    );
+    let result;
+    try {
+      result = await this.searchService.search<Record<string, unknown>>(
+        COMPANY_INDEX,
+        query,
+        searchFilters,
+        { page: 1, limit: 20 },
+      );
+    } catch (err) {
+      this.logger.warn(`Company search via OpenSearch failed, falling back to DB: ${(err as Error).message}`);
+      const dbResult = await this.prisma.company.findMany({
+        where: {
+          deletedAt: null,
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } },
+          ],
+        },
+        take: 20,
+        orderBy: { trustScore: 'desc' },
+        include: {
+          owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+          locations: { where: { deletedAt: null }, take: 1 },
+          categories: { include: { category: true } },
+        },
+      });
+      return { data: dbResult, meta: { total: dbResult.length, limit: 20, cursor: undefined } };
+    }
 
     const ids = result.hits.map((hit) => hit.id as string);
     if (ids.length === 0) return { data: [], meta: { total: 0, limit: 20, cursor: undefined } };
@@ -571,7 +655,7 @@ export class CompaniesService {
 
   async getPublicProfile(slug: string) {
     const company = await this.prisma.company.findFirst({
-      where: { slug, deletedAt: null, status: { not: 'INACTIVE' as Prisma.EnumCompanyStatusFilter['not'] } },
+      where: { slug, deletedAt: null, status: { not: 'INACTIVE' } },
       include: {
         owners: { include: { user: { select: { id: true, name: true } } } },
         locations: { where: { deletedAt: null } },

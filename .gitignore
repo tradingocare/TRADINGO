@@ -1,10 +1,39 @@
 node_modules/
 dist/
 .next/
+.next.old*/
 coverage/
 .env
 .env.*.local
+apps/api/.env
 *.log
+*.err
+*.out
 .DS_Store
 *.tsbuildinfo
 .turbo/
+
+# Production SSL certs (local rehearsal only)
+infrastructure/nginx/ssl/*.pem
+.env.production.rehearsal
+
+# Terraform provider cache (local only)
+infrastructure/terraform/.terraform/
+
+# pnpm store cache (local only)
+.pnpm-store/
+
+# Test & review artifacts (archived outside repo)
+playwright-report/
+test-results/
+screenshots/
+docs/review/
+apps/web/fat-report/
+.codex-*.png
+check-db*.js
+fix-data.js
+list-users.js
+update-role.js
+test-flows*.ps1
+run-tests.bat
+test-runner.mjs

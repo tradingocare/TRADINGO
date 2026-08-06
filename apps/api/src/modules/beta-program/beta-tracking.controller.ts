@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BetaProgramService } from './beta-program.service';
 import { TrackEventDto } from './dto/track-event.dto';
@@ -18,8 +19,10 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Beta Tracking')
+@Throttle(RateLimits.WRITE_GENERAL)
 @Controller('beta-tracking')
 export class BetaTrackingController {
   constructor(private readonly betaProgramService: BetaProgramService) {}

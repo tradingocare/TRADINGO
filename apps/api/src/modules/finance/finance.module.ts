@@ -5,19 +5,21 @@ import { CreditService } from './credit.service';
 import { CollectionsService } from './collections.service';
 import { CreditNoteService } from './credit-notes.service';
 import { FinanceDashboardService } from './finance-dashboard.service';
+import { FinanceAggregatorService } from './aggregator.service';
 import { RmFinanceService } from './rm-finance.service';
 import { AiFinanceService } from './ai-finance.service';
 import { CreditController, CreditApprovalController } from './credit.controller';
 import { CollectionsController } from './collections.controller';
 import { CreditNoteController, DebitNoteController } from './credit-notes.controller';
 import { FinanceDashboardController } from './finance-dashboard.controller';
+import { FinanceAggregatorController } from './aggregator.controller';
 import { RmFinanceController } from './rm-finance.controller';
 import { AiFinanceController } from './ai-finance.controller';
 
 @Module({
   imports: [PrismaModule, AiGatewayModule],
-  controllers: [CreditController, CreditApprovalController, CollectionsController, CreditNoteController, DebitNoteController, FinanceDashboardController, RmFinanceController, AiFinanceController],
-  providers: [CreditService, CollectionsService, CreditNoteService, FinanceDashboardService, RmFinanceService, AiFinanceService],
-  exports: [CreditService, CreditNoteService, FinanceDashboardService],
+  controllers: [CreditController, CreditApprovalController, CollectionsController, CreditNoteController, DebitNoteController, FinanceDashboardController, FinanceAggregatorController, RmFinanceController, AiFinanceController],
+  providers: [CreditService, CollectionsService, CreditNoteService, FinanceDashboardService, FinanceAggregatorService, RmFinanceService, AiFinanceService],
+  exports: [CreditService, CreditNoteService, FinanceDashboardService, FinanceAggregatorService, AiFinanceService],
 })
 export class FinanceModule {}

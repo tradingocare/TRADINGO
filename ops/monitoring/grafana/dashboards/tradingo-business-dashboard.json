@@ -1,0 +1,34 @@
+{
+  "uid": "tradingo-business",
+  "title": "TRADINGO Business",
+  "version": 2,
+  "panels": [
+    {
+      "title": "Active Users",
+      "type": "graph",
+      "targets": [{ "expr": "business:active_users", "legendFormat": "active users" }],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Requests per User",
+      "type": "graph",
+      "targets": [{ "expr": "business:api_requests_per_user:rate5m", "legendFormat": "req/user" }],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "API Uptime",
+      "type": "singlestat",
+      "targets": [{ "expr": "avg(up{job=\"tradingo-api\"}) * 100" }],
+      "format": "percent",
+      "thresholds": "99,99.9",
+      "colors": ["#d44", "#fa0", "#0a0"],
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 8 }
+    },
+    {
+      "title": "Queue Backlog",
+      "type": "graph",
+      "targets": [{ "expr": "job:http_requests_total:rate5m", "legendFormat": "req/s" }],
+      "gridPos": { "h": 8, "w": 12, "x": 4, "y": 8 }
+    }
+  ]
+}

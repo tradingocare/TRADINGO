@@ -4,8 +4,8 @@
   "description": "India's First TEM™ E-Marketplace",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#00001C",
+  "theme_color": "#080b12",
   "icons": [
     {
       "src": "/logo/trdn.png",

@@ -58,9 +58,9 @@ export default function SellerChatPage() {
                   <button
                     key={conv.id}
                     onClick={() => setSelectedConvId(conv.id)}
-                    className={`flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-surface-secondary/50 dark:border-dark-border dark:hover:bg-dark-surface-secondary/50 ${selectedConvId === conv.id ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
+                    className={`flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-surface-secondary/50 dark:border-dark-border dark:hover:bg-dark-surface-secondary/50 ${selectedConvId === conv.id ? 'bg-accent-50 dark:bg-accent-900/20' : ''}`}
                   >
-                    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                       <User className="h-5 w-5" />
                       {conv.unreadCount > 0 && (
                         <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">

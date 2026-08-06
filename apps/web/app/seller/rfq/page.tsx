@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSellerIncomingRfqs, useSellerRfqStats } from '@/hooks/use-smart-rfq';
 import { Search, FileText, AlertCircle, CheckCircle, XCircle, MessageSquare, Eye } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const statusTabs = ['ALL', 'SENT', 'VIEWED', 'QUOTED', 'DECLINED', 'EXPIRED'];
 
@@ -37,10 +38,10 @@ export default function SellerRfqPage() {
             placeholder="Search RFQs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-white/[0.04] border-white/[0.06] text-white"
+            className="pl-10 bg-surface border-border text-text-primary"
           />
         </div>
-        <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1">
           {statusTabs.map((tab) => (
             <button
               key={tab}
@@ -56,22 +57,14 @@ export default function SellerRfqPage() {
       </div>
 
       {error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-white">Failed to load RFQs</p>
-          <p className="mt-1 text-sm text-white/60">{(error as any).message}</p>
-        </div>
+        <EmptyState icon={AlertCircle} variant="error" title="Failed to load RFQs" description={(error as any).message} />
       ) : isLoading ? (
         <TableSkeleton rows={5} />
       ) : rfqs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <FileText className="h-12 w-12 text-white/30" />
-          <p className="mt-4 text-lg font-medium text-white">No incoming RFQs</p>
-          <p className="mt-1 text-sm text-white/60">New RFQ matches will appear here.</p>
-        </div>
+        <EmptyState icon={FileText} title="No incoming RFQs" description="New RFQ matches will appear here." />
       ) : (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/40 lg:grid">
+        <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-tertiary lg:grid">
             <div className="col-span-4">Buyer / RFQ</div>
             <div className="col-span-2">Products</div>
             <div className="col-span-2">Budget</div>
@@ -82,15 +75,15 @@ export default function SellerRfqPage() {
             <div
               key={rfq.id}
               onClick={() => router.push(`/seller/rfq/${rfq.id}`)}
-              className="grid cursor-pointer grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 transition-colors hover:bg-white/[0.02] lg:grid-cols-12 lg:items-center"
+              className="grid cursor-pointer grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 transition-colors hover:bg-surface lg:grid-cols-12 lg:items-center"
             >
               <div className="flex items-center gap-3 lg:col-span-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400">
                   <FileText className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white">{rfq.title || rfq.productName || 'RFQ'}</p>
-                  <p className="text-xs text-white/40">{rfq.company?.name || 'Buyer'}</p>
+                  <p className="text-sm font-medium text-text-primary">{rfq.title || rfq.productName || 'RFQ'}</p>
+                  <p className="text-xs text-text-tertiary">{rfq.company?.name || 'Buyer'}</p>
                 </div>
               </div>
               <p className="text-sm text-white/60 lg:col-span-2">{rfq.productItems?.length ?? rfq.quantity ?? '-'}</p>

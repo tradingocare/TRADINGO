@@ -31,8 +31,8 @@ export function NotFoundState({
     <div className={cn('flex min-h-[60vh] items-center justify-center p-4', className)}>
       <Card className="mx-auto w-full max-w-md text-center">
         <div className="p-8">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-            <FileQuestion className="h-8 w-8 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-accent-500/10">
+            <FileQuestion className="h-8 w-8 text-accent-500" aria-hidden="true" />
           </div>
 
           <h1 className="mb-2 text-2xl font-bold text-text-primary dark:text-dark-text-primary">

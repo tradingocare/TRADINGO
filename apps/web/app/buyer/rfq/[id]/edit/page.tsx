@@ -6,6 +6,7 @@ import { DashboardPageHeader } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useSmartRfq } from '@/hooks/use-smart-rfq';
 import { smartRfqApi } from '@/lib/api/smart-rfq';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -58,29 +59,29 @@ export default function EditRfqPage() {
         }
       />
 
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl space-y-4">
+      <div className="glass-card p-6  space-y-4">
         {isLoading ? (
           <div className="animate-pulse space-y-4">
-            {[1, 2, 3].map((i) => <div key={i} className="h-12 rounded-lg bg-white/[0.04]" />)}
+            {[1, 2, 3].map((i) => <div key={i} className="h-12 rounded-lg bg-surface" />)}
           </div>
         ) : (
           <>
             <div className="space-y-2">
-              <Label className="text-white/80">Title</Label>
-              <Input value={form.title} onChange={(e) => update('title', e.target.value)} className="bg-white/[0.04] border-white/[0.06] text-white" />
+              <Label className="text-text-secondary">Title</Label>
+              <Input value={form.title} onChange={(e) => update('title', e.target.value)} className="bg-surface border-border text-text-primary" />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/80">Description</Label>
-              <textarea
+              <Label className="text-text-secondary">Description</Label>
+              <Textarea
                 value={form.description}
                 onChange={(e) => update('description', e.target.value)}
                 rows={4}
-                className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/80">Expiry Date</Label>
-              <Input type="date" value={form.expiresAt} onChange={(e) => update('expiresAt', e.target.value)} className="bg-white/[0.04] border-white/[0.06] text-white" />
+              <Label className="text-text-secondary">Expiry Date</Label>
+              <Input type="date" value={form.expiresAt} onChange={(e) => update('expiresAt', e.target.value)} className="bg-surface border-border text-text-primary" />
             </div>
           </>
         )}

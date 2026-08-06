@@ -6,8 +6,8 @@ import FormField from './vendor-registration/components/FormField'
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
 
@@ -55,15 +55,15 @@ export default function Step1Basic({ form, errors, update }: Step1BasicProps) {
           value={form.category}
           onChange={e => update('category', e.target.value)}
         >
-          <option value="" style={{ background: '#1D0001', color: 'rgba(255,255,255,0.5)' }}>Select a category</option>
-          <option value="Automation" style={{ background: '#1D0001' }}>Automation</option>
-          <option value="Material Handling" style={{ background: '#1D0001' }}>Material Handling</option>
-          <option value="Industrial Equipment" style={{ background: '#1D0001' }}>Industrial Equipment</option>
-          <option value="Machinery" style={{ background: '#1D0001' }}>Machinery</option>
-          <option value="Tools & Hardware" style={{ background: '#1D0001' }}>Tools & Hardware</option>
-          <option value="Construction Materials" style={{ background: '#1D0001' }}>Construction Materials</option>
-          <option value="Electronics & Electrical" style={{ background: '#1D0001' }}>Electronics & Electrical</option>
-          <option value="Plumbing & HVAC" style={{ background: '#1D0001' }}>Plumbing & HVAC</option>
+          <option value="" style={{ background: 'var(--bg-base)', color: 'rgba(255,255,255,0.5)' }}>Select a category</option>
+          <option value="Automation" style={{ background: 'var(--bg-base)' }}>Automation</option>
+          <option value="Material Handling" style={{ background: 'var(--bg-base)' }}>Material Handling</option>
+          <option value="Industrial Equipment" style={{ background: 'var(--bg-base)' }}>Industrial Equipment</option>
+          <option value="Machinery" style={{ background: 'var(--bg-base)' }}>Machinery</option>
+          <option value="Tools & Hardware" style={{ background: 'var(--bg-base)' }}>Tools & Hardware</option>
+          <option value="Construction Materials" style={{ background: 'var(--bg-base)' }}>Construction Materials</option>
+          <option value="Electronics & Electrical" style={{ background: 'var(--bg-base)' }}>Electronics & Electrical</option>
+          <option value="Plumbing & HVAC" style={{ background: 'var(--bg-base)' }}>Plumbing & HVAC</option>
         </select>
       </FormField>
 
@@ -102,15 +102,15 @@ export default function Step1Basic({ form, errors, update }: Step1BasicProps) {
             value={form.unit}
             onChange={e => update('unit', e.target.value)}
           >
-            <option value="" style={{ background: '#1D0001', color: 'rgba(255,255,255,0.5)' }}>Select unit</option>
-            <option value="pieces" style={{ background: '#1D0001' }}>pieces</option>
-            <option value="kg" style={{ background: '#1D0001' }}>kg</option>
-            <option value="tonnes" style={{ background: '#1D0001' }}>tonnes</option>
-            <option value="meters" style={{ background: '#1D0001' }}>meters</option>
-            <option value="liters" style={{ background: '#1D0001' }}>liters</option>
-            <option value="boxes" style={{ background: '#1D0001' }}>boxes</option>
-            <option value="sets" style={{ background: '#1D0001' }}>sets</option>
-            <option value="pairs" style={{ background: '#1D0001' }}>pairs</option>
+            <option value="" style={{ background: 'var(--bg-base)', color: 'rgba(255,255,255,0.5)' }}>Select unit</option>
+            <option value="pieces" style={{ background: 'var(--bg-base)' }}>pieces</option>
+            <option value="kg" style={{ background: 'var(--bg-base)' }}>kg</option>
+            <option value="tonnes" style={{ background: 'var(--bg-base)' }}>tonnes</option>
+            <option value="meters" style={{ background: 'var(--bg-base)' }}>meters</option>
+            <option value="liters" style={{ background: 'var(--bg-base)' }}>liters</option>
+            <option value="boxes" style={{ background: 'var(--bg-base)' }}>boxes</option>
+            <option value="sets" style={{ background: 'var(--bg-base)' }}>sets</option>
+            <option value="pairs" style={{ background: 'var(--bg-base)' }}>pairs</option>
           </select>
         </FormField>
       </div>

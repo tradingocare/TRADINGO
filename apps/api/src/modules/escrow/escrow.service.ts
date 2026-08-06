@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException,
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { EscrowAnalyticsService } from './escrow-analytics.service';
+import { CommissionService } from '../commission/commission.service';
+import { SettlementService } from '../settlement/settlement.service';
 import { QueryEscrowDto } from './dto/escrow.dto';
 import { NotificationType, EscrowEventType } from '@prisma/client';
 
@@ -13,6 +15,8 @@ export class EscrowService {
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
     private readonly escrowAnalyticsService: EscrowAnalyticsService,
+    private readonly commissionService: CommissionService,
+    private readonly settlementService: SettlementService,
   ) {}
 
   async hold(orderId: string, companyId: string, userId: string) {
@@ -223,7 +227,7 @@ export class EscrowService {
         escrow.buyerCompanyId,
         undefined,
         NotificationType.ESCROW_REFUNDED,
-        { orderNumber: escrow.order.orderNumber, amount: escrow.amount, createdById: userId },
+        { orderNumber: escrow.order?.orderNumber ?? 'N/A', bookingId: escrow.bookingId, amount: escrow.amount, createdById: userId },
       );
     } catch (err) {
       this.logger.warn(`Failed to send ESCROW_REFUNDED notification: ${(err as Error).message}`);
@@ -270,15 +274,29 @@ export class EscrowService {
   async release(escrowId: string, companyId: string, userId: string) {
     const escrow = await this.prisma.escrow.findUnique({
       where: { id: escrowId },
-      include: { order: { select: { orderNumber: true } } },
+      include: { order: { select: { orderNumber: true, id: true } } },
     });
     if (!escrow) throw new NotFoundException('Escrow not found');
     if (escrow.status !== 'HELD') throw new BadRequestException('Escrow must be in HELD status to release');
 
+    const commission = await this.commissionService.calculate(escrow.netAmount, undefined);
+
     const updated = await this.prisma.$transaction(async (tx) => {
       const e = await tx.escrow.update({
         where: { id: escrowId },
-        data: { status: 'RELEASED', releasedAt: new Date() },
+        data: {
+          status: 'RELEASED',
+          releasedAt: new Date(),
+          commissionAmount: commission.commissionAmount,
+          commissionMetadata: {
+            grossAmount: escrow.netAmount,
+            commissionType: 'PERCENTAGE',
+            platformCommission: commission.commissionAmount,
+            netSettlementAmount: escrow.netAmount - commission.commissionAmount,
+            tdsAmount: commission.tdsAmount,
+            gstAmount: commission.gstAmount,
+          },
+        },
       });
 
       await tx.escrowEvent.create({
@@ -286,6 +304,12 @@ export class EscrowService {
           escrowId,
           type: EscrowEventType.ESCROW_RELEASED,
           createdById: userId,
+          metadata: {
+            commissionAmount: commission.commissionAmount,
+            tdsAmount: commission.tdsAmount,
+            gstAmount: commission.gstAmount,
+            netAmount: commission.netAmount,
+          },
         },
       });
 
@@ -294,7 +318,10 @@ export class EscrowService {
 
     await this.escrowAnalyticsService.trackEvent(companyId, escrowId, 'ESCROW_RELEASED', {
       amount: escrow.amount,
-      netAmount: escrow.netAmount,
+      netAmount: commission.netAmount,
+      commissionAmount: commission.commissionAmount,
+      tdsAmount: commission.tdsAmount,
+      gstAmount: commission.gstAmount,
     });
 
     try {
@@ -302,10 +329,16 @@ export class EscrowService {
         escrow.sellerCompanyId,
         undefined,
         NotificationType.ESCROW_RELEASED,
-        { orderNumber: escrow.order.orderNumber, amount: escrow.netAmount, createdById: userId },
+        { orderNumber: escrow.order?.orderNumber ?? 'N/A', bookingId: escrow.bookingId, amount: commission.netAmount, createdById: userId },
       );
     } catch (err) {
       this.logger.warn(`Failed to send ESCROW_RELEASED notification: ${(err as Error).message}`);
+    }
+
+    try {
+      await this.settlementService.create(escrowId, companyId, userId);
+    } catch (err) {
+      this.logger.warn(`Failed to auto-create settlement for escrow ${escrowId}: ${(err as Error).message}`);
     }
 
     return updated;
@@ -322,15 +355,15 @@ export class EscrowService {
 
     this.logger.log(`Processing auto-release for ${escrows.length} escrows`);
 
-    const results: { escrowId: string; orderId: string; success: boolean; error?: string }[] = [];
+    const results: { escrowId: string; orderId: string | null; bookingId: string | null; success: boolean; error?: string }[] = [];
 
     for (const escrow of escrows) {
       try {
         await this.release(escrow.id, escrow.sellerCompanyId, 'system-auto-release');
-        results.push({ escrowId: escrow.id, orderId: escrow.orderId, success: true });
-        this.logger.log(`Auto-released escrow ${escrow.id} for order ${escrow.orderId}`);
+        results.push({ escrowId: escrow.id, orderId: escrow.orderId, bookingId: escrow.bookingId, success: true });
+        this.logger.log(`Auto-released escrow ${escrow.id} for ${escrow.orderId ? `order ${escrow.orderId}` : `booking ${escrow.bookingId}`}`);
       } catch (err) {
-        results.push({ escrowId: escrow.id, orderId: escrow.orderId, success: false, error: (err as Error).message });
+        results.push({ escrowId: escrow.id, orderId: escrow.orderId, bookingId: escrow.bookingId, success: false, error: (err as Error).message });
         this.logger.error(`Auto-release failed for escrow ${escrow.id}: ${(err as Error).message}`);
       }
     }

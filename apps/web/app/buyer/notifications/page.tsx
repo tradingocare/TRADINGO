@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { DashboardPageHeader } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { useBuyerNotifications, useMarkBuyerNotificationRead, useMarkAllBuyerNotificationsRead } from '@/hooks';
-import { Bell, CheckCheck, ExternalLink, Loader2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Bell, CheckCheck, ExternalLink, AlertCircle } from 'lucide-react';
 
 const typeIcons: Record<string, string> = {
   RFQ_RESPONSE: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
@@ -15,7 +16,7 @@ const typeIcons: Record<string, string> = {
 
 export default function BuyerNotificationsPage() {
   const [type, setType] = useState<string | undefined>();
-  const { data, isLoading } = useBuyerNotifications(type);
+  const { data, isLoading, isError } = useBuyerNotifications(type);
   const markRead = useMarkBuyerNotificationRead();
   const markAllRead = useMarkAllBuyerNotificationsRead();
 
@@ -41,7 +42,14 @@ export default function BuyerNotificationsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-text-tertiary" /></div>
+        <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">Failed to load notifications</h3>
+          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Something went wrong. Please try again.</p>
+          <Button variant="accent" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
       ) : notifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
           <Bell className="h-12 w-12 text-text-tertiary" />
@@ -52,7 +60,7 @@ export default function BuyerNotificationsPage() {
         <div className="space-y-2">
           {notifications.map((notif: any) => (
             <div key={notif.id}
-              className={`flex items-start gap-4 rounded-xl border p-4 transition-colors ${notif.readAt ? 'border-border bg-surface dark:bg-dark-surface dark:border-dark-border' : 'border-[#FF5A1F]/20 bg-[#FF5A1F]/5 dark:bg-[#FF5A1F]/10'}`}>
+              className={`flex items-start gap-4 rounded-xl border p-4 transition-colors ${notif.readAt ? 'border-border bg-surface dark:bg-dark-surface dark:border-dark-border' : 'border-border bg-surface border-l-2 border-l-accent'}`}>
               <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${typeIcons[notif.type] ?? 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary'}`}>
                 <Bell className="h-4 w-4" />
               </div>
@@ -63,7 +71,7 @@ export default function BuyerNotificationsPage() {
                 </div>
                 <p className="mt-0.5 text-xs text-text-secondary dark:text-dark-text-secondary">{notif.body}</p>
                 {!notif.readAt && (
-                  <Button variant="ghost" size="sm" className="mt-2 h-auto px-2 py-1 text-[11px] text-[#FF5A1F]" onClick={() => markRead.mutate(notif.id)}>
+                  <Button variant="ghost" size="sm" className="mt-2 h-auto px-2 py-1 text-[11px] text-[#f97316]" onClick={() => markRead.mutate(notif.id)}>
                     <CheckCheck className="h-3 w-3 mr-1" /> Mark Read
                   </Button>
                 )}

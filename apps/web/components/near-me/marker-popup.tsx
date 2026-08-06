@@ -34,7 +34,7 @@ export function MarkerPopup({ product }: MarkerPopupProps) {
         </h3>
 
         <Link href={`/companies/${product.companySlug}`}
-          className="text-xs text-text-secondary dark:text-dark-text-secondary truncate hover:text-[#FF5A1F] transition-colors inline-flex items-center gap-1"
+          className="text-xs text-text-secondary dark:text-dark-text-secondary truncate hover:text-[#f97316] transition-colors inline-flex items-center gap-1"
           aria-label={`View ${product.companyName} profile`}>
           <Building2 size={11} /> {product.companyName}
         </Link>
@@ -43,7 +43,7 @@ export function MarkerPopup({ product }: MarkerPopupProps) {
           <span className="font-bold text-text-primary dark:text-dark-text-primary">
             {product.price != null ? `₹${product.price.toLocaleString()}` : 'Price on request'}
           </span>
-          <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+          <span className="flex items-center gap-0.5 text-accent-500">
             <Star className="h-3 w-3" aria-hidden="true" />
             <span>{product.trustScore}</span>
           </span>
@@ -79,7 +79,7 @@ export function MarkerPopup({ product }: MarkerPopupProps) {
           </span>
           <Link
             href={`/products/${product.slug}`}
-            className="rounded-md bg-primary dark:bg-primary-dark px-2.5 py-1 text-[11px] font-medium text-white hover:opacity-90 transition-opacity"
+            className="rounded-md bg-primary dark:bg-primary-dark px-2.5 py-1 text-[11px] font-medium text-gray-900 hover:opacity-90 transition-opacity"
             aria-label={`View ${product.name}`}
           >
             View Product

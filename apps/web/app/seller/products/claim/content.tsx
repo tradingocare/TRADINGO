@@ -6,7 +6,9 @@ import { DashboardPageHeader } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiClient } from '@/lib/api-client';
-import { Search, Package, Loader2 } from 'lucide-react';
+import { Search, Package } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ProductMasterCategory {
   id: string;
@@ -81,14 +83,10 @@ export function ClaimProductContent() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-text-tertiary" />
+          <LoadingSpinner size="lg" />
         </div>
       ) : searched && results.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-10 text-center dark:bg-dark-surface dark:border-dark-border">
-          <Package className="mx-auto h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No products found</h3>
-          <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">Try a different search term.</p>
-        </div>
+        <EmptyState icon={Package} title="No products found" description="Try a different search term." />
       ) : results.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((product) => (
@@ -131,13 +129,7 @@ export function ClaimProductContent() {
           ))}
         </div>
       ) : searched === false && !query.trim() ? (
-        <div className="rounded-xl border border-border bg-surface p-10 text-center dark:bg-dark-surface dark:border-dark-border">
-          <Search className="mx-auto h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">Search products</h3>
-          <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">
-            Type a product name to search the catalog.
-          </p>
-        </div>
+        <EmptyState icon={Search} title="Search products" description="Type a product name to search the catalog." />
       ) : null}
     </div>
   );

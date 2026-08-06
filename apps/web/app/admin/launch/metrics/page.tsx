@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { Tabs } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { DashboardPageHeader, StatCard, DashboardSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
 import {
   Building2,
   Package,
@@ -118,14 +121,9 @@ function SectionLoading() {
 
 function SectionError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-      <Activity className="h-12 w-12 text-red-500" />
-      <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load section</p>
-      <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{message}</p>
-      <Button onClick={onRetry} className="mt-4">
-        Retry
-      </Button>
-    </div>
+    <Alert variant="error" title="Failed to load section">{message}
+      <div className="mt-3"><Button onClick={onRetry}>Retry</Button></div>
+    </Alert>
   );
 }
 
@@ -281,12 +279,7 @@ function ConversionSection() {
                   <span className="text-text-primary dark:text-dark-text-primary">{label}</span>
                   <span className="font-medium text-text-secondary dark:text-dark-text-secondary">{rate}%</span>
                 </div>
-                <div className="mt-1 h-2 w-full rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
-                  <div
-                    className="h-2 rounded-full bg-primary-500"
-                    style={{ width: `${Math.min(rate, 100)}%` }}
-                  />
-                </div>
+                <Progress value={Math.min(rate, 100)} size="lg" variant="info" className="mt-1" />
               </div>
             ))}
           </CardContent>
@@ -325,19 +318,7 @@ export default function LaunchMetricsPage() {
     <div className="space-y-6">
       <DashboardPageHeader title="Launch Metrics" description="Consolidated Phase 7E metrics" />
 
-      <div className="flex flex-wrap gap-2">
-        {sections.map((s) => (
-          <Button
-            key={s.id}
-            variant={activeSection === s.id ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveSection(s.id)}
-          >
-            {s.icon}
-            <span className="ml-2">{s.label}</span>
-          </Button>
-        ))}
-      </div>
+      <Tabs tabs={sections.map(s => ({ value: s.id, label: s.label, icon: s.icon }))} value={activeSection} onChange={(v) => setActiveSection(v as Section)} />
 
       <SectionComponent />
     </div>

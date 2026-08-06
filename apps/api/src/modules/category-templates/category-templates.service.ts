@@ -6,6 +6,7 @@ import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateFieldDto } from './dto/create-field.dto';
 import { UpdateFieldDto } from './dto/update-field.dto';
+import { ImportTemplateDto } from './dto/import-template.dto';
 
 @Injectable()
 export class CategoryTemplatesService {
@@ -332,7 +333,7 @@ export class CategoryTemplatesService {
     };
   }
 
-  async importJson(categoryId: string, userId: string, data: any) {
+  async importJson(categoryId: string, userId: string, data: ImportTemplateDto) {
     const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
     if (!category) throw new NotFoundException('Category not found');
 
@@ -370,7 +371,7 @@ export class CategoryTemplatesService {
               sectionId: newSection.id,
               key: field.key,
               label: field.label,
-              type: field.type,
+              type: field.type as any,
               placeholder: field.placeholder,
               helpText: field.helpText,
               defaultValue: field.defaultValue ?? undefined,

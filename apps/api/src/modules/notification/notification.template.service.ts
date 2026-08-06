@@ -37,12 +37,14 @@ const FALLBACK_TEMPLATES: Record<string, { title: string; body: string; emailSub
   PAYMENT_FAILED: { title: 'Payment Failed', body: 'Your payment of ₹{{amount}} has failed. Reason: {{reason}}', emailSubject: 'Payment Failed – Tradingo' },
   PAYMENT_REFUNDED: { title: 'Refund Processed', body: '₹{{amount}} has been refunded to your account.', emailSubject: 'Refund Processed – Tradingo' },
   CREDIT_PACK_PURCHASED: { title: 'Credit Pack Purchased', body: 'Your {{credits}} credit pack has been activated successfully.', emailSubject: 'Credit Pack Activated – Tradingo' },
+  PAYOUT_PROCESSED: { title: 'Payout Processed', body: '₹{{amount}} has been sent to your bank account (Net: ₹{{netAmount}}).', emailSubject: 'Payout Processed – Tradingo' },
+  PAYOUT_FAILED: { title: 'Payout Failed', body: 'Payout of ₹{{amount}} has failed. Reason: {{reason}}', emailSubject: 'Payout Failed – Tradingo' },
 
   // GoCash
   GOCASH_EARNED: { title: 'GoCash Credited', body: 'You earned ₹{{amount}} GoCash. Balance: ₹{{balance}}.', emailSubject: 'GoCash Credited – Tradingo' },
   GOCASH_REDEEMED: { title: 'GoCash Redeemed', body: '₹{{amount}} GoCash has been redeemed for {{redemptionType}}.', emailSubject: 'GoCash Redeemed – Tradingo' },
   GOCASH_EXPIRED: { title: 'GoCash Expired', body: '₹{{amount}} GoCash has expired from your account.', emailSubject: 'GoCash Expired – Tradingo' },
-  GOCASH_REWARD: { title: 'GoCash Reward', body: 'Congratulations! You earned ₹{{amount}} GoCash reward.', emailSubject: 'GoCash Reward – Tradingo' },
+  GOCASH_REWARD: { title: 'GoCash Reward', body: '{{message}}', emailSubject: 'GoCash Reward – Tradingo' },
   TRADGO_MILESTONE: { title: 'TradGo Milestone', body: 'Congratulations! You reached the {{milestoneName}} milestone and earned ₹{{reward}} GoCash!', emailSubject: 'TradGo Milestone – Tradingo' },
 
   // Subscription
@@ -129,6 +131,57 @@ const FALLBACK_TEMPLATES: Record<string, { title: string; body: string; emailSub
   // System
   SYSTEM_ANNOUNCEMENT: { title: 'Announcement', body: '{{message}}', emailSubject: 'Tradingo Announcement' },
   SYSTEM_MAINTENANCE: { title: 'Scheduled Maintenance', body: 'Tradingo will be under maintenance on {{date}} from {{start}} to {{end}}.', emailSubject: 'Scheduled Maintenance – Tradingo' },
+
+  // Ecosystem / GOCASH 2.0
+  MISSION_COMPLETED: { title: 'Mission Complete', body: '🎯 Mission "{{missionName}}" completed! +{{xpReward}} XP earned.', emailSubject: 'Mission Complete – Tradingo' },
+  BADGE_EARNED: { title: 'New Badge Earned', body: '🏅 Congratulations! You earned the "{{badgeName}}" badge!', emailSubject: 'Badge Earned – Tradingo' },
+  LEVEL_UP: { title: 'Level Up!', body: '🎉 Level Up! You reached {{newLevel}} — Rewards unlocked!', emailSubject: 'Level Up – Tradingo' },
+  DAILY_CHECKIN: { title: 'Daily Check-in', body: '✅ Day {{streakCount}} check-in streak! +{{xpEarned}} XP earned.', emailSubject: 'Daily Check-in – Tradingo' },
+  REWARD_EXPIRING: { title: 'Reward Expiring Soon', body: '⏰ Your {{rewardType}} reward of {{amount}} expires in {{days}} days.', emailSubject: 'Reward Expiring Soon – Tradingo' },
+  LEADERBOARD_IMPROVED: { title: 'Leaderboard Update', body: '📊 You moved up to #{{rank}} on the {{period}} leaderboard!', emailSubject: 'Leaderboard Update – Tradingo' },
+  CAMPAIGN_STARTED: { title: 'Campaign Started', body: '📢 "{{campaignName}}" is now live! Participate to earn rewards.', emailSubject: 'Campaign Started – Tradingo' },
+  CAMPAIGN_ENDING: { title: 'Campaign Ending Soon', body: '⏰ "{{campaignName}}" ends in {{days}} days. Complete tasks now!', emailSubject: 'Campaign Ending Soon – Tradingo' },
+  AI_SUGGESTED_MISSION: { title: 'AI Mission Suggestion', body: '🤖 {{suggestion}}', emailSubject: 'AI Mission Suggestion – Tradingo' },
+  REFERRAL_REWARD: { title: 'Referral Reward', body: '🎁 You earned {{amount}} GOCASH from a successful referral!', emailSubject: 'Referral Reward – Tradingo' },
+  REFERRAL_MILESTONE: { title: 'Referral Milestone', body: '🏆 You reached {{count}} successful referrals! Keep sharing.', emailSubject: 'Referral Milestone – Tradingo' },
+  MEMBERSHIP_UPGRADED: { title: 'Membership Upgraded', body: '⭐ Your plan has been upgraded to {{plan}}. Enjoy new benefits!', emailSubject: 'Membership Upgraded – Tradingo' },
+  MEMBERSHIP_EXPIRING: { title: 'Membership Expiring', body: '⚠️ Your {{plan}} plan expires in {{days}} days. Renew to keep benefits.', emailSubject: 'Membership Expiring – Tradingo' },
+  AI_CREDIT_ADDED: { title: 'AI Credits Added', body: '🤖 {{amount}} AI credits have been added to your {{plan}} plan.', emailSubject: 'AI Credits Added – Tradingo' },
+
+  // Security & Incident Response
+  SECURITY_ALERT: { title: 'Security Alert', body: '{{message}}', emailSubject: 'Security Alert – Tradingo' },
+  INCIDENT_DETECTED: { title: 'Incident Detected', body: '{{incidentType}} incident detected: {{description}}', emailSubject: 'Incident Detected – Tradingo' },
+  INCIDENT_RESOLVED: { title: 'Incident Resolved', body: '{{incidentType}} incident #{{incidentId}} has been resolved.', emailSubject: 'Incident Resolved – Tradingo' },
+  INCIDENT_ESCALATED: { title: 'Incident Escalated', body: '{{incidentType}} incident #{{incidentId}} escalated to {{severity}}.', emailSubject: 'Incident Escalated – Tradingo' },
+  UNAUTHORIZED_ACCESS: { title: 'Unauthorized Access', body: 'Unauthorized access attempt detected: {{details}}', emailSubject: 'Unauthorized Access – Tradingo' },
+  BRUTE_FORCE_DETECTED: { title: 'Brute Force Detected', body: 'Multiple failed attempts from {{ipAddress}} targeting {{resource}}.', emailSubject: 'Brute Force Detected – Tradingo' },
+  AUTH_ANOMALY: { title: 'Authentication Anomaly', body: 'Unusual authentication activity: {{details}}', emailSubject: 'Auth Anomaly – Tradingo' },
+
+  // Support
+  TICKET_CREATED: { title: 'Support Ticket Created', body: 'Ticket #{{ticketId}}: {{subject}}', emailSubject: 'Support Ticket Created – Tradingo' },
+  TICKET_ASSIGNED: { title: 'Ticket Assigned', body: 'Ticket #{{ticketId}} assigned to you: {{subject}}', emailSubject: 'Ticket Assigned – Tradingo' },
+  TICKET_MESSAGE_ADDED: { title: 'New Ticket Message', body: 'New message on ticket #{{ticketId}}: {{subject}}', emailSubject: 'New Message on Ticket – Tradingo' },
+  TICKET_RESOLVED: { title: 'Ticket Resolved', body: 'Ticket #{{ticketId}} has been resolved: {{subject}}', emailSubject: 'Ticket Resolved – Tradingo' },
+  TICKET_CLOSED: { title: 'Ticket Closed', body: 'Ticket #{{ticketId}} has been closed: {{subject}}', emailSubject: 'Ticket Closed – Tradingo' },
+  TICKET_REOPENED: { title: 'Ticket Reopened', body: 'Ticket #{{ticketId}} has been reopened: {{subject}}', emailSubject: 'Ticket Reopened – Tradingo' },
+
+  // TradeServ
+  BOOKING_CREATED: { title: 'New Booking', body: 'You have a new booking on {{date}} from {{clientName}}.', emailSubject: 'New Booking – TradeServ' },
+  BOOKING_CONFIRMED: { title: 'Booking Confirmed', body: 'Your booking on {{date}} has been confirmed by {{professionalName}}.', emailSubject: 'Booking Confirmed – TradeServ' },
+  BOOKING_COMPLETED: { title: 'Booking Completed', body: 'Your booking on {{date}} with {{professionalName}} has been completed.', emailSubject: 'Booking Completed – TradeServ' },
+  BOOKING_CANCELLED: { title: 'Booking Cancelled', body: 'Your booking on {{date}} has been cancelled. Reason: {{reason}}', emailSubject: 'Booking Cancelled – TradeServ' },
+  BOOKING_PAYMENT_FAILED: { title: 'Payment Failed', body: 'Payment for your booking on {{date}} failed. Reason: {{reason}}', emailSubject: 'Payment Failed – TradeServ' },
+  REVIEW_SUBMITTED: { title: 'New Review', body: '{{reviewerName}} left a {{rating}}-star review for your services.', emailSubject: 'New Review – TradeServ' },
+  PROPOSAL_SUBMITTED: { title: 'New Proposal', body: '{{professionalName}} has submitted a proposal for your inquiry.', emailSubject: 'New Proposal – TradeServ' },
+  PROPOSAL_ACCEPTED: { title: 'Proposal Accepted', body: 'Your proposal for {{clientName}} has been accepted.', emailSubject: 'Proposal Accepted – TradeServ' },
+  PROPOSAL_REJECTED: { title: 'Proposal Not Accepted', body: 'Your proposal for {{clientName}} was not selected.', emailSubject: 'Proposal Update – TradeServ' },
+  INQUIRY_RECEIVED: { title: 'New Inquiry', body: '{{clientName}} has sent an inquiry: {{requirement}}.', emailSubject: 'New Inquiry – TradeServ' },
+
+  // TradeTalk Social
+  POST_CREATED: { title: 'New Post', body: '{{authorName}} created a new post in {{communityName}}.', emailSubject: 'New Post – TradeTalk' },
+  COMMENT_ADDED: { title: 'New Comment', body: '{{authorName}} commented on your post.', emailSubject: 'New Comment – TradeTalk' },
+  FOLLOW_RECEIVED: { title: 'New Follower', body: '{{followerName}} started following you.', emailSubject: 'New Follower – TradeTalk' },
+  POST_LIKED: { title: 'Post Liked', body: '{{userName}} liked your post.', emailSubject: 'Post Liked – TradeTalk' },
 
   // Generic
   GENERIC: { title: 'Notification', body: '{{message}}', emailSubject: 'Notification – Tradingo' },

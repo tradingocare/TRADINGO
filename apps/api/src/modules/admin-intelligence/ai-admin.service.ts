@@ -2,6 +2,12 @@ import { Injectable, Logger } from '@nestjs/common'
 import { AiGatewayService } from '../ai-gateway/ai-gateway.service'
 import { PromptManagerService } from '../ai-gateway/prompt-manager.service'
 import { TaskType } from '@prisma/client'
+import {
+  AiMorningBriefDto, AiRevenueForecastDto, AiUserGrowthPredictionDto,
+  AiFraudIntelligenceDto, AiChurnPredictionDto, AiCategoryIntelligenceDto,
+  AiGeoIntelligenceDto, AiMarketTrendsDto, AiAlertsDto,
+  AiExecutiveCopilotDto, AiWeeklyMonthlyReportDto, AiDecisionSupportDto,
+} from './dto/ai-admin.dto'
 
 @Injectable()
 export class AiAdminService {
@@ -63,7 +69,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }
   }
 
-  async morningBrief(companyId: string, userId: string, payload: any) {
+  async morningBrief(companyId: string, userId: string, payload: AiMorningBriefDto) {
     const context: Record<string, unknown> = {}
     if (payload.date) context.date = payload.date
     if (payload.platformData) context.platformData = payload.platformData
@@ -75,7 +81,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async revenueForecast(companyId: string, userId: string, payload: any) {
+  async revenueForecast(companyId: string, userId: string, payload: AiRevenueForecastDto) {
     const context: Record<string, unknown> = {}
     if (payload.forecastDays) context.forecastDays = payload.forecastDays
     if (payload.revenueData) context.revenueData = payload.revenueData
@@ -87,7 +93,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async userGrowthPrediction(companyId: string, userId: string, payload: any) {
+  async userGrowthPrediction(companyId: string, userId: string, payload: AiUserGrowthPredictionDto) {
     const context: Record<string, unknown> = {}
     if (payload.buyerData) context.buyerData = payload.buyerData
     if (payload.sellerData) context.sellerData = payload.sellerData
@@ -100,7 +106,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async fraudIntelligence(companyId: string, userId: string, payload: any) {
+  async fraudIntelligence(companyId: string, userId: string, payload: AiFraudIntelligenceDto) {
     const context: Record<string, unknown> = {}
     if (payload.walletAlerts) context.walletAlerts = payload.walletAlerts
     if (payload.referralAlerts) context.referralAlerts = payload.referralAlerts
@@ -113,7 +119,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async churnPrediction(companyId: string, userId: string, payload: any) {
+  async churnPrediction(companyId: string, userId: string, payload: AiChurnPredictionDto) {
     const context: Record<string, unknown> = {}
     if (payload.buyerChurnData) context.buyerChurnData = payload.buyerChurnData
     if (payload.sellerChurnData) context.sellerChurnData = payload.sellerChurnData
@@ -126,7 +132,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async categoryIntelligence(companyId: string, userId: string, payload: any) {
+  async categoryIntelligence(companyId: string, userId: string, payload: AiCategoryIntelligenceDto) {
     const context: Record<string, unknown> = {}
     if (payload.categories) context.categories = payload.categories
     if (payload.orderData) context.orderData = payload.orderData
@@ -138,7 +144,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async geoIntelligence(companyId: string, userId: string, payload: any) {
+  async geoIntelligence(companyId: string, userId: string, payload: AiGeoIntelligenceDto) {
     const context: Record<string, unknown> = {}
     if (payload.cityData) context.cityData = payload.cityData
     if (payload.stateData) context.stateData = payload.stateData
@@ -151,7 +157,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async marketTrends(companyId: string, userId: string, payload: any) {
+  async marketTrends(companyId: string, userId: string, payload: AiMarketTrendsDto) {
     const context: Record<string, unknown> = {}
     if (payload.searchTrends) context.searchTrends = payload.searchTrends
     if (payload.pricingData) context.pricingData = payload.pricingData
@@ -164,7 +170,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async aiAlerts(companyId: string, userId: string, payload: any) {
+  async aiAlerts(companyId: string, userId: string, payload: AiAlertsDto) {
     const context: Record<string, unknown> = {}
     if (payload.revenueData) context.revenueData = payload.revenueData
     if (payload.fraudData) context.fraudData = payload.fraudData
@@ -178,7 +184,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async executiveCopilot(companyId: string, userId: string, payload: any) {
+  async executiveCopilot(companyId: string, userId: string, payload: AiExecutiveCopilotDto) {
     const context: Record<string, unknown> = {}
     if (payload.platformHealth) context.platformHealth = payload.platformHealth
     if (payload.revenueMetrics) context.revenueMetrics = payload.revenueMetrics
@@ -192,7 +198,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async weeklyMonthlyReport(companyId: string, userId: string, payload: any) {
+  async weeklyMonthlyReport(companyId: string, userId: string, payload: AiWeeklyMonthlyReportDto) {
     const context: Record<string, unknown> = {
       reportType: payload.reportType,
     }
@@ -208,7 +214,7 @@ Provide a structured JSON response appropriate for the action. Include scores, c
     }, companyId, userId)
   }
 
-  async decisionSupport(companyId: string, userId: string, payload: any) {
+  async decisionSupport(companyId: string, userId: string, payload: AiDecisionSupportDto) {
     const context: Record<string, unknown> = {}
     if (payload.marketData) context.marketData = payload.marketData
     if (payload.platformData) context.platformData = payload.platformData

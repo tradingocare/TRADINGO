@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { SmartNegotiationService } from './smart-negotiation.service';
 import { CounterOfferDto } from './dto/counter-offer.dto';
 import { StartNegotiationDto } from './dto/start-negotiation.dto';
@@ -10,6 +12,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Smart Negotiation Engine')
+@Throttle(RateLimits.NEGOTIATION)
 @UseGuards(JwtAuthGuard)
 @Controller('smart-negotiation')
 export class SmartNegotiationController {

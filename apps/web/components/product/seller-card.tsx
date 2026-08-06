@@ -23,16 +23,16 @@ const VERIFICATION_LABELS: Record<string, string> = {
 export function SellerCard({ seller, onChat }: SellerCardProps) {
   const trustColor =
     seller.trustScore >= 80
-      ? 'text-accent-600 dark:text-accent-400'
+      ? 'text-accent'
       : seller.trustScore >= 50
-        ? 'text-amber-600 dark:text-amber-400'
+        ? 'text-accent'
         : 'text-red-600 dark:text-red-400';
 
   const trustBg =
     seller.trustScore >= 80
-      ? 'bg-accent-500/10'
+      ? 'bg-accent/10'
       : seller.trustScore >= 50
-        ? 'bg-amber-500/10'
+        ? 'bg-accent/10'
         : 'bg-red-500/10';
 
   const memberSince = new Date(seller.createdAt).getFullYear();
@@ -59,7 +59,7 @@ export function SellerCard({ seller, onChat }: SellerCardProps) {
           <div className="min-w-0 flex-1">
             <Link
               href={`/companies/${seller.slug}`}
-              className="text-base font-semibold text-text-primary hover:text-primary-600 dark:text-dark-text-primary dark:hover:text-primary-400"
+              className="text-base font-semibold text-text-primary hover:text-accent"
             >
               {seller.name}
             </Link>

@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { v4 as uuid } from 'uuid';
 
@@ -13,9 +13,9 @@ export class BulkOperationsService {
     return owner.company;
   }
 
-  async previewImport(userId: string, rows: any[]) {
-    const company = await this.resolveCompany(userId);
-    const results = rows.map((row, i) => {
+   async previewImport(userId: string, rows: any[]) {
+     await this.resolveCompany(userId);
+     const results = rows.map((row, i) => {
       const errors: string[] = [];
       if (!row.name) errors.push('Name is required');
       if (row.sku) {

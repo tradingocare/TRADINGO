@@ -1,14 +1,14 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
 import { type ProductDetailVariant } from '@/types/product-detail';
 
-const GLASS = 'rgba(255,255,255,0.04)';
-const BORDER = '1px solid rgba(255,255,255,0.09)';
-const ACTIVE_BG = 'rgba(255,77,0,0.15)';
-const ACTIVE_BORDER = '1px solid rgba(255,77,0,0.4)';
+const GLASS = 'var(--bg-elevated)';
+const BORDER = '1px solid var(--border-color)';
+const ACTIVE_BG = 'color-mix(in srgb, var(--accent) 15%, transparent)';
+const ACTIVE_BORDER = '1px solid color-mix(in srgb, var(--accent) 40%, transparent)';
 
 interface VariantSelectorProps {
   variants: ProductDetailVariant[];
@@ -38,7 +38,7 @@ export function VariantSelector({
     <div className="space-y-4">
       {Array.from(grouped.entries()).map(([type, items]) => (
         <div key={type}>
-          <p className="mb-2 text-sm font-semibold text-white/70">{type}</p>
+          <p className="mb-2 text-sm font-semibold text-text-primary">{type}</p>
           <div className="flex flex-wrap gap-2">
             {items.map((v) => {
               const isSelected = selectedVariant?.id === v.id;
@@ -48,11 +48,11 @@ export function VariantSelector({
                   style={{
                     background: isSelected ? ACTIVE_BG : GLASS,
                     border: isSelected ? ACTIVE_BORDER : BORDER,
-                    color: isSelected ? '#FF4D00' : 'rgba(255,255,255,0.6)',
+                    color: isSelected ? 'var(--accent)' : 'var(--text-secondary)',
                   }}
                 >
                   {v.value}
-                  {isSelected && <CheckCircle size={13} className="ml-1 inline" style={{ color: '#FF4D00' }} />}
+                  {isSelected && <CheckCircle size={13} className="ml-1 inline text-accent" />}
                 </button>
               );
             })}
@@ -61,20 +61,20 @@ export function VariantSelector({
       ))}
 
       {selectedVariant && (
-        <div className="rounded-2xl p-4" style={{ background: GLASS, border: BORDER }}>
-          {selectedVariant.sku && <p className="text-[11px] text-white/40">SKU: {selectedVariant.sku}</p>}
+        <div className="rounded-2xl p-4 bg-surface border border-border">
+          {selectedVariant.sku && <p className="text-[11px] text-text-tertiary">SKU: {selectedVariant.sku}</p>}
           {selectedVariant.price != null && (
-            <p className="text-lg font-black text-white">
+            <p className="text-lg font-black text-text-primary">
               ₹{selectedVariant.price.toLocaleString()}
               {selectedVariant.compareAtPrice && (
-                <span className="ml-2 text-sm text-white/30 line-through">₹{selectedVariant.compareAtPrice.toLocaleString()}</span>
+                <span className="ml-2 text-sm text-text-tertiary line-through">₹{selectedVariant.compareAtPrice.toLocaleString()}</span>
               )}
             </p>
           )}
           {selectedVariant.stockStatus && (
             <p className="mt-1 text-xs font-semibold" style={{
-              color: selectedVariant.stockStatus === 'IN_STOCK' ? '#4ade80'
-                : selectedVariant.stockStatus === 'LOW_STOCK' ? '#F2C94C' : '#f87171',
+              color: selectedVariant.stockStatus === 'IN_STOCK' ? 'var(--status-success)'
+                : selectedVariant.stockStatus === 'LOW_STOCK' ? 'var(--accent)' : 'var(--status-error)',
             }}>
               {selectedVariant.stockStatus === 'IN_STOCK' ? 'In Stock'
                 : selectedVariant.stockStatus === 'LOW_STOCK' ? 'Low Stock' : 'Out of Stock'}

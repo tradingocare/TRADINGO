@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import api from '../../../../lib/api/client'
 import type { SectionProps, CategoryNode } from '../../../../types/vendor-onboarding'
-import { Search, Plus, X, ChevronDown, ChevronRight, Star } from 'lucide-react'
+import { Search, X, ChevronDown, ChevronRight, Star } from 'lucide-react'
 
 export default function Section2Categories({ vendor, onSave, onNext, onBack }: SectionProps) {
   const [tree, setTree] = useState<CategoryNode[]>([])
@@ -20,7 +20,7 @@ export default function Section2Categories({ vendor, onSave, onNext, onBack }: S
         const d = r.data?.data || r.data || r
         setTree(Array.isArray(d) ? d : [])
       })
-      .catch(() => {})
+      .catch(() => { console.error('Failed to load categories'); })
       .finally(() => setLoading(false))
   }, [])
 
@@ -35,7 +35,7 @@ export default function Section2Categories({ vendor, onSave, onNext, onBack }: S
             const d = r.data?.data || r.data || r
             setSearchResults(Array.isArray(d) ? d : [])
           })
-          .catch(() => {})
+          .catch(() => { console.error('Category search failed'); })
       }, 300)
     }
   })(), [])
@@ -77,22 +77,22 @@ export default function Section2Categories({ vendor, onSave, onNext, onBack }: S
 
     return (
       <div key={node.id}>
-        <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/5 transition-colors"
+        <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-surface transition-colors"
           style={{ paddingLeft: `${12 + depth * 16}px` }}>
           {hasChildren ? (
-            <button onClick={() => toggleExpand(node.slug)} className="text-white/30 hover:text-white/60">
+            <button onClick={() => toggleExpand(node.slug)} className="text-text-tertiary hover:text-text-secondary">
               {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
           ) : <div className="w-4" />}
           {node.icon && <span className="text-sm">{node.icon}</span>}
-          <span className="flex-1 text-white/80 text-sm truncate">{node.name}</span>
-          <span className="text-white/20 text-xs">{node.productCount}</span>
+          <span className="flex-1 text-text-secondary text-sm truncate">{node.name}</span>
+          <span className="text-text-tertiary text-xs">{node.productCount}</span>
           <button onClick={() => toggleCategory(node.slug)}
-            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all"
+            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all bg-surface"
             style={{
-              background: isSelected ? 'rgba(255,77,0,0.15)' : 'rgba(255,255,255,0.06)',
-              border: isSelected ? '1px solid rgba(255,77,0,0.35)' : '1px solid rgba(255,255,255,0.1)',
-              color: isSelected ? '#FF4D00' : 'rgba(255,255,255,0.5)',
+              background: isSelected ? 'rgba(245, 158, 11, 0.15)' : '',
+              border: isSelected ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid var(--border-color)',
+              color: isSelected ? '#f59e0b' : 'rgba(255,255,255,0.5)',
             }}>
             {isSelected ? 'Added' : '+ Add'}
           </button>
@@ -115,64 +115,63 @@ export default function Section2Categories({ vendor, onSave, onNext, onBack }: S
         <div className="relative mb-4">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
           <input value={search} onChange={e => { setSearch(e.target.value); debouncedSearch(e.target.value) }}
-            className="w-full px-10 py-3 rounded-xl text-white text-sm bg-white/5 border border-white/10 focus:outline-none focus:border-[#FF4D00] transition-colors"
+            className="w-full px-10 py-3 rounded-xl text-text-primary text-sm bg-surface border border-border focus:outline-none focus:border-[#f59e0b] transition-colors"
             placeholder="Search categories..." />
         </div>
 
         {searchResults.length > 0 ? (
           <div className="space-y-1">
             {searchResults.map((cat: any) => (
-              <div key={cat.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/5 transition-colors">
+              <div key={cat.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-surface transition-colors">
                 {cat.icon && <span className="text-sm">{cat.icon}</span>}
-                <span className="flex-1 text-white/80 text-sm">{cat.name}</span>
+                <span className="flex-1 text-text-secondary text-sm">{cat.name}</span>
                 <button onClick={() => toggleCategory(cat.slug)}
-                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all"
-                  style={{
-                    background: selected.includes(cat.slug) ? 'rgba(255,77,0,0.15)' : 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: selected.includes(cat.slug) ? '#FF4D00' : 'rgba(255,255,255,0.5)',
-                  }}>
+                    className="px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all bg-surface"
+                    style={{
+                      background: selected.includes(cat.slug) ? 'rgba(245, 158, 11, 0.15)' : '',
+                      border: '1px solid var(--border-color)',
+                      color: selected.includes(cat.slug) ? '#f59e0b' : 'rgba(255,255,255,0.5)',
+                    }}>
                   {selected.includes(cat.slug) ? 'Added' : '+ Add'}
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <div className="rounded-xl bg-white/5 border border-white/10 max-h-[500px] overflow-y-auto">
+          <div className="rounded-xl bg-surface border border-border max-h-[500px] overflow-y-auto">
             {filteredTree.map(node => renderNode(node))}
           </div>
         )}
 
         <div className="flex items-center gap-3 mt-6">
-          {onBack && <button onClick={onBack} className="px-4 py-2 text-sm text-white/50 hover:text-white/80">Back</button>}
+          {onBack && <button onClick={onBack} className="px-4 py-2 text-sm text-text-tertiary hover:text-text-secondary">Back</button>}
           <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
             onClick={save} disabled={saving || selected.length === 0}
             className="px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-40"
-            style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', color:'#fff' }}>
+            style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff' }}>
             {saving ? 'Saving...' : `Save (${selected.length}) & Continue`}
           </motion.button>
         </div>
       </div>
 
       <div>
-        <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-          <h3 className="text-white font-semibold text-sm mb-3">
+        <div className="rounded-xl bg-surface border border-border p-4">
+          <h3 className="text-text-primary font-semibold text-sm mb-3">
             Selected Categories ({selected.length}/10)
           </h3>
           {selected.length === 0 ? (
-            <p className="text-white/30 text-xs">No categories selected yet. Browse and add categories from the left panel.</p>
+            <p className="text-text-tertiary text-xs">No categories selected yet. Browse and add categories from the left panel.</p>
           ) : (
             <div className="space-y-2">
               {selected.map((slug, i) => {
                 const cat = tree.find(c => c.slug === slug) || searchResults.find(c => c.slug === slug)
                 return (
                   <div key={slug}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all"
-                    style={{ background: i === 0 ? 'rgba(255,77,0,0.08)' : 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    {i === 0 && <Star size={12} className="text-[#FF4D00] flex-shrink-0" />}
-                    <span className="flex-1 text-white/80 text-xs truncate">{cat?.name || slug}</span>
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all bg-surface" style={{ background: i === 0 ? 'rgba(245, 158, 11, 0.08)' : '', border: '1px solid var(--border-color)' }}>
+                    {i === 0 && <Star size={12} className="text-[#f59e0b] flex-shrink-0" />}
+                    <span className="flex-1 text-text-secondary text-xs truncate">{cat?.name || slug}</span>
                     <button onClick={() => setSelected(prev => prev.filter(s => s !== slug))}
-                      className="text-white/20 hover:text-red-400">
+                      className="text-text-tertiary hover:text-red-400">
                       <X size={12} />
                     </button>
                   </div>
@@ -182,9 +181,9 @@ export default function Section2Categories({ vendor, onSave, onNext, onBack }: S
           )}
 
           {selected.length > 0 && (
-            <div className="mt-4 p-3 rounded-xl bg-white/5">
-              <p className="text-white/50 text-[10px] font-semibold mb-2">📊 Market Insight</p>
-              <p className="text-white/80 text-xs">Selected categories will be used to match your products with buyer searches.</p>
+            <div className="mt-4 p-3 rounded-xl bg-surface">
+              <p className="text-text-tertiary text-[10px] font-semibold mb-2">📊 Market Insight</p>
+              <p className="text-text-secondary text-xs">Selected categories will be used to match your products with buyer searches.</p>
             </div>
           )}
         </div>

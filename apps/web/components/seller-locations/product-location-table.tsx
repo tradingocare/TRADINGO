@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { MapPin, ExternalLink, Search, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { LocationStatusBadge } from './location-status-badge';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { ProductWithLocation } from '@/lib/api/product-locations';
 
 interface ProductLocationTableProps {
@@ -84,7 +86,7 @@ export function ProductLocationTable({
         {!searchInput && (
           <Link
             href="/seller/products/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary dark:bg-primary-dark px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary dark:bg-primary-dark px-4 py-2 text-sm font-medium text-gray-900 hover:opacity-90 transition-opacity"
           >
             Add Product
           </Link>
@@ -132,44 +134,34 @@ export function ProductLocationTable({
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-surface-border dark:border-dark-border">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-surface-secondary dark:bg-dark-surface-secondary text-xs font-medium text-text-tertiary dark:text-dark-text-tertiary uppercase tracking-wider">
-              <th className="px-4 py-3 text-left w-10">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.length === products.length && products.length > 0}
-                  onChange={toggleSelectAll}
-                  className="rounded border-surface-border dark:border-dark-border"
-                />
-              </th>
-              <th className="px-4 py-3 text-left">
+        <Table>
+          <THead>
+            <TR className="bg-surface-secondary dark:bg-dark-surface-secondary text-xs font-medium text-text-tertiary dark:text-dark-text-tertiary uppercase tracking-wider">
+              <TH className="w-10">
+                <Checkbox checked={selectedIds.length === products.length && products.length > 0} onChange={toggleSelectAll} />
+              </TH>
+              <TH>
                 <span className="inline-flex items-center gap-1">
                   Product <ArrowUpDown className="h-3 w-3" />
                 </span>
-              </th>
-              <th className="px-4 py-3 text-left hidden sm:table-cell">SKU</th>
-              <th className="px-4 py-3 text-left hidden md:table-cell">Category</th>
-              <th className="px-4 py-3 text-center">Status</th>
-              <th className="px-4 py-3 text-center">Coordinates</th>
-              <th className="px-4 py-3 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-border dark:divide-dark-border">
+              </TH>
+              <TH className="hidden sm:table-cell">SKU</TH>
+              <TH className="hidden md:table-cell">Category</TH>
+              <TH className="text-center">Status</TH>
+              <TH className="text-center">Coordinates</TH>
+              <TH className="text-center">Actions</TH>
+            </TR>
+          </THead>
+          <TBody>
             {products.map((product) => (
-              <tr
+              <TR
                 key={product.id}
                 className="bg-surface dark:bg-dark-surface hover:bg-surface-secondary/50 dark:hover:bg-dark-surface-secondary/50 transition-colors"
               >
-                <td className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(product.id)}
-                    onChange={() => toggleSelect(product.id)}
-                    className="rounded border-surface-border dark:border-dark-border"
-                  />
-                </td>
-                <td className="px-4 py-3">
+                <TD>
+                  <Checkbox checked={selectedIds.includes(product.id)} onChange={() => toggleSelect(product.id)} />
+                </TD>
+                <TD>
                   <Link
                     href={`/seller/products/${product.id}/location`}
                     className="text-sm font-medium text-primary dark:text-primary-dark hover:underline"
@@ -179,20 +171,20 @@ export function ProductLocationTable({
                   <div className="text-xs text-text-tertiary dark:text-dark-text-tertiary mt-0.5">
                     {product.slug}
                   </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-text-secondary dark:text-dark-text-secondary hidden sm:table-cell">
+                </TD>
+                <TD className="hidden sm:table-cell">
                   {product.sku || '—'}
-                </td>
-                <td className="px-4 py-3 text-sm text-text-secondary dark:text-dark-text-secondary hidden md:table-cell">
+                </TD>
+                <TD className="hidden md:table-cell">
                   {product.category?.name || '—'}
-                </td>
-                <td className="px-4 py-3 text-center">
+                </TD>
+                <TD className="text-center">
                   <LocationStatusBadge
                     locationSet={product.locationSet}
                     indexed={product.indexedAt !== null}
                   />
-                </td>
-                <td className="px-4 py-3 text-center text-sm text-text-secondary dark:text-dark-text-secondary">
+                </TD>
+                <TD className="text-center">
                   {product.locationSet ? (
                     <span className="font-mono text-xs">
                       {product.latitude?.toFixed(4)}, {product.longitude?.toFixed(4)}
@@ -200,8 +192,8 @@ export function ProductLocationTable({
                   ) : (
                     <span className="text-text-tertiary dark:text-dark-text-tertiary">—</span>
                   )}
-                </td>
-                <td className="px-4 py-3 text-center">
+                </TD>
+                <TD className="text-center">
                   <Link
                     href={`/seller/products/${product.id}/location`}
                     className="inline-flex items-center gap-1 text-xs font-medium text-primary dark:text-primary-dark hover:underline"
@@ -209,11 +201,11 @@ export function ProductLocationTable({
                     <ExternalLink className="h-3 w-3" />
                     Edit
                   </Link>
-                </td>
-              </tr>
+                </TD>
+              </TR>
             ))}
-          </tbody>
-        </table>
+          </TBody>
+        </Table>
       </div>
 
       <div className="flex items-center justify-between text-sm text-text-secondary dark:text-dark-text-secondary">

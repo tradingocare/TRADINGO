@@ -51,8 +51,8 @@ const engines: Engine[] = [
   {
     icon: Shield,
     name: 'Secure Escrow',
-    tagline: 'Protected Payments',
-    description: 'Funds are held in escrow until both parties confirm satisfaction, ensuring zero-risk transactions.',
+    tagline: 'Zero Commission',
+    description: 'TRADINGO earns only from subscription plans — zero commission from any buyer or seller. Escrow protection included free, released only after you confirm delivery.',
     href: '/why-tradingo',
     color: 'from-orange-500 to-red-500',
   },
@@ -86,7 +86,7 @@ export function TradingEngines() {
                 <CardHeader>
                   <div
                     className={cn(
-                      'mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm',
+                      'mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-gray-900 shadow-sm',
                       engine.color,
                     )}
                   >

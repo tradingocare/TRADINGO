@@ -182,7 +182,7 @@ export function LocationForm({
         type="button"
         onClick={handleSubmit}
         disabled={saving || !dirty}
-        className="w-full sm:w-auto rounded-lg bg-primary dark:bg-primary-dark px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+        className="w-full sm:w-auto rounded-lg bg-primary dark:bg-primary-dark px-6 py-2.5 text-sm font-medium text-gray-900 hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
         {saving ? 'Saving...' : 'Save Location'}
       </button>

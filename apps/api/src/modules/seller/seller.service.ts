@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UpdateSellerDocumentsDto } from './dto';
 
 @Injectable()
 export class SellerService {
@@ -69,7 +70,7 @@ export class SellerService {
     if (dto.logo !== undefined) updateData.logo = dto.logo;
     if (dto.banner !== undefined) updateData.banner = dto.banner;
 
-    const updated = await this.prisma.company.update({
+    await this.prisma.company.update({
       where: { id: company.id },
       data: { ...updateData, updatedBy: userId },
     });
@@ -86,19 +87,22 @@ export class SellerService {
     return this.getProfile(userId);
   }
 
-  async updateDocuments(userId: string, docs: Record<string, string>) {
+  async updateDocuments(userId: string, docs: UpdateSellerDocumentsDto) {
     const company = await this.prisma.company.findFirst({
       where: { owners: { some: { userId } } },
     });
     if (!company) throw new NotFoundException('Company not found');
 
-    const updateData: any = {};
-    for (const [key, url] of Object.entries(docs)) {
-      updateData[key] = url;
-    }
     await this.prisma.company.update({
       where: { id: company.id },
-      data: { ...updateData, updatedBy: userId },
+      data: {
+        ...(docs.aadhar !== undefined && { aadhar: docs.aadhar }),
+        ...(docs.pan !== undefined && { pan: docs.pan }),
+        ...(docs.gst !== undefined && { gst: docs.gst }),
+        ...(docs.businessRegistration !== undefined && { businessRegistration: docs.businessRegistration }),
+        ...(docs.addressProof !== undefined && { addressProof: docs.addressProof }),
+        updatedBy: userId,
+      },
     });
 
     return { success: true };

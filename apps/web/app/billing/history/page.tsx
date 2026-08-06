@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import api from '@/lib/api/client'
-import { Loader2, CreditCard, FileText, RotateCcw, ChevronRight, ArrowLeft, CheckCircle, XCircle, Clock, Banknote, RefreshCw } from 'lucide-react'
+import { Loader2, CreditCard, FileText, ChevronRight, ArrowLeft, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 
 interface HistoryEvent {
@@ -57,30 +57,30 @@ export default function BillingHistoryPage() {
         const d = res.data?.data || res.data
         setEvents(Array.isArray(d) ? d : d?.events || [])
       })
-      .catch(() => {})
+      .catch((err: any) => { console.error('Failed to load billing history:', err) })
       .finally(() => setLoading(false))
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-bg-base">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-2">
-          <Link href="/billing/invoices" className="p-2 rounded-lg hover:bg-gray-200 transition-all">
-            <ArrowLeft size={18} className="text-gray-600" />
+          <Link href="/billing/invoices" className="p-2 rounded-lg hover:bg-border transition-all">
+            <ArrowLeft size={18} className="text-text-secondary" />
           </Link>
           <div>
-            <h1 className="text-2xl font-black text-gray-900">Billing History</h1>
-            <p className="text-sm text-gray-500">Payment, invoice, and plan change timeline</p>
+            <h1 className="text-2xl font-black text-text-primary">Billing History</h1>
+            <p className="text-sm text-text-secondary">Payment, invoice, and plan change timeline</p>
           </div>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 size={24} className="animate-spin text-orange-500" />
+            <Loader2 size={24} className="animate-spin text-accent" />
           </div>
         ) : (
           <div className="mt-6 relative">
-            <div className="absolute left-[17px] top-0 bottom-0 w-0.5 bg-gray-200" />
+            <div className="absolute left-[17px] top-0 bottom-0 w-0.5 bg-border" />
             <div className="space-y-0">
               {events.map((evt, i) => {
                 const config = TYPE_CONFIG[evt.type] || TYPE_CONFIG.invoice
@@ -96,14 +96,14 @@ export default function BillingHistoryPage() {
                     </div>
                     <div className="flex-1 min-w-0 pt-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-text-primary">
                           {evt.type === 'payment' && `${evt.gateway || 'Payment'} — ${evt.subtype}`}
                           {evt.type === 'invoice' && `Invoice ${evt.label}`}
                           {evt.type === 'plan_change' && `Plan Change: ${evt.subtype}`}
                         </p>
-                        <span className="text-[10px] text-gray-400 shrink-0">{formatDate(evt.date)}</span>
+                        <span className="text-[10px] text-text-tertiary shrink-0">{formatDate(evt.date)}</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-text-secondary mt-0.5">
                         {evt.type === 'payment' && formatAmount(evt.amount)}
                         {evt.type === 'invoice' && `${evt.planName || ''} ${formatAmount(evt.amount)}`}
                         {evt.type === 'plan_change' && `${evt.label}`}
@@ -111,7 +111,7 @@ export default function BillingHistoryPage() {
                     </div>
                     {config.link(evt) && (
                       <Link href={config.link(evt)!}
-                        className="p-1.5 rounded-lg text-gray-300 hover:text-orange-500 hover:bg-orange-50 transition-all mt-1 shrink-0">
+                        className="p-1.5 rounded-lg text-text-tertiary hover:text-accent hover:bg-accent/10 transition-all mt-1 shrink-0">
                         <ChevronRight size={14} />
                       </Link>
                     )}
@@ -119,7 +119,7 @@ export default function BillingHistoryPage() {
                 )
               })}
               {events.length === 0 && (
-                <div className="py-16 text-center text-sm text-gray-400">No billing history yet</div>
+                <div className="py-16 text-center text-sm text-text-tertiary">No billing history yet</div>
               )}
             </div>
           </div>

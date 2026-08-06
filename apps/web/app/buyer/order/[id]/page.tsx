@@ -37,10 +37,10 @@ export default function BuyerOrderDetailPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Order Detail" description="View order information" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 backdrop-blur-xl">
           <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-white">Failed to load order</p>
-          <p className="mt-1 text-sm text-white/60">{(error as any).message}</p>
+          <p className="mt-4 text-lg font-medium text-text-primary">Failed to load order</p>
+          <p className="mt-1 text-sm text-text-secondary">{(error as any).message}</p>
         </div>
       </div>
     );
@@ -69,45 +69,45 @@ export default function BuyerOrderDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Order Items</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">Order Items</h3>
             <div className="space-y-3">
               {order.items?.map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                <div key={item.id} className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3">
                   <div>
-                    <p className="text-sm font-medium text-white">{item.productName}</p>
-                    <p className="text-xs text-white/50">Qty: {item.quantity} × {formatINR(Number(item.unitPrice))}</p>
+                    <p className="text-sm font-medium text-text-primary">{item.productName}</p>
+                    <p className="text-xs text-text-tertiary">Qty: {item.quantity} × {formatINR(Number(item.unitPrice))}</p>
                   </div>
-                  <p className="text-sm font-semibold text-white">{formatINR(Number(item.totalPrice))}</p>
+                  <p className="text-sm font-semibold text-text-primary">{formatINR(Number(item.totalPrice))}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex justify-between border-t border-white/[0.06] pt-4">
-              <span className="text-sm font-semibold text-white">Total</span>
+            <div className="mt-4 flex justify-between border-t border-border pt-4">
+              <span className="text-sm font-semibold text-text-primary">Total</span>
               <span className="text-lg font-bold text-orange-400">{formatINR(Number(order.totalAmount))}</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Timeline</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">Timeline</h3>
             {(!timeline || timeline.length === 0) ? (
-              <p className="text-sm text-white/50">No timeline events yet.</p>
+              <p className="text-sm text-text-tertiary">No timeline events yet.</p>
             ) : (
               <div className="space-y-4">
                 {timeline.map((event: any) => (
                   <div key={event.id} className="flex gap-4">
                     <div className="flex flex-col items-center">
-                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-white/20'}`} />
-                      <div className="mt-1 h-full w-px bg-white/[0.06]" />
+                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-surface-secondary'}`} />
+                      <div className="mt-1 h-full w-px bg-surface-secondary" />
                     </div>
                     <div className="pb-4">
                       <div className="flex items-center gap-2">
                         <StatusBadge status={event.toStatus} />
                         {event.fromStatus && (
-                          <span className="text-xs text-white/40">from <StatusBadge status={event.fromStatus} /></span>
+                          <span className="text-xs text-text-tertiary">from <StatusBadge status={event.fromStatus} /></span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-white/50">
+                      <p className="mt-1 text-xs text-text-tertiary">
                         {new Date(event.createdAt).toLocaleString('en-IN')}
                         {event.changedByRole && ` — by ${event.changedByRole}`}
                       </p>
@@ -121,16 +121,16 @@ export default function BuyerOrderDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Package className="h-4 w-4" /> Order Info</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Package className="h-4 w-4" /> Order Info</h3>
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-white/50">Status</p>
+                <p className="text-xs text-text-tertiary">Status</p>
                 <StatusBadge status={order.status} />
               </div>
               <div>
-                <p className="text-xs text-white/50">Order Number</p>
-                <p className="font-mono text-sm text-white">{order.orderNumber}</p>
+                <p className="text-xs text-text-tertiary">Order Number</p>
+                <p className="font-mono text-sm text-text-primary">{order.orderNumber}</p>
               </div>
               <div>
                 <p className="text-xs text-white/50">Seller</p>
@@ -147,8 +147,8 @@ export default function BuyerOrderDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Actions</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">Actions</h3>
             <div className="space-y-3">
               {canConfirmDelivery && (
                 <Button

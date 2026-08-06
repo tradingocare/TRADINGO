@@ -2,7 +2,7 @@ const CACHE_NAME = 'tradingo-v1';
 const STATIC_ASSETS = [
   '/',
   '/offline',
-  '/logo/trdn.png',
+  '/logo/trdn6.png',
 ];
 
 self.addEventListener('install', (event: ExtendableEvent) => {
@@ -51,8 +51,8 @@ self.addEventListener('push', (event: PushEvent) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.message,
-      icon: '/logo/trdn.png',
-      badge: '/logo/trdn.png',
+      icon: '/logo/trdn6.png',
+      badge: '/logo/trdn6.png',
       vibrate: [200, 100, 200],
     }),
   );

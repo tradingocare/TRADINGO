@@ -26,7 +26,7 @@ export interface PaymentGatewayRefundResult {
 export interface IPaymentGateway {
   readonly name: string;
   createOrder(amount: number, currency: string, receipt: string, notes?: Record<string, string>): Promise<PaymentGatewayOrder>;
-  verifyPayment(params: PaymentGatewayVerifyParams): boolean;
+  verifyPayment(params: PaymentGatewayVerifyParams): boolean | Promise<boolean>;
   verifyWebhookSignature(rawBody: string, signature: string): boolean;
   fetchPayment(gatewayPaymentId: string): Promise<any>;
   createRefund(params: PaymentGatewayRefundParams): Promise<PaymentGatewayRefundResult>;

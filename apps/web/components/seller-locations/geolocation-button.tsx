@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface GeolocationButtonProps {
   onLocationDetected: (lat: number, lng: number) => void;
@@ -55,7 +56,7 @@ export function GeolocationButton({ onLocationDetected, disabled }: GeolocationB
         className="inline-flex items-center gap-2 rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface px-3 py-2 text-sm font-medium text-text-secondary dark:text-dark-text-secondary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary disabled:opacity-50 transition-colors"
       >
         {detecting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <LoadingSpinner size="sm" color="accent" />
         ) : (
           <MapPin className="h-4 w-4" />
         )}

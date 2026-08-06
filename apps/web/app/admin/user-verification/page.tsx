@@ -1,7 +1,11 @@
 'use client';
 
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
+import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TR, TH, TBody, TD } from '@/components/ui/table';
 import { useUserVerifications, useReviewUserVerification } from '@/hooks';
 import { ShieldCheck, Eye, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -25,11 +29,7 @@ export default function AdminUserVerificationPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="User Verification Queue" description="Review and manage buyer KYC verification submissions" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load user verification submissions</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
-        </div>
+        <Alert variant="error" title="Failed to load user verification submissions">{error.message}</Alert>
       </div>
     );
   }
@@ -47,11 +47,7 @@ export default function AdminUserVerificationPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="User Verification Queue" description="Review and manage buyer KYC verification submissions" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <ShieldCheck className="h-12 w-12 text-green-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">No user verification submissions</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">All buyers have been verified.</p>
-        </div>
+        <EmptyState icon={ShieldCheck} title="No user verification submissions" description="All buyers have been verified." />
       </div>
     );
   }
@@ -60,71 +56,45 @@ export default function AdminUserVerificationPage() {
     <div className="space-y-6">
       <DashboardPageHeader title="User Verification Queue" description="Review and manage buyer KYC verification submissions" />
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-border dark:border-dark-border text-text-tertiary">
-              <th className="px-4 py-3 font-medium">User</th>
-              <th className="px-4 py-3 font-medium">Level</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Submitted</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {verifications.map((v) => (
-              <tr key={v.id} className="border-b border-border dark:border-dark-border last:border-b-0">
-                <td className="px-4 py-3 text-text-primary dark:text-dark-text-primary">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{v.submitter?.name || v.submittedBy}</span>
-                    <span className="text-xs text-text-tertiary">{v.submitter?.email}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-blue-500">
-                    {v.level}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={v.status} />
-                </td>
-                <td className="px-4 py-3 text-sm text-text-secondary dark:text-dark-text-secondary">
-                  {new Date(v.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" disabled title="View details">
-                      <Eye size={14} />
-                    </Button>
-                    {v.status === 'PENDING' && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-green-500/30 text-green-500 hover:bg-green-500/10"
-                          onClick={() => handleReview(v.id, 'APPROVED')}
-                          disabled={actionId === v.id}
-                        >
-                          {actionId === v.id ? '...' : <CheckCircle size={14} />}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-red-500/30 text-red-500 hover:bg-red-500/10"
-                          onClick={() => handleReview(v.id, 'REJECTED')}
-                          disabled={actionId === v.id}
-                        >
-                          {actionId === v.id ? '...' : <XCircle size={14} />}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <THead>
+          <TR><TH>User</TH><TH>Level</TH><TH>Status</TH><TH>Submitted</TH><TH>Action</TH></TR>
+        </THead>
+        <TBody>
+          {verifications.map((v) => (
+            <TR key={v.id}>
+              <TD>
+                <div className="flex flex-col">
+                  <span className="font-medium">{v.submitter?.name || v.submittedBy}</span>
+                  <span className="text-xs text-text-tertiary">{v.submitter?.email}</span>
+                </div>
+              </TD>
+              <TD><Badge variant="default">{v.level}</Badge></TD>
+              <TD><StatusBadge status={v.status} /></TD>
+              <TD className="text-sm text-text-secondary">{new Date(v.createdAt).toLocaleDateString()}</TD>
+              <TD>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" disabled title="View details">
+                    <Eye size={14} />
+                  </Button>
+                  {v.status === 'PENDING' && (
+                    <>
+                      <Button size="sm" variant="outline" className="border-green-500/30 text-green-500 hover:bg-green-500/10"
+                        onClick={() => handleReview(v.id, 'APPROVED')} disabled={actionId === v.id}>
+                        {actionId === v.id ? '...' : <CheckCircle size={14} />}
+                      </Button>
+                      <Button size="sm" variant="outline" className="border-red-500/30 text-red-500 hover:bg-red-500/10"
+                        onClick={() => handleReview(v.id, 'REJECTED')} disabled={actionId === v.id}>
+                        {actionId === v.id ? '...' : <XCircle size={14} />}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </TD>
+            </TR>
+          ))}
+        </TBody>
+      </Table>
     </div>
   );
 }

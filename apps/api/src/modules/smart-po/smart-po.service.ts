@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, Prisma, PurchaseOrderStatus, PoEventType, DeliveryTerms, PaymentTerms } from '@prisma/client';
 import { UpdatePoDto } from './dto/update-po.dto';
 import { PoPdfService } from './po-pdf.service';
 import { PaginationDto, buildPaginationQuery, buildPaginatedResult } from '../../common/dto/pagination.dto';
@@ -71,8 +71,8 @@ export class SmartPoService {
           totalAmount: quote.totalAmount,
           discountAmount: quote.discountAmount,
           discountPercent: quote.discountPercent,
-          deliveryTerms: quote.deliveryTerms as any,
-          paymentTerms: quote.paymentTerms as any,
+          deliveryTerms: quote.deliveryTerms as DeliveryTerms,
+          paymentTerms: quote.paymentTerms as PaymentTerms,
           leadTimeDays: quote.leadTimeDays,
           leadTimeDisplay: quote.leadTimeDisplay,
           validityDate: quote.validityDate,
@@ -104,7 +104,7 @@ export class SmartPoService {
           purchaseOrderId: p.id,
           version: 1,
           status: 'DRAFT',
-          data: p as any,
+          data: p as unknown as Prisma.InputJsonValue,
           createdBy: userId,
           notes: 'Generated from accepted negotiation',
         },
@@ -283,15 +283,15 @@ export class SmartPoService {
     const isBuyer = po.buyerCompanyId === company.id;
     if (!isBuyer) throw new ForbiddenException('Only the buyer can revise the PO');
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       currency: dto.currency,
       subtotal: dto.subtotal,
       taxAmount: dto.taxAmount,
       totalAmount: dto.totalAmount,
       discountAmount: dto.discountAmount,
       discountPercent: dto.discountPercent,
-      deliveryTerms: dto.deliveryTerms as any,
-      paymentTerms: dto.paymentTerms as any,
+      deliveryTerms: dto.deliveryTerms as DeliveryTerms,
+      paymentTerms: dto.paymentTerms as PaymentTerms,
       leadTimeDays: dto.leadTimeDays,
       leadTimeDisplay: dto.leadTimeDisplay,
       validityDate: dto.validityDate ? new Date(dto.validityDate) : undefined,
@@ -338,8 +338,8 @@ export class SmartPoService {
         data: {
           purchaseOrderId: poId,
           version: (latestVersion?.version || 0) + 1,
-          status: po.status as any,
-          data: updated as any,
+          status: po.status as PurchaseOrderStatus,
+          data: updated as unknown as Prisma.InputJsonValue,
           changedFields: dto.revisionNotes ? [] : undefined,
           createdBy: userId,
           notes: dto.revisionNotes,
@@ -374,10 +374,10 @@ export class SmartPoService {
 
   async findAll(userId: string, status?: string, pagination?: PaginationDto) {
     const company = await this.getUserCompany(userId);
-    const where: any = {
+    const where: Prisma.PurchaseOrderWhereInput = {
       OR: [{ buyerCompanyId: company.id }, { sellerCompanyId: company.id }],
     };
-    if (status) where.status = status;
+    if (status) where.status = status as PurchaseOrderStatus;
 
     const query = buildPaginationQuery(pagination || new PaginationDto());
     const [data, total] = await Promise.all([
@@ -388,7 +388,7 @@ export class SmartPoService {
           sellerCompany: { select: { id: true, name: true, slug: true } },
           _count: { select: { versions: true, lineItems: true } },
         },
-        orderBy: { [query.sort]: query.order } as any,
+        orderBy: { [query.sort]: query.order } as Prisma.PurchaseOrderOrderByWithRelationInput,
         take: query.limit,
         skip: query.skip,
       }),
@@ -397,7 +397,7 @@ export class SmartPoService {
     return buildPaginatedResult(data, total, query);
   }
 
-  async findById(poId: string, userId?: string) {
+  async findById(poId: string, userId: string) {
     const po = await this.prisma.purchaseOrder.findUnique({
       where: { id: poId },
       include: {
@@ -410,6 +410,10 @@ export class SmartPoService {
       },
     });
     if (!po) throw new NotFoundException('Purchase order not found');
+    const company = await this.getUserCompany(userId);
+    const isBuyer = po.buyerCompanyId === company.id;
+    const isSeller = po.sellerCompanyId === company.id;
+    if (!isBuyer && !isSeller) throw new ForbiddenException('Not authorized');
     return po;
   }
 
@@ -431,8 +435,8 @@ export class SmartPoService {
     });
   }
 
-  async getPdfHtml(poId: string) {
-    const po = await this.findById(poId);
+  async getPdfHtml(poId: string, userId: string) {
+    const po = await this.findById(poId, userId);
     return this.poPdfService.generateHtml(po);
   }
 
@@ -449,8 +453,8 @@ export class SmartPoService {
   }
 
   async getAdminPos(status?: string, pagination?: PaginationDto) {
-    const where: any = {};
-    if (status) where.status = status;
+    const where: Prisma.PurchaseOrderWhereInput = {};
+    if (status) where.status = status as PurchaseOrderStatus;
     const query = buildPaginationQuery(pagination || new PaginationDto());
     const [data, total] = await Promise.all([
       this.prisma.purchaseOrder.findMany({
@@ -460,7 +464,7 @@ export class SmartPoService {
           sellerCompany: { select: { id: true, name: true } },
           _count: { select: { versions: true, lineItems: true } },
         },
-        orderBy: { [query.sort]: query.order } as any,
+        orderBy: { [query.sort]: query.order } as Prisma.PurchaseOrderOrderByWithRelationInput,
         take: query.limit,
         skip: query.skip,
       }),
@@ -470,20 +474,20 @@ export class SmartPoService {
   }
 
   async getAdminFlagged(pagination?: PaginationDto) {
-    const where = { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] } };
+    const where: Prisma.PurchaseOrderWhereInput = { status: { in: ['REJECTED' as PurchaseOrderStatus, 'CANCELLED' as PurchaseOrderStatus, 'EXPIRED' as PurchaseOrderStatus] } };
     const query = buildPaginationQuery(pagination || new PaginationDto());
     const [data, total] = await Promise.all([
       this.prisma.purchaseOrder.findMany({
-        where: where as any,
+        where,
         include: {
           buyerCompany: { select: { id: true, name: true } },
           sellerCompany: { select: { id: true, name: true } },
         },
-        orderBy: { [query.sort]: query.order } as any,
+        orderBy: { [query.sort]: query.order } as Prisma.PurchaseOrderOrderByWithRelationInput,
         take: query.limit,
         skip: query.skip,
       }),
-      this.prisma.purchaseOrder.count({ where: where as any }),
+      this.prisma.purchaseOrder.count({ where }),
     ]);
     return buildPaginatedResult(data, total, query);
   }
@@ -493,7 +497,7 @@ export class SmartPoService {
     const [data, total] = await Promise.all([
       this.prisma.purchaseOrderEvent.findMany({
         include: { purchaseOrder: { select: { poNumber: true } } },
-        orderBy: { [query.sort]: query.order } as any,
+        orderBy: { [query.sort]: query.order } as Prisma.PurchaseOrderEventOrderByWithRelationInput,
         take: query.limit,
         skip: query.skip,
       }),
@@ -504,7 +508,7 @@ export class SmartPoService {
 
   // ─── HELPERS ────────────────────────────────────────────────────────
 
-  private async trackVersion(tx: any, poId: string, status: string, userId: string, notes?: string) {
+  private async trackVersion(tx: Prisma.TransactionClient, poId: string, status: string, userId: string, notes?: string) {
     const latest = await tx.purchaseOrderVersion.findFirst({
       where: { purchaseOrderId: poId }, orderBy: { version: 'desc' },
     });
@@ -513,22 +517,22 @@ export class SmartPoService {
       data: {
         purchaseOrderId: poId,
         version: (latest?.version || 0) + 1,
-        status: status as any,
-        data: po as any,
+        status: status as PurchaseOrderStatus,
+        data: po as unknown as Prisma.InputJsonValue,
         createdBy: userId,
         notes,
       },
     });
   }
 
-  private async trackEvent(tx: any, poId: string, eventType: string, actorId: string, actorRole: string, metadata?: any) {
+  private async trackEvent(tx: Prisma.TransactionClient, poId: string, eventType: string, actorId: string, actorRole: string, metadata?: Record<string, unknown>) {
     await tx.purchaseOrderEvent.create({
       data: {
         purchaseOrderId: poId,
-        eventType: eventType as any,
+        eventType: eventType as PoEventType,
         actorId,
         actorRole,
-        metadata: metadata || undefined,
+        metadata: (metadata || undefined) as Prisma.InputJsonValue,
       },
     });
   }

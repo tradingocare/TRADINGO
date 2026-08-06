@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber, Min } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, Min } from 'class-validator';
 
 export class CreateDeliveryDto {
   @IsString()

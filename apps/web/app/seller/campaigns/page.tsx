@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Megaphone, Gift, DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useState } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 
 const formatINR = (amount: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 
@@ -60,7 +62,7 @@ export default function SellerCampaignsPage() {
                   <CardContent className="p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <Badge variant="outline">{c.type}</Badge>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${c.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{c.status}</span>
+                      <Badge variant={c.status === 'ACTIVE' ? 'success' : 'warning'}>{c.status}</Badge>
                     </div>
                     <h3 className="font-semibold">{c.name}</h3>
                     {c.description && <p className="mt-1 text-xs text-text-secondary line-clamp-2">{c.description}</p>}
@@ -88,33 +90,24 @@ export default function SellerCampaignsPage() {
           {claimsLoading ? (
             <p className="text-sm text-text-secondary">Loading...</p>
           ) : !claims?.length ? (
-            <p className="text-sm text-text-secondary">No rewards yet. Participate in campaigns to earn rewards.</p>
+            <EmptyState icon={Gift} title="No rewards yet" description="Participate in campaigns to earn rewards." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-2 font-medium">Campaign</th>
-                    <th className="pb-2 font-medium">Amount</th>
-                    <th className="pb-2 font-medium">Status</th>
-                    <th className="pb-2 font-medium">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {claims.map((claim) => (
-                    <tr key={claim.id} className="border-b last:border-0">
-                      <td className="py-2">{claim.campaign?.name ?? claim.campaignId}</td>
-                      <td className="py-2 font-medium">{formatINR(Number(claim.amount))}</td>
-                      <td className="py-2">
-                        {claim.status === 'PAID' ? <CheckCircle className="inline h-4 w-4 text-green-500" /> : claim.status === 'FAILED' ? <XCircle className="inline h-4 w-4 text-red-500" /> : <Clock className="inline h-4 w-4 text-yellow-500" />}
-                        <span className="ml-1">{claim.status}</span>
-                      </td>
-                      <td className="py-2 text-text-secondary">{new Date(claim.claimedAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <THead><TR><TH>Campaign</TH><TH>Amount</TH><TH>Status</TH><TH>Date</TH></TR></THead>
+              <TBody>
+                {claims.map((claim) => (
+                  <TR key={claim.id}>
+                    <TD>{claim.campaign?.name ?? claim.campaignId}</TD>
+                    <TD className="font-medium">{formatINR(Number(claim.amount))}</TD>
+                    <TD>
+                      {claim.status === 'PAID' ? <CheckCircle className="inline h-4 w-4 text-green-500" /> : claim.status === 'FAILED' ? <XCircle className="inline h-4 w-4 text-red-500" /> : <Clock className="inline h-4 w-4 text-yellow-500" />}
+                      <span className="ml-1">{claim.status}</span>
+                    </TD>
+                    <TD className="text-text-secondary">{new Date(claim.claimedAt).toLocaleDateString()}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </CardContent>
       </Card>

@@ -7,3 +7,7 @@ export * from './create-task.dto';
 export * from './create-pipeline-stage.dto';
 export * from './search-crm.dto';
 export * from './ai-crm.dto';
+export * from './create-public-lead.dto';
+export * from './create-campaign.dto';
+export * from './update-campaign.dto';
+export * from './campaign-query.dto';

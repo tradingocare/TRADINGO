@@ -17,6 +17,7 @@ import { useTasks, useCreateTask, useCompleteTask } from '@/hooks/use-crm';
 import { useLeadTimeline } from '@/hooks/use-crm';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Edit3, Trash2, CheckCircle, XCircle, UserPlus, RefreshCw, Pin, PinOff, Plus, Calendar, Clock, Activity, Sparkles } from 'lucide-react';
+import { Select } from '@/components/ui/select';
 import { AiCrmCopilot } from '@/components/crm/ai-crm-copilot';
 import { useAiCrmScoring, useAiCrmNextBestAction, useAiCrmConversionProbability, useAiCrmInsights, useAiCrmSentiment, useAiCrmDealRisk, useAiCrmRecommendedActions, useAiCrmCommunicationTips } from '@/hooks/use-ai-crm';
 
@@ -24,7 +25,7 @@ const STATUS_STYLES: Record<string, string> = {
   NEW: 'bg-blue-500/20 text-blue-400', CONTACTED: 'bg-yellow-500/20 text-yellow-400',
   QUALIFIED: 'bg-purple-500/20 text-purple-400', PROPOSAL: 'bg-indigo-500/20 text-indigo-400',
   NEGOTIATION: 'bg-orange-500/20 text-orange-400', WON: 'bg-green-500/20 text-green-400',
-  LOST: 'bg-red-500/20 text-red-400', DISQUALIFIED: 'bg-gray-500/20 text-gray-400',
+  LOST: 'bg-red-500/20 text-red-400', DISQUALIFIED: 'bg-bg-elevated text-gray-400',
 };
 
 export default function LeadDetailPage({ params }: { params: { id: string } }) {
@@ -65,7 +66,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [lostReason, setLostReason] = useState('');
   const [reassignId, setReassignId] = useState('');
 
-  if (isLoading) return <div className="p-8 text-gray-400">Loading lead...</div>;
+  if (isLoading) return <div className="p-8 text-text-tertiary">Loading lead...</div>;
   if (error || !lead) return <div className="p-8 text-red-400">Lead not found</div>;
 
   const handleStatusChange = async (newStatus: string) => {
@@ -128,19 +129,19 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-xs text-gray-400">Score</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-bold">{lead.score || 0}</CardContent></Card>
-            <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-xs text-gray-400">Priority</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-bold">{lead.priority || '-'}</CardContent></Card>
-            <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-xs text-gray-400">Est. Value</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-bold">{lead.estimatedValue ? `₹${Number(lead.estimatedValue).toLocaleString()}` : '-'}</CardContent></Card>
-            <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-xs text-gray-400">Source</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-bold">{lead.source || '-'}</CardContent></Card>
+            <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-xs text-text-tertiary">Score</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-bold">{lead.score || 0}</CardContent></Card>
+            <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-xs text-text-tertiary">Priority</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-bold">{lead.priority || '-'}</CardContent></Card>
+            <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-xs text-text-tertiary">Est. Value</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-bold">{lead.estimatedValue ? `₹${Number(lead.estimatedValue).toLocaleString()}` : '-'}</CardContent></Card>
+            <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-xs text-text-tertiary">Source</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-bold">{lead.source || '-'}</CardContent></Card>
           </div>
 
           <Card>
             <CardHeader><CardTitle>Actions</CardTitle></CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-              <select className="bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm" value={status} onChange={e => { setStatus(e.target.value); if (e.target.value) handleStatusChange(e.target.value); }}>
+              <Select value={status} onChange={e => { setStatus(e.target.value); if (e.target.value) handleStatusChange(e.target.value); }}>
                 <option value="">Change Status</option>
                 {Object.keys(STATUS_STYLES).filter(s => s !== lead.status).map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              </Select>
               {lead.status !== 'WON' && <Button size="sm" onClick={handleConvert}><CheckCircle className="mr-1 h-4 w-4" /> Convert</Button>}
               {lead.status !== 'LOST' && (
                 <div className="flex gap-2">
@@ -159,9 +160,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             <CardHeader><CardTitle>Follow-ups ({followUps?.length || 0})</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleAddFollowUp} className="flex gap-2"><Input placeholder="Title" className="flex-1" value={fuTitle} onChange={e => setFuTitle(e.target.value)} /><Input type="date" className="w-40" value={fuDueDate} onChange={e => setFuDueDate(e.target.value)} /><Button type="submit" size="sm"><Plus className="h-4 w-4" /></Button></form>
-              {(!followUps || followUps.length === 0) ? <p className="text-sm text-gray-400">No follow-ups</p> : followUps.map((fu: any) => (
-                <div key={fu.id} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
-                  <div><p className="text-sm font-medium">{fu.title}</p><p className="text-xs text-gray-400">Due: {new Date(fu.dueDate).toLocaleDateString()} • {fu.status}</p></div>
+              {(!followUps || followUps.length === 0) ? <p className="text-sm text-text-tertiary">No follow-ups</p> : followUps.map((fu: any) => (
+                <div key={fu.id} className="flex justify-between items-center p-3 bg-bg-elevated/50 rounded-lg">
+                  <div><p className="text-sm font-medium">{fu.title}</p><p className="text-xs text-text-tertiary">Due: {new Date(fu.dueDate).toLocaleDateString()} • {fu.status}</p></div>
                   {fu.status === 'PENDING' && <Button size="sm" variant="ghost" onClick={() => handleCompleteFollowUp(fu.id)}><CheckCircle className="h-4 w-4 text-green-400" /></Button>}
                 </div>
               ))}
@@ -172,9 +173,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             <CardHeader><CardTitle>Tasks ({tasks?.length || 0})</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleAddTask} className="flex gap-2"><Input placeholder="Task title" className="flex-1" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} /><Button type="submit" size="sm"><Plus className="h-4 w-4" /></Button></form>
-              {(!tasks || tasks.length === 0) ? <p className="text-sm text-gray-400">No tasks</p> : tasks.map((t: any) => (
-                <div key={t.id} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
-                  <div><p className="text-sm font-medium">{t.title}</p><p className="text-xs text-gray-400">{t.type} • {t.status}{t.dueDate ? ` • Due: ${new Date(t.dueDate).toLocaleDateString()}` : ''}</p></div>
+              {(!tasks || tasks.length === 0) ? <p className="text-sm text-text-tertiary">No tasks</p> : tasks.map((t: any) => (
+                <div key={t.id} className="flex justify-between items-center p-3 bg-bg-elevated/50 rounded-lg">
+                  <div><p className="text-sm font-medium">{t.title}</p><p className="text-xs text-text-tertiary">{t.type} • {t.status}{t.dueDate ? ` • Due: ${new Date(t.dueDate).toLocaleDateString()}` : ''}</p></div>
                   {t.status === 'PENDING' && <Button size="sm" variant="ghost" onClick={() => completeTaskMutation.mutate(t.id)}><CheckCircle className="h-4 w-4 text-green-400" /></Button>}
                 </div>
               ))}
@@ -188,8 +189,8 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 <Textarea placeholder="Add a note..." value={noteContent} onChange={e => setNoteContent(e.target.value)} />
                 <Button type="submit" size="sm"><Plus className="mr-1 h-4 w-4" /> Add Note</Button>
               </form>
-              {(!notes || notes.length === 0) ? <p className="text-sm text-gray-400">No notes</p> : notes.map((n: any) => (
-                <div key={n.id} className={`p-3 bg-gray-800/50 rounded-lg ${n.isPinned ? 'ring-1 ring-yellow-500/30' : ''}`}>
+              {(!notes || notes.length === 0) ? <p className="text-sm text-text-tertiary">No notes</p> : notes.map((n: any) => (
+                <div key={n.id} className={`p-3 bg-bg-elevated/50 rounded-lg ${n.isPinned ? 'ring-1 ring-yellow-500/30' : ''}`}>
                   <div className="flex justify-between items-start">
                     <p className="text-sm whitespace-pre-wrap">{n.content}</p>
                     <div className="flex gap-1">
@@ -197,7 +198,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                       <Button size="sm" variant="ghost" onClick={() => deleteNoteMutation.mutate(n.id)}><Trash2 className="h-3 w-3 text-red-400" /></Button>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}{n.mentions?.length ? ` • Mentions: ${n.mentions.join(', ')}` : ''}</p>
+                  <p className="text-xs text-text-secondary mt-1">{new Date(n.createdAt).toLocaleString()}{n.mentions?.length ? ` • Mentions: ${n.mentions.join(', ')}` : ''}</p>
                 </div>
               ))}
             </CardContent>
@@ -222,10 +223,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           <Card>
             <CardHeader><CardTitle>Timeline</CardTitle></CardHeader>
             <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-              {(!timeline || timeline.length === 0) ? <p className="text-sm text-gray-400">No events</p> : timeline.map((ev: any) => (
+              {(!timeline || timeline.length === 0) ? <p className="text-sm text-text-tertiary">No events</p> : timeline.map((ev: any) => (
                 <div key={ev.id} className="flex gap-3 text-sm">
                   <Activity className="h-4 w-4 mt-0.5 text-gray-500 shrink-0" />
-                  <div><p>{ev.description}</p><p className="text-xs text-gray-500">{new Date(ev.createdAt).toLocaleString()}</p></div>
+                  <div><p>{ev.description}</p><p className="text-xs text-text-secondary">{new Date(ev.createdAt).toLocaleString()}</p></div>
                 </div>
               ))}
             </CardContent>
@@ -234,13 +235,13 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           <Card>
             <CardHeader><CardTitle>Details</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div><span className="text-gray-400">Email:</span><p>{lead.email || '-'}</p></div>
-              <div><span className="text-gray-400">Mobile:</span><p>{lead.mobile || '-'}</p></div>
-              <div><span className="text-gray-400">Owner:</span><p>{lead.owner?.name || '-'}</p></div>
-              <div><span className="text-gray-400">Stage:</span><p>{lead.stage?.name || '-'}</p></div>
-              <div><span className="text-gray-400">Created:</span><p>{new Date(lead.createdAt).toLocaleDateString()}</p></div>
-              {lead.convertedAt && <div><span className="text-gray-400">Converted:</span><p>{new Date(lead.convertedAt).toLocaleDateString()}</p></div>}
-              {lead.description && <div><span className="text-gray-400">Description:</span><p className="text-xs">{lead.description}</p></div>}
+              <div><span className="text-text-tertiary">Email:</span><p>{lead.email || '-'}</p></div>
+              <div><span className="text-text-tertiary">Mobile:</span><p>{lead.mobile || '-'}</p></div>
+              <div><span className="text-text-tertiary">Owner:</span><p>{lead.owner?.name || '-'}</p></div>
+              <div><span className="text-text-tertiary">Stage:</span><p>{lead.stage?.name || '-'}</p></div>
+              <div><span className="text-text-tertiary">Created:</span><p>{new Date(lead.createdAt).toLocaleDateString()}</p></div>
+              {lead.convertedAt && <div><span className="text-text-tertiary">Converted:</span><p>{new Date(lead.convertedAt).toLocaleDateString()}</p></div>}
+              {lead.description && <div><span className="text-text-tertiary">Description:</span><p className="text-xs">{lead.description}</p></div>}
             </CardContent>
           </Card>
         </div>

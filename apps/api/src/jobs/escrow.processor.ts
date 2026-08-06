@@ -1,6 +1,7 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import { QueueNames, EscrowJobTypes } from './queues';
 import { EscrowService } from '../modules/escrow/escrow.service';
 
@@ -34,5 +35,6 @@ export class EscrowProcessor extends WorkerHost {
   @OnWorkerEvent('failed')
   onFailed(job: Job, err: Error) {
     this.logger.error(`Escrow job ${job.id} failed: ${err.message}`);
+    Sentry.captureException(err, { tags: { queue: 'escrow', jobId: String(job.id), type: String(job.data.type) }, extra: { data: job.data } });
   }
 }

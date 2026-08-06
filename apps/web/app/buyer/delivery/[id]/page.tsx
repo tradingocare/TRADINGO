@@ -5,8 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useDeliveryDetail, useDeliveryTimeline, useConfirmDelivery, useRejectDelivery } from '@/hooks/use-smart-delivery';
-import { AlertCircle, ArrowLeft, Package, Truck, CheckCircle, XCircle, Clock, MapPin, FileText, User, Phone, Camera, Map, Shield } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import { AlertCircle, ArrowLeft, Package, Truck, CheckCircle, XCircle, Clock, FileText, Shield } from 'lucide-react';
 
 const statusColor: Record<string, string> = {
   OUT_FOR_DELIVERY: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
@@ -34,7 +36,7 @@ export default function BuyerDeliveryDetailPage() {
   const [rejectNote, setRejectNote] = useState('');
   const [showReject, setShowReject] = useState(false);
 
-  if (error) return (<div className="space-y-6"><DashboardPageHeader title="Delivery Detail" /><div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12"><AlertCircle className="h-12 w-12 text-red-500" /><p className="mt-4 text-lg font-medium text-white">Failed to load delivery</p></div></div>);
+  if (error) return (<div className="space-y-6"><DashboardPageHeader title="Delivery Detail" /><div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12"><AlertCircle className="h-12 w-12 text-red-500" /><p className="mt-4 text-lg font-medium text-text-primary">Failed to load delivery</p></div></div>);
   if (isLoading || !delivery) return <TableSkeleton rows={8} />;
 
   const canConfirm = delivery.status === 'DELIVERED';
@@ -47,15 +49,15 @@ export default function BuyerDeliveryDetailPage() {
         actions={<Button variant="ghost" onClick={() => router.push('/buyer/delivery')}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>} />
 
       {/* Status Banner */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl flex items-center justify-between flex-wrap gap-4">
+      <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <Truck className="h-8 w-8 text-orange-400" />
-          <div><p className="text-lg font-semibold text-white">Delivery Status</p><p className="text-sm text-white/60"><StatusBadge status={delivery.status} /></p></div>
+          <div><p className="text-lg font-semibold text-text-primary">Delivery Status</p><p className="text-sm text-text-secondary"><StatusBadge status={delivery.status} /></p></div>
         </div>
         {delivery.shipment?.trackingNumber && (
           <div className="text-right">
-            <p className="text-xs text-white/50">Tracking</p>
-            <p className="font-mono text-sm text-white">{delivery.shipment.trackingNumber}</p>
+            <p className="text-xs text-text-tertiary">Tracking</p>
+            <p className="font-mono text-sm text-text-primary">{delivery.shipment.trackingNumber}</p>
           </div>
         )}
       </div>
@@ -95,8 +97,8 @@ export default function BuyerDeliveryDetailPage() {
                 </div>
                 <div>
                   <p className="mb-1 text-xs text-white/50">Notes</p>
-                  <textarea value={buyerNotes} onChange={(e) => setBuyerNotes(e.target.value)} rows={2} placeholder="Any delivery notes..."
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
+                  <Textarea value={buyerNotes} onChange={(e) => setBuyerNotes(e.target.value)} rows={2} placeholder="Any delivery notes..."
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500/50" />
                 </div>
                 <div className="flex gap-2">
                   <Button variant="accent" onClick={() => confirmMutation.mutate({ deliveryId: id, receiverName: receiverName || undefined, receiverMobile: receiverMobile || undefined, buyerNotes: buyerNotes || undefined })} disabled={confirmMutation.isPending}>
@@ -108,23 +110,23 @@ export default function BuyerDeliveryDetailPage() {
           )}
 
           {/* Timeline */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Clock className="h-4 w-4" /> Timeline</h3>
-            {(!timeline || timeline.length === 0) ? <p className="text-sm text-white/50">No events yet.</p> : (
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Clock className="h-4 w-4" /> Timeline</h3>
+            {(!timeline || timeline.length === 0) ? <p className="text-sm text-text-tertiary">No events yet.</p> : (
               <div className="space-y-4">
                 {[...timeline].reverse().map((event: any) => (
                   <div key={event.id} className="flex gap-4">
                     <div className="flex flex-col items-center">
-                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-white/20'}`} />
-                      <div className="mt-1 h-full w-px bg-white/[0.06]" />
+                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-surface-secondary'}`} />
+                      <div className="mt-1 h-full w-px bg-surface-secondary" />
                     </div>
                     <div className="pb-4">
                       <div className="flex items-center gap-2">
                         <StatusBadge status={event.toStatus} />
-                        {event.fromStatus && <span className="text-xs text-white/40">from <StatusBadge status={event.fromStatus} /></span>}
+                        {event.fromStatus && <span className="text-xs text-text-tertiary">from <StatusBadge status={event.fromStatus} /></span>}
                       </div>
-                      <p className="mt-1 text-xs text-white/50">{new Date(event.createdAt).toLocaleString('en-IN')}{event.changedByRole && ` — by ${event.changedByRole}`}</p>
-                      {event.note && <p className="mt-1 text-xs text-white/60">{event.note}</p>}
+                      <p className="mt-1 text-xs text-text-tertiary">{new Date(event.createdAt).toLocaleString('en-IN')}{event.changedByRole && ` — by ${event.changedByRole}`}</p>
+                      {event.note && <p className="mt-1 text-xs text-text-secondary">{event.note}</p>}
                     </div>
                   </div>
                 ))}
@@ -134,24 +136,24 @@ export default function BuyerDeliveryDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Package className="h-4 w-4" /> Delivery Info</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Package className="h-4 w-4" /> Delivery Info</h3>
             <div className="space-y-3">
-              <div><p className="text-xs text-white/50">Status</p><StatusBadge status={delivery.status} /></div>
-              <div><p className="text-xs text-white/50">Delivery Number</p><p className="font-mono text-sm text-white">{delivery.deliveryNumber}</p></div>
-              <div><p className="text-xs text-white/50">Order</p><p className="text-sm text-white">{delivery.order?.orderNumber ?? '—'}</p></div>
-              <div><p className="text-xs text-white/50">Shipment</p><p className="text-sm text-white">{delivery.shipment?.shipmentNumber ?? '—'}</p></div>
-              <div><p className="text-xs text-white/50">Seller</p><p className="text-sm text-white">{delivery.sellerCompany?.name ?? '—'}</p></div>
-              {delivery.receiverName && <div><p className="text-xs text-white/50">Receiver</p><p className="text-sm text-white">{delivery.receiverName}</p></div>}
-              {delivery.deliveredAt && <div><p className="text-xs text-white/50">Delivered</p><p className="text-sm text-white">{new Date(delivery.deliveredAt).toLocaleString('en-IN')}</p></div>}
-              {delivery.confirmedAt && <div><p className="text-xs text-white/50">Confirmed</p><p className="text-sm text-white">{new Date(delivery.confirmedAt).toLocaleString('en-IN')}</p></div>}
+              <div><p className="text-xs text-text-tertiary">Status</p><StatusBadge status={delivery.status} /></div>
+              <div><p className="text-xs text-text-tertiary">Delivery Number</p><p className="font-mono text-sm text-text-primary">{delivery.deliveryNumber}</p></div>
+              <div><p className="text-xs text-text-tertiary">Order</p><p className="text-sm text-text-primary">{delivery.order?.orderNumber ?? '—'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Shipment</p><p className="text-sm text-text-primary">{delivery.shipment?.shipmentNumber ?? '—'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Seller</p><p className="text-sm text-text-primary">{delivery.sellerCompany?.name ?? '—'}</p></div>
+              {delivery.receiverName && <div><p className="text-xs text-text-tertiary">Receiver</p><p className="text-sm text-text-primary">{delivery.receiverName}</p></div>}
+              {delivery.deliveredAt && <div><p className="text-xs text-text-tertiary">Delivered</p><p className="text-sm text-text-primary">{new Date(delivery.deliveredAt).toLocaleString('en-IN')}</p></div>}
+              {delivery.confirmedAt && <div><p className="text-xs text-text-tertiary">Confirmed</p><p className="text-sm text-text-primary">{new Date(delivery.confirmedAt).toLocaleString('en-IN')}</p></div>}
               {delivery.rejectionReason && <div><p className="text-xs text-white/50">Rejection Reason</p><p className="text-sm text-red-400">{delivery.rejectionReason}</p></div>}
             </div>
           </div>
 
           {/* Actions */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Actions</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">Actions</h3>
             <div className="space-y-3">
               {canConfirm && (
                 <Button variant="accent" className="w-full" onClick={() => confirmMutation.mutate({ deliveryId: id })} disabled={confirmMutation.isPending}>
@@ -166,16 +168,16 @@ export default function BuyerDeliveryDetailPage() {
               {showReject && (
                 <div className="space-y-2 rounded-lg border border-red-500/20 bg-red-500/5 p-3">
                   <p className="text-xs font-medium text-red-400">Rejection Reason</p>
-                  <select value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white">
+                  <Select value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}>
                     <option value="">Select reason...</option>
                     <option value="DAMAGED">Damaged goods</option>
                     <option value="WRONG_ITEM">Wrong item</option>
                     <option value="INCOMPLETE">Incomplete delivery</option>
                     <option value="QUALITY_ISSUE">Quality issue</option>
                     <option value="OTHER">Other</option>
-                  </select>
-                  <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} rows={2} placeholder="Additional notes..."
-                    className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40" />
+                  </Select>
+                  <Textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} rows={2} placeholder="Additional notes..."
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/40" />
                   <div className="flex gap-2">
                     <Button variant="destructive" size="sm" onClick={() => rejectMutation.mutate({ deliveryId: id, reason: rejectReason || 'OTHER', note: rejectNote || undefined })} disabled={rejectMutation.isPending || !rejectReason}>Confirm Reject</Button>
                     <Button variant="ghost" size="sm" onClick={() => setShowReject(false)}>Cancel</Button>
@@ -186,14 +188,14 @@ export default function BuyerDeliveryDetailPage() {
           </div>
 
           {/* Documents */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><FileText className="h-4 w-4" /> Documents</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><FileText className="h-4 w-4" /> Documents</h3>
             {delivery.documents?.length ? delivery.documents.map((doc: any) => (
               <a key={doc.id} href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm text-white/70 hover:text-orange-400 mb-2">
+                className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-secondary hover:text-orange-400 mb-2">
                 <FileText className="h-4 w-4" /> {doc.fileName}
               </a>
-            )) : <p className="text-sm text-white/50">No documents</p>}
+            )) : <p className="text-sm text-text-tertiary">No documents</p>}
           </div>
         </div>
       </div>

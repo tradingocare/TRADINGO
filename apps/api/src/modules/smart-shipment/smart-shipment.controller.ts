@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { SmartShipmentService } from './smart-shipment.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,6 +10,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateShipmentDto, AssignCourierDto, UpdateShipmentDto, UpdateTrackingDto, AddDocumentDto } from './dto/smart-shipment.dto';
 
 @ApiTags('Smart Shipment & Logistics Engine')
+@Throttle(RateLimits.WRITE_GENERAL)
 @UseGuards(JwtAuthGuard)
 @Controller('smart-shipment')
 export class SmartShipmentController {

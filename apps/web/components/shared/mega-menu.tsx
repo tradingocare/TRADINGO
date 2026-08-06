@@ -75,15 +75,15 @@ export function MegaMenu({ label, columns, featured }: MegaMenuProps) {
                           onClick={() => setIsOpen(false)}
                           className="group block rounded-lg p-2 transition-colors hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary"
                         >
-                          <span className="text-sm font-medium text-text-primary transition-colors group-hover:text-primary-600 dark:text-dark-text-primary dark:group-hover:text-primary-400">
-                            {item.label}
-                          </span>
-                          {item.description && (
-                            <span className="mt-0.5 block text-xs text-text-tertiary dark:text-dark-text-tertiary">
-                              {item.description}
-                            </span>
-                          )}
-                        </Link>
+                     <span className="text-sm font-medium text-text-primary transition-colors group-hover:text-accent-600 dark:text-dark-text-primary dark:group-hover:text-accent-400">
+                       {item.label}
+                     </span>
+                     {item.description && (
+                       <span className="mt-0.5 block text-xs text-text-tertiary dark:text-dark-text-tertiary">
+                       {item.description}
+                     </span>
+                   )}
+                 </Link>
                       </li>
                     ))}
                   </ul>
@@ -91,9 +91,9 @@ export function MegaMenu({ label, columns, featured }: MegaMenuProps) {
               ))}
 
               {featured && (
-                <div className="col-span-1 rounded-xl bg-gradient-to-br from-primary-50 to-accent-50 p-4 dark:from-primary-900/20 dark:to-accent-900/20">
+                <div className="col-span-1 rounded-xl bg-gradient-to-br from-accent-50 to-accent-100 p-4 dark:from-accent-900/20 dark:to-accent-900/30">
                   <Link href={featured.href} onClick={() => setIsOpen(false)}>
-                    <h4 className="mb-2 text-sm font-semibold text-primary-700 dark:text-primary-300">
+                    <h4 className="mb-2 text-sm font-semibold text-accent-700 dark:text-accent-300">
                       {featured.title}
                     </h4>
                     <p className="text-xs text-text-secondary dark:text-dark-text-secondary">

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TrendingUp, Users, ShoppingBag, DollarSign } from 'lucide-react';
-import { MASTER_PLATFORM_STATS } from '@/data/master-data';
+import { TrendingUp, Users, ShoppingBag, DollarSign, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { getPlatformStats, PlatformStats } from '@/lib/api/homepage';
 
 interface LiveStat {
   icon: React.ReactNode;
@@ -13,44 +14,67 @@ interface LiveStat {
   positive: boolean;
 }
 
-const defaultStats: LiveStat[] = [
-  { icon: <ShoppingBag className="h-5 w-5" />, ...MASTER_PLATFORM_STATS.liveStats[0] },
-  { icon: <Users className="h-5 w-5" />, ...MASTER_PLATFORM_STATS.liveStats[1] },
-  { icon: <DollarSign className="h-5 w-5" />, ...MASTER_PLATFORM_STATS.liveStats[2] },
-  { icon: <TrendingUp className="h-5 w-5" />, ...MASTER_PLATFORM_STATS.liveStats[3] },
-];
+const STAT_LABELS = ['Products Listed', 'Active Traders', 'Live RFQs', 'Orders Completed'];
+
+function formatNum(n: number): string {
+  if (n >= 10000000) return (n / 10000000).toFixed(1) + 'Cr';
+  if (n >= 100000) return (n / 100000).toFixed(1) + 'L';
+  if (n >= 1000) return n.toLocaleString('en-IN');
+  return String(n);
+}
 
 export function LiveStats({ className }: { className?: string }) {
-  const [stats] = useState(defaultStats);
+  const [data, setData] = useState<PlatformStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const interval = setInterval(() => {}, 30000);
-    return () => clearInterval(interval);
+    getPlatformStats()
+      .then(setData)
+      .catch(() => {/* fallback to null */})
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return (
+      <div className={cn('flex items-center justify-center py-12', className)}>
+        <Loader2 className="h-6 w-6 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  const values = data
+    ? [
+        formatNum(data.productsListed),
+        formatNum(data.activeTraders),
+        formatNum(data.liveRfqs),
+        formatNum(data.ordersCompleted),
+      ]
+    : ['--', '--', '--', '--'];
+
+  const icons = [
+    <ShoppingBag className="h-5 w-5" key="0" />,
+    <Users className="h-5 w-5" key="1" />,
+    <DollarSign className="h-5 w-5" key="2" />,
+    <TrendingUp className="h-5 w-5" key="3" />,
+  ];
 
   return (
     <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-4', className)}>
-      {stats.map((stat, i) => (
+      {STAT_LABELS.map((label, i) => (
         <div
-          key={i}
-          className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(255,77,0,0.15)]"
+          key={label}
+          className="glass-card-lg p-5 transition-all duration-300 hover:border-accent-500/20 hover:shadow-[0_0_30px_-5px_rgba(0, 255, 255, 0.15)]"
         >
           <div className="flex items-start justify-between">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10" style={{ color: '#FF4D00' }}>
-              {stat.icon}
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-500/10 text-accent-500">
+              {icons[i]}
             </div>
-            <span
-              className={`inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-medium backdrop-blur-md ${
-                stat.positive
-                  ? 'border-green-500/30 bg-green-500/10 text-green-400'
-                  : 'border-red-500/30 bg-red-500/10 text-red-400'
-              }`}
-            >
-              {stat.change}
-            </span>
+            <Badge variant="success" className="gap-0.5 px-2 py-0.5 text-[10px] backdrop-blur-md">
+              Live
+            </Badge>
           </div>
-          <p className="mt-3 text-2xl font-bold text-white">{stat.value}</p>
-          <p className="mt-0.5 text-sm text-white/60">{stat.label}</p>
+          <p className="mt-3 text-2xl font-bold text-text-primary">{values[i]}</p>
+          <p className="mt-0.5 text-sm text-text-secondary">{label}</p>
         </div>
       ))}
     </div>

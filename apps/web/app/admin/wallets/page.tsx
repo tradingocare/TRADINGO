@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { DashboardPageHeader, StatCard, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Select } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { WalletAnalyticsBar } from '@/components/wallet/wallet-analytics-bar';
 import {
@@ -15,7 +17,7 @@ import {
 } from '@/hooks/use-wallet';
 import {
   Search, ExternalLink, Wallet, Users, DollarSign, AlertTriangle, TrendingUp,
-  BookOpen, Shield, Activity, BarChart3, RefreshCw, Award, Megaphone, Gift,
+  BookOpen, Shield, Activity, BarChart3, RefreshCw, Award,
   Filter, ChevronDown, ChevronUp, AlertCircle
 } from 'lucide-react';
 
@@ -104,12 +106,12 @@ export default function AdminWalletsPage() {
             ) : walletsError ? (
               <p className="py-4 text-center text-sm text-red-400">Failed to load wallets.</p>
             ) : !wallets.length ? (
-              <p className="text-sm text-white/40">{search ? 'No wallets match your search.' : 'No wallets found.'}</p>
+              <EmptyState icon={Search} title={search ? 'No wallets match your search' : 'No wallets found'} description={search ? 'Try a different search term.' : undefined} />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/[0.06] text-left">
+                    <tr className="border-b border-border text-left">
                       <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">ID</th>
                       <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">User</th>
                       <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">Type</th>
@@ -120,7 +122,7 @@ export default function AdminWalletsPage() {
                   </thead>
                   <tbody>
                     {wallets.map((w) => (
-                      <tr key={w.id} className="border-b border-white/[0.06] last:border-0">
+                      <tr key={w.id} className="border-b border-border last:border-0">
                         <td className="py-2 font-mono text-xs text-white/50">{w.id.slice(0, 8)}...</td>
                         <td className="py-2 font-mono text-xs text-white/50">{w.userId.slice(0, 8)}...</td>
                         <td className="py-2"><Badge variant="outline">{w.type}</Badge></td>
@@ -130,7 +132,7 @@ export default function AdminWalletsPage() {
                             w.status === 'ACTIVE' ? 'bg-green-500/10 text-green-400' :
                             w.status === 'LOCKED' ? 'bg-red-500/10 text-red-400' :
                             w.status === 'SUSPENDED' ? 'bg-yellow-500/10 text-yellow-400' :
-                            'bg-white/5 text-white/40'
+                            'bg-surface text-text-tertiary'
                           }`}>{w.status}</span>
                         </td>
                         <td className="py-2">
@@ -160,7 +162,7 @@ export default function AdminWalletsPage() {
           <CardHeader><CardTitle><Award className="mr-2 inline h-4 w-4" /> Top Wallets</CardTitle></CardHeader>
           <CardContent>
             {topLoading ? (
-              <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-lg bg-white/[0.04]" />)}</div>
+              <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-lg bg-surface" />)}</div>
             ) : topError ? (
               <p className="py-4 text-center text-sm text-red-400">Failed to load top wallets.</p>
             ) : !topWallets?.length ? (
@@ -168,7 +170,7 @@ export default function AdminWalletsPage() {
             ) : (
               <div className="space-y-3">
                 {topWallets.map((w) => (
-                  <div key={w.id} className="flex items-center justify-between rounded-lg border border-white/[0.06] p-3">
+                  <div key={w.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div>
                       <p className="text-sm font-medium text-white">#{w.rank} — {w.type}</p>
                       <p className="text-xs font-mono text-white/40">{w.id.slice(0, 12)}...</p>
@@ -193,7 +195,7 @@ export default function AdminWalletsPage() {
         {showFraud && (
           <CardContent>
             {fraudLoading ? (
-              <div className="space-y-3">{Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-white/[0.04]" />)}</div>
+              <div className="space-y-3">{Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />)}</div>
             ) : fraudError ? (
               <p className="py-4 text-center text-sm text-red-400">Failed to load fraud data.</p>
             ) : !fraud?.alerts?.length && !fraud?.highVelocity?.length ? (
@@ -203,19 +205,19 @@ export default function AdminWalletsPage() {
                 {fraud.alerts.map((alert, i) => (
                   <div key={i} className="mb-2 flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-sm">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-                    <span className="text-white/80">{alert}</span>
+                    <span className="text-white">{alert}</span>
                   </div>
                 ))}
                 <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-lg border border-white/[0.06] p-3">
+                  <div className="rounded-lg border border-border p-3">
                     <p className="text-lg font-bold text-white">{fraud?.failedAttempts ?? 0}</p>
                     <p className="text-xs text-white/40">Failed Attempts (24h)</p>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] p-3">
+                  <div className="rounded-lg border border-border p-3">
                     <p className="text-lg font-bold text-white">{fraud?.reversedCount ?? 0}</p>
                     <p className="text-xs text-white/40">Reversals (24h)</p>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] p-3">
+                  <div className="rounded-lg border border-border p-3">
                     <p className="text-lg font-bold text-white">{fraud?.totalTransactions ?? 0}</p>
                     <p className="text-xs text-white/40">Flagged Transactions</p>
                   </div>
@@ -256,11 +258,11 @@ export default function AdminWalletsPage() {
             <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-white/60">Direction</label>
-                <select className="h-9 rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 text-xs text-white backdrop-blur-xl" value={ledgerFilters.direction} onChange={(e) => setLedgerFilters({ ...ledgerFilters, direction: e.target.value })}>
+                <Select className="h-9 text-xs" value={ledgerFilters.direction} onChange={(e) => setLedgerFilters({ ...ledgerFilters, direction: e.target.value })}>
                   <option value="">All</option>
                   <option value="CREDIT">Credit</option>
                   <option value="DEBIT">Debit</option>
-                </select>
+                </Select>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-white/60">Search</label>
@@ -288,7 +290,7 @@ export default function AdminWalletsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/[0.06] text-left">
+                    <tr className="border-b border-border text-left">
                       <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">Date</th>
                       <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">Wallet</th>
                       <th className="sticky top-0 bg-background pb-2 font-medium text-white/60">Type</th>
@@ -301,10 +303,10 @@ export default function AdminWalletsPage() {
                   </thead>
                   <tbody>
                     {ledgerTxns.map((txn) => (
-                      <tr key={txn.id} className="border-b border-white/[0.06] last:border-0">
+                      <tr key={txn.id} className="border-b border-border last:border-0">
                         <td className="py-2 text-xs text-white/50">{new Date(txn.createdAt).toLocaleDateString()}</td>
                         <td className="py-2 font-mono text-xs text-white/50">{txn.walletId.slice(0, 8)}...</td>
-                        <td className="py-2"><span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-white/70">{txn.type.replace(/_/g, ' ')}</span></td>
+                        <td className="py-2"><span className="rounded-full bg-surface-secondary px-2 py-0.5 text-xs text-text-secondary">{txn.type.replace(/_/g, ' ')}</span></td>
                         <td className="py-2">
                           <span className={`text-xs font-medium ${txn.direction === 'CREDIT' ? 'text-green-400' : 'text-red-400'}`}>{txn.direction}</span>
                         </td>
@@ -318,7 +320,7 @@ export default function AdminWalletsPage() {
                             txn.status === 'SUCCESS' ? 'bg-green-500/10 text-green-400' :
                             txn.status === 'FAILED' ? 'bg-red-500/10 text-red-400' :
                             txn.status === 'REVERSED' ? 'bg-yellow-500/10 text-yellow-400' :
-                            'bg-white/5 text-white/40'
+                            'bg-surface text-text-tertiary'
                           }`}>{txn.status}</span>
                         </td>
                       </tr>
@@ -345,7 +347,7 @@ export default function AdminWalletsPage() {
           <CardHeader><CardTitle><BarChart3 className="mr-2 inline h-4 w-4" /> Distribution by Type</CardTitle></CardHeader>
           <CardContent>
             {distLoading ? (
-              <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 animate-pulse rounded-lg bg-white/[0.04]" />)}</div>
+              <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 animate-pulse rounded-lg bg-surface" />)}</div>
             ) : distError ? (
               <p className="py-4 text-center text-sm text-red-400">Failed to load distribution data.</p>
             ) : (
@@ -357,17 +359,17 @@ export default function AdminWalletsPage() {
           <CardHeader><CardTitle><Activity className="mr-2 inline h-4 w-4" /> Redemption Trends</CardTitle></CardHeader>
           <CardContent>
             {redemptLoading ? (
-              <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-white/[0.04]" />)}</div>
+              <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />)}</div>
             ) : redemptError ? (
               <p className="py-4 text-center text-sm text-red-400">Failed to load redemption data.</p>
             ) : redemptions ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg border border-white/[0.06] p-3">
+                  <div className="rounded-lg border border-border p-3">
                     <p className="text-lg font-bold text-white">{redemptions.totalRedemptions}</p>
                     <p className="text-xs text-white/40">Total Redemptions</p>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] p-3">
+                  <div className="rounded-lg border border-border p-3">
                     <p className="text-lg font-bold text-white">{formatINRObj(redemptions.totalAmount)}</p>
                     <p className="text-xs text-white/40">Total Amount</p>
                   </div>
@@ -378,7 +380,7 @@ export default function AdminWalletsPage() {
                     <p className="text-xs text-white/40">Approved</p>
                   </div>
                   <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
-                    <p className="text-lg font-bold text-yellow-400">{formatINRObj(redemptions.pendingAmount)}</p>
+                    <p className="text-lg font-bold text-accent-500">{formatINRObj(redemptions.pendingAmount)}</p>
                     <p className="text-xs text-white/40">Pending</p>
                   </div>
                 </div>
@@ -416,33 +418,33 @@ export default function AdminWalletsPage() {
             ) : growth ? (
               <>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-lg border border-white/[0.06] p-4">
+                  <div className="rounded-lg border border-border p-4">
                     <p className="text-xs text-white/40">New Wallets (30d)</p>
                     <p className="mt-1 text-2xl font-bold text-white">{growth.newWallets30d}</p>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] p-4">
+                  <div className="rounded-lg border border-border p-4">
                     <p className="text-xs text-white/40">Buyer Wallets</p>
                     <p className="mt-1 text-2xl font-bold text-white">{growth.buyerWallets}</p>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] p-4">
+                  <div className="rounded-lg border border-border p-4">
                     <p className="text-xs text-white/40">Seller Wallets</p>
                     <p className="mt-1 text-2xl font-bold text-white">{growth.sellerWallets}</p>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] p-4">
+                  <div className="rounded-lg border border-border p-4">
                     <p className="text-xs text-white/40">Locked/Suspended</p>
                     <p className="mt-1 text-2xl font-bold text-white">{growth.lockedWallets + growth.suspendedWallets}</p>
                   </div>
                 </div>
                 <div className="mt-4 grid gap-6 sm:grid-cols-3">
-                  <div className="rounded-lg border border-white/[0.06] p-4">
+                  <div className="rounded-lg border border-border p-4">
                     <p className="text-xs text-white/40">Total Lifetime Earned</p>
                     <p className="mt-1 text-xl font-bold text-white">{formatINRObj(growth.totalLifetimeEarned)}</p>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] p-4">
+                  <div className="rounded-lg border border-border p-4">
                     <p className="text-xs text-white/40">Total Lifetime Redeemed</p>
                     <p className="mt-1 text-xl font-bold text-white">{formatINRObj(growth.totalLifetimeRedeemed)}</p>
                   </div>
-                  <div className="rounded-lg border border-white/[0.06] p-4">
+                  <div className="rounded-lg border border-border p-4">
                     <p className="text-xs text-white/40">Total Available</p>
                     <p className="mt-1 text-xl font-bold text-white">{formatINRObj(growth.totalAvailable)}</p>
                   </div>

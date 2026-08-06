@@ -70,5 +70,5 @@ export class ProductAttributeDisplayDto {
   sections: AttributeSectionDto[];
 
   @ApiProperty({ description: 'Flattened key-value map for quick lookup' })
-  flattened: Record<string, any>;
+  flattened: Record<string, unknown>;
 }

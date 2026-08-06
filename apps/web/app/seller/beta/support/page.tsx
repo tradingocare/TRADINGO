@@ -9,7 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { getSupportTickets, createSupportTicket, type SupportTicket } from '@/lib/api/beta';
-import { Plus, MessageSquare, ChevronRight, Loader2, X } from 'lucide-react';
+import { Plus, MessageSquare, ChevronRight, X } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import { Modal } from '@/components/ui/modal';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const STATUS_BADGE_VARIANTS: Record<string, 'outline' | 'warning' | 'success' | 'secondary'> = {
   OPEN: 'outline',
@@ -83,7 +86,7 @@ export default function SupportPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-text-secondary" />
+          <LoadingSpinner size="default" />
           <span className="ml-3 text-text-secondary">Loading tickets...</span>
         </div>
       ) : tickets.length === 0 ? (
@@ -131,79 +134,61 @@ export default function SupportPage() {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-lg mx-4">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>New Support Ticket</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => setShowModal(false)}>
-                <X className="h-5 w-5" />
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                  Subject
-                </label>
-                <Input
-                  placeholder="Brief title of your issue"
-                  value={form.subject}
-                  onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                  Description
-                </label>
-                <Textarea
-                  placeholder="Describe your issue in detail"
-                  rows={4}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                    Category
-                  </label>
-                  <select
-                    className="flex h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary"
-                    value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  >
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                    Priority
-                  </label>
-                  <select
-                    className="flex h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary"
-                    value={form.priority}
-                    onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  >
-                    {PRIORITIES.map((p) => (
-                      <option key={p} value={p.toUpperCase()}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowModal(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreate} disabled={submitting || !form.subject.trim() || !form.description.trim()}>
-                  {submitting ? 'Creating...' : 'Create Ticket'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="New Support Ticket">
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+              Subject
+            </label>
+            <Input
+              placeholder="Brief title of your issue"
+              value={form.subject}
+              onChange={(e) => setForm({ ...form, subject: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+              Description
+            </label>
+            <Textarea
+              placeholder="Describe your issue in detail"
+              rows={4}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                Category
+              </label>
+              <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                Priority
+              </label>
+              <Select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p.toUpperCase()}>{p}</option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setShowModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate} disabled={submitting || !form.subject.trim() || !form.description.trim()}>
+              {submitting ? 'Creating...' : 'Create Ticket'}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AiProviderService } from './ai-provider.service';
-import { PromptService } from './prompt.service';
-import { QueryCatalogQualityDto, DetectDuplicatesDto, AiHealthDashboardDto } from './dto/ai.dto';
+import { QueryCatalogQualityDto, DetectDuplicatesDto, AiHealthDashboardDto, GenerateBulkQualityScoresDto } from './dto/ai.dto';
+import { gracefulCatch } from '../../common/utils/graceful-catch';
 
 @Injectable()
 export class CatalogQualityService {
@@ -10,14 +9,12 @@ export class CatalogQualityService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly aiProvider: AiProviderService,
-    private readonly prompts: PromptService,
   ) {}
 
   async calculateScore(productId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
-      include: { category: true, productBrand: true, media: true, specifications: true, attributes: true },
+      include: { category: true, productBrand: true, media: true, specifications: true, attributes: true, inventory: true, priceSlabs: true },
     });
     if (!product) throw new Error('Product not found');
 
@@ -29,7 +26,9 @@ export class CatalogQualityService {
     const categoryQuality = product.categoryId ? (product.category?.name ? 80 : 50) : 0;
     const brandQuality = product.brand || product.brandId ? 80 : 0;
     const attributeQuality = product.attributes.length > 0 ? Math.min(product.attributes.length * 10, 100) : 0;
-    const completeness = Math.round((titleQuality + descriptionQuality + imageQuality + specificationQuality + seoQuality + categoryQuality + brandQuality + attributeQuality) / 8);
+    const pricingQuality = this.scorePricing(product.priceSlabs, product.originalPrice);
+    const inventoryQuality = this.scoreInventory(product.inventory);
+    const completeness = Math.round((titleQuality + descriptionQuality + imageQuality + specificationQuality + seoQuality + categoryQuality + brandQuality + attributeQuality + pricingQuality + inventoryQuality) / 10);
 
     const recommendations: string[] = [];
     if (titleQuality < 70) recommendations.push('Add brand and model to product name');
@@ -39,14 +38,29 @@ export class CatalogQualityService {
     if (seoQuality < 70) recommendations.push('Fill in SEO title and meta description');
     if (categoryQuality < 70) recommendations.push('Assign to a specific category');
     if (brandQuality < 70) recommendations.push('Specify brand name');
+    if (pricingQuality < 70) recommendations.push('Define pricing slabs for volume-based pricing');
+    if (inventoryQuality < 70) recommendations.push('Set inventory quantity and stock status');
 
     const total = completeness;
 
     return this.prisma.catalogQualityScore.upsert({
       where: { productId },
-      create: { productId, total, titleQuality, descriptionQuality, imageQuality, specificationQuality, seoQuality, categoryQuality, brandQuality, attributeQuality, completeness, recommendations: recommendations as any },
-      update: { total, titleQuality, descriptionQuality, imageQuality, specificationQuality, seoQuality, categoryQuality, brandQuality, attributeQuality, completeness, recommendations: recommendations as any, lastCalculatedAt: new Date() },
+      create: { productId, total, titleQuality, descriptionQuality, imageQuality, specificationQuality, seoQuality, categoryQuality, brandQuality, attributeQuality, pricingQuality, inventoryQuality, completeness, recommendations: recommendations as any },
+      update: { total, titleQuality, descriptionQuality, imageQuality, specificationQuality, seoQuality, categoryQuality, brandQuality, attributeQuality, pricingQuality, inventoryQuality, completeness, recommendations: recommendations as any, lastCalculatedAt: new Date() },
     });
+  }
+
+  async calculateBulkScores(dto: GenerateBulkQualityScoresDto) {
+    const results: Array<{ productId: string; total: number; completeness: number; error?: string }> = [];
+    for (const productId of dto.productIds) {
+      try {
+        const score = await this.calculateScore(productId);
+        results.push({ productId, total: score.total, completeness: score.completeness });
+      } catch (err: any) {
+        results.push({ productId, total: 0, completeness: 0, error: err.message });
+      }
+    }
+    return { results, totalProcessed: results.length, successCount: results.filter(r => !r.error).length, failedCount: results.filter(r => r.error).length };
   }
 
   async listScores(query: QueryCatalogQualityDto) {
@@ -78,12 +92,14 @@ export class CatalogQualityService {
     const where: any = {};
     if (dto.companyId) where.companyId = dto.companyId;
 
-    const [totalProducts, scores, missingImages, missingSeo, missingSpecs, translations] = await Promise.all([
+    const [totalProducts, scores, missingImages, missingSeo, missingSpecs, missingAttributes, missingPricing, translations] = await Promise.all([
       this.prisma.product.count({ where: { ...where, deletedAt: null } }),
-      this.prisma.catalogQualityScore.findMany({ where: dto.companyId ? { product: { companyId: dto.companyId } } : {}, select: { total: true, titleQuality: true, descriptionQuality: true, imageQuality: true, specificationQuality: true, seoQuality: true } }),
+      this.prisma.catalogQualityScore.findMany({ where: dto.companyId ? { product: { companyId: dto.companyId } } : {}, select: { total: true, titleQuality: true, descriptionQuality: true, imageQuality: true, specificationQuality: true, seoQuality: true, pricingQuality: true, inventoryQuality: true }, take: 1000 }),
       this.prisma.product.count({ where: { ...where, deletedAt: null, media: { none: {} } } }),
       this.prisma.product.count({ where: { ...where, deletedAt: null, OR: [{ metaTitle: null }, { metaDescription: null }] } }),
       this.prisma.product.count({ where: { ...where, deletedAt: null, specifications: { none: {} } } }),
+      this.prisma.product.count({ where: { ...where, deletedAt: null, attributes: { none: {} } } }),
+      this.prisma.product.count({ where: { ...where, deletedAt: null, OR: [{ priceSlabs: { none: {} } }, { minPrice: null }] } }),
       this.prisma.productTranslation.groupBy({ by: ['locale'], _count: true }),
     ]);
 
@@ -99,24 +115,61 @@ export class CatalogQualityService {
 
     return {
       totalProducts, scoredProducts: scores.length, avgScore, avgTitleQuality, avgDescQuality, avgImageQuality, avgSpecQuality, avgSeoQuality,
-      missingImages, missingSeo, missingSpecs, lowScoringProducts: lowScoring,
+      missingImages, missingSeo, missingSpecs, missingAttributes, missingPricing, lowScoringProducts: lowScoring,
       duplicateRiskCount: duplicateRisk.length,
       translations: translations.map(t => ({ locale: t.locale, count: t._count })),
     };
   }
 
+  async getSellerDashboard(companyId: string) {
+    const [avgScore, totalProducts, scoredProducts, missingImages, missingSeo, missingSpecs, missingAttributes, lowScoring, duplicates] = await Promise.all([
+      this.prisma.catalogQualityScore.aggregate({ where: { product: { companyId } }, _avg: { total: true } }).then(r => Math.round(r._avg.total || 0)).catch(gracefulCatch('catalogQuality.getSellerDashboard.avgScore', 0)),
+      this.prisma.product.count({ where: { companyId, deletedAt: null } }).catch(gracefulCatch('catalogQuality.getSellerDashboard.totalProducts', 0)),
+      this.prisma.catalogQualityScore.count({ where: { product: { companyId } } }).catch(gracefulCatch('catalogQuality.getSellerDashboard.scoredProducts', 0)),
+      this.prisma.product.count({ where: { companyId, media: { none: {} }, deletedAt: null } }).catch(gracefulCatch('catalogQuality.getSellerDashboard.missingImages', 0)),
+      this.prisma.product.count({ where: { companyId, OR: [{ metaTitle: null }, { metaDescription: null }], deletedAt: null } }).catch(gracefulCatch('catalogQuality.getSellerDashboard.missingSeo', 0)),
+      this.prisma.product.count({ where: { companyId, specifications: { none: {} }, deletedAt: null } }).catch(gracefulCatch('catalogQuality.getSellerDashboard.missingSpecs', 0)),
+      this.prisma.product.count({ where: { companyId, attributes: { none: {} }, deletedAt: null } }).catch(gracefulCatch('catalogQuality.getSellerDashboard.missingAttributes', 0)),
+      this.prisma.catalogQualityScore.count({ where: { total: { lt: 70 }, product: { companyId } } }).catch(gracefulCatch('catalogQuality.getSellerDashboard.lowScoring', 0)),
+      this.detectGlobalDuplicates(companyId).catch(gracefulCatch('catalogQuality.getSellerDashboard.duplicates', [])),
+    ])
+    const scoreDistribution = await this.prisma.catalogQualityScore.groupBy({
+      by: ['total'], where: { product: { companyId } }, _count: { total: true },
+      orderBy: { total: 'asc' },
+    }).catch(gracefulCatch('catalogQuality.getSellerDashboard.scoreDistribution', []))
+    return { avgScore, totalProducts, scoredProducts, missingImages, missingSeo, missingSpecs, missingAttributes, lowScoringProducts: lowScoring, duplicateRiskCount: duplicates.length, scoreDistribution }
+  }
+
   async detectDuplicates(dto: DetectDuplicatesDto) {
+    const where: any = { deletedAt: null };
+    if (dto.companyId) where.companyId = dto.companyId;
+
     const products = dto.productId
       ? [await this.prisma.product.findUnique({ where: { id: dto.productId } })].filter(Boolean)
-      : await this.prisma.product.findMany({ where: dto.companyId ? { companyId: dto.companyId, deletedAt: null } : { deletedAt: null }, take: 100 });
+      : await this.prisma.product.findMany({ where, take: 500, include: { category: { select: { name: true } } } });
 
-    const results: Array<{ productId: string; productName: string; similarTo: string; confidence: string; reason: string }> = [];
+    const results: Array<{ productId: string; productName: string; similarTo: string; confidence: string; reason: string; matchType: string }> = [];
     for (let i = 0; i < products.length; i++) {
       for (let j = i + 1; j < products.length; j++) {
         const a = products[i]!; const b = products[j]!;
         const nameSim = this.similarity(a.name.toLowerCase(), b.name.toLowerCase());
-        if (nameSim > 0.8) {
-          results.push({ productId: a.id, productName: a.name, similarTo: b.name, confidence: nameSim > 0.95 ? 'high' : 'medium', reason: `Name similarity: ${Math.round(nameSim * 100)}%` });
+        const sameCategory = a.categoryId && b.categoryId && a.categoryId === b.categoryId;
+        const sameSku = a.sku && a.sku.toLowerCase() === b.sku?.toLowerCase();
+        const sameBrand = a.brand && a.brand.toLowerCase() === b.brand?.toLowerCase();
+        const brandNameSim = sameBrand ? nameSim * 1.15 : nameSim;
+        const nearDuplicate = brandNameSim > 0.75 && sameCategory && sameBrand;
+        const exactBrandNameSim = brandNameSim > 0.9 && sameBrand;
+
+        if (sameSku) {
+          results.push({ productId: a.id, productName: a.name, similarTo: b.name, confidence: 'high', reason: `Same SKU: ${a.sku}`, matchType: 'SKU' });
+        } else if (exactBrandNameSim) {
+          results.push({ productId: a.id, productName: a.name, similarTo: b.name, confidence: 'high', reason: `Name similarity: ${Math.round(brandNameSim * 100)}% + same brand`, matchType: 'NAME_BRAND' });
+        } else if (nameSim > 0.85 && sameCategory) {
+          results.push({ productId: a.id, productName: a.name, similarTo: b.name, confidence: nameSim > 0.95 ? 'high' : 'medium', reason: `Name similarity: ${Math.round(nameSim * 100)}% + same category`, matchType: 'NAME_CATEGORY' });
+        } else if (nameSim > 0.9) {
+          results.push({ productId: a.id, productName: a.name, similarTo: b.name, confidence: 'high', reason: `Name similarity: ${Math.round(nameSim * 100)}%`, matchType: 'NAME' });
+        } else if (nearDuplicate) {
+          results.push({ productId: a.id, productName: a.name, similarTo: b.name, confidence: 'medium', reason: `Near duplicate: ${Math.round(brandNameSim * 100)}% similarity + same brand/category`, matchType: 'NEAR_DUPLICATE' });
         }
       }
     }
@@ -124,11 +177,13 @@ export class CatalogQualityService {
   }
 
   private async detectGlobalDuplicates(companyId?: string) {
-    const products = await this.prisma.product.findMany({ where: companyId ? { companyId, deletedAt: null } : { deletedAt: null }, select: { id: true, name: true, companyId: true }, take: 200 });
+    const products = await this.prisma.product.findMany({ where: companyId ? { companyId, deletedAt: null } : { deletedAt: null }, select: { id: true, name: true, companyId: true, brand: true }, take: 200 });
     const results: Array<{ id: string; name: string; similarTo: string }> = [];
     for (let i = 0; i < Math.min(products.length, 50); i++) {
       for (let j = i + 1; j < Math.min(products.length, 50); j++) {
-        if (this.similarity(products[i].name.toLowerCase(), products[j].name.toLowerCase()) > 0.85) {
+        const sim = this.similarity(products[i].name.toLowerCase(), products[j].name.toLowerCase());
+        const sameBrand = products[i].brand && products[i].brand!.toLowerCase() === products[j].brand?.toLowerCase();
+        if (sim > 0.85 || (sim > 0.75 && sameBrand)) {
           results.push({ id: products[i].id, name: products[i].name, similarTo: products[j].name });
         }
       }
@@ -159,21 +214,11 @@ export class CatalogQualityService {
   }
 
   private scoreImages(media: any[]): number {
-    if (media.length === 0) return 0;
-    if (media.length >= 1) return 30;
-    if (media.length >= 3) return 60;
-    if (media.length >= 5) return 80;
-    if (media.length >= 8) return 100;
-    return Math.min(media.length * 20, 100);
+    return media.length === 0 ? 0 : Math.min(media.length >= 8 ? 100 : media.length >= 5 ? 80 : media.length >= 3 ? 60 : media.length >= 1 ? 30 : media.length * 20, 100);
   }
 
   private scoreSpecifications(specs: any[]): number {
-    if (specs.length === 0) return 0;
-    if (specs.length >= 1) return 25;
-    if (specs.length >= 3) return 50;
-    if (specs.length >= 5) return 75;
-    if (specs.length >= 10) return 100;
-    return Math.min(specs.length * 15, 100);
+    return specs.length === 0 ? 0 : Math.min(specs.length >= 10 ? 100 : specs.length >= 5 ? 75 : specs.length >= 3 ? 50 : specs.length >= 1 ? 25 : specs.length * 15, 100);
   }
 
   private scoreSeo(metaTitle: string | null, metaDescription: string | null, keywords: string[]): number {
@@ -182,6 +227,23 @@ export class CatalogQualityService {
     if (metaTitle && metaTitle.length >= 30 && metaTitle.length <= 60) score += 20;
     if (metaDescription) score += 30;
     if (keywords?.length > 0) score += 20;
+    return Math.min(score, 100);
+  }
+
+  private scorePricing(priceSlabs: any[], originalPrice: any): number {
+    let score = 0;
+    if (priceSlabs && priceSlabs.length >= 2) score += 40;
+    if (priceSlabs && priceSlabs.length >= 1) score += 30;
+    if (originalPrice && Number(originalPrice) > 0) score += 30;
+    return Math.min(score, 100);
+  }
+
+  private scoreInventory(inventory: any): number {
+    if (!inventory) return 0;
+    let score = 30;
+    if (inventory.availableQuantity > 0) score += 30;
+    if (inventory.availableQuantity >= 100) score += 20;
+    if (inventory.stockStatus) score += 20;
     return Math.min(score, 100);
   }
 

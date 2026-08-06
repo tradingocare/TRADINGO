@@ -270,3 +270,71 @@ export class AdminCreatePlanAddonDto {
   @IsNumber()
   sortOrder?: number;
 }
+
+export class UpdateVisibilityDto {
+  @IsEnum(PlanVisibility)
+  visibility: PlanVisibility;
+}
+
+export class BatchUpdateFeatureDto {
+  @IsString()
+  category: string;
+
+  @IsString()
+  feature: string;
+
+  @IsBoolean()
+  included: boolean;
+
+  @IsOptional()
+  @IsString()
+  value?: string;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+}
+
+// ── Subscription Lifecycle DTOs ──────────────────────────
+export class EnrollTrialDto {
+  @IsString()
+  planId: string;
+}
+
+export class UpgradeSubscriptionDto {
+  @IsString()
+  newPlanId: string;
+
+  @IsString()
+  planTier: string;
+
+  @IsNumber()
+  amount: number;
+
+  @IsString()
+  paymentId: string;
+}
+
+export class DowngradeSubscriptionDto {
+  @IsString()
+  newPlanId: string;
+
+  @IsOptional()
+  @IsString()
+  effectiveAt?: string;
+}
+
+export class RenewSubscriptionDto {
+  @IsNumber()
+  amount: number;
+
+  @IsString()
+  paymentId: string;
+}
+
+export class SuspendSubscriptionDto {
+  @IsString()
+  reason: string;
+}
+
+export class ReactivateSubscriptionDto {}

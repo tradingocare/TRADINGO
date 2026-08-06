@@ -27,7 +27,7 @@ const DEFAULT_COLORS = [
 
 export function WalletAnalyticsBar({ items, formatCurrency, maxItems = 8 }: WalletAnalyticsBarProps) {
   if (!items?.length) {
-    return <p className="py-4 text-center text-sm text-white/40">No data available</p>;
+    return <p className="py-4 text-center text-sm text-text-tertiary">No data available</p>;
   }
 
   const maxValue = Math.max(...items.map((i) => i.value), 1);
@@ -40,15 +40,15 @@ export function WalletAnalyticsBar({ items, formatCurrency, maxItems = 8 }: Wall
         return (
           <div key={item.label}>
             <div className="mb-1 flex items-center justify-between text-sm">
-              <span className="text-white/80">{item.label}</span>
-              <span className="font-medium text-white">
+              <span className="text-text-primary">{item.label}</span>
+              <span className="font-medium text-text-primary">
                 {formatCurrency(item.value)}
                 {item.count != null && (
-                  <span className="ml-1 text-xs text-white/40">({item.count})</span>
+                  <span className="ml-1 text-xs text-text-tertiary">({item.count})</span>
                 )}
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
               <div
                 className={`h-full rounded-full bg-gradient-to-r ${DEFAULT_COLORS[idx % DEFAULT_COLORS.length]} transition-all duration-500`}
                 style={{ width: `${Math.max(pct, 2)}%` }}

@@ -1,11 +1,14 @@
-import { Controller, Post, Headers, Req, RawBodyRequest, HttpCode } from '@nestjs/common';
+import { Controller, Post, Headers, Req, RawBodyRequest, HttpCode, HttpException, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
 import { RazorpayService } from './gateways/razorpay.service';
 import { StripeService } from './gateways/stripe.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { maskSensitiveData } from '../../common/utils/pii';
 
 @ApiTags('Payment Webhooks')
+@Throttle({ default: { limit: 60, ttl: 60000 } })
 @Controller('payments/webhook')
 export class PaymentWebhookController {
   constructor(
@@ -25,14 +28,14 @@ export class PaymentWebhookController {
   ) {
     const rawBody = req.rawBody?.toString() || '';
     if (!signature || !this.razorpayService.verifyWebhookSignature(rawBody, signature)) {
-      return { status: 'error', message: 'Invalid webhook signature' };
+      throw new HttpException({ status: 'error', message: 'Invalid webhook signature' }, HttpStatus.UNAUTHORIZED);
     }
 
     let payload: any;
     try {
       payload = JSON.parse(rawBody);
     } catch {
-      return { status: 'error', message: 'Invalid webhook payload' };
+      throw new HttpException({ status: 'error', message: 'Invalid webhook payload' }, HttpStatus.BAD_REQUEST);
     }
 
     const eventId = payload.id;
@@ -45,7 +48,7 @@ export class PaymentWebhookController {
 
     if (eventId) {
       await this.prisma.processedWebhookEvent.create({
-        data: { eventId, gateway: 'RAZORPAY', payload },
+        data: { eventId, gateway: 'RAZORPAY', payload: maskSensitiveData(payload) as any },
       });
     }
 
@@ -61,14 +64,14 @@ export class PaymentWebhookController {
   ) {
     const rawBody = req.rawBody?.toString() || '';
     if (!signature || !this.stripeService.verifyWebhookSignature(rawBody, signature)) {
-      return { status: 'error', message: 'Invalid webhook signature' };
+      throw new HttpException({ status: 'error', message: 'Invalid webhook signature' }, HttpStatus.UNAUTHORIZED);
     }
 
     let payload: any;
     try {
       payload = JSON.parse(rawBody);
     } catch {
-      return { status: 'error', message: 'Invalid webhook payload' };
+      throw new HttpException({ status: 'error', message: 'Invalid webhook payload' }, HttpStatus.BAD_REQUEST);
     }
 
     const eventId = payload.id;
@@ -82,7 +85,7 @@ export class PaymentWebhookController {
 
     if (eventId) {
       await this.prisma.processedWebhookEvent.create({
-        data: { eventId, gateway: 'STRIPE', payload },
+        data: { eventId, gateway: 'STRIPE', payload: maskSensitiveData(payload) as any },
       });
     }
 

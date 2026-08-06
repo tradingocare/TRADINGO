@@ -16,7 +16,7 @@ const PLANS_META: Record<string, { icon: any; color: string }> = {
   Trade_Start:   { icon: Star,   color: '#6b7280' },
   Trade_Smart:   { icon: Shield, color: '#3D8BFF' },
   Trade_Plus:    { icon: Shield, color: '#9B5DE5' },
-  Trade_Pro:     { icon: Crown,  color: '#FF4D00' },
+  Trade_Pro:     { icon: Crown,  color: '#f59e0b' },
   Trade_Premium: { icon: Crown,  color: '#F2C94C' },
   Trade_Elite:   { icon: Zap,    color: '#4ade80' },
 }
@@ -59,8 +59,8 @@ export default function PlanDetailClient() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background:'#0A0A0F' }}>
-      <div className="w-12 h-12 rounded-full border-2 border-t-[#FF4D00] border-white/10 animate-spin" />
+    <div className="min-h-screen flex items-center justify-center" style={{ background:'var(--bg-base)' }}>
+      <div className="w-12 h-12 rounded-full border-2 border-t-[#f59e0b] border-border animate-spin" />
     </div>
   )
 
@@ -72,7 +72,7 @@ export default function PlanDetailClient() {
   const currentTier = PLAN_TIERS.find(t => t.id === tier)!
 
   return (
-    <div className="min-h-screen" style={{ background:'#0A0A0F' }}>
+    <div className="min-h-screen" style={{ background:'var(--bg-base)' }}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full opacity-10"
           style={{ background:'radial-gradient(circle,#9B5DE520,transparent 70%)', filter:'blur(80px)' }} />
@@ -87,8 +87,8 @@ export default function PlanDetailClient() {
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
           className="rounded-2xl p-8 border"
           style={{
-            background: 'rgba(255,255,255,0.03)',
-            borderColor: 'rgba(255,255,255,0.1)',
+            backgroundColor: 'var(--bg-elevated)',
+            borderColor: 'var(--border-color)',
           }}>
           <div className="flex items-center gap-3 mb-4">
             <Icon size={28} style={{ color: meta.color }} />
@@ -101,9 +101,9 @@ export default function PlanDetailClient() {
               <button key={t.id} onClick={() => setTier(t.id)}
                 className="px-4 py-2 rounded-xl text-sm font-semibold transition-all text-left"
                 style={{
-                  background: tier === t.id ? 'rgba(255,77,0,0.12)' : 'rgba(255,255,255,0.04)',
-                  border: tier === t.id ? '1px solid rgba(255,77,0,0.35)' : '1px solid rgba(255,255,255,0.08)',
-                  color: tier === t.id ? '#FF4D00' : 'rgba(255,255,255,0.5)',
+                  background: tier === t.id ? 'rgba(245, 158, 11, 0.12)' : 'var(--bg-elevated)',
+                  border: tier === t.id ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid var(--border-color)',
+                  color: tier === t.id ? '#f59e0b' : 'rgba(255,255,255,0.5)',
                 }}>
                 <div>{t.label}</div>
                 <div className="text-[10px] opacity-60">{t.desc}</div>
@@ -120,7 +120,7 @@ export default function PlanDetailClient() {
             onClick={handlePurchase}
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 mb-8"
             style={{
-              background: 'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+              background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
               color: '#fff',
             }}>
             {user ? 'Purchase Now' : 'Sign Up & Purchase'} <ArrowRight size={14} />

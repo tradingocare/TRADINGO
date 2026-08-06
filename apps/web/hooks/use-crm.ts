@@ -128,3 +128,34 @@ export function useRmPerformanceReport() {
 export function useAdminCrmDashboard() {
   return useQuery({ queryKey: ['crm', 'admin', 'dashboard'], queryFn: () => crmApi.getAdminCrmDashboard().then(r => r.data) });
 }
+
+// ─── Campaign Hooks ─────────────────────────────────────
+
+export function useCampaigns(params?: crmApi.CampaignQueryParams) {
+  return useQuery({ queryKey: ['crm', 'campaigns', params], queryFn: () => crmApi.listCampaigns(params).then(r => r.data) });
+}
+export function useCampaign(id: string) {
+  return useQuery({ queryKey: ['crm', 'campaign', id], queryFn: () => crmApi.getCampaign(id).then(r => r.data), enabled: !!id });
+}
+export function useCreateCampaign() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: crmApi.CreateCampaignDto) => crmApi.createCampaign(dto).then(r => r.data), onSuccess: () => qc.invalidateQueries({ queryKey: ['crm', 'campaigns'] }) });
+}
+export function useUpdateCampaign() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ id, dto }: { id: string; dto: crmApi.UpdateCampaignDto }) => crmApi.updateCampaign(id, dto).then(r => r.data), onSuccess: () => qc.invalidateQueries({ queryKey: ['crm', 'campaigns'] }) });
+}
+export function useDeleteCampaign() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => crmApi.deleteCampaign(id).then(r => r.data), onSuccess: () => qc.invalidateQueries({ queryKey: ['crm', 'campaigns'] }) });
+}
+export function useAddLeadsToCampaign() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ campaignId, leadIds }: { campaignId: string; leadIds: string[] }) => crmApi.addLeadsToCampaign(campaignId, leadIds).then(r => r.data), onSuccess: () => qc.invalidateQueries({ queryKey: ['crm', 'campaign'] }) });
+}
+export function useCampaignAnalytics(id: string) {
+  return useQuery({ queryKey: ['crm', 'campaign', id, 'analytics'], queryFn: () => crmApi.getCampaignAnalytics(id).then(r => r.data), enabled: !!id });
+}
+export function useCampaignDashboard() {
+  return useQuery({ queryKey: ['crm', 'campaigns', 'dashboard'], queryFn: () => crmApi.getCampaignDashboard().then(r => r.data) });
+}

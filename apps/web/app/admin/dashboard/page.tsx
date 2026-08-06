@@ -4,8 +4,10 @@ import { DashboardPageHeader, StatCard, DashboardSkeleton } from '@/components/d
 import { useUsers, useCompanies, useRfqs, useKycSubmissions } from '@/hooks';
 import { useFraudSummary } from '@/hooks/use-wallet';
 import { useAiExecutiveCopilot } from '@/hooks/use-ai-admin';
+import { useEcoAdminDashboard } from '@/hooks/use-ecosystem';
 import { AiAdminCopilot } from '@/components/admin/ai-admin-copilot';
-import { Users, Building2, FileText, ShieldCheck, Shield, AlertTriangle, Activity, BadgeCheck, Scale, Ban, Sparkles, X } from 'lucide-react';
+import { AdminDashboardCopilot } from '@/components/admin-agent/dashboard-copilot';
+import { Users, Building2, FileText, ShieldCheck, Shield, AlertTriangle, Activity, BadgeCheck, Scale, Ban, Sparkles, Zap, Award, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ADMIN_QUICK_LINKS } from '@/data/master-data';
@@ -20,6 +22,7 @@ export default function AdminDashboardPage() {
   const { data: rfqsData, isLoading: rfqsLoad } = useRfqs({ limit: 1 });
   const { data: kycData, isLoading: kycLoad } = useKycSubmissions({ limit: 1 });
   const { data: fraudData, isLoading: fraudLoad } = useFraudSummary();
+  const { data: ecoData, isLoading: ecoLoad } = useEcoAdminDashboard();
 
   if (usersLoad || companiesLoad || rfqsLoad || kycLoad || fraudLoad) {
     return <DashboardSkeleton />;
@@ -41,7 +44,7 @@ export default function AdminDashboardPage() {
           description="Platform overview"
         />
         <button onClick={() => setShowCopilot(!showCopilot)}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${showCopilot ? 'text-orange-300 bg-orange-500/15 border border-orange-400/30' : 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10'}`}>
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${showCopilot ? 'text-orange-300 bg-orange-500/15 border border-orange-400/30' : 'text-text-secondary hover:text-text-primary bg-surface hover:bg-surface-secondary border border-border'}`}>
           <Sparkles className="h-3.5 w-3.5" />
           AI Copilot
         </button>
@@ -53,6 +56,15 @@ export default function AdminDashboardPage() {
         <StatCard icon={FileText} label="Active RFQs" value={String(activeRfqs)} change="Total" changeType="neutral" />
         <StatCard icon={ShieldCheck} label="Pending KYC" value={String(pendingKyc)} change="Awaiting review" changeType="neutral" />
       </div>
+
+      {ecoData && !ecoLoad && (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard icon={Zap} label="Ecosystem Users" value={String(ecoData.totalUsers)} change="Total" changeType="neutral" />
+          <StatCard icon={Award} label="Total XP Issued" value={ecoData.totalXp.toLocaleString()} change="Platform-wide" changeType="neutral" />
+          <StatCard icon={BadgeCheck} label="Check-ins" value={String(ecoData.totalCheckins)} change="Total" changeType="neutral" />
+          <StatCard icon={Award} label="Badges Issued" value={String(ecoData.totalBadges)} change="Total" changeType="neutral" />
+        </div>
+      )}
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={BadgeCheck} label="Open Disputes" value={String(fraudData?.summary?.openDisputes ?? 0)} change="Disputes" changeType={fraudData?.summary?.openDisputes ? 'negative' : 'positive'} />
@@ -136,11 +148,10 @@ export default function AdminDashboardPage() {
       </div>
 
       {showCopilot && (
-        <div className="rounded-2xl p-4"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="rounded-2xl border border-border p-4 bg-surface">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-white/50">AI Executive Copilot</span>
-            <button onClick={() => setShowCopilot(false)} className="text-white/30 hover:text-white/60">
+            <span className="text-xs font-semibold text-text-tertiary">AI Executive Copilot</span>
+            <button onClick={() => setShowCopilot(false)} className="text-text-tertiary hover:text-text-secondary">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -162,6 +173,7 @@ export default function AdminDashboardPage() {
           />
         </div>
       )}
+      <AdminDashboardCopilot />
     </div>
   );
 }

@@ -13,14 +13,14 @@ const BADGE_CONFIG: Record<BadgeType, BadgeConfig> = {
   verified:          { label: 'Verified',          icon: BadgeCheck,    className: 'text-green-500 bg-green-500/10 border-green-500/20' },
   trusted:           { label: 'Trusted',           icon: ShieldCheck,   className: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
   premium:           { label: 'Premium',           icon: Award,         className: 'text-purple-500 bg-purple-500/10 border-purple-500/20' },
-  gold:              { label: 'Gold',              icon: Crown,         className: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20' },
-  platinum:          { label: 'Platinum',          icon: Diamond,       className: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
-  elite:             { label: 'Elite',             icon: Star,          className: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
+  gold:              { label: 'Gold',              icon: Crown,         className: 'text-accent bg-accent/10 border-accent/20' },
+  platinum:          { label: 'Platinum',          icon: Diamond,       className: 'text-accent bg-accent/10 border-accent/20' },
+  elite:             { label: 'Elite',             icon: Star,          className: 'text-accent bg-accent/10 border-accent/20' },
   'top-seller':      { label: 'Top Seller',       icon: TrendingUp,    className: 'text-teal-500 bg-teal-500/10 border-teal-500/20' },
   'top-buyer':       { label: 'Top Buyer',        icon: ShoppingBag,   className: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20' },
   'fast-responder':  { label: 'Fast Responder',   icon: Zap,           className: 'text-sky-500 bg-sky-500/10 border-sky-500/20' },
   'reliable-supplier': { label: 'Reliable Supplier', icon: Truck,      className: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
-  future:            { label: 'Future',            icon: Sparkles,      className: 'text-gray-400 bg-gray-500/10 border-gray-500/20' },
+  future:            { label: 'Future',            icon: Sparkles,      className: 'text-gray-400 bg-surface border-border' },
 };
 
 interface VerifiedBadgeProps {

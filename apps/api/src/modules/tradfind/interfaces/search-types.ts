@@ -42,12 +42,35 @@ export interface SearchSortOptions {
   longitude?: number;
 }
 
+export interface FacetCount {
+  key: string;
+  doc_count: number;
+}
+
+export interface SearchFacets {
+  categories?: FacetCount[];
+  industries?: FacetCount[];
+  verificationLevels?: FacetCount[];
+  businessTypes?: FacetCount[];
+  cities?: FacetCount[];
+  states?: FacetCount[];
+  priceRanges?: { key: string; from?: number; to?: number; doc_count: number }[];
+  brands?: FacetCount[];
+}
+
+export interface SpellCorrection {
+  suggested: string;
+  original: string;
+}
+
 export interface UnifiedSearchResult<T> {
   hits: T[];
   total: number;
   page: number;
   limit: number;
   cursor?: string;
+  facets?: SearchFacets;
+  spellCorrection?: SpellCorrection;
 }
 
 export interface GlobalSearchResponse {
@@ -55,6 +78,8 @@ export interface GlobalSearchResponse {
   companies: Record<string, unknown>[];
   categories: Record<string, unknown>[];
   industries: Record<string, unknown>[];
+  catalogCategories?: Record<string, unknown>[];
+  catalogItems?: Record<string, unknown>[];
   meta: {
     total: number;
     page: number;

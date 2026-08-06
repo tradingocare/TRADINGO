@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BetaProgramService } from './beta-program.service';
 import { SubmitFeedbackDto } from './dto/submit-feedback.dto';
@@ -19,8 +20,10 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { FeedbackStatus } from '@prisma/client';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
 @ApiTags('Beta Feedback')
+@Throttle(RateLimits.WRITE_GENERAL)
 @Controller('beta-feedback')
 export class BetaFeedbackController {
   constructor(private readonly betaProgramService: BetaProgramService) {}

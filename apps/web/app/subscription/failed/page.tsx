@@ -10,10 +10,10 @@ function FailedContent() {
   const reason = searchParams.get('reason') || ''
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background:'#0A0A0F' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background:'var(--bg-base)' }}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-10"
-          style={{ background:'radial-gradient(circle,rgba(255,77,0,0.3),transparent 70%)', filter:'blur(80px)' }} />
+          style={{ background:'radial-gradient(circle,rgba(245, 158, 11, 0.3),transparent 70%)', filter:'blur(80px)' }} />
       </div>
 
       <motion.div initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }}
@@ -26,11 +26,11 @@ function FailedContent() {
           {reason || 'The payment was not completed. Please try again or use a different payment method.'}
         </p>
         <div className="flex items-center justify-center gap-3">
-          <button onClick={() => router.back()}
+          <button onClick={() => router.push('/subscription/purchase')}
             className="px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-1.5"
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-color)',
               color: 'rgba(255,255,255,0.8)',
             }}>
             <ArrowLeft size={14} /> Try Again
@@ -38,7 +38,7 @@ function FailedContent() {
           <button onClick={() => router.push('/plans')}
             className="px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-1.5"
             style={{
-              background: 'linear-gradient(135deg,#FF4D00,#FF7A3D)',
+              background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
               color: '#fff',
             }}>
             <RefreshCcw size={14} /> Back to Plans
@@ -58,8 +58,8 @@ function FailedContent() {
 export default function FailedPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ background:'#0A0A0F' }}>
-        <div className="w-12 h-12 rounded-full border-2 border-t-[#FF4D00] border-white/10 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background:'var(--bg-base)' }}>
+        <div className="w-12 h-12 rounded-full border-2 border-t-[#f59e0b] border-border animate-spin" />
       </div>
     }>
       <FailedContent />

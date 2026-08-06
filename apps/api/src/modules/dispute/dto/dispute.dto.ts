@@ -9,6 +9,14 @@ export class CreateDisputeDto {
   @IsOptional() @IsInt() @Min(1) amount?: number;
 }
 
+export class CreateBookingDisputeDto {
+  @IsUUID() bookingId: string;
+  @IsEnum(DisputeType) type: DisputeType;
+  @IsEnum(DisputeReason) reason: DisputeReason;
+  @IsString() description: string;
+  @IsOptional() @IsInt() @Min(1) amount?: number;
+}
+
 export class UpdateDisputeStatusDto {
   @IsEnum(DisputeStatus) status: DisputeStatus;
   @IsOptional() @IsString() description?: string;

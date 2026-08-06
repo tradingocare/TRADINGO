@@ -29,23 +29,33 @@ class ApiClient {
 
   private async refreshAccessToken(): Promise<boolean> {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) return false;
-
       const res = await fetch(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+        credentials: 'include',
       });
 
       if (!res.ok) return false;
 
       const data = await res.json();
       setAccessToken(data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
       return true;
     } catch {
-      return false;
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) return false;
+      try {
+        const res = await fetch(`${this.baseUrl}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!res.ok) return false;
+        const data = await res.json();
+        setAccessToken(data.accessToken);
+        return true;
+      } catch {
+        return false;
+      }
     }
   }
 

@@ -12,6 +12,8 @@ module.exports = [
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
+        project: './tsconfig.eslint.json',
+        tsconfigRootDir: __dirname,
       },
     },
     plugins: {
@@ -22,6 +24,20 @@ module.exports = [
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/prefer-optional-chain': 'warn',
+      '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+      '@typescript-eslint/no-restricted-types': ['warn', {
+        types: {
+          'Record<string, any>': { message: 'Use Record<string, unknown> or a specific interface instead', fixWith: 'Record<string, unknown>' },
+        },
+      }],
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'CatchClause > BlockStatement:not(:has(*))',
+          message: 'Empty catch blocks hide errors. Add at least a logger.warn() call.',
+        },
+      ],
     },
   },
 ];

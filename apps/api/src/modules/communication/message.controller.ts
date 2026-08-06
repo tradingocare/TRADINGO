@@ -1,10 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpCode, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query, HttpCode, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { MessageService } from './message.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { SendMessageDto, ReportMessageDto } from './dto';
 
 @ApiTags('Communication Hub — Messages')
+@Throttle(RateLimits.CHAT_MESSAGE)
 @UseGuards(JwtAuthGuard)
 @Controller('communication/conversations/:conversationId/messages')
 export class MessageController {
@@ -27,7 +31,7 @@ export class MessageController {
     @CurrentUser('sub') userId: string,
     @CurrentUser('companyId') companyId: string,
     @Param('conversationId') conversationId: string,
-    @Body() body: any,
+    @Body() body: SendMessageDto,
   ) {
     return this.service.send(conversationId, userId, companyId, body);
   }
@@ -52,9 +56,9 @@ export class MessageController {
     @CurrentUser('sub') userId: string,
     @Param('conversationId') conversationId: string,
     @Param('messageId') messageId: string,
-    @Body() body: { reason: string; description?: string },
+    @Body() dto: ReportMessageDto,
   ) {
-    return this.service.reportMessage(conversationId, messageId, userId, body.reason, body.description);
+    return this.service.reportMessage(conversationId, messageId, userId, dto.reason, dto.description);
   }
 }
 

@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { TradTrustService } from './tradtrust.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,6 +9,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('TradTrust')
 @Controller('tradtrust')
+@Throttle({ default: { limit: 60, ttl: 60000 } })
 export class TradTrustController {
   constructor(private readonly tradTrustService: TradTrustService) {}
 

@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Briefcase, Upload, X, ChevronDown, MapPin } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
 import { lookupPincode } from '@/lib/utils/india-lookup'
@@ -10,12 +11,12 @@ import type { BusinessProfileForm } from '@/types/vendor-registration'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 import { CATALOG_CATEGORIES } from '@/data/catalog-data'
 
@@ -185,7 +186,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
 
   return (
     <StepCard
-      icon={<Briefcase size={20} style={{ color: '#FF4D00' }} />}
+      icon={<Briefcase size={20} style={{ color: '#f59e0b' }} />}
       title="Business Profile"
       subtitle="Tell us about your business and location"
     >
@@ -240,15 +241,15 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   className="absolute z-20 w-full mt-1 rounded-xl max-h-48 overflow-y-auto"
-                  style={{ background: 'rgba(30,10,25,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}
-                >
-                  {filteredCategories.map(c => (
-                    <button
-                      key={c}
-                      type="button"
+                   style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
+                  >
+                    {filteredCategories.map(c => (
+                      <button
+                        key={c}
+                        type="button"
                       onClick={() => { set('primaryCategory', c); setCatSearch(''); setShowCatDropdown(false) }}
                       className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:text-white transition-colors"
-                      style={{ background: c === form.primaryCategory ? 'rgba(255,77,0,0.12)' : 'transparent' }}
+                      style={{ background: c === form.primaryCategory ? 'rgba(245, 158, 11, 0.12)' : 'transparent' }}
                     >
                       {c}
                     </button>
@@ -268,7 +269,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
               <span
                 key={cat}
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-white/80"
-                style={{ background: 'rgba(255,77,0,0.12)', border: '1px solid rgba(255,77,0,0.3)' }}
+                style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)' }}
               >
                 {cat}
                 <button type="button" onClick={() => removeSecondary(cat)} className="ml-0.5 text-white/50 hover:text-white">
@@ -294,9 +295,9 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     className="absolute z-20 w-full mt-1 rounded-xl max-h-40 overflow-y-auto"
-                    style={{ background: 'rgba(30,10,25,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}
-                  >
-                    {filteredSecondary.map(c => (
+                     style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
+                    >
+                      {filteredSecondary.map(c => (
                       <button
                         key={c}
                         type="button"
@@ -349,23 +350,15 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
         </div>
 
         <FormField label="Lead Time" required error={errors.leadTime}>
-          <div className="relative">
-            <select
-              className={INPUT_CLASS}
-              style={{ ...inputStyle(!!errors.leadTime), appearance: 'none', cursor: 'pointer', color: form.leadTime ? '#fff' : 'rgba(255,255,255,0.25)' }}
-              value={form.leadTime || ''}
-              onChange={e => set('leadTime', e.target.value)}
-            >
-              <option value="" disabled>Select lead time...</option>
-              {LEAD_TIMES.map(t => (
-                <option key={t} value={t} style={{ background: '#1D0001', color: '#fff' }}>{t}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
-          </div>
+          <Select value={form.leadTime || ''} onChange={e => set('leadTime', e.target.value)}>
+            <option value="" disabled>Select lead time...</option>
+            {LEAD_TIMES.map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </Select>
         </FormField>
 
-        <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white/80 text-sm font-medium">Export Capability</p>
@@ -375,7 +368,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
               type="button"
               onClick={() => set('exportCapability', !form.exportCapability)}
               className="relative w-12 h-6 rounded-full transition-colors duration-200"
-              style={{ background: form.exportCapability ? 'linear-gradient(135deg, #FF4D00, #FF7A3D)' : 'rgba(255,255,255,0.08)' }}
+              style={{ background: form.exportCapability ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : 'var(--bg-elevated)' }}
             >
               <span
                 className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200"
@@ -403,8 +396,8 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
           </AnimatePresence>
         </div>
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
-        <p className="text-white/40 text-xs font-semibold uppercase tracking-wider">Business Location</p>
+        <div className="h-px" style={{ backgroundColor: 'var(--bg-elevated)' }} />
+        <p className="text-text-tertiary text-xs font-semibold uppercase tracking-wider">Business Location</p>
 
         <FormField label="Address Line 1" required error={errors.addressLine1}>
           <input
@@ -469,30 +462,22 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
         </div>
 
         <FormField label="State" required error={errors.state}>
-          <div className="relative">
-            <select
-              className={INPUT_CLASS}
-              style={{ ...inputStyle(!!errors.state), appearance: 'none', cursor: 'pointer', color: form.state ? '#fff' : 'rgba(255,255,255,0.25)' }}
-              value={form.state || ''}
-              onChange={e => set('state', e.target.value)}
-            >
-              <option value="" disabled>Select state...</option>
-              {INDIAN_STATES.map(s => (
-                <option key={s} value={s} style={{ background: '#1D0001', color: '#fff' }}>{s}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
-          </div>
+          <Select value={form.state || ''} onChange={e => set('state', e.target.value)}>
+            <option value="" disabled>Select state...</option>
+            {INDIAN_STATES.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </Select>
         </FormField>
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+        <div className="h-px" style={{ backgroundColor: 'var(--bg-elevated)' }} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Logo" hint="Strongly Recommended — Sellers with logos get 2x more clicks">
             <div
               onClick={() => logoRef.current?.click()}
-              className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:border-[#FF4D00]/30"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)', minHeight: '120px' }}
+              className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:border-[#f59e0b]/30"
+              style={{ backgroundColor: 'var(--bg-elevated)', border: '1px dashed var(--border-color)', minHeight: '120px' }}
             >
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo preview" className="w-16 h-16 rounded-full object-cover" />
@@ -507,8 +492,8 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
           <FormField label="Banner Image" hint="Landscape image recommended">
             <div
               onClick={() => bannerRef.current?.click()}
-              className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:border-[#FF4D00]/30"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)', minHeight: '120px' }}
+              className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:border-[#f59e0b]/30"
+              style={{ backgroundColor: 'var(--bg-elevated)', border: '1px dashed var(--border-color)', minHeight: '120px' }}
             >
               {bannerPreview ? (
                 <img src={bannerPreview} alt="Banner preview" className="w-full h-20 rounded-lg object-cover" />

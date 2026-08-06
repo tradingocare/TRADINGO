@@ -38,7 +38,7 @@ export default function Section3Visuals({ vendor, onSave, onNext, onBack }: Sect
             hint="Recommended: 400×400px, transparent PNG"
           />
           {logoUrl && (
-            <div className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-white/5">
+            <div className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-surface">
               <img src={logoUrl} alt="Logo preview" className="w-12 h-12 rounded-full object-cover" />
               <span className="text-green-400 text-xs font-semibold">✓ Logo uploaded</span>
             </div>
@@ -46,7 +46,7 @@ export default function Section3Visuals({ vendor, onSave, onNext, onBack }: Sect
         </div>
 
         <div>
-          <label className="text-white/70 text-xs font-semibold mb-2 block">Banner Image</label>
+          <label className="text-text-secondary text-xs font-semibold mb-2 block">Banner Image</label>
           <UploadZone
             label="Upload your banner"
             accept="image/jpeg,image/png,image/webp"
@@ -61,23 +61,23 @@ export default function Section3Visuals({ vendor, onSave, onNext, onBack }: Sect
       </div>
 
       {(logoUrl || bannerUrl) && (
-        <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
-          <p className="text-white/50 text-xs mb-3">Preview how your company page will look:</p>
+        <div className="mt-6 p-4 rounded-xl bg-surface border border-border">
+          <p className="text-text-tertiary text-xs mb-3">Preview how your company page will look:</p>
           <div className="rounded-xl overflow-hidden">
             {bannerUrl && (
               <div className="h-24 bg-cover bg-center" style={{ backgroundImage: `url(${bannerUrl})` }} />
             )}
-            <div className="flex items-center gap-3 p-3 bg-white/5">
+            <div className="flex items-center gap-3 p-3 bg-surface">
               {logoUrl ? (
-                <img src={logoUrl} className="w-10 h-10 rounded-full object-cover" alt="" />
+                <img src={logoUrl} className="w-10 h-10 rounded-full object-cover" alt={`${vendor?.name || 'Company'} logo`} />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/40 text-sm font-bold">
+                <div className="w-10 h-10 rounded-full bg-surface-secondary flex items-center justify-center text-text-tertiary text-sm font-bold">
                   {vendor?.name?.[0] || '?'}
                 </div>
               )}
               <div>
-                <p className="text-white font-bold text-sm">{vendor?.name || 'Your Company'}</p>
-                <p className="text-white/40 text-xs">{vendor?.city || 'City'}, {vendor?.state || 'State'}</p>
+                <p className="text-text-primary font-bold text-sm">{vendor?.name || 'Your Company'}</p>
+                <p className="text-text-tertiary text-xs">{vendor?.city || 'City'}, {vendor?.state || 'State'}</p>
               </div>
             </div>
           </div>
@@ -89,7 +89,7 @@ export default function Section3Visuals({ vendor, onSave, onNext, onBack }: Sect
         <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
           onClick={save} disabled={saving}
           className="px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-40"
-          style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', color:'#fff' }}>
+          style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff' }}>
           {saving ? 'Saving...' : 'Save & Continue'}
         </motion.button>
       </div>

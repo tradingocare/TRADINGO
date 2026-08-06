@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, IsArray, ValidateNested, Min, Max, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class LocationDto {
@@ -143,6 +143,10 @@ export class CreateRfqDto {
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  catalogCategoryId?: string;
 
   @IsOptional()
   @IsString()

@@ -3,12 +3,15 @@ import {
   ConnectedSocket, MessageBody,
 } from '@nestjs/websockets';
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConfigService } from '@nestjs/config';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatService } from './chat.service';
 import { ChatPresenceService } from './chat-presence.service';
 import { ChatAnalyticsService } from './chat-analytics.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { getWsCorsOrigin } from '../../common/utils/ws-cors';
 import { SendMessageDto } from './dto/chat.dto';
 
@@ -36,10 +39,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly chatService: ChatService,
     private readonly chatPresence: ChatPresenceService,
     private readonly chatAnalytics: ChatAnalyticsService,
+    private readonly auditLog: AuditLogService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async handleConnection(socket: Socket) {
@@ -47,12 +53,50 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const token = socket.handshake.auth?.token || socket.handshake.query?.token;
       if (!token) {
         socket.emit('error', { message: 'Authentication required' });
+        await this.auditLog.create({
+          action: 'SECURITY_WEBSOCKET_REJECTED',
+          resource: 'chat/connect',
+          metadata: { reason: 'missing_token', ipAddress: socket.handshake.address },
+          ipAddress: socket.handshake.address,
+        });
+        this.eventEmitter.emit('security.websocket.rejected', {
+          action: 'SECURITY_WEBSOCKET_REJECTED',
+          resource: 'chat/connect',
+          metadata: { reason: 'missing_token' },
+          ipAddress: socket.handshake.address,
+        });
         socket.disconnect();
         return;
       }
 
-      const payload = this.jwtService.verify(token as string);
+      const secret = this.configService.get<string>('jwt.secret')!;
+      const payload = this.jwtService.verify(token as string, { secret });
       const userId = payload.sub;
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, isActive: true },
+      });
+
+      if (!user?.isActive) {
+        socket.emit('error', { message: 'Account is inactive or suspended' });
+        await this.auditLog.create({
+          userId,
+          action: 'SECURITY_WEBSOCKET_REJECTED',
+          resource: 'chat/connect',
+          metadata: { reason: 'inactive_or_suspended' },
+          ipAddress: socket.handshake.address,
+        });
+        this.eventEmitter.emit('security.websocket.rejected', {
+          userId,
+          action: 'SECURITY_WEBSOCKET_REJECTED',
+          resource: 'chat/connect',
+          metadata: { reason: 'inactive_or_suspended' },
+          ipAddress: socket.handshake.address,
+        });
+        socket.disconnect();
+        return;
+      }
 
       (socket as any).user = payload;
       socket.data.userId = userId;
@@ -166,6 +210,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         { conversationId: data.conversationId, messageId: result.message.id },
       );
     } catch (err) {
+      this.logger.error('handleMessageSent failed', (err as Error).stack);
       socket.emit('error', { message: (err as Error).message });
     }
   }
@@ -180,6 +225,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         messageId: data.messageId,
       });
     } catch (err) {
+      this.logger.error('handleDeleteMessage failed', (err as Error).stack);
       socket.emit('error', { message: (err as Error).message });
     }
   }
@@ -202,6 +248,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         messageId: data.messageId,
       });
     } catch (err) {
+      this.logger.error('handleMarkSeen failed', (err as Error).stack);
       socket.emit('error', { message: (err as Error).message });
     }
   }

@@ -3,6 +3,7 @@
 import { useRouter, useParams } from 'next/navigation';
 import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
   usePurchaseOrderDetail, usePoVersions, usePoTimeline,
   useConfirmPo, useCancelPo, useLockPo,
@@ -81,9 +82,9 @@ export default function BuyerPoDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {/* Header */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-white/60">
+              <div className="flex items-center gap-2 text-text-secondary">
                 <FileText className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Purchase Order</span>
               </div>
@@ -91,7 +92,7 @@ export default function BuyerPoDetailPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <p className="text-xs text-white/40">PO Number</p>
+                <p className="text-xs text-text-tertiary">PO Number</p>
                 <p className="text-lg font-bold text-orange-400">{p.poNumber}</p>
               </div>
               <div>
@@ -109,31 +110,31 @@ export default function BuyerPoDetailPage() {
           </div>
 
           {/* Pricing */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-4">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-4">
               <DollarSign className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Pricing</span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div><p className="text-xs text-white/40">Subtotal</p><p className="text-sm text-white/80">{p.currency} {(p.subtotal || 0).toLocaleString('en-IN')}</p></div>
-              <div><p className="text-xs text-white/40">Tax</p><p className="text-sm text-white/80">{p.currency} {(p.taxAmount || 0).toLocaleString('en-IN')}</p></div>
-              <div><p className="text-xs text-white/40">Discount</p><p className="text-sm text-white/80">{p.discountPercent ? `${p.discountPercent}%` : '-'}</p></div>
-              <div><p className="text-xs text-white/40 text-orange-400 font-bold">Total</p><p className="text-sm font-bold text-orange-400">{p.currency} {(p.totalAmount || 0).toLocaleString('en-IN')}</p></div>
+              <div><p className="text-xs text-text-tertiary">Subtotal</p><p className="text-sm text-text-secondary">{p.currency} {(p.subtotal || 0).toLocaleString('en-IN')}</p></div>
+              <div><p className="text-xs text-text-tertiary">Tax</p><p className="text-sm text-text-secondary">{p.currency} {(p.taxAmount || 0).toLocaleString('en-IN')}</p></div>
+              <div><p className="text-xs text-text-tertiary">Discount</p><p className="text-sm text-text-secondary">{p.discountPercent ? `${p.discountPercent}%` : '-'}</p></div>
+              <div><p className="text-xs text-text-tertiary text-orange-400 font-bold">Total</p><p className="text-sm font-bold text-orange-400">{p.currency} {(p.totalAmount || 0).toLocaleString('en-IN')}</p></div>
             </div>
           </div>
 
           {/* Terms */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-4">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-4">
               <Truck className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Terms</span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div><p className="text-xs text-white/40">Delivery Terms</p><p className="text-sm text-white/80">{p.deliveryTerms || '-'}</p></div>
-              <div><p className="text-xs text-white/40">Payment Terms</p><p className="text-sm text-white/80">{p.paymentTerms ? p.paymentTerms.replace(/_/g, ' ') : '-'}</p></div>
-              <div><p className="text-xs text-white/40">Lead Time</p><p className="text-sm text-white/80 flex items-center gap-1"><Clock className="h-3 w-3 text-white/40" />{p.leadTimeDays ? `${p.leadTimeDays}d` : '-'}</p></div>
-              <div><p className="text-xs text-white/40">Freight</p><p className="text-sm text-white/80">{p.freight || '-'}</p></div>
-              <div><p className="text-xs text-white/40">Warranty</p><p className="text-sm text-white/80">{p.warranty || '-'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Delivery Terms</p><p className="text-sm text-text-secondary">{p.deliveryTerms || '-'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Payment Terms</p><p className="text-sm text-text-secondary">{p.paymentTerms ? p.paymentTerms.replace(/_/g, ' ') : '-'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Lead Time</p><p className="text-sm text-text-secondary flex items-center gap-1"><Clock className="h-3 w-3 text-text-tertiary" />{p.leadTimeDays ? `${p.leadTimeDays}d` : '-'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Freight</p><p className="text-sm text-text-secondary">{p.freight || '-'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Warranty</p><p className="text-sm text-text-secondary">{p.warranty || '-'}</p></div>
               <div><p className="text-xs text-white/40">Valid Until</p><p className="text-sm text-white/80">{p.validityDate ? new Date(p.validityDate).toLocaleDateString('en-IN') : '-'}</p></div>
               <div><p className="text-xs text-white/40">Packing</p><p className="text-sm text-white/80">{p.packing || '-'}</p></div>
               <div><p className="text-xs text-white/40">GST Type</p><p className="text-sm text-white/80">{p.gstType || '-'}</p></div>
@@ -143,33 +144,33 @@ export default function BuyerPoDetailPage() {
           </div>
 
           {/* Line Items */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-4">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-4">
               <Package className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Line Items</span>
             </div>
             {p.lineItems?.length ? (
               <div className="space-y-2">
                 {p.lineItems.map((li: any, i: number) => (
-                  <div key={li.id || i} className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <div key={li.id || i} className="flex items-center justify-between rounded-lg border border-border bg-surface p-3">
                     <div>
-                      <p className="text-sm font-medium text-white">{li.productName}</p>
-                      <p className="text-xs text-white/40">{li.quantity} {li.unit} × {p.currency} {li.unitPrice?.toLocaleString('en-IN')}</p>
+                      <p className="text-sm font-medium text-text-primary">{li.productName}</p>
+                      <p className="text-xs text-text-tertiary">{li.quantity} {li.unit} × {p.currency} {li.unitPrice?.toLocaleString('en-IN')}</p>
                     </div>
-                    <p className="text-sm font-bold text-white">{p.currency} {(li.totalPrice || li.unitPrice * (li.quantity || 1)).toLocaleString('en-IN')}</p>
+                    <p className="text-sm font-bold text-text-primary">{p.currency} {(li.totalPrice || li.unitPrice * (li.quantity || 1)).toLocaleString('en-IN')}</p>
                   </div>
                 ))}
               </div>
-            ) : <p className="text-sm text-white/40">No line items</p>}
+            ) : <p className="text-sm text-text-tertiary">No line items</p>}
           </div>
 
           {/* Cancel Dialog */}
           {showCancel && (
             <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 backdrop-blur-xl">
               <p className="text-sm font-medium text-red-400 mb-2">Cancel Purchase Order</p>
-              <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
+              <Textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
                 rows={2} placeholder="Reason for cancellation..."
-                className="w-full rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50" />
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50" />
               <div className="mt-2 flex gap-2">
                 <Button variant="destructive" size="sm" onClick={() => cancelMutation.mutateAsync({ poId: id, reason: cancelReason || undefined }).then(() => setShowCancel(false))}>
                   <X className="mr-1 h-3 w-3" />Confirm Cancel
@@ -183,17 +184,17 @@ export default function BuyerPoDetailPage() {
         {/* Right sidebar */}
         <div className="space-y-4">
           {/* Status Timeline */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <Activity className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Timeline</span>
             </div>
             {Array.isArray(timeline) && timeline.length > 0 ? (
               <div className="space-y-2">
                 {[...timeline].reverse().map((e: any) => (
-                  <div key={e.id} className="flex items-start gap-2 border-l-2 border-white/[0.06] pl-3 pb-2">
+                  <div key={e.id} className="flex items-start gap-2 border-l-2 border-border pl-3 pb-2">
                     <div>
-                      <p className="text-xs font-medium text-white capitalize">{e.eventType.replace(/_/g, ' ').toLowerCase()}</p>
+                      <p className="text-xs font-medium text-text-primary capitalize">{e.eventType.replace(/_/g, ' ').toLowerCase()}</p>
                       <p className="text-[10px] text-white/40">{new Date(e.createdAt).toLocaleString('en-IN')}</p>
                       {e.actorRole && <p className="text-[10px] text-white/30">By: {e.actorRole}</p>}
                     </div>
@@ -204,25 +205,25 @@ export default function BuyerPoDetailPage() {
           </div>
 
           {/* Version History */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-white/60 mb-3">
+          <div className="rounded-xl border border-border bg-surface p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-text-secondary mb-3">
               <History className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Versions</span>
             </div>
             {Array.isArray(versions) && versions.length > 0 ? (
               <div className="space-y-2">
                 {[...versions].reverse().map((v: any) => (
-                  <div key={v.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
+                  <div key={v.id} className="rounded-lg border border-border bg-surface p-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-white">v{v.version}</span>
-                      <span className="text-[10px] text-white/40">{v.status?.replace(/_/g, ' ')}</span>
+                      <span className="text-xs font-medium text-text-primary">v{v.version}</span>
+                      <span className="text-[10px] text-text-tertiary">{v.status?.replace(/_/g, ' ')}</span>
                     </div>
-                    <p className="text-[10px] text-white/40">{v.createdAt ? new Date(v.createdAt).toLocaleString('en-IN') : '-'}</p>
-                    {v.notes && <p className="text-[10px] text-white/50 mt-1">{v.notes}</p>}
+                    <p className="text-[10px] text-text-tertiary">{v.createdAt ? new Date(v.createdAt).toLocaleString('en-IN') : '-'}</p>
+                    {v.notes && <p className="text-[10px] text-text-tertiary mt-1">{v.notes}</p>}
                   </div>
                 ))}
               </div>
-            ) : <p className="text-sm text-white/40">No versions</p>}
+            ) : <p className="text-sm text-text-tertiary">No versions</p>}
           </div>
         </div>
       </div>

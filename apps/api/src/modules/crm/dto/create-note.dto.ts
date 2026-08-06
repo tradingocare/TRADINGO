@@ -1,15 +1,32 @@
 import { IsString, IsOptional, IsBoolean, IsArray } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateNoteDto {
-  @IsString() content: string;
-  @IsOptional() @IsBoolean() isPinned?: boolean;
-  @IsOptional() @IsArray() @IsString({ each: true }) mentions?: string[];
-  @IsOptional() attachments?: Array<{ name: string; url: string; type: string }>;
+  @IsString()
+  @ApiProperty({ description: 'Note content' })
+  content: string;
+  @IsOptional() @IsBoolean()
+  @ApiPropertyOptional({ description: 'Is note pinned' })
+  isPinned?: boolean;
+  @IsOptional() @IsArray() @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'Mentioned user IDs' })
+  mentions?: string[];
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Attachments' })
+  attachments?: Array<{ name: string; url: string; type: string }>;
 }
 
 export class UpdateNoteDto {
-  @IsOptional() @IsString() content?: string;
-  @IsOptional() @IsBoolean() isPinned?: boolean;
-  @IsOptional() @IsArray() @IsString({ each: true }) mentions?: string[];
-  @IsOptional() attachments?: Array<{ name: string; url: string; type: string }>;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Note content' })
+  content?: string;
+  @IsOptional() @IsBoolean()
+  @ApiPropertyOptional({ description: 'Is note pinned' })
+  isPinned?: boolean;
+  @IsOptional() @IsArray() @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'Mentioned user IDs' })
+  mentions?: string[];
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Attachments' })
+  attachments?: Array<{ name: string; url: string; type: string }>;
 }

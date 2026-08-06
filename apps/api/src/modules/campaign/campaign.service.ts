@@ -1,11 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GocashService } from '../gocash/gocash.service';
-import { CampaignStatus, CampaignType, Prisma } from '@prisma/client';
+import { CampaignClaim, CampaignStatus, CampaignTargetType, CampaignType, Prisma } from '@prisma/client';
 import { CreateCampaignDto, UpdateCampaignDto, QueryCampaignDto, ClaimCampaignDto } from './dto';
 
 @Injectable()
 export class CampaignService {
+  private readonly logger = new Logger(CampaignService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gocashService: GocashService,
@@ -62,7 +64,7 @@ export class CampaignService {
       await this.prisma.campaignTarget.createMany({
         data: targets.map((t) => ({
           campaignId: campaign.id,
-          targetType: t.targetType as any,
+          targetType: t.targetType as CampaignTargetType,
           targetId: t.targetId,
           isInclude: t.isInclude ?? true,
         })),
@@ -108,7 +110,18 @@ export class CampaignService {
     const [data, total] = await Promise.all([
       this.prisma.campaign.findMany({
         where,
-        include: { rules: { orderBy: { priority: 'asc' } }, targets: true, _count: { select: { claims: true } } },
+        select: {
+          id: true, name: true, description: true, type: true, status: true,
+          priority: true, startDate: true, endDate: true,
+          budget: true, spentBudget: true, remainingBudget: true,
+          maxRewards: true, dailyLimit: true, perUserLimit: true, perCompanyLimit: true,
+          maxClaims: true, currentClaims: true, rewardAmount: true, rewardType: true,
+          eligibility: true, targetAudience: true, metadata: true,
+          companyId: true, createdBy: true, createdAt: true, updatedAt: true,
+          rules: { orderBy: { priority: 'asc' }, select: { id: true, priority: true, conditionField: true, conditionOperator: true, conditionValue: true, actionType: true, actionValue: true, isActive: true } },
+          targets: { select: { id: true, targetType: true, targetId: true, isInclude: true } },
+          _count: { select: { claims: true } },
+        },
         skip,
         take: limit,
         orderBy,
@@ -125,7 +138,18 @@ export class CampaignService {
   async findById(id: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
-      include: { rules: { orderBy: { priority: 'asc' } }, targets: true, _count: { select: { claims: true } } },
+      select: {
+        id: true, name: true, description: true, type: true, status: true,
+        priority: true, startDate: true, endDate: true,
+        budget: true, spentBudget: true, remainingBudget: true,
+        maxRewards: true, dailyLimit: true, perUserLimit: true, perCompanyLimit: true,
+        maxClaims: true, currentClaims: true, rewardAmount: true, rewardType: true,
+        eligibility: true, targetAudience: true, metadata: true,
+        companyId: true, createdBy: true, createdAt: true, updatedAt: true,
+        rules: { orderBy: { priority: 'asc' }, select: { id: true, priority: true, conditionField: true, conditionOperator: true, conditionValue: true, actionType: true, actionValue: true, isActive: true } },
+        targets: { select: { id: true, targetType: true, targetId: true, isInclude: true } },
+        _count: { select: { claims: true } },
+      },
     });
     if (!campaign) throw new NotFoundException('Campaign not found');
     return campaign;
@@ -133,27 +157,27 @@ export class CampaignService {
 
   async update(id: string, dto: UpdateCampaignDto) {
     const existing = await this.findById(id);
-    const { rules, targets, ...campaignData } = dto as any;
+    const { rules, targets, ...campaignData } = dto;
+
+    const updateData: Record<string, unknown> = { ...campaignData };
 
     if (campaignData.budget !== undefined) {
       const budgetDelta = Number(campaignData.budget) - Number(existing.budget);
-      campaignData.remainingBudget = Number(existing.remainingBudget) + budgetDelta;
+      updateData.remainingBudget = Number(existing.remainingBudget) + budgetDelta;
     }
-    if (campaignData.startDate) campaignData.startDate = new Date(campaignData.startDate);
-    if (campaignData.endDate) campaignData.endDate = new Date(campaignData.endDate);
-
-    const updateData: any = { ...campaignData };
+    if (campaignData.startDate) updateData.startDate = new Date(campaignData.startDate);
+    if (campaignData.endDate) updateData.endDate = new Date(campaignData.endDate);
     Object.keys(updateData).forEach((k) => {
       if (updateData[k] === undefined) delete updateData[k];
     });
 
-    await this.prisma.campaign.update({ where: { id }, data: updateData });
+    await this.prisma.campaign.update({ where: { id }, data: updateData as Prisma.CampaignUpdateInput });
 
     if (rules) {
       await this.prisma.campaignRule.deleteMany({ where: { campaignId: id } });
       if (rules.length) {
         await this.prisma.campaignRule.createMany({
-          data: rules.map((r: any) => ({
+          data: rules.map((r) => ({
             campaignId: id,
             priority: r.priority ?? 0,
             conditionField: r.conditionField,
@@ -171,9 +195,9 @@ export class CampaignService {
       await this.prisma.campaignTarget.deleteMany({ where: { campaignId: id } });
       if (targets.length) {
         await this.prisma.campaignTarget.createMany({
-          data: targets.map((t: any) => ({
+          data: targets.map((t) => ({
             campaignId: id,
-            targetType: t.targetType as any,
+            targetType: t.targetType as CampaignTargetType,
             targetId: t.targetId,
             isInclude: t.isInclude ?? true,
           })),
@@ -315,7 +339,7 @@ export class CampaignService {
     }
 
     if (campaign.eligibility) {
-      const eligibility = campaign.eligibility as Record<string, any>;
+      const eligibility = campaign.eligibility as Record<string, unknown>;
       if (eligibility.requiredMembership && !companyId) {
         return { eligible: false, reason: 'This campaign requires a company account' };
       }
@@ -395,7 +419,7 @@ export class CampaignService {
     });
   }
 
-  private async recordAnalytics(campaignId: string, claim: any) {
+  private async recordAnalytics(campaignId: string, claim: CampaignClaim) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -418,8 +442,8 @@ export class CampaignService {
           uniqueUsers: 1,
         },
       });
-    } catch {
-      // Analytics are non-critical — silently continue
+    } catch (err) {
+      this.logger.warn(`Failed to record campaign analytics: ${(err as Error).message}`);
     }
   }
 
@@ -432,7 +456,16 @@ export class CampaignService {
         endDate: { gte: now },
         ...(companyId ? { OR: [{ companyId: null }, { companyId }] } : { companyId: null }),
       },
-      include: { rules: { where: { isActive: true }, orderBy: { priority: 'asc' } } },
+      select: {
+        id: true, name: true, description: true, type: true, status: true,
+        priority: true, startDate: true, endDate: true,
+        budget: true, spentBudget: true, remainingBudget: true,
+        maxRewards: true, dailyLimit: true, perUserLimit: true, perCompanyLimit: true,
+        maxClaims: true, currentClaims: true, rewardAmount: true, rewardType: true,
+        eligibility: true, targetAudience: true, metadata: true,
+        companyId: true, createdBy: true, createdAt: true, updatedAt: true,
+        rules: { where: { isActive: true }, orderBy: { priority: 'asc' }, select: { id: true, priority: true, conditionField: true, conditionOperator: true, conditionValue: true, actionType: true, actionValue: true, isActive: true } },
+      },
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
     });
   }
@@ -440,7 +473,13 @@ export class CampaignService {
   async getMyClaims(userId: string) {
     return this.prisma.campaignClaim.findMany({
       where: { userId },
-      include: { campaign: { select: { name: true, type: true, status: true } } },
+      select: {
+        id: true, campaignId: true, userId: true, companyId: true,
+        claimType: true, amount: true, status: true, transactionId: true,
+        ipAddress: true, userAgent: true, metadata: true, claimedAt: true,
+        createdAt: true, updatedAt: true,
+        campaign: { select: { name: true, type: true, status: true } },
+      },
       orderBy: { claimedAt: 'desc' },
       take: 50,
     });
@@ -450,6 +489,12 @@ export class CampaignService {
     await this.findById(campaignId);
     return this.prisma.campaignAnalytics.findMany({
       where: { campaignId },
+      select: {
+        id: true, campaignId: true, date: true,
+        claims: true, approved: true, rejected: true, paid: true,
+        rewardAmount: true, uniqueUsers: true,
+        conversionCount: true, conversionRate: true,
+      },
       orderBy: { date: 'asc' },
     });
   }
@@ -473,9 +518,9 @@ export class CampaignService {
       completed,
       draft,
       totalClaims,
-      totalRewardsPaid: totalRewards._sum.amount ?? 0,
-      totalBudget: totalBudget._sum.budget ?? 0,
-      totalSpent: totalBudget._sum.spentBudget ?? 0,
+      totalRewardsPaid: Number(totalRewards._sum.amount ?? 0),
+      totalBudget: Number(totalBudget._sum.budget ?? 0),
+      totalSpent: Number(totalBudget._sum.spentBudget ?? 0),
       budgetUsageRate: totalBudget._sum.budget && Number(totalBudget._sum.budget) > 0
         ? Number(totalBudget._sum.spentBudget) / Number(totalBudget._sum.budget)
         : 0,
@@ -486,23 +531,30 @@ export class CampaignService {
   async getSellerCampaigns(companyId: string) {
     return this.prisma.campaign.findMany({
       where: {
-        OR: [{ companyId }, { type: 'SELLER' as any }, { type: 'CASHBACK' as any }],
+        OR: [{ companyId }, { type: 'SELLER' as CampaignType }, { type: 'CASHBACK' as CampaignType }],
         status: { in: ['ACTIVE', 'DRAFT', 'PAUSED'] },
       },
-      include: {
-        rules: { where: { isActive: true }, orderBy: { priority: 'asc' } },
+      select: {
+        id: true, name: true, description: true, type: true, status: true,
+        priority: true, startDate: true, endDate: true,
+        budget: true, spentBudget: true, remainingBudget: true,
+        maxRewards: true, dailyLimit: true, perUserLimit: true, perCompanyLimit: true,
+        maxClaims: true, currentClaims: true, rewardAmount: true, rewardType: true,
+        eligibility: true, targetAudience: true, metadata: true,
+        companyId: true, createdBy: true, createdAt: true, updatedAt: true,
+        rules: { where: { isActive: true }, orderBy: { priority: 'asc' }, select: { id: true, priority: true, conditionField: true, conditionOperator: true, conditionValue: true, actionType: true, actionValue: true, isActive: true } },
         _count: { select: { claims: true } },
       },
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
-  async evaluateRules(campaignId: string, context: Record<string, any>) {
+  async evaluateRules(campaignId: string, context: Record<string, unknown>) {
     const campaign = await this.findById(campaignId);
     const rules = campaign.rules;
     if (!rules?.length) return { matched: false, actions: [] };
 
-    const matchedActions: Array<{ actionType: string; actionValue: any }> = [];
+    const matchedActions: Array<{ actionType: string; actionValue: unknown }> = [];
     for (const rule of rules) {
       if (!rule.isActive) continue;
       const fieldValue = context[rule.conditionField];
@@ -518,7 +570,7 @@ export class CampaignService {
     return { matched: matchedActions.length > 0, actions: matchedActions };
   }
 
-  private evaluateCondition(fieldValue: any, operator: string, conditionValue: any): boolean {
+  private evaluateCondition(fieldValue: unknown, operator: string, conditionValue: unknown): boolean {
     switch (operator) {
       case 'EQUALS': return fieldValue === conditionValue;
       case 'NOT_EQUALS': return fieldValue !== conditionValue;
@@ -538,7 +590,16 @@ export class CampaignService {
     const now = new Date();
     return this.prisma.campaign.findMany({
       where: { type: type as CampaignType, status: 'ACTIVE', startDate: { lte: now }, endDate: { gte: now } },
-      include: { _count: { select: { claims: true } } },
+      select: {
+        id: true, name: true, description: true, type: true, status: true,
+        priority: true, startDate: true, endDate: true,
+        budget: true, spentBudget: true, remainingBudget: true,
+        maxRewards: true, dailyLimit: true, perUserLimit: true, perCompanyLimit: true,
+        maxClaims: true, currentClaims: true, rewardAmount: true, rewardType: true,
+        eligibility: true, targetAudience: true, metadata: true,
+        companyId: true, createdBy: true, createdAt: true, updatedAt: true,
+        _count: { select: { claims: true } },
+      },
       orderBy: { priority: 'desc' },
     });
   }

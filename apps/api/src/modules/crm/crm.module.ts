@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { TradTrustModule } from '../tradtrust/tradtrust.module';
 import { AiGatewayModule } from '../ai-gateway/ai-gateway.module';
+import { TurnstileService } from '../../common/services/turnstile.service';
 import { CrmService } from './crm.service';
 import { CrmFollowUpService } from './crm-follow-up.service';
 import { CrmNoteService } from './crm-note.service';
@@ -21,11 +22,12 @@ import { CrmSearchController } from './crm-search.controller';
 import { CrmReportController } from './crm-report.controller';
 import { AdminCrmController } from './admin-crm.controller';
 import { AiCrmController } from './ai-crm.controller';
+import { PublicCrmController } from './public-crm.controller';
 
 @Module({
   imports: [PrismaModule, TradTrustModule, AiGatewayModule],
-  controllers: [CrmController, CrmFollowUpController, CrmNoteController, CrmTaskController, CrmTimelineController, CrmPipelineController, CrmSearchController, CrmReportController, AdminCrmController, AiCrmController],
-  providers: [CrmService, CrmFollowUpService, CrmNoteService, CrmTaskService, CrmTimelineService, CrmPipelineService, CrmSearchService, CrmReportService, AiCrmService],
+  controllers: [CrmController, CrmFollowUpController, CrmNoteController, CrmTaskController, CrmTimelineController, CrmPipelineController, CrmSearchController, CrmReportController, AdminCrmController, AiCrmController, PublicCrmController],
+  providers: [CrmService, CrmFollowUpService, CrmNoteService, CrmTaskService, CrmTimelineService, CrmPipelineService, CrmSearchService, CrmReportService, AiCrmService, TurnstileService],
   exports: [CrmService],
 })
 export class CrmModule {}

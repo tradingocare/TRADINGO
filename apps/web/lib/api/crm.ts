@@ -114,3 +114,45 @@ export function getRmPerformanceReport() { return api.get('/crm/reports/rm-perfo
 export function getResponseTimeReport() { return api.get('/crm/reports/response-time'); }
 
 export function getAdminCrmDashboard() { return api.get('/admin/crm/dashboard'); }
+
+// ─── Campaign API ───────────────────────────────────────
+
+export interface CreateCampaignDto {
+  name: string;
+  description?: string;
+  type?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  budget?: number;
+  targetLeads?: number;
+  metadata?: Record<string, any>;
+}
+export interface UpdateCampaignDto {
+  name?: string;
+  description?: string;
+  type?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  budget?: number;
+  targetLeads?: number;
+  metadata?: Record<string, any>;
+}
+export interface CampaignQueryParams {
+  type?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export function createCampaign(dto: CreateCampaignDto) { return api.post('/crm/campaigns', dto); }
+export function listCampaigns(params?: CampaignQueryParams) { return api.get('/crm/campaigns', { params }); }
+export function getCampaign(id: string) { return api.get(`/crm/campaigns/${id}`); }
+export function updateCampaign(id: string, dto: UpdateCampaignDto) { return api.patch(`/crm/campaigns/${id}`, dto); }
+export function deleteCampaign(id: string) { return api.delete(`/crm/campaigns/${id}`); }
+export function addLeadsToCampaign(campaignId: string, leadIds: string[]) { return api.post(`/crm/campaigns/${campaignId}/leads`, { leadIds }); }
+export function removeLeadsFromCampaign(campaignId: string, leadIds: string[]) { return api.delete(`/crm/campaigns/${campaignId}/leads`, { data: { leadIds } }); }
+export function getCampaignAnalytics(id: string) { return api.get(`/crm/campaigns/${id}/analytics`); }
+export function getCampaignDashboard() { return api.get('/crm/campaigns/dashboard'); }

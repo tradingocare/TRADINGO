@@ -3,7 +3,9 @@
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { useDisputes } from '@/hooks';
-import { Scale, MessageSquare, AlertCircle } from 'lucide-react';
+import { Alert } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Scale, MessageSquare } from 'lucide-react';
 import type { Dispute } from '@/lib/api/types';
 
 export default function AdminDisputesPage() {
@@ -14,11 +16,7 @@ export default function AdminDisputesPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Disputes" description="Resolve trading disputes" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load disputes</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
-        </div>
+        <Alert variant="error" title="Failed to load disputes">{error.message}</Alert>
       </div>
     );
   }
@@ -40,11 +38,7 @@ export default function AdminDisputesPage() {
       />
 
       {disputes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
-          <Scale className="h-12 w-12 text-text-tertiary" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">No disputes found</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">All trades are running smoothly with no disputes raised.</p>
-        </div>
+        <EmptyState icon={Scale} title="No disputes found" description="All trades are running smoothly with no disputes raised." />
       ) : (
         <div className="space-y-4">
           {disputes.map((dispute: Dispute) => (

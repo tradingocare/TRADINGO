@@ -17,7 +17,7 @@ interface CategoryDef {
 
 function getColor(score: number): string {
   if (score < 40) return 'text-red-500';
-  if (score < 70) return 'text-amber-500';
+  if (score < 70) return 'text-accent-500';
   if (score < 90) return 'text-blue-500';
   return 'text-accent-500';
 }
@@ -31,7 +31,7 @@ function getStrokeColor(score: number): string {
 
 function getBarColor(score: number): string {
   if (score < 40) return 'bg-red-500';
-  if (score < 70) return 'bg-amber-500';
+  if (score < 70) return 'bg-accent-500';
   if (score < 90) return 'bg-blue-500';
   return 'bg-accent-500';
 }

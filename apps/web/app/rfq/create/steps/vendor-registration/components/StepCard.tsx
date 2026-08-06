@@ -11,16 +11,16 @@ export default function StepCard({ icon, title, subtitle, children }: {
   return (
     <div className="rounded-3xl p-6 sm:p-8"
       style={{
-        background: 'rgba(255,255,255,0.04)',
+        background: 'var(--bg-elevated)',
         backdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255,255,255,0.09)',
+        border: '1px solid var(--border-color)',
         boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
       }}>
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           {icon && (
             <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(255,77,0,0.12)', border: '1px solid rgba(255,77,0,0.2)' }}>
+              style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
               {icon}
             </div>
           )}

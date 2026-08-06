@@ -1,4 +1,3 @@
-'use client'
 import { PageHeader } from '@/components/shared/page-header'
 
 const refundSections = [
@@ -58,25 +57,25 @@ const refundSections = [
 
 export default function RefundPage() {
   return (
-    <div className="min-h-screen pt-24 pb-16" style={{ background: '#1D0001' }}>
+    <div className="min-h-screen pt-24 pb-16" style={{ background: 'var(--bg-base)' }}>
       <div className="max-w-4xl mx-auto px-4">
         <PageHeader
           title="Refund Policy"
           description="Our commitment to fair and transparent refund practices."
         />
-        <div className="mt-8 rounded-3xl p-6 sm:p-8" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.09)' }}>
-          <p className="mb-10 text-sm text-white/40">Last updated: June 1, 2025</p>
+        <div className="mt-8 rounded-3xl p-6 sm:p-8 bg-surface" style={{ backdropFilter: 'blur(24px)', border: '1px solid var(--border-color)' }}>
+          <p className="mb-10 text-sm text-text-tertiary">Last updated: June 1, 2025</p>
 
           {refundSections.map((section) => (
             <div key={section.title} className="mb-10 last:mb-0">
-              <h2 className="mb-3 text-xl font-bold text-white">{section.title}</h2>
-              <p className="mb-5 leading-relaxed text-white/60">{section.content}</p>
+              <h2 className="mb-3 text-xl font-bold text-text-primary">{section.title}</h2>
+              <p className="mb-5 leading-relaxed text-text-secondary">{section.content}</p>
               {section.subsections.length > 0 && (
                 <div className="space-y-5">
                   {section.subsections.map((sub) => (
                     <div key={sub.heading}>
-                      <h3 className="mb-1.5 text-base font-semibold text-white/90">{sub.heading}</h3>
-                      <p className="leading-relaxed text-white/50">{sub.text}</p>
+                      <h3 className="mb-1.5 text-base font-semibold text-text-primary">{sub.heading}</h3>
+                      <p className="leading-relaxed text-text-tertiary">{sub.text}</p>
                     </div>
                   ))}
                 </div>
@@ -84,7 +83,7 @@ export default function RefundPage() {
             </div>
           ))}
 
-          <p className="mt-14 text-xs text-white/30">
+          <p className="mt-14 text-xs text-text-tertiary">
             This Refund Policy was last updated on June 1, 2025. We reserve the right to update this policy at any time.
             Changes will be effective immediately upon posting on this page.
           </p>

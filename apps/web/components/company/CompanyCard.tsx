@@ -1,12 +1,13 @@
 'use client'
 import Link         from 'next/link'
 import { motion }   from 'framer-motion'
-import { useRef }   from 'react'
+import { useRef, memo }   from 'react'
 import {
   Crown, MapPin, Star,
   Package, Zap, Shield, Building2, ArrowRight,
 } from 'lucide-react'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
+import { BestScoreBadge } from '@/components/marketplace/best-score-badge'
 
 interface CompanyCardData {
   id:             string
@@ -31,15 +32,17 @@ interface CompanyCardData {
   productCount?:  number
   isGstVerified?: boolean
   yearsActive?:   number
+  bestScore?:     number
+  recommendation?: 'BEST' | 'STRONG' | 'GOOD' | 'AVERAGE' | 'POOR'
   [key: string]: any
 }
 
 const GLOW_COLORS = [
   '#FF4D00','#9B5DE5','#3D8BFF',
-  '#2DE0E0','#F2C94C','#F15BB5',
+  '#2DE0E0','#FF4D00','#F15BB5',
 ]
 
-export default function CompanyCard({
+const CompanyCard = memo(function CompanyCard({
   company, index = 0,
 }: { company: CompanyCardData; index?: number }) {
   const ref   = useRef<HTMLDivElement>(null)
@@ -53,23 +56,17 @@ export default function CompanyCard({
   }
 
   return (
-    <Link href={`/companies/${company.slug}`}>
+    <div className="stacked-card-wrapper h-full">
+    <Link href={`/companies/${company.slug}`} className="block h-full">
       <motion.div
         ref={ref}
         onMouseMove={handleMouseMove}
         whileHover={{ y: -4, scale: 1.01 }}
         transition={{ duration: 0.25 }}
-        className="relative rounded-2xl overflow-hidden cursor-pointer group h-full"
-        style={{
-          background:    'rgba(255,255,255,0.04)',
-          backdropFilter:'blur(20px)',
-          border:        '1px solid rgba(255,255,255,0.08)',
-          boxShadow:     '0 4px 24px rgba(0,0,0,0.3)',
-        }}
-      >
+        className="relative rounded-2xl overflow-hidden cursor-pointer group h-full compact-stack-card neon-rainbow-border ambient-backlight border border-border">
         <div className="absolute inset-0 pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-400 rounded-2xl"
           style={{
-            background: `radial-gradient(200px circle at var(--mx,50%) var(--my,50%), ${glow}12, transparent 65%)`,
+            background: `radial-gradient(200px circle at var(--mx,50%) var(--my,50%), ${glow}18, transparent 65%)`,
           }} />
 
         <div className="absolute inset-0 rounded-2xl pointer-events-none z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -82,7 +79,7 @@ export default function CompanyCard({
               : `linear-gradient(135deg, ${glow}18, rgba(31,3,24,0.8))`,
           }}>
           <div className="absolute inset-0"
-            style={{ background:'linear-gradient(to bottom, transparent 40%, rgba(15,5,20,0.95))' }} />
+            style={{ background:'linear-gradient(to bottom, transparent 40%, rgba(10,14,26,0.95))' }} />
 
           <div className="absolute top-2.5 right-2.5 flex gap-1.5">
             {company.isTradgoElite && (
@@ -100,7 +97,7 @@ export default function CompanyCard({
             <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center font-black text-lg"
               style={{
                 background: company.logo ? 'transparent' : `${glow}18`,
-                border: `2px solid rgba(15,5,20,1)`,
+                border: `2px solid rgba(10,14,26,1)`,
                 boxShadow: `0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px ${glow}25`,
                 color: glow,
               }}>
@@ -112,22 +109,22 @@ export default function CompanyCard({
             </div>
 
             <div className="flex-1 min-w-0 pb-0.5">
-              <h3 className="text-white font-bold text-sm leading-tight group-hover:text-[#FF4D00] transition-colors truncate">
+              <h3 className="text-text-primary font-bold text-sm leading-tight group-hover:text-accent transition-colors truncate">
                 {company.name}
               </h3>
               {company.city && (
-                <p className="text-white/40 text-[10px] flex items-center gap-1 mt-0.5">
-                  <MapPin size={9} style={{ color:'#FF4D00' }} />
+                <p className="text-text-secondary text-[10px] flex items-center gap-1 mt-0.5">
+                  <MapPin size={9} className="text-accent" />
                   {company.city}{company.state ? `, ${company.state}` : ''}
                 </p>
               )}
             </div>
 
-            <ArrowRight size={15} className="text-white/20 group-hover:text-[#FF4D00] flex-shrink-0 mb-1 transition-all group-hover:translate-x-1 duration-200" />
+            <ArrowRight size={15} className="text-text-tertiary group-hover:text-accent flex-shrink-0 mb-1 transition-all group-hover:translate-x-1 duration-200" />
           </div>
 
           {(company.tagline || company.description) && (
-            <p className="text-white/45 text-[10px] leading-relaxed line-clamp-2 mb-3">
+            <p className="text-text-secondary text-[10px] leading-relaxed line-clamp-2 mb-3">
               {company.tagline || company.description}
             </p>
           )}
@@ -136,38 +133,38 @@ export default function CompanyCard({
             <div className="flex flex-wrap gap-1.5 mb-3">
               {company.categories.slice(0, 3).map((cat: string) => (
                 <span key={cat}
-                  className="text-[9px] px-2 py-0.5 rounded-full"
-                  style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.5)' }}>
+                  className="text-[9px] px-2 py-0.5 rounded-full bg-surface border border-border text-text-secondary">
                   {cat}
                 </span>
               ))}
               {company.categories.length > 3 && (
-                <span className="text-[9px] text-white/25">+{company.categories.length - 3} more</span>
+                <span className="text-[9px] text-text-tertiary">+{company.categories.length - 3} more</span>
               )}
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-2 pt-3"
-            style={{ borderTop:'1px solid rgba(255,255,255,0.07)' }}>
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border">
             <div className="text-center">
               <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                <Star size={10} className="fill-yellow-400 text-yellow-400" />
-                <span className="text-white font-bold text-xs">{company.rating?.toFixed(1) ?? '0.0'}</span>
+                <Star size={10} className="fill-accent text-accent" />
+                <span className="text-text-primary font-bold text-xs">{company.rating?.toFixed(1) ?? '0.0'}</span>
               </div>
-              <p className="text-white/30 text-[8px]">{company.reviewCount ?? 0} reviews</p>
+              <p className="text-text-secondary text-[8px]">{company.reviewCount ?? 0} reviews</p>
             </div>
-            <div className="text-center"
-              style={{ borderLeft:'1px solid rgba(255,255,255,0.07)', borderRight:'1px solid rgba(255,255,255,0.07)' }}>
+            <div className="text-center border-x border-border">
               <div className="flex items-center justify-center gap-0.5 mb-0.5">
                 <Shield size={10} style={{ color: (company.trustScore ?? 0) >= 80 ? '#4ade80' : (company.trustScore ?? 0) >= 60 ? '#F2C94C' : '#f87171' }} />
-                <span className="text-white font-bold text-xs">{company.trustScore ?? 0}</span>
+                <span className="text-text-primary font-bold text-xs">{company.trustScore ?? 0}</span>
+                {company.bestScore != null && (
+                  <BestScoreBadge score={company.bestScore} recommendation={company.recommendation} />
+                )}
               </div>
-              <p className="text-white/30 text-[8px]">Trust Score</p>
+              <p className="text-text-secondary text-[8px]">Trust Score</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                <Package size={10} style={{ color:'#FF4D00' }} />
-                <span className="text-white font-bold text-xs">
+                <Package size={10} className="text-accent" />
+                <span className="text-text-primary font-bold text-xs">
                   {company.productCount
                     ? company.productCount >= 1000
                       ? `${(company.productCount/1000).toFixed(1)}K`
@@ -175,12 +172,11 @@ export default function CompanyCard({
                     : '—'}
                 </span>
               </div>
-              <p className="text-white/30 text-[8px]">Products</p>
+              <p className="text-text-secondary text-[8px]">Products</p>
             </div>
           </div>
 
-          <div className="mt-2.5 h-1 rounded-full overflow-hidden"
-            style={{ background:'rgba(255,255,255,0.07)' }}>
+          <div className="mt-2.5 h-1 rounded-full overflow-hidden bg-surface">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width:`${Math.min(company.trustScore ?? 0, 100)}%` }}
@@ -196,13 +192,16 @@ export default function CompanyCard({
           </div>
 
           {company.responseTime && (
-            <p className="text-white/30 text-[9px] flex items-center gap-1 mt-2">
-              <Zap size={9} style={{ color:'#FF4D00' }} />
+            <p className="text-text-secondary text-[9px] flex items-center gap-1 mt-2">
+              <Zap size={9} className="text-accent" />
               Responds in {company.responseTime}
             </p>
           )}
         </div>
       </motion.div>
     </Link>
+    </div>
   )
-}
+})
+
+export default CompanyCard

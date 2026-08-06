@@ -4,22 +4,41 @@ on:
   push:
     branches: [develop]
 
+concurrency:
+  group: staging-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY_API: tradingo-api
-  ECR_REPOSITORY_WEB: tradingo-web
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  ENVIRONMENT: staging
   ECS_CLUSTER: tradingo-staging
   ECS_SERVICE_API: tradingo-api-staging
   ECS_SERVICE_WEB: tradingo-web-staging
 
 jobs:
   deploy:
-    name: Build & Deploy to Staging
+    name: Build & Deploy
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
+    environment: staging
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '9.15.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate AWS account ID
+        run: |
+          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
+            echo "::error::AWS_ACCOUNT_ID secret is not configured. Set it in GitHub secrets."
+            exit 1
+          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -28,47 +47,113 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
+      - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build & push API image
+      - name: Build & push API
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: infrastructure/docker/Dockerfile.api
+          file: apps/api/Dockerfile
           push: true
           tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:latest
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/tradingo/api:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/tradingo/api:staging
 
-      - name: Build & push Web image
+      - name: Build & push Web
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: infrastructure/docker/Dockerfile.web
+          file: apps/web/Dockerfile
           push: true
           tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:latest
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/tradingo/web:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/tradingo/web:staging
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_SOCKET_URL=${{ secrets.NEXT_PUBLIC_SOCKET_URL }}
+            NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+
+      - name: Run database migrations (before service deploy)
+        run: |
+          docker run --rm -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
+            ${{ env.ECR_REGISTRY }}/tradingo/api:${{ github.sha }} \
+            sh -c "npx prisma migrate deploy"
+          echo "Database migrations completed successfully"
+
+      - name: Substitute __AWS_ACCOUNT_ID__ in task definitions
+        run: |
+          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.api.json
+          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.web.json
+          echo "Task definition placeholders substituted"
+
+      - name: Render API task definition
+        id: render-api
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infrastructure/ecs/task-definition.api.json
+          container-name: api
+          image: ${{ env.ECR_REGISTRY }}/tradingo/api:${{ github.sha }}
+
+      - name: Render Web task definition
+        id: render-web
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infrastructure/ecs/task-definition.web.json
+          container-name: web
+          image: ${{ env.ECR_REGISTRY }}/tradingo/web:${{ github.sha }}
 
       - name: Deploy API to ECS
-        run: |
-          aws ecs update-service \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --service ${{ env.ECS_SERVICE_API }} \
-            --force-new-deployment
+        uses: aws-actions/amazon-ecs-deploy-service-definition@v1
+        with:
+          task-definition: ${{ steps.render-api.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_API }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
 
       - name: Deploy Web to ECS
-        run: |
-          aws ecs update-service \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --service ${{ env.ECS_SERVICE_WEB }} \
-            --force-new-deployment
+        uses: aws-actions/amazon-ecs-deploy-service-definition@v1
+        with:
+          task-definition: ${{ steps.render-web.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_WEB }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
 
-      - name: Run database migrations
+      - name: Smoke test
         run: |
-          aws ecs run-task \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --task-definition tradingo-api-migration \
-            --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNETS }}],securityGroups=[${{ secrets.SECURITY_GROUPS }}],assignPublicIp=ENABLED}"
+          STAGING_URL=${{ vars.STAGING_URL }} bash scripts/deploy/smoke-test.sh
+
+  rollback:
+    name: Rollback
+    if: failure()
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Rollback API service to previous task definition
+        run: |
+          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} --query 'services[0].taskDefinition' --output text)
+          echo "Rolling back API to: $PREVIOUS_TASK_DEF"
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_API }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
+
+      - name: Rollback Web service to previous task definition
+        run: |
+          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_WEB }} --query 'services[0].taskDefinition' --output text)
+          echo "Rolling back Web to: $PREVIOUS_TASK_DEF"
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_WEB }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
+
+      - name: Wait for rollback stability
+        run: |
+          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} ${{ env.ECS_SERVICE_WEB }}

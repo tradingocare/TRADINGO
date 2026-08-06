@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger'
 import { AiNegotiationService } from './ai-negotiation.service'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import { Throttle } from '@nestjs/throttler'
 import {
   AiNegotiationStrategyDto,
   AiNegotiationBuyerBehaviorDto,
@@ -20,6 +21,7 @@ import {
 
 @ApiTags('AI NEGOTIATION')
 @UseGuards(JwtAuthGuard)
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 @Controller('smart-negotiation/:id/ai')
 export class AiNegotiationController {
   constructor(private readonly aiNegotiationService: AiNegotiationService) {}

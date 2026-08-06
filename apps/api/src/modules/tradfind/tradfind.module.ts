@@ -3,12 +3,14 @@ import { TradfindController } from './tradfind.controller';
 import { TradfindService } from './tradfind.service';
 import { SearchModule } from '../search/search.module';
 import { AiGatewayModule } from '../ai-gateway/ai-gateway.module';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { AiSearchController } from './ai-search.controller';
 import { AiSearchService } from './ai-search.service';
 import { ProductSearchService } from './services/product-search.service';
 import { CompanySearchService } from './services/company-search.service';
 import { GeoSearchService } from './services/geo-search.service';
 import { SearchRankingService } from './services/search-ranking.service';
+import { UnifiedRankingService } from './services/unified-ranking.service';
 import { AutocompleteService } from './services/autocomplete.service';
 import { SuggestionsService } from './services/suggestions.service';
 import { RecentSearchService } from './services/recent-search.service';
@@ -17,7 +19,7 @@ import { DiscoveryFeedService } from './services/discovery-feed.service';
 import { SearchAnalyticsService } from './services/search-analytics.service';
 
 @Module({
-  imports: [SearchModule, AiGatewayModule],
+  imports: [SearchModule, AiGatewayModule, PrismaModule],
   controllers: [TradfindController, AiSearchController],
   providers: [
     TradfindService,
@@ -26,6 +28,7 @@ import { SearchAnalyticsService } from './services/search-analytics.service';
     CompanySearchService,
     GeoSearchService,
     SearchRankingService,
+    UnifiedRankingService,
     AutocompleteService,
     SuggestionsService,
     RecentSearchService,

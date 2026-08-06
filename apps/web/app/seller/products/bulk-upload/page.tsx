@@ -8,6 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Upload, Download, AlertCircle, CheckCircle, X, FileSpreadsheet } from 'lucide-react';
 import api from '@/lib/api/client';
 import { useToast } from '@/components/ui/use-toast';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 
 interface PreviewRow {
   row: number;
@@ -226,48 +228,31 @@ export default function BulkUploadPage() {
                   <StatusBadge status={hasErrors ? 'pending' : 'verified'} />
                 </div>
                 <Separator className="mb-4" />
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary">
-                        <th className="px-3 py-2">#</th>
-                        <th className="px-3 py-2">Name</th>
-                        <th className="px-3 py-2">Category</th>
-                        <th className="px-3 py-2">Price</th>
-                        <th className="px-3 py-2">Stock</th>
-                        <th className="px-3 py-2">Unit</th>
-                        <th className="px-3 py-2">Errors</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.map((row) => (
-                        <tr
-                          key={row.row}
-                          className={`border-b border-border last:border-0 dark:border-dark-border ${
-                            row.errors.length > 0 ? 'bg-red-50 dark:bg-red-900/10' : ''
-                          }`}
-                        >
-                          <td className="px-3 py-3 text-text-secondary">{row.row}</td>
-                          <td className={`px-3 py-3 font-medium ${!row.name ? 'text-red-600' : 'text-text-primary dark:text-dark-text-primary'}`}>
-                            {row.name || '(empty)'}
-                          </td>
-                          <td className="px-3 py-3 text-text-secondary">{row.category}</td>
-                          <td className="px-3 py-3 text-text-primary dark:text-dark-text-primary">₹{row.price}</td>
-                          <td className="px-3 py-3 text-text-secondary">{row.stock}</td>
-                          <td className="px-3 py-3 text-text-secondary">{row.unit}</td>
-                          <td className="px-3 py-3">
-                            {row.errors.map((err, i) => (
-                              <span key={i} className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                                <AlertCircle className="h-3 w-3" />
-                                {err}
-                              </span>
-                            ))}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table>
+                  <THead><TR><TH>#</TH><TH>Name</TH><TH>Category</TH><TH>Price</TH><TH>Stock</TH><TH>Unit</TH><TH>Errors</TH></TR></THead>
+                  <TBody>
+                    {preview.map((row) => (
+                      <TR key={row.row} className={row.errors.length > 0 ? 'bg-red-50 dark:bg-red-900/10' : ''}>
+                        <TD className="text-text-secondary">{row.row}</TD>
+                        <TD className={`font-medium ${!row.name ? 'text-red-600' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                          {row.name || '(empty)'}
+                        </TD>
+                        <TD className="text-text-secondary">{row.category}</TD>
+                        <TD className="text-text-primary dark:text-dark-text-primary">₹{row.price}</TD>
+                        <TD className="text-text-secondary">{row.stock}</TD>
+                        <TD className="text-text-secondary">{row.unit}</TD>
+                        <TD>
+                          {row.errors.map((err, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                              <AlertCircle className="h-3 w-3" />
+                              {err}
+                            </span>
+                          ))}
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
               </CardContent>
             </Card>
           )}

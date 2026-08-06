@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { SellerProductService } from './seller-product.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -10,6 +11,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 @ApiTags('Seller Products')
 @UseGuards(JwtAuthGuard)
 @Controller('seller/products')
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 export class SellerProductController {
   constructor(private readonly service: SellerProductService) {}
 
@@ -40,13 +42,19 @@ export class SellerProductController {
   @Post()
   @ApiOperation({ summary: 'Create product' })
   createProduct(@CurrentUser('sub') userId: string, @Body() dto: CreateProductDto) {
-    return this.service.createProduct(userId, dto as any);
+    return this.service.createProduct(userId, dto);
+  }
+
+  @Post('quick')
+  @ApiOperation({ summary: 'Quick create product — minimal fields' })
+  quickCreateProduct(@CurrentUser('sub') userId: string, @Body() dto: { name: string; categoryId?: string; price?: number }) {
+    return this.service.quickCreateProduct(userId, dto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update product' })
   updateProduct(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: UpdateProductDto) {
-    return this.service.updateProduct(userId, id, dto as any);
+    return this.service.updateProduct(userId, id, dto);
   }
 
   @Delete(':id')

@@ -5,6 +5,7 @@ import { useCampaign, useUpdateCampaign, useCampaignAnalytics } from '@/hooks/us
 import { DashboardPageHeader, StatCard, StatCardSkeleton } from '@/components/dashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { Calendar, DollarSign, Users, Target, Activity } from 'lucide-react';
 
 export default function AdminCampaignDetailPage() {
@@ -108,24 +109,20 @@ export default function AdminCampaignDetailPage() {
                 <div className="rounded-lg border p-3"><p className="text-2xl font-bold">{totalAnalytics?.paid ?? 0}</p><p className="text-xs text-text-secondary">Paid</p></div>
                 <div className="rounded-lg border p-3"><p className="text-2xl font-bold">₹{Number(totalAnalytics?.rewardAmount ?? 0).toLocaleString('en-IN')}</p><p className="text-xs text-text-secondary">Total Rewards</p></div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left"><th className="pb-2 font-medium">Date</th><th className="pb-2 font-medium">Claims</th><th className="pb-2 font-medium">Approved</th><th className="pb-2 font-medium">Paid</th><th className="pb-2 font-medium">Amount</th></tr>
-                  </thead>
-                  <tbody>
-                    {analytics.map((a) => (
-                      <tr key={a.id} className="border-b last:border-0">
-                        <td className="py-2">{new Date(a.date).toLocaleDateString()}</td>
-                        <td className="py-2">{a.claims}</td>
-                        <td className="py-2">{a.approved}</td>
-                        <td className="py-2">{a.paid}</td>
-                        <td className="py-2">₹{Number(a.rewardAmount).toLocaleString('en-IN')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <THead><TR><TH>Date</TH><TH>Claims</TH><TH>Approved</TH><TH>Paid</TH><TH>Amount</TH></TR></THead>
+                <TBody>
+                  {analytics.map((a) => (
+                    <TR key={a.id}>
+                      <TD>{new Date(a.date).toLocaleDateString()}</TD>
+                      <TD>{a.claims}</TD>
+                      <TD>{a.approved}</TD>
+                      <TD>{a.paid}</TD>
+                      <TD>₹{Number(a.rewardAmount).toLocaleString('en-IN')}</TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
             </>
           )}
         </CardContent>

@@ -1,0 +1,352 @@
+{
+    "metrics": {
+        "http_req_sending": {
+            "avg": 0.025382318587812494,
+            "min": 0,
+            "med": 0,
+            "max": 13.4388,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_connecting": {
+            "avg": 0.0017103245071613542,
+            "min": 0,
+            "med": 0,
+            "max": 1.795,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "product_list_latency": {
+            "p(90)": 30.117,
+            "p(95)": 59.469375,
+            "avg": 14.86706278209395,
+            "min": 1.3263,
+            "med": 5.02805,
+            "max": 438.4942,
+            "thresholds": {
+                "p(95)<5000": false
+            }
+        },
+        "vus": {
+            "max": 100,
+            "value": 3,
+            "min": 1
+        },
+        "http_req_blocked": {
+            "min": 0,
+            "med": 0,
+            "max": 13.6804,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.007566759156492791
+        },
+        "data_received": {
+            "count": 66592496,
+            "rate": 157842.08251687812
+        },
+        "category_requests": {
+            "count": 5406,
+            "rate": 12.813670448487816
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(90)": 5428.286400000001,
+            "p(95)": 6333.38465,
+            "avg": 3633.6328132201124,
+            "min": 10.5115,
+            "med": 3517.93545,
+            "max": 21460.704
+        },
+        "http_req_failed": {
+            "passes": 31836,
+            "fails": 6006,
+            "thresholds": {
+                "rate<0.05": true
+            },
+            "value": 0.8412874583795783
+        },
+        "request_failures": {
+            "passes": 31836,
+            "fails": 6006,
+            "thresholds": {
+                "rate<0.05": true
+            },
+            "value": 0.8412874583795783
+        },
+        "search_latency": {
+            "avg": 24.11253771735101,
+            "min": 1.0227,
+            "med": 4.6838,
+            "max": 1379.7036,
+            "p(90)": 39.55655,
+            "p(95)": 80.740025,
+            "thresholds": {
+                "p(95)<5000": false
+            }
+        },
+        "auth_latency": {
+            "min": 0,
+            "med": 1.80065,
+            "max": 189.3291,
+            "p(90)": 9.16925,
+            "p(95)": 18.90645,
+            "avg": 4.847631483536819,
+            "thresholds": {
+                "p(95)<8000": false
+            }
+        },
+        "http_req_tls_handshaking": {
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0,
+            "min": 0
+        },
+        "iterations": {
+            "count": 5406,
+            "rate": 12.813670448487816
+        },
+        "industry_latency": {
+            "p(90)": 25.3949,
+            "p(95)": 51.532175,
+            "avg": 13.826974139844618,
+            "min": 0.507,
+            "med": 4.6061499999999995,
+            "max": 513.1928
+        },
+        "iteration_duration": {
+            "p(90)": 7775.12975,
+            "p(95)": 8765.44175,
+            "avg": 5870.797037199397,
+            "min": 2918.0011,
+            "med": 5583.478499999999,
+            "max": 23962.6979
+        },
+        "http_req_duration": {
+            "avg": 588.8656168860045,
+            "min": 0,
+            "med": 5.6021,
+            "max": 21460.704,
+            "p(90)": 3105.3998100000003,
+            "p(95)": 4139.260644999997,
+            "thresholds": {
+                "p(99)<10000": false,
+                "p(95)<5000": false
+            }
+        },
+        "http_req_waiting": {
+            "med": 5.31285,
+            "max": 21460.704,
+            "p(90)": 3104.67234,
+            "p(95)": 4139.260644999997,
+            "avg": 588.519479654881,
+            "min": 0
+        },
+        "category_latency": {
+            "avg": 18.09055808361083,
+            "min": 1.5409,
+            "med": 7.83125,
+            "max": 546.5044,
+            "p(90)": 35.98005,
+            "p(95)": 67.29995
+        },
+        "product_list_requests": {
+            "count": 5406,
+            "rate": 12.813670448487816
+        },
+        "health_latency": {
+            "p(95)": 6618.075575,
+            "avg": 4033.265859581945,
+            "min": 2337.6975,
+            "med": 3668.1648,
+            "max": 21460.704,
+            "p(90)": 5544.882,
+            "thresholds": {
+                "p(95)<2000": true
+            }
+        },
+        "company_requests": {
+            "count": 5406,
+            "rate": 12.813670448487816
+        },
+        "group_duration": {
+            "min": 0,
+            "med": 5.75685,
+            "max": 21460.704,
+            "p(90)": 3105.4763000000003,
+            "p(95)": 4140.457709999999,
+            "avg": 589.02068062206
+        },
+        "company_latency": {
+            "p(95)": 52.325075,
+            "avg": 13.048694413614507,
+            "min": 0.5072,
+            "med": 4.51405,
+            "max": 482.3692,
+            "p(90)": 24.0484
+        },
+        "health_requests": {
+            "count": 5406,
+            "rate": 12.813670448487816
+        },
+        "auth_requests": {
+            "count": 5406,
+            "rate": 12.813670448487816
+        },
+        "data_sent": {
+            "count": 6909408,
+            "rate": 16377.150778051297
+        },
+        "checks": {
+            "passes": 6006,
+            "fails": 31836,
+            "value": 0.15871254162042175
+        },
+        "industry_requests": {
+            "rate": 12.813670448487816,
+            "count": 5406
+        },
+        "search_requests": {
+            "count": 5406,
+            "rate": 12.813670448487816
+        },
+        "vus_max": {
+            "value": 100,
+            "min": 100,
+            "max": 100
+        },
+        "http_reqs": {
+            "count": 37842,
+            "rate": 89.69569313941471
+        },
+        "http_req_receiving": {
+            "avg": 0.32075491253105043,
+            "min": 0,
+            "med": 0,
+            "max": 168.9967,
+            "p(90)": 0.9019,
+            "p(95)": 1.0000949999999997
+        },
+        "error_rate": {
+            "passes": 0,
+            "fails": 0,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0
+        }
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "health endpoints": {
+                "id": "64184590e1bd07b18559a8a7af681092",
+                "groups": {},
+                "checks": {
+                        "health is 200": {
+                            "path": "::health endpoints::health is 200",
+                            "id": "0928265319f02d471c86763c03563ac9",
+                            "passes": 5406,
+                            "fails": 0,
+                            "name": "health is 200"
+                        }
+                    },
+                "name": "health endpoints",
+                "path": "::health endpoints"
+            },
+            "browse categories": {
+                "path": "::browse categories",
+                "id": "976d954e77b933282fa7221b48a3d8d9",
+                "groups": {},
+                "checks": {
+                        "categories is 200": {
+                            "name": "categories is 200",
+                            "path": "::browse categories::categories is 200",
+                            "id": "b40c1e57acd28f96eff85c4e0b39b623",
+                            "passes": 0,
+                            "fails": 5406
+                        }
+                    },
+                "name": "browse categories"
+            },
+            "browse industries": {
+                "name": "browse industries",
+                "path": "::browse industries",
+                "id": "db0b59e375ea4d39014ebfd278b21f6a",
+                "groups": {},
+                "checks": {
+                        "industries is 200": {
+                            "fails": 5406,
+                            "name": "industries is 200",
+                            "path": "::browse industries::industries is 200",
+                            "id": "480d6ac8eb12843c5466cdf4fcf571b4",
+                            "passes": 0
+                        }
+                    }
+            },
+            "list products": {
+                "name": "list products",
+                "path": "::list products",
+                "id": "d61934c8994bee786f2cffc32bb823c8",
+                "groups": {},
+                "checks": {
+                        "products listed": {
+                            "name": "products listed",
+                            "path": "::list products::products listed",
+                            "id": "eb431b53f3052c1cf7e4b9218cceef2e",
+                            "passes": 600,
+                            "fails": 4806
+                        }
+                    }
+            },
+            "search products": {
+                "name": "search products",
+                "path": "::search products",
+                "id": "21c11a5cca7aed6a7947d18c67363993",
+                "groups": {},
+                "checks": {
+                        "search returned": {
+                            "name": "search returned",
+                            "path": "::search products::search returned",
+                            "id": "b114557c4751af8ecc370b830ae2c4d3",
+                            "passes": 0,
+                            "fails": 5406
+                        }
+                    }
+            },
+            "list companies": {
+                "name": "list companies",
+                "path": "::list companies",
+                "id": "a3115498d0d53a822392ce3f76bd70c3",
+                "groups": {},
+                "checks": {
+                        "companies listed": {
+                            "passes": 0,
+                            "fails": 5406,
+                            "name": "companies listed",
+                            "path": "::list companies::companies listed",
+                            "id": "02fe93d035dd47ef1ebacf0dbfeed6e0"
+                        }
+                    }
+            },
+            "auth endpoints": {
+                "checks": {
+                    "auth responded": {
+                        "path": "::auth endpoints::auth responded",
+                        "id": "488908c347c5aff6ca4bfd54711447fc",
+                        "passes": 0,
+                        "fails": 5406,
+                        "name": "auth responded"
+                    }
+                },
+                "name": "auth endpoints",
+                "path": "::auth endpoints",
+                "id": "81403d93b54ca0047edc1d07dbe2fb6a",
+                "groups": {}
+            }
+        },
+        "checks": {}
+    }
+}

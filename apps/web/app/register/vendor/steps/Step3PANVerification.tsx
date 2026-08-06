@@ -7,12 +7,12 @@ import FormField from '../components/FormField'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/
 
@@ -96,7 +96,7 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
   return (
     <StepCard icon={<span className="text-lg">🪪</span>} title="PAN Verification" subtitle="Your identity for TRADINGO login">
       <div className="space-y-5">
-        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
           PAN Number is your TRADINGO Login ID. Please enter it carefully.
         </div>
 
@@ -132,11 +132,11 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
         <FormField label="PAN Card Image" error={uploadError || undefined} hint="Recommended — JPG, PNG or PDF, max 5MB">
           <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={handleFileChange} />
           {panCardImage ? (
-            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
               {panCardPreview ? (
                 <img src={panCardPreview} alt="PAN preview" className="w-16 h-16 rounded-lg object-cover" />
               ) : (
-                <div className="w-16 h-16 rounded-lg flex items-center justify-center text-white/40 text-xs" style={{ background: 'rgba(255,255,255,0.05)' }}>PDF</div>
+                <div className="w-16 h-16 rounded-lg flex items-center justify-center text-white/40 text-xs" style={{ backgroundColor: 'var(--bg-elevated)' }}>PDF</div>
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs truncate">{panCardImage.name}</p>
@@ -148,13 +148,13 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
           ) : (
             <button type="button" onClick={() => fileRef.current?.click()}
               className="w-full py-6 rounded-xl border border-dashed text-white/30 text-xs hover:text-white/50 transition-colors"
-              style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+              style={{ borderColor: 'var(--border-color)' }}>
               Click to upload PAN card image
             </button>
           )}
         </FormField>
 
-        <div className="p-3 rounded-xl space-y-1" style={{ background: 'rgba(255,77,0,0.05)', border: '1px solid rgba(255,77,0,0.1)' }}>
+        <div className="p-3 rounded-xl space-y-1" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
           <p className="text-white/60 text-xs font-semibold">Why we need PAN:</p>
           <p className="text-white/40 text-[10px]">✓ Login ID</p>
           <p className="text-white/40 text-[10px]">✓ GST Invoice generation</p>

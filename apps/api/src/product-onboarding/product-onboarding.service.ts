@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { Prisma, DraftStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchService } from '../modules/search/search.service';
+import { buildProductIndexDoc } from '../modules/products/product-index.doc';
 import { CreateDraftDto } from './dto/create-draft.dto';
 import { UpdateDraftDto } from './dto/update-draft.dto';
 import { v4 as uuid } from 'uuid';
@@ -57,49 +58,36 @@ export class ProductOnboardingService {
       const product = await this.prisma.product.findFirst({
         where: { id: productId, deletedAt: null },
         include: {
-          company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true, status: true } },
+          company: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              trustScore: true,
+              verificationLevel: true,
+              status: true,
+              businessType: true,
+              establishedYear: true,
+              gstNumber: true,
+              certifications: true,
+              locations: {
+                select: { city: true, state: true, country: true, isPrimary: true },
+                where: { deletedAt: null },
+              },
+            },
+          },
           category: { select: { id: true, name: true, slug: true } },
           industry: { select: { id: true, name: true, slug: true } },
           inventory: { select: { availableQuantity: true, stockStatus: true } },
-          media: { select: { id: true, url: true, type: true, sortOrder: true }, take: 1, orderBy: { sortOrder: 'asc' } },
+          media: { select: { id: true, url: true, type: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
           specifications: { select: { key: true, value: true } },
-          priceSlabs: { select: { minQty: true, maxQty: true, price: true }, orderBy: { minQty: 'asc' } },
+          priceSlabs: { select: { minQty: true, maxQty: true, price: true, currency: true }, orderBy: { minQty: 'asc' } },
+          catalogItem: { select: { id: true, slug: true, subcategory: { select: { name: true } } } },
         },
       });
       if (!product) return;
 
-      await this.searchService.indexDocument(PRODUCT_INDEX, product.id, {
-        name: product.name,
-        slug: product.slug,
-        shortDescription: product.shortDescription,
-        description: product.description,
-        productType: product.productType,
-        status: product.status,
-        categoryId: product.category?.id,
-        categoryName: product.category?.name,
-        industryId: product.industry?.id,
-        industryName: product.industry?.name,
-        companyId: product.company.id,
-        companyName: product.company.name,
-        companySlug: product.company.slug,
-        trustScoreSnapshot: product.company.trustScore,
-        verificationLevel: product.company.verificationLevel,
-        brand: product.brand,
-        model: product.model,
-        sku: product.sku,
-        moq: product.moq,
-        unit: product.unit,
-        visibilityRadius: product.visibilityRadius,
-        isFeatured: product.isFeatured,
-        latitude: product.latitude,
-        longitude: product.longitude,
-        thumbnail: product.media[0]?.url || null,
-        specifications: Object.fromEntries(product.specifications.map((s: { key: string; value: string }) => [s.key, s.value])),
-        inventoryStatus: product.inventory?.stockStatus || 'OUT_OF_STOCK',
-        availableQuantity: product.inventory?.availableQuantity || 0,
-        minPrice: product.priceSlabs[0]?.price || null,
-        maxPrice: product.priceSlabs.length > 0 ? product.priceSlabs[product.priceSlabs.length - 1]?.price : null,
-      });
+      await this.searchService.indexDocument(PRODUCT_INDEX, product.id, buildProductIndexDoc(product as any));
     } catch (err) {
       this.logger.warn(`Failed to sync product ${productId} with OpenSearch: ${err}`);
     }

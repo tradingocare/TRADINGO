@@ -26,39 +26,39 @@ export function CTABlock({
 }: CTAProps) {
   return (
     <section
-      className={cn(
-        'py-20',
-        variant === 'accent' && 'bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-800 dark:to-primary-900',
-        variant === 'default' && 'bg-surface-secondary dark:bg-dark-surface-secondary',
-        variant === 'simple' && 'bg-surface dark:bg-dark-surface',
-        className,
-      )}
-    >
-      <div className="container-main">
-        <div
-          className={cn(
-            'mx-auto max-w-3xl text-center',
-            variant === 'accent' ? 'text-white' : '',
-          )}
-        >
-          <h2
-            className={cn(
-              'text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl',
-              variant === 'accent' ? 'text-white' : 'text-text-primary dark:text-dark-text-primary',
-            )}
-          >
-            {title}
-          </h2>
-          {subtitle && (
-            <p
-              className={cn(
-                'mx-auto mt-4 max-w-2xl text-lg',
-                variant === 'accent' ? 'text-primary-100' : 'text-text-secondary dark:text-dark-text-secondary',
-              )}
-            >
-              {subtitle}
-            </p>
-          )}
+       className={cn(
+         'py-20',
+         variant === 'accent' && 'bg-gradient-to-r from-accent-600 to-accent-700 dark:from-accent-800 dark:to-accent-900',
+         variant === 'default' && 'bg-surface-secondary dark:bg-dark-surface-secondary',
+         variant === 'simple' && 'bg-surface dark:bg-dark-surface',
+         className,
+       )}
+     >
+       <div className="container-main">
+         <div
+           className={cn(
+             'mx-auto max-w-3xl text-center',
+             variant === 'accent' ? 'text-gray-900' : '',
+           )}
+         >
+           <h2
+             className={cn(
+               'text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl',
+               variant === 'accent' ? 'text-gray-900' : 'text-text-primary dark:text-dark-text-primary',
+             )}
+           >
+             {title}
+           </h2>
+           {subtitle && (
+             <p
+               className={cn(
+                 'mx-auto mt-4 max-w-2xl text-lg',
+                 variant === 'accent' ? 'text-accent-100' : 'text-text-secondary dark:text-dark-text-secondary',
+               )}
+             >
+               {subtitle}
+             </p>
+           )}
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href={primaryHref}>
               <Button
@@ -80,7 +80,7 @@ export function CTABlock({
                   variant={variant === 'accent' ? 'ghost' : 'outline'}
                   className={cn(
                     'w-full sm:w-auto',
-                    variant === 'accent' && 'text-white hover:bg-white/10',
+                    variant === 'accent' && 'text-gray-900 hover:bg-surface-tertiary',
                   )}
                 >
                   {secondaryLabel}

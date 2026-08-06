@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { DashboardPageHeader, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
@@ -36,19 +37,9 @@ export default function SellerBuyersPage() {
       {isLoading ? (
         <TableSkeleton rows={4} />
       ) : error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
-          <Building2 className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary">Failed to load buyers</h3>
-          <p className="mt-1 text-sm text-text-secondary">Please try again later.</p>
-        </div>
+        <Card><CardContent className="p-12"><EmptyState icon={Building2} variant="error" title="Failed to load buyers" description="Please try again later." /></CardContent></Card>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
-          <Building2 className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary">No buyers found</h3>
-          <p className="mt-1 text-sm text-text-secondary">
-            {search ? 'Try a different search term.' : 'Buyers will appear here once you complete orders.'}
-          </p>
-        </div>
+        <Card><CardContent className="p-12"><EmptyState icon={Building2} title="No buyers found" description={search ? 'Try a different search term.' : 'Buyers will appear here once you complete orders.'} /></CardContent></Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {filtered.map((buyer: any) => (

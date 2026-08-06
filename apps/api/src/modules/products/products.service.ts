@@ -2,11 +2,13 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { Prisma, StockStatus, MediaType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
+import { buildProductIndexDoc } from './product-index.doc';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Role } from '../../common/enums/role.enum';
 import { v4 as uuid } from 'uuid';
 import { ProductAttributeDisplayService } from './services/product-attribute-display.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `prod-${uuid().slice(0, 8)}`;
@@ -28,6 +30,7 @@ export class ProductsService {
     private readonly prisma: PrismaService,
     private readonly searchService: SearchService,
     private readonly attributeDisplayService: ProductAttributeDisplayService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   private normalizeProduct(product: any) {
@@ -51,6 +54,11 @@ export class ProductsService {
         avgResponseTime: c.responseRate ? `< ${c.responseRate}` : undefined,
         ordersFulfilled: (c as any).totalProducts || undefined,
         gstVerified:    !!c.gstNumber,
+        certifications: c.certificationDocs?.map((d: any) => ({
+          id: d.id,
+          type: d.type,
+          documentNumber: d.documentNumber,
+        })) || [],
       },
     };
   }
@@ -115,49 +123,83 @@ export class ProductsService {
       const product = await this.prisma.product.findFirst({
         where: { id: productId, deletedAt: null },
         include: {
-          company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true, status: true } },
+          company: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              trustScore: true,
+              verificationLevel: true,
+              status: true,
+              businessType: true,
+              establishedYear: true,
+              gstNumber: true,
+              certifications: true,
+              locations: {
+                select: { city: true, state: true, country: true, isPrimary: true },
+                where: { deletedAt: null },
+              },
+            },
+          },
           category: { select: { id: true, name: true, slug: true } },
           industry: { select: { id: true, name: true, slug: true } },
           inventory: { select: { availableQuantity: true, stockStatus: true } },
-          media: { select: { id: true, url: true, type: true, sortOrder: true }, take: 1, orderBy: { sortOrder: 'asc' } },
+          media: { select: { id: true, url: true, type: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
           specifications: { select: { key: true, value: true } },
-          priceSlabs: { select: { minQty: true, maxQty: true, price: true }, orderBy: { minQty: 'asc' } },
+          priceSlabs: { select: { minQty: true, maxQty: true, price: true, currency: true }, orderBy: { minQty: 'asc' } },
+          catalogItem: { select: { id: true, slug: true, subcategory: { select: { name: true } } } },
         },
       });
       if (!product) return;
 
-      await this.searchService.indexDocument(PRODUCT_INDEX, product.id, {
-        name: product.name,
-        slug: product.slug,
-        shortDescription: product.shortDescription,
-        description: product.description,
-        productType: product.productType,
-        status: product.status,
-        categoryId: product.category?.id,
-        categoryName: product.category?.name,
-        industryId: product.industry?.id,
-        industryName: product.industry?.name,
-        companyId: product.company.id,
-        companyName: product.company.name,
-        companySlug: product.company.slug,
-        trustScoreSnapshot: product.company.trustScore,
-        verificationLevel: product.company.verificationLevel,
-        brand: product.brand,
-        model: product.model,
-        sku: product.sku,
-        moq: product.moq,
-        unit: product.unit,
-        visibilityRadius: product.visibilityRadius,
-        isFeatured: product.isFeatured,
-        latitude: product.latitude,
-        longitude: product.longitude,
-        thumbnail: product.media[0]?.url || null,
-        specifications: Object.fromEntries(product.specifications.map((s: { key: string; value: string }) => [s.key, s.value])),
-        inventoryStatus: product.inventory?.stockStatus || 'OUT_OF_STOCK',
-        availableQuantity: product.inventory?.availableQuantity || 0,
-        minPrice: product.priceSlabs[0]?.price || null,
-        maxPrice: product.priceSlabs.length > 0 ? product.priceSlabs[product.priceSlabs.length - 1]?.price : null,
-      });
+      // Catalog enrichment: look up matching CatalogItem by product name
+      let catalogEnrichment: {
+        catalogItemId: string | null;
+        catalogItemSlug: string | null;
+        catalogCategoryPath: string | null;
+        catalogKeywords: string[];
+        catalogSynonyms: string[];
+        subCategoryName: string | null;
+      } = {
+        catalogItemId: null,
+        catalogItemSlug: null,
+        catalogCategoryPath: null,
+        catalogKeywords: [],
+        catalogSynonyms: [],
+        subCategoryName: null,
+      };
+
+      try {
+        const catalogItem = await this.prisma.catalogItem.findFirst({
+          where: {
+            isActive: true,
+            name: { equals: product.name, mode: 'insensitive' },
+          },
+          include: {
+            subcategory: {
+              include: { category: true },
+            },
+          },
+        });
+
+        if (catalogItem) {
+          catalogEnrichment = {
+            catalogItemId: catalogItem.id,
+            catalogItemSlug: catalogItem.slug,
+            catalogCategoryPath: `${catalogItem.subcategory.category.name} > ${catalogItem.subcategory.name}`,
+            catalogKeywords: catalogItem.keywords || [],
+            catalogSynonyms: catalogItem.synonyms || [],
+            subCategoryName: catalogItem.subcategory.name,
+          };
+        }
+      } catch (catalogErr) {
+        this.logger.debug(`Catalog enrichment lookup skipped for product ${productId}: ${catalogErr}`);
+      }
+
+      await this.searchService.indexDocument(PRODUCT_INDEX, product.id, buildProductIndexDoc({
+        ...(product as any),
+        enrichment: catalogEnrichment,
+      }));
     } catch (err) {
       this.logger.warn(`Failed to sync product ${productId} with OpenSearch: ${err}`);
     }
@@ -266,6 +308,8 @@ export class ProductsService {
 
     await this.syncOpenSearch(product.id);
 
+    this.eventEmitter.emit('product.created', { productId: product.id, companyId: dto.companyId, userId, timestamp: new Date().toISOString(), metadata: { name: dto.name, status: dto.status || 'DRAFT' } });
+
     this.logger.log(`Product ${product.id} created by ${userId}`);
     return product;
   }
@@ -275,7 +319,8 @@ export class ProductsService {
     companyId?: string; categoryId?: string; industryId?: string;
     productType?: string; status?: string; ownerId?: string; isFeatured?: string;
   }) {
-    const { cursor, limit = 20, search, companyId, categoryId, industryId, productType, status, isFeatured } = query;
+    const { cursor, search, companyId, categoryId, industryId, productType, status, isFeatured } = query;
+    const limit = Number(query.limit) || 20;
     const where: Prisma.ProductWhereInput = { deletedAt: null };
 
     if (search) {
@@ -341,7 +386,7 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({
       where: { id, deletedAt: null },
       include: {
-        company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true } },
+        company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true, certificationDocs: { where: { status: 'APPROVED' }, select: { id: true, type: true, documentNumber: true } } } },
         category: { select: { id: true, name: true, slug: true } },
         industry: { select: { id: true, name: true, slug: true } },
         media: { orderBy: { sortOrder: 'asc' } },
@@ -359,7 +404,7 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({
       where: { slug, deletedAt: null },
       include: {
-        company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true, responseRate: true, gstNumber: true, totalProducts: true, locations: { where: { isPrimary: true }, select: { city: true, state: true }, take: 1 } } },
+        company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true, responseRate: true, gstNumber: true, totalProducts: true, certificationDocs: { where: { status: 'APPROVED' }, select: { id: true, type: true, documentNumber: true } }, locations: { where: { isPrimary: true }, select: { city: true, state: true }, take: 1 } } },
         category: { select: { id: true, name: true, slug: true } },
         industry: { select: { id: true, name: true, slug: true } },
         media: { orderBy: { sortOrder: 'asc' } },
@@ -375,7 +420,7 @@ export class ProductsService {
     await this.prisma.product.update({
       where: { id: product.id },
       data: { viewCount: { increment: 1 } },
-    }).catch(() => {});
+    }).catch((err) => { this.logger.warn(`Failed to increment view count for product ${product.id}: ${err.message}`); });
 
     const productAttributes = await this.attributeDisplayService.getDisplayAttributes(
       product.id,
@@ -457,6 +502,8 @@ export class ProductsService {
 
     await this.syncOpenSearch(id);
 
+    this.eventEmitter.emit('product.updated', { productId: id, companyId: product.companyId, userId, timestamp: new Date().toISOString() });
+
     return updated;
   }
 
@@ -509,6 +556,9 @@ export class ProductsService {
     });
 
     await this.syncOpenSearch(id);
+
+    this.eventEmitter.emit('product.published', { productId: id, companyId: product.companyId, userId, timestamp: new Date().toISOString() });
+
     return updated;
   }
 
@@ -531,6 +581,9 @@ export class ProductsService {
     });
 
     await this.syncOpenSearch(id);
+
+    this.eventEmitter.emit('product.unpublished', { productId: id, companyId: product.companyId, userId, timestamp: new Date().toISOString() });
+
     return updated;
   }
 
@@ -746,15 +799,54 @@ export class ProductsService {
     if (filters.city) searchFilters.city = filters.city;
     if (filters.state) searchFilters.state = filters.state;
 
-    const result = await this.searchService.search<Record<string, unknown>>(
-      PRODUCT_INDEX,
-      query,
-      searchFilters,
-      { page: 1, limit: 50 },
-    );
+    let ids: string[] = [];
+    let total = 0;
+    try {
+      const result = await this.searchService.search<Record<string, unknown>>(
+        PRODUCT_INDEX,
+        query,
+        searchFilters,
+        { page: 1, limit: 50 },
+      );
+      ids = result.hits.map((hit) => hit.id as string);
+      total = result.total;
+    } catch (err) {
+      this.logger.warn(`OpenSearch search failed, falling back to Prisma: ${err}`);
+    }
 
-    const ids = result.hits.map((hit) => hit.id as string);
-    if (ids.length === 0) return { data: [], meta: { total: 0, limit: 50, cursor: undefined } };
+    if (ids.length === 0) {
+      const where: Prisma.ProductWhereInput = {
+        deletedAt: null,
+        status: { not: 'DISCONTINUED' },
+      };
+      if (query?.trim()) {
+        where.OR = [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ];
+      }
+      if (filters.categoryId) where.categoryId = filters.categoryId;
+      if (filters.industryId) where.industryId = filters.industryId;
+      if (filters.companyId) where.companyId = filters.companyId;
+
+      const fallbackProducts = await this.prisma.product.findMany({
+        where,
+        take: 50,
+        include: {
+          company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true } },
+          category: { select: { id: true, name: true, slug: true } },
+          industry: { select: { id: true, name: true, slug: true } },
+          media: { take: 1, orderBy: { sortOrder: 'asc' } },
+          inventory: { select: { availableQuantity: true, stockStatus: true } },
+          priceSlabs: { orderBy: { minQty: 'asc' } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      return {
+        data: fallbackProducts.map((p) => this.normalizeProduct(p)),
+        meta: { total: fallbackProducts.length, limit: 50, cursor: undefined },
+      };
+    }
 
     const products = await this.prisma.product.findMany({
       where: { id: { in: ids }, deletedAt: null, status: { not: 'DISCONTINUED' as Prisma.EnumProductStatusFilter['not'] } },
@@ -773,7 +865,7 @@ export class ProductsService {
 
     return {
       data: products.map((p) => this.normalizeProduct(p)),
-      meta: { total: result.total, limit: 50, cursor: undefined },
+      meta: { total: total || products.length, limit: 50, cursor: undefined },
     };
   }
 }

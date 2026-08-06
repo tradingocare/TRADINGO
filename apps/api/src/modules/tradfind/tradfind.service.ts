@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { ProductSearchService } from './services/product-search.service';
 import { CompanySearchService } from './services/company-search.service';
@@ -30,6 +31,9 @@ import {
   COMPANIES_INDEX,
   CATEGORIES_INDEX,
   INDUSTRIES_INDEX,
+  CATALOG_ITEMS_INDEX,
+  CATALOG_CATEGORIES_INDEX,
+  INDEX_MAPPINGS,
 } from './tradfind.config';
 import { SearchEntity } from './enums/search.enums';
 
@@ -38,6 +42,7 @@ export class TradfindService {
   private readonly logger = new Logger(TradfindService.name);
 
   constructor(
+    private readonly prisma: PrismaService,
     private readonly searchService: SearchService,
     private readonly productSearchService: ProductSearchService,
     private readonly companySearchService: CompanySearchService,
@@ -52,41 +57,88 @@ export class TradfindService {
   ) {}
 
   async globalSearch(dto: GlobalSearchDto): Promise<GlobalSearchResponse> {
+    const start = Date.now();
     const page = dto.page || 1;
     const limit = dto.limit || 10;
 
-    const [products, companies, categories, industries] = await Promise.all([
+    const [products, companies, categories, industries, catalogCategories, catalogItems] = await Promise.all([
       this.searchInIndex(PRODUCTS_INDEX, dto.q, { status: 'ACTIVE' }, page, limit),
       this.searchInIndex(COMPANIES_INDEX, dto.q, { status: ['ACTIVE', 'VERIFIED'] }, page, limit),
       this.searchInIndex(CATEGORIES_INDEX, dto.q, { isActive: true }, page, limit),
       this.searchInIndex(INDUSTRIES_INDEX, dto.q, {}, page, limit),
+      this.searchInIndex(CATALOG_CATEGORIES_INDEX, dto.q, {}, page, limit),
+      this.searchInIndex(CATALOG_ITEMS_INDEX, dto.q, {}, page, limit),
     ]);
 
     const total = products.total + companies.total + categories.total + industries.total;
+    const catalogTotal = catalogCategories.total + catalogItems.total;
+
+    this.logger.log(
+      `globalSearch q="${dto.q}" duration=${Date.now() - start}ms ` +
+      `hits={products:${products.total} companies:${companies.total} categories:${categories.total} ` +
+      `industries:${industries.total} catalogCategories:${catalogCategories.total} catalogItems:${catalogItems.total}}`,
+    );
 
     await this.trendingSearchService.trackSearch(dto.q);
-    this.trackSearchAnalytics(dto.q, SearchEntity.PRODUCTS, total, dto.latitude, dto.longitude).catch(() => {});
+    this.trackSearchAnalytics(dto.q, SearchEntity.PRODUCTS, total, dto.latitude, dto.longitude).catch((err) => this.logger.warn(`Search analytics track failed: ${(err as Error).message}`));
 
     return {
       products: products.hits,
       companies: companies.hits,
       categories: categories.hits,
       industries: industries.hits,
-      meta: { total, page, limit: dto.limit || 10 },
+      catalogCategories: catalogCategories.hits,
+      catalogItems: catalogItems.hits,
+      meta: { total: total + catalogTotal, page, limit: dto.limit || 10 },
     };
   }
 
   async productSearch(dto: ProductSearchDto): Promise<UnifiedSearchResult<Record<string, unknown>>> {
-    const result = await this.productSearchService.search(dto);
+    const start = Date.now();
+    let productResult: UnifiedSearchResult<Record<string, unknown>>;
+    let catalogResult: UnifiedSearchResult<Record<string, unknown>>;
+    try {
+      [productResult, catalogResult] = await Promise.all([
+        this.productSearchService.search(dto),
+        this.searchInIndex(CATALOG_ITEMS_INDEX, dto.q || '', {}, dto.page || 1, dto.limit || 20),
+      ]);
+    } catch (err) {
+      this.logger.warn(`Product search failed, returning empty: ${(err as Error).message}`);
+      return { hits: [], total: 0, page: dto.page || 1, limit: dto.limit || 20 } as UnifiedSearchResult<Record<string, unknown>>;
+    }
+
+    const enrichedHits = [
+      ...productResult.hits,
+      ...catalogResult.hits.map((hit) => ({ ...hit, _sourceType: 'catalog' })),
+    ];
+
+    this.logger.log(
+      `productSearch q="${dto.q}" duration=${Date.now() - start}ms ` +
+      `hits={products:${productResult.total} catalogItems:${catalogResult.total}} ` +
+      `rankingSource=opensearch`,
+    );
+
     await this.trendingSearchService.trackSearch(dto.q || '');
-    this.trackSearchAnalytics(dto.q || '', SearchEntity.PRODUCTS, result.total, dto.latitude, dto.longitude).catch(() => {});
-    return result;
+    this.trackSearchAnalytics(dto.q || '', SearchEntity.PRODUCTS, productResult.total, dto.latitude, dto.longitude).catch((err) => this.logger.warn(`Search analytics track failed: ${(err as Error).message}`));
+
+    return {
+      hits: enrichedHits,
+      total: productResult.total + catalogResult.total,
+      page: productResult.page,
+      limit: productResult.limit,
+    } as UnifiedSearchResult<Record<string, unknown>>;
   }
 
   async companySearch(dto: CompanySearchDto): Promise<UnifiedSearchResult<Record<string, unknown>>> {
-    const result = await this.companySearchService.search(dto);
+    let result: UnifiedSearchResult<Record<string, unknown>>;
+    try {
+      result = await this.companySearchService.search(dto);
+    } catch (err) {
+      this.logger.warn(`Company search failed, returning empty: ${(err as Error).message}`);
+      return { hits: [], total: 0, page: dto.page || 1, limit: dto.limit || 20 } as UnifiedSearchResult<Record<string, unknown>>;
+    }
     await this.trendingSearchService.trackSearch(dto.q || '');
-    this.trackSearchAnalytics(dto.q || '', SearchEntity.COMPANIES, result.total, dto.latitude, dto.longitude).catch(() => {});
+    this.trackSearchAnalytics(dto.q || '', SearchEntity.COMPANIES, result.total, dto.latitude, dto.longitude).catch((err) => this.logger.warn(`Search analytics track failed: ${(err as Error).message}`));
     return result;
   }
 
@@ -143,6 +195,154 @@ export class TradfindService {
     } catch (err) {
       this.logger.warn(`Search in ${index} failed: ${(err as Error).message}`);
       return { hits: [], total: 0, page, limit };
+    }
+  }
+
+  async searchCatalog(
+    q: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<UnifiedSearchResult<Record<string, unknown>>> {
+    try {
+      return await this.searchService.search<Record<string, unknown>>(
+        CATALOG_ITEMS_INDEX,
+        q,
+        {},
+        { page, limit },
+      );
+    } catch (err) {
+      this.logger.warn(`Catalog search failed, returning empty: ${(err as Error).message}`);
+      return { hits: [], total: 0, page, limit };
+    }
+  }
+
+  async reindexCatalog(): Promise<{ categories: number; items: number }> {
+    this.logger.log('Starting Master Catalog reindexing...');
+
+    try {
+      // 1. Recreate indices
+      await this.searchService.deleteIndex(CATALOG_CATEGORIES_INDEX).catch(() => {});
+      await this.searchService.createIndex(
+        CATALOG_CATEGORIES_INDEX,
+        INDEX_MAPPINGS[CATALOG_CATEGORIES_INDEX],
+      );
+
+      await this.searchService.deleteIndex(CATALOG_ITEMS_INDEX).catch(() => {});
+      await this.searchService.createIndex(
+        CATALOG_ITEMS_INDEX,
+        INDEX_MAPPINGS[CATALOG_ITEMS_INDEX],
+      );
+
+      // 2. Fetch and index Catalog Categories and Subcategories
+      const categories = await this.prisma.catalogCategory.findMany({
+        where: { isActive: true },
+        include: { subcategories: true },
+      });
+
+      let categoryCount = 0;
+      const categoryDocs: { id: string; body: Record<string, unknown> }[] = [];
+      for (const cat of categories) {
+        categoryDocs.push({
+          id: cat.id,
+          body: {
+            id: cat.id,
+            name: cat.name,
+            slug: cat.slug,
+            path: cat.name,
+            parent: null,
+            level: 0,
+            createdAt: cat.createdAt,
+          },
+        });
+        categoryCount++;
+
+        for (const sub of cat.subcategories) {
+          categoryDocs.push({
+            id: sub.id,
+            body: {
+              id: sub.id,
+              name: sub.name,
+              slug: sub.slug,
+              path: `${cat.name} > ${sub.name}`,
+              parent: cat.id,
+              level: 1,
+              createdAt: sub.createdAt,
+            },
+          });
+          categoryCount++;
+        }
+      }
+      const categoryResult = await this.searchService.bulkIndex(CATALOG_CATEGORIES_INDEX, categoryDocs);
+      this.logger.log(
+        `Indexed ${categoryResult.indexed} category/subcategory docs (${categoryResult.failed} failed)`,
+      );
+
+      // 3. Fetch and index Catalog Items (cursor-paginated to avoid PostgreSQL bind variable limit)
+      let itemCount = 0;
+      let cursor: string | undefined;
+      let hasMore = true;
+      while (hasMore) {
+        const chunk = await this.prisma.catalogItem.findMany({
+          take: 2000,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          orderBy: { id: 'asc' },
+          where: { isActive: true },
+          include: {
+            subcategory: {
+              include: {
+                category: true,
+              },
+            },
+            attributes: { where: { isActive: true } },
+          },
+        });
+
+        const itemDocs: { id: string; body: Record<string, unknown> }[] = [];
+        for (const item of chunk) {
+          const categoryPath = `${item.subcategory.category.name} > ${item.subcategory.name}`;
+          const attributesMapped = item.attributes.map((attr) => ({
+            key: attr.key,
+            value: attr.value,
+          }));
+          itemDocs.push({
+            id: item.id,
+            body: {
+              id: item.id,
+              name: item.name,
+              type: item.type,
+              slug: item.slug,
+              unit: item.unit || null,
+              altUnits: item.altUnits || null,
+              quantityParams: item.quantityParams || null,
+              keywords: item.keywords,
+              synonyms: item.synonyms,
+              categoryPath,
+              attributes: attributesMapped,
+              createdAt: item.createdAt,
+            },
+          });
+        }
+
+        const result = await this.searchService.bulkIndex(CATALOG_ITEMS_INDEX, itemDocs);
+        itemCount += result.indexed;
+        if (result.failed > 0) {
+          this.logger.warn(`Failed to index ${result.failed} catalog item docs`);
+        }
+
+        if (chunk.length < 2000) {
+          hasMore = false;
+        } else {
+          cursor = chunk[chunk.length - 1].id;
+        }
+      }
+
+      this.logger.log(
+        `Master Catalog reindexing complete. Indexed ${categoryCount} categories/subcategories and ${itemCount} items.`,
+      );
+      return { categories: categoryCount, items: itemCount };
+    } catch (err) {
+      this.logger.error(`Master Catalog reindexing failed: ${(err as Error).message}`);
+      throw err;
     }
   }
 

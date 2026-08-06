@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSellerShipments } from '@/hooks/use-smart-shipment';
 import { Package, AlertCircle, Search, RefreshCw, Eye, Truck, Clock, Plus } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
 
 const statusTabs = ['ALL', 'PREPARING', 'PACKED', 'READY_FOR_PICKUP', 'COURIER_ASSIGNED', 'DISPATCHED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'DELIVERY_FAILED', 'RETURNED'];
@@ -44,7 +45,7 @@ export default function SellerShipmentDashboard() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
           <Input placeholder="Search shipments..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
         </div>
-        <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1">
           {statusTabs.map((tab) => (
             <button
               key={tab}
@@ -57,25 +58,18 @@ export default function SellerShipmentDashboard() {
             </button>
           ))}
         </div>
-        <Button variant="ghost" size="icon"><RefreshCw className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" aria-label="Refresh shipments"><RefreshCw className="h-4 w-4" /></Button>
       </div>
 
       {error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-white">Failed to load shipments</p>
-        </div>
+        <EmptyState icon={AlertCircle} variant="error" title="Failed to load shipments" />
       ) : isLoading ? (
         <TableSkeleton rows={5} />
       ) : shipments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12 backdrop-blur-xl">
-          <Truck className="h-12 w-12 text-white/30" />
-          <p className="mt-4 text-lg font-medium text-white">No shipments found</p>
-          <p className="mt-1 text-sm text-white/60">Create a shipment from a confirmed order to get started.</p>
-        </div>
+        <EmptyState icon={Truck} title="No shipments found" description="Create a shipment from a confirmed order to get started." />
       ) : (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
+        <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
             <div className="col-span-2">Shipment</div>
             <div className="col-span-2">Order</div>
             <div className="col-span-2">Buyer</div>
@@ -85,7 +79,7 @@ export default function SellerShipmentDashboard() {
             <div className="col-span-1" />
           </div>
           {shipments.map((s: any) => (
-            <div key={s.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
+            <div key={s.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
               <p className="font-mono text-sm font-medium text-white sm:col-span-2">{s.shipmentNumber}</p>
               <p className="text-sm text-white/70 sm:col-span-2">{s.order?.orderNumber ?? '—'}</p>
               <p className="text-sm text-white/70 sm:col-span-2">{s.order?.buyerCompany?.name ?? '—'}</p>

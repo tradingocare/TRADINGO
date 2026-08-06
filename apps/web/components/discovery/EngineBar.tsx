@@ -29,14 +29,14 @@ const ENGINES = [
     desc: 'WhatsApp-style B2B chat. Phone numbers are never shared. Direct connect between buyers and sellers.',
   },
   {
-    id: 'TRADTRUST',   icon: Shield,         color: '#F2C94C',
+    id: 'TRADTRUST',   icon: Shield,         color: '#FF4D00',
     title: 'TRADTRUST', subtitle: 'Verification',
     desc: '5-layer KYC: PAN, GST, Aadhaar, Business Registration, Bank. Trust score shown on every seller.',
   },
   {
-    id: 'TRADZERO',    icon: Lock,           color: '#FF7A3D',
-    title: 'TRADZERO',  subtitle: 'Zero-Risk Payments',
-    desc: 'Escrow holds your payment. Released to seller only after you confirm delivery. Dispute resolution included.',
+    id: 'TRADZERO',    icon: Lock,           color: '#FF4D00',
+    title: 'TRADZERO',  subtitle: 'Zero Commission',
+    desc: 'TRADINGO earns only from subscription plans. Zero commission and zero platform fees from any buyer or seller — on every transaction. Escrow protection included free.',
   },
 ]
 
@@ -44,16 +44,16 @@ export default function EngineBar() {
   const [expanded, setExpanded] = useState<string | null>(null)
 
   return (
-    <div className="rounded-2xl p-3"
+    <div className="rounded-2xl p-2.5"
       style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.07)',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border-color)',
         backdropFilter: 'blur(16px)',
       }}>
-      <div className="flex items-center justify-end mb-3 px-1">
+      <div className="flex items-center justify-end mb-1.5 px-1">
         {expanded && (
           <button onClick={() => setExpanded(null)}
-            className="text-[10px] text-white/35 hover:text-white/60">
+            className="text-[10px] text-text-tertiary hover:text-text-secondary">
             Close X
           </button>
         )}
@@ -77,8 +77,8 @@ export default function EngineBar() {
                   style={{ background: `${e.color}15` }}>
                   <Icon size={15} style={{ color: e.color }} />
                 </div>
-                <span className="text-[9px] font-bold text-white/70">{e.title}</span>
-                <span className="text-[8px] text-white/35 leading-tight">{e.subtitle}</span>
+                <span className="text-[9px] font-bold text-text-primary">{e.title}</span>
+                <span className="text-[8px] text-text-tertiary leading-tight">{e.subtitle}</span>
               </button>
             )
           })}
@@ -87,8 +87,8 @@ export default function EngineBar() {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <div className="w-20 h-20 rounded-full flex items-center justify-center"
             style={{
-              background: 'rgba(31,3,24,0.9)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-color)',
               backdropFilter: 'blur(12px)',
             }}>
             <TradingoLogoIcon height={40} />
@@ -112,7 +112,7 @@ export default function EngineBar() {
                   background: `${e.color}0D`,
                   border: `1px solid ${e.color}25`,
                 }}>
-                <p className="text-white/70 text-xs leading-relaxed">{e.desc}</p>
+                <p className="text-text-primary text-xs leading-relaxed">{e.desc}</p>
               </div>
             </motion.div>
           )

@@ -36,7 +36,7 @@ export default function BuyerDeliveryDashboard() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
           <Input placeholder="Search deliveries..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
         </div>
-        <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1">
           {statusTabs.map((tab) => (
             <button key={tab} onClick={() => setStatus(tab)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap ${status === tab ? 'bg-orange-500/20 text-orange-400' : 'text-white/60 hover:text-white/80'}`}>
@@ -44,21 +44,21 @@ export default function BuyerDeliveryDashboard() {
             </button>
           ))}
         </div>
-        <Button variant="ghost" size="icon"><RefreshCw className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" aria-label="Refresh deliveries"><RefreshCw className="h-4 w-4" /></Button>
       </div>
 
       {error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12"><AlertCircle className="h-12 w-12 text-red-500" /><p className="mt-4 text-lg font-medium text-white">Failed to load deliveries</p></div>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12"><AlertCircle className="h-12 w-12 text-red-500" /><p className="mt-4 text-lg font-medium text-white">Failed to load deliveries</p></div>
       ) : isLoading ? (
         <TableSkeleton rows={5} />
       ) : deliveries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <Truck className="h-12 w-12 text-white/30" />
           <p className="mt-4 text-lg font-medium text-white">No deliveries found</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-xl">
-          <div className="hidden grid-cols-12 gap-4 border-b border-white/[0.06] px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
+        <div className="rounded-xl border border-border bg-surface backdrop-blur-xl">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-white/50 sm:grid">
             <div className="col-span-2">Delivery</div>
             <div className="col-span-2">Order</div>
             <div className="col-span-2">Status</div>
@@ -67,7 +67,7 @@ export default function BuyerDeliveryDashboard() {
             <div className="col-span-2" />
           </div>
           {deliveries.map((d: any) => (
-            <div key={d.id} className="grid grid-cols-1 gap-3 border-b border-white/[0.06] px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
+            <div key={d.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
               <p className="font-mono text-sm font-medium text-white sm:col-span-2">{d.deliveryNumber}</p>
               <p className="text-sm text-white/70 sm:col-span-2">{d.order?.orderNumber ?? '—'}</p>
               <div className="sm:col-span-2"><StatusBadge status={d.status} /></div>

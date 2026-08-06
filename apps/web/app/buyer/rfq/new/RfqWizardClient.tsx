@@ -12,6 +12,7 @@ import { StepSuppliers } from './steps/StepSuppliers';
 import { StepDelivery } from './steps/StepDelivery';
 import { StepAttachments } from './steps/StepAttachments';
 import { StepPreview } from './steps/StepPreview';
+import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, ArrowRight, Send, Save, X } from 'lucide-react';
 
 const steps = ['Requirement', 'Products', 'Suppliers', 'Delivery', 'Attachments', 'Preview'];
@@ -76,8 +77,11 @@ export function RfqWizardClient() {
     try {
       const payload = buildPayload('ACTIVE');
       await createMutation.mutateAsync(payload);
+      toast({ title: 'Success', description: 'RFQ submitted successfully' });
       reset();
       router.push('/buyer/rfq');
+    } catch {
+      toast({ title: 'Error', description: 'Failed to submit RFQ', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -88,8 +92,11 @@ export function RfqWizardClient() {
     try {
       const payload = buildPayload('DRAFT');
       await createMutation.mutateAsync(payload);
+      toast({ title: 'Draft Saved', description: 'RFQ draft saved successfully' });
       reset();
       router.push('/buyer/rfq');
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save draft', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -99,14 +106,14 @@ export function RfqWizardClient() {
     <div className="space-y-6">
       <DashboardPageHeader title="Create RFQ" description="Multi-step request for quote" />
 
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+      <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           {steps.map((label, i) => (
             <div key={i} className="flex items-center gap-2 flex-1">
               <button
                 onClick={() => i < step ? setStep(i) : undefined}
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                  i === step ? 'bg-orange-500 text-white scale-110' : i < step ? 'bg-orange-500/30 text-orange-400' : 'bg-white/[0.06] text-white/40'
+                  i === step ? 'bg-orange-500 text-white scale-110' : i < step ? 'bg-orange-500/30 text-orange-400' : 'bg-surface-secondary text-white/40'
                 }`}
               >
                 {i < step ? '✓' : i + 1}
@@ -114,13 +121,13 @@ export function RfqWizardClient() {
               <span className={`hidden text-xs font-medium sm:block ${i === step ? 'text-orange-400' : i < step ? 'text-white/60' : 'text-white/40'}`}>
                 {label}
               </span>
-              {i < steps.length - 1 && <div className={`h-px flex-1 ${i < step ? 'bg-orange-500/50' : 'bg-white/[0.06]'}`} />}
+              {i < steps.length - 1 && <div className={`h-px flex-1 ${i < step ? 'bg-orange-500/50' : 'bg-surface-secondary'}`} />}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
+      <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
         {step === 0 && <StepRequirement />}
         {step === 1 && <StepProducts />}
         {step === 2 && <StepSuppliers />}
@@ -129,7 +136,7 @@ export function RfqWizardClient() {
         {step === 5 && <StepPreview />}
       </div>
 
-      <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.04] p-4 backdrop-blur-xl">
+      <div className="flex items-center justify-between rounded-xl border border-border bg-surface p-4 backdrop-blur-xl">
         <div>
           {step > 0 && (
             <Button variant="ghost" onClick={handleBack}>

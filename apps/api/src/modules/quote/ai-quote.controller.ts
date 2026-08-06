@@ -4,6 +4,7 @@ import { AiQuoteService } from './ai-quote.service'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import { Throttle } from '@nestjs/throttler'
 import {
   AiQuoteGenerateDto,
   AiQuotePriceRecommendationDto,
@@ -19,6 +20,7 @@ import {
 
 @ApiTags('AI QUOTE')
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 @Controller('companies/:companyId/quote/ai')
 export class AiQuoteController {
   constructor(private readonly aiQuoteService: AiQuoteService) {}

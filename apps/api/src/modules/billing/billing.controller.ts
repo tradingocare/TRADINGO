@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Param, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { BillingService } from './billing.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -9,6 +10,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @ApiTags('Billing')
 @UseGuards(JwtAuthGuard)
 @Controller('billing')
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 export class BillingController {
   constructor(
     private readonly billingService: BillingService,

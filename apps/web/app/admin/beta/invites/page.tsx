@@ -4,12 +4,16 @@ import { useEffect, useState } from 'react';
 import { DashboardPageHeader } from '@/components/dashboard';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { getBetaInvites, createBetaInvite, revokeBetaInvite, getBetaInviteStats, BetaInvite } from '@/lib/api/beta';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { Mail, CheckCircle, Clock, XCircle, RefreshCw, Plus, Search, Send, UserPlus, AlertTriangle } from 'lucide-react';
+import { Modal } from '@/components/ui/modal';
 
 interface InviteStats {
   total: number;
@@ -41,8 +45,6 @@ function InviteModal({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
@@ -63,69 +65,53 @@ function InviteModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-lg dark:border-dark-border dark:bg-dark-surface">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Send Beta Invite</h2>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 text-text-secondary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary"
-          >
-            <XCircle className="h-5 w-5" />
-          </button>
+    <Modal open={open} onClose={onClose} title="Send Beta Invite">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            Email <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="email"
+            placeholder="user@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <Input
-              type="email"
-              placeholder="user@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-              Company Name <span className="text-text-tertiary">(optional)</span>
-            </label>
-            <Input
-              placeholder="Acme Corp"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-              Message <span className="text-text-tertiary">(optional)</span>
-            </label>
-            <Textarea
-              placeholder="Welcome to the TRADINGO beta program..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-            />
-          </div>
-          {error && (
-            <div className="flex items-center gap-2 rounded-lg bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              {error}
-            </div>
-          )}
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={sending}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={sending || !email}>
-              <Send className="mr-2 h-4 w-4" />
-              {sending ? 'Sending...' : 'Send Invite'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            Company Name <span className="text-text-tertiary">(optional)</span>
+          </label>
+          <Input
+            placeholder="Acme Corp"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            Message <span className="text-text-tertiary">(optional)</span>
+          </label>
+          <Textarea
+            placeholder="Welcome to the TRADINGO beta program..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={3}
+          />
+        </div>
+        {error && <Alert variant="error">{error}</Alert>}
+        <div className="flex justify-end gap-3 pt-2">
+          <Button type="button" variant="outline" onClick={onClose} disabled={sending}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={sending || !email}>
+            <Send className="mr-2 h-4 w-4" />
+            {sending ? 'Sending...' : 'Send Invite'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -229,61 +215,36 @@ export default function BetaInvitesPage() {
               </Button>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-12 text-center">
-              <UserPlus className="h-10 w-10 text-text-tertiary" />
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-                {search ? 'No invites match your search' : 'No invites sent yet. Send your first beta invite.'}
-              </p>
-              {!search && (
-                <Button onClick={() => setModalOpen(true)} variant="outline" size="sm">
-                  <Plus className="mr-2 h-4 w-4" /> Send Invite
-                </Button>
-              )}
-            </div>
+            <EmptyState icon={search ? Search : UserPlus} title={search ? 'No invites match your search' : 'No invites sent yet'} description={search ? undefined : 'Send your first beta invite.'} action={!search && <Button onClick={() => setModalOpen(true)} variant="outline" size="sm"><Plus className="mr-2 h-4 w-4" /> Send Invite</Button>} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border dark:border-dark-border">
-                    <th className="py-3 pr-4 text-left font-medium text-text-secondary">Email</th>
-                    <th className="py-3 pr-4 text-left font-medium text-text-secondary">Company</th>
-                    <th className="py-3 pr-4 text-left font-medium text-text-secondary">Status</th>
-                    <th className="py-3 pr-4 text-left font-medium text-text-secondary">Created</th>
-                    <th className="py-3 pr-4 text-left font-medium text-text-secondary">Expires</th>
-                    <th className="py-3 text-right font-medium text-text-secondary">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((inv) => (
-                    <tr key={inv.id} className="border-b border-border dark:border-dark-border">
-                      <td className="py-3 pr-4 text-text-primary dark:text-dark-text-primary">{inv.email}</td>
-                      <td className="py-3 pr-4 text-text-secondary">{inv.companyName || '-'}</td>
-                      <td className="py-3 pr-4">
-                        <Badge variant={statusVariant[inv.status] || 'secondary'}>{inv.status}</Badge>
-                      </td>
-                      <td className="py-3 pr-4 text-text-secondary whitespace-nowrap">
-                        {new Date(inv.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 pr-4 text-text-secondary whitespace-nowrap">
-                        {new Date(inv.expiresAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 text-right">
-                        {inv.status === 'PENDING' && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleRevoke(inv.id)}
-                            disabled={revoking === inv.id}
-                          >
-                            {revoking === inv.id ? 'Revoking...' : 'Revoke'}
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <THead><TR>
+                <TH>Email</TH>
+                <TH>Company</TH>
+                <TH>Status</TH>
+                <TH>Created</TH>
+                <TH>Expires</TH>
+                <TH className="text-right">Actions</TH>
+              </TR></THead>
+              <TBody>
+                {filtered.map((inv) => (
+                  <TR key={inv.id}>
+                    <TD>{inv.email}</TD>
+                    <TD className="text-text-secondary">{inv.companyName || '-'}</TD>
+                    <TD><Badge variant={statusVariant[inv.status] || 'secondary'}>{inv.status}</Badge></TD>
+                    <TD className="whitespace-nowrap text-text-secondary">{new Date(inv.createdAt).toLocaleDateString()}</TD>
+                    <TD className="whitespace-nowrap text-text-secondary">{new Date(inv.expiresAt).toLocaleDateString()}</TD>
+                    <TD className="text-right">
+                      {inv.status === 'PENDING' && (
+                        <Button variant="destructive" size="sm" onClick={() => handleRevoke(inv.id)} disabled={revoking === inv.id}>
+                          {revoking === inv.id ? 'Revoking...' : 'Revoke'}
+                        </Button>
+                      )}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </CardContent>
       </Card>

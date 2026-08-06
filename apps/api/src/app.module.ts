@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard, ThrottlerStorage, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { BullModule } from '@nestjs/bullmq';
+import { logger } from './common/logger';
 
 import {
   appConfig,
@@ -18,6 +19,8 @@ import {
 } from './config/app.config';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './common/services/redis.module';
+import { RedisService } from './common/services/redis.service';
+import { RedisThrottlerStorage } from './common/services/redis-throttler-storage';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { StorageModule } from './modules/storage/storage.module';
@@ -33,6 +36,7 @@ import { UserVerificationModule } from './modules/user-verification/user-verific
 import { ReputationModule } from './modules/reputation/reputation.module';
 import { TradTrustModule } from './modules/tradtrust/tradtrust.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { CatalogAdapterModule } from './modules/catalog-adapter/catalog-adapter.module';
 import { IndustriesModule } from './modules/industries/industries.module';
 import { ProductsModule } from './modules/products/products.module';
 import { ProductOnboardingModule } from './product-onboarding/product-onboarding.module';
@@ -40,7 +44,6 @@ import { TradfindModule } from './modules/tradfind/tradfind.module';
 import { VendorCodesModule } from './modules/vendor-codes/vendor-codes.module';
 import { CertificationsModule } from './modules/certifications/certifications.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
-import { GoCashModule } from './modules/go-cash/go-cash.module';
 import { SellerAnalyticsModule } from './modules/seller-analytics/seller-analytics.module';
 import { RfqModule } from './modules/rfq/rfq.module';
 import { TradmatchModule } from './modules/tradmatch/tradmatch.module';
@@ -54,7 +57,9 @@ import { SettlementModule } from './modules/settlement/settlement.module';
 import { ManualPaymentModule } from './modules/manual-payment/manual-payment.module';
 import { DisputeModule } from './modules/dispute/dispute.module';
 import { BetaProgramModule } from './modules/beta-program/beta-program.module';
+import { SupportModule } from './modules/support/support.module';
 import { LaunchModule } from './modules/launch/launch.module';
+import { IncidentResponseModule } from './modules/incident-response/incident-response.module';
 import { TradgoModule } from './modules/tradgo/tradgo.module';
 import { MalwareModule } from './modules/malware/malware.module';
 import { CatalogImportModule } from './catalog-import/catalog-import.module';
@@ -87,6 +92,41 @@ import { FinanceModule } from './modules/finance/finance.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AiGatewayModule } from './modules/ai-gateway/ai-gateway.module';
 import { AdminIntelligenceModule } from './modules/admin-intelligence/admin-intelligence.module';
+import { LocationIntelligenceModule } from './modules/location-intelligence/location-intelligence.module';
+import { MarketplaceIntelligenceModule } from './modules/marketplace-intelligence/marketplace-intelligence.module';
+import { FreightIntelligenceModule } from './modules/freight-intelligence/freight-intelligence.module';
+import { MarketIntelligenceModule } from './modules/market-intelligence/market-intelligence.module';
+import { TerritoryIntelligenceModule } from './modules/territory-intelligence/territory-intelligence.module';
+import { GocashEcosystemModule } from './modules/gocash-ecosystem/gocash-ecosystem.module';
+import { FounderAiModule } from './modules/founder-ai/founder-ai.module';
+import { TradeservModule } from './modules/tradeserv/tradeserv.module';
+import { MarketplaceCatalogBridgeModule } from './modules/marketplace-catalog-bridge/marketplace-catalog-bridge.module';
+import { TradeTalkModule } from './modules/tradetalk/tradetalk.module';
+import { HomepageModule } from './modules/homepage/homepage.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { AdminSettingsModule } from './modules/admin-settings/admin-settings.module';
+import { MetricsModule } from './common/services/metrics.module';
+import { EnterpriseCatalogModule } from './modules/enterprise-catalog/enterprise-catalog.module';
+import { AiOrchestratorModule } from './modules/ai-orchestrator/ai-orchestrator.module';
+import { AiRuntimeModule } from './modules/ai-runtime/ai-runtime.module';
+import { SellerAgentModule } from './modules/seller-agent/seller-agent.module';
+import { BuyerAgentModule } from './modules/buyer-agent/buyer-agent.module';
+import { AgentFrameworkModule } from './modules/agent-framework/agent-framework.module';
+import { AdminAgentModule } from './modules/admin-agent/admin-agent.module';
+import { AiFederationModule } from './modules/ai-federation/ai-federation.module';
+import { FounderExecutiveAgentModule } from './modules/executive-agent/executive-agent.module';
+import { ProfessionalAgentModule } from './modules/professional-agent/professional-agent.module';
+import { CommunityAgentModule } from './modules/community-agent/community-agent.module';
+import { ProfileCompletionModule } from './modules/profile-completion/profile-completion.module';
+import { TrackingModule } from './modules/tracking/tracking.module';
+import { FeatureFlagModule } from './modules/feature-flags/feature-flag.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { EnterpriseIntelligenceModule } from './modules/enterprise-intelligence/enterprise-intelligence.module';
+import { GrowthIntelligenceModule } from './modules/growth-intelligence/growth-intelligence.module';
+import { ExecutiveIntelligenceModule } from './modules/executive-intelligence/executive-intelligence.module';
+import { CommissionModule } from './modules/commission/commission.module';
+import { RefundModule } from './modules/refund/refund.module';
+import { PayoutModule } from './modules/payout/payout.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -107,7 +147,14 @@ import { AppService } from './app.service';
         razorpayConfig,
       ],
     }),
-    ThrottlerModule.forRoot([{ limit: 100, ttl: 60000 }]),
+    ThrottlerModule.forRootAsync({
+      imports: [RedisModule],
+      inject: [RedisService],
+      useFactory: (redisService: RedisService): ThrottlerModuleOptions => ({
+        throttlers: [{ limit: 100, ttl: 60000 }],
+        storage: new RedisThrottlerStorage(redisService) as unknown as ThrottlerStorage,
+      }),
+    }),
     BullModule.forRootAsync({
       useFactory: (configService) => ({
         connection: { url: configService.get('redis.url') },
@@ -135,6 +182,7 @@ import { AppService } from './app.service';
     CompanyVerificationModule,
     TradTrustModule,
     CategoriesModule,
+    CatalogAdapterModule,
     IndustriesModule,
     ProductsModule,
     ProductOnboardingModule,
@@ -142,7 +190,6 @@ import { AppService } from './app.service';
     VendorCodesModule,
     CertificationsModule,
     GalleryModule,
-    GoCashModule,
     SellerAnalyticsModule,
     RfqModule,
     TradmatchModule,
@@ -158,7 +205,9 @@ import { AppService } from './app.service';
     ManualPaymentModule,
     DisputeModule,
     BetaProgramModule,
+    SupportModule,
     LaunchModule,
+    IncidentResponseModule,
     CatalogImportModule,
     ProductClaimsModule,
     CategoryTemplatesModule,
@@ -191,6 +240,41 @@ import { AppService } from './app.service';
     AiModule,
     AiGatewayModule,
     AdminIntelligenceModule,
+    LocationIntelligenceModule,
+    MarketplaceIntelligenceModule,
+    FreightIntelligenceModule,
+    MarketIntelligenceModule,
+    TerritoryIntelligenceModule,
+    GocashEcosystemModule,
+    FounderAiModule,
+    TradeservModule,
+    MarketplaceCatalogBridgeModule,
+    TradeTalkModule,
+    EnterpriseCatalogModule,
+    AiOrchestratorModule,
+    AiRuntimeModule,
+    AgentFrameworkModule,
+    SellerAgentModule,
+    BuyerAgentModule,
+    AdminAgentModule,
+    AiFederationModule,
+    FounderExecutiveAgentModule,
+    ProfessionalAgentModule,
+    CommunityAgentModule,
+    EnterpriseIntelligenceModule,
+    ExecutiveIntelligenceModule,
+    HomepageModule,
+    TrackingModule,
+    GrowthIntelligenceModule,
+    CommissionModule,
+    RefundModule,
+    PayoutModule,
+    FeatureFlagModule,
+    OnboardingModule,
+    ProfileCompletionModule,
+    AuditLogModule,
+    AdminSettingsModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -198,6 +282,17 @@ import { AppService } from './app.service';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: 'RAZORPAY_CONFIG_VALIDATOR',
+      useFactory: (configService: ConfigService) => {
+        const keyId = configService.get<string>('razorpay.keyId');
+        const keySecret = configService.get<string>('razorpay.keySecret');
+        if (!keyId || !keySecret || keyId.includes('your-') || keySecret.includes('your-')) {
+          logger.warn({ razorpayKeyConfigured: false }, 'Razorpay keys are missing or contain placeholder values. Payment and payout features will fail in production.');
+        }
+      },
+      inject: [ConfigService],
     },
   ],
 })

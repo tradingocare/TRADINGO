@@ -129,7 +129,6 @@ export class CreditService {
     if (approval.requestedLimit && approval.buyerCredit) {
       const newLimit = new Prisma.Decimal(approval.requestedLimit);
       await this.prisma.buyerCredit.update({ where: { id: approval.buyerCreditId }, data: { creditLimit: newLimit, lastReviewedAt: new Date(), reviewedBy: userId } });
-      const diff = newLimit.minus(approval.currentLimit || 0);
       await this.prisma.creditHistory.create({
         data: { buyerCreditId: approval.buyerCreditId, changeType: 'LIMIT_CHANGED', amount: newLimit, reason: `Approved: ${approval.reason}`, changedBy: userId },
       });
@@ -137,7 +136,7 @@ export class CreditService {
     return { approved: true };
   }
 
-  async rejectApproval(id: string, dto: RejectCreditApprovalDto, userId: string) {
+  async rejectApproval(id: string, dto: RejectCreditApprovalDto, _userId: string) {
     const approval = await this.prisma.creditApproval.findUnique({ where: { id } });
     if (!approval) throw new NotFoundException('Approval request not found');
     if (approval.status !== CreditApprovalStatus.PENDING) throw new BadRequestException('Approval already processed');

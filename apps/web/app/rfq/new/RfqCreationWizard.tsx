@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Package, Truck, ClipboardCheck, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Package, Truck, ClipboardCheck } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useRouter } from 'next/navigation'
 import { useCreateRfq } from '@/hooks'
 import type { Rfq } from '@/lib/api/types'
@@ -10,13 +13,13 @@ import type { Rfq } from '@/lib/api/types'
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 
 const inputStyle = (hasError: boolean = false) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
 })
 
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
 
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnSecondary = { background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 import { CATALOG_CATEGORIES } from '@/data/catalog-data'
 
@@ -193,9 +196,9 @@ export default function RfqCreationWizard() {
                     background: done
                       ? 'linear-gradient(135deg, #22c55e, #16a34a)'
                       : current
-                      ? 'linear-gradient(135deg, #FF4D00, #FF7A3D)'
-                      : 'rgba(255,255,255,0.06)',
-                    border: done || current ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                      ? 'linear-gradient(135deg, #f59e0b, #fbbf24)'
+                      : 'var(--bg-elevated)',
+                    border: done || current ? 'none' : '1px solid var(--border-color)',
                     color: done || current ? '#fff' : 'rgba(255,255,255,0.3)',
                   }}
                 >
@@ -208,7 +211,7 @@ export default function RfqCreationWizard() {
                   <div className="w-12 sm:w-20 h-[2px] mx-2 sm:mx-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
                     <motion.div
                       className="h-full rounded-full"
-                      style={{ background: 'linear-gradient(90deg, #FF4D00, #FF7A3D)' }}
+                      style={{ background: 'linear-gradient(90deg, #f59e0b, #fbbf24)' }}
                       initial={{ width: '0%' }}
                       animate={{ width: `${Math.max(0, ((step - 1) / 2) * 100 - (i * 50))}%` }}
                       transition={{ duration: 0.4 }}
@@ -236,8 +239,8 @@ export default function RfqCreationWizard() {
             <div
               className="rounded-2xl p-6 sm:p-8"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.09)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-color)',
                 backdropFilter: 'blur(24px)',
               }}
             >
@@ -260,17 +263,12 @@ export default function RfqCreationWizard() {
 
                 <div>
                   <label className="block text-white/60 text-xs mb-1.5">Category *</label>
-                  <select
-                    className={INPUT_CLASS}
-                    style={{ ...inputStyle(!!errors.category), appearance: 'none' }}
-                    value={form.category}
-                    onChange={e => update('category', e.target.value)}
-                  >
-                    <option value="" style={{ background: '#1a0118' }}>Select category</option>
+                  <Select value={form.category} onChange={e => update('category', e.target.value)}>
+                    <option value="">Select category</option>
                     {CATEGORIES.map(c => (
-                      <option key={c} value={c} style={{ background: '#1a0118' }}>{c}</option>
+                      <option key={c} value={c}>{c}</option>
                     ))}
-                  </select>
+                  </Select>
                   {errors.category && <p className="text-red-400 text-xs mt-1">{errors.category}</p>}
                 </div>
 
@@ -337,8 +335,8 @@ export default function RfqCreationWizard() {
             <div
               className="rounded-2xl p-6 sm:p-8"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.09)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-color)',
                 backdropFilter: 'blur(24px)',
               }}
             >
@@ -362,17 +360,12 @@ export default function RfqCreationWizard() {
                   </div>
                   <div>
                     <label className="block text-white/60 text-xs mb-1.5">Unit *</label>
-                    <select
-                      className={INPUT_CLASS}
-                      style={{ ...inputStyle(!!errors.unit), appearance: 'none' }}
-                      value={form.unit}
-                      onChange={e => update('unit', e.target.value)}
-                    >
-                      <option value="" style={{ background: '#1a0118' }}>Select unit</option>
+                    <Select value={form.unit} onChange={e => update('unit', e.target.value)}>
+                      <option value="">Select unit</option>
                       {UNITS.map(u => (
-                        <option key={u} value={u} style={{ background: '#1a0118' }}>{u}</option>
+                        <option key={u} value={u}>{u}</option>
                       ))}
-                    </select>
+                    </Select>
                     {errors.unit && <p className="text-red-400 text-xs mt-1">{errors.unit}</p>}
                   </div>
                 </div>
@@ -419,33 +412,23 @@ export default function RfqCreationWizard() {
 
                 <div>
                   <label className="block text-white/60 text-xs mb-1.5">Delivery State *</label>
-                  <select
-                    className={INPUT_CLASS}
-                    style={{ ...inputStyle(!!errors.deliveryState), appearance: 'none' }}
-                    value={form.deliveryState}
-                    onChange={e => update('deliveryState', e.target.value)}
-                  >
-                    <option value="" style={{ background: '#1a0118' }}>Select state</option>
+                  <Select value={form.deliveryState} onChange={e => update('deliveryState', e.target.value)}>
+                    <option value="">Select state</option>
                     {STATES_UTS.map(s => (
-                      <option key={s} value={s} style={{ background: '#1a0118' }}>{s}</option>
+                      <option key={s} value={s}>{s}</option>
                     ))}
-                  </select>
+                  </Select>
                   {errors.deliveryState && <p className="text-red-400 text-xs mt-1">{errors.deliveryState}</p>}
                 </div>
 
                 <div>
                   <label className="block text-white/60 text-xs mb-1.5">Timeline *</label>
-                  <select
-                    className={INPUT_CLASS}
-                    style={{ ...inputStyle(!!errors.deliveryTimeline), appearance: 'none' }}
-                    value={form.deliveryTimeline}
-                    onChange={e => update('deliveryTimeline', e.target.value)}
-                  >
-                    <option value="" style={{ background: '#1a0118' }}>Select timeline</option>
+                  <Select value={form.deliveryTimeline} onChange={e => update('deliveryTimeline', e.target.value)}>
+                    <option value="">Select timeline</option>
                     {TIMELINES.map(t => (
-                      <option key={t} value={t} style={{ background: '#1a0118' }}>{t}</option>
+                      <option key={t} value={t}>{t}</option>
                     ))}
-                  </select>
+                  </Select>
                   {errors.deliveryTimeline && <p className="text-red-400 text-xs mt-1">{errors.deliveryTimeline}</p>}
                 </div>
 
@@ -459,14 +442,14 @@ export default function RfqCreationWizard() {
                         className="p-3 rounded-xl text-left transition-all duration-200"
                         style={{
                           background: form.urgency === opt.value
-                            ? 'rgba(255,77,0,0.12)'
-                            : 'rgba(255,255,255,0.04)',
+                            ? 'rgba(245, 158, 11, 0.12)'
+                            : 'var(--bg-elevated)',
                           border: form.urgency === opt.value
-                            ? '1px solid rgba(255,77,0,0.4)'
-                            : '1px solid rgba(255,255,255,0.08)',
+                            ? '1px solid rgba(245, 158, 11, 0.4)'
+                            : '1px solid var(--border-color)',
                         }}
                       >
-                        <span className="block text-sm font-medium" style={{ color: form.urgency === opt.value ? '#FF7A3D' : 'rgba(255,255,255,0.8)' }}>
+                        <span className="block text-sm font-medium" style={{ color: form.urgency === opt.value ? '#fbbf24' : 'rgba(255,255,255,0.8)' }}>
                           {opt.label}
                         </span>
                         <span className="block text-xs text-white/30 mt-0.5">{opt.desc}</span>
@@ -509,8 +492,8 @@ export default function RfqCreationWizard() {
             <div
               className="rounded-2xl p-6 sm:p-8"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.09)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-color)',
                 backdropFilter: 'blur(24px)',
               }}
             >
@@ -541,7 +524,7 @@ export default function RfqCreationWizard() {
                   <div
                     key={item.label}
                     className="flex justify-between items-start py-2.5"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                    style={{ borderBottom: '1px solid var(--border-color)' }}
                   >
                     <span className="text-white/40 text-sm">{item.label}</span>
                     <span className="text-white text-sm text-right max-w-[60%]">{item.value}</span>
@@ -556,7 +539,7 @@ export default function RfqCreationWizard() {
                   type="checkbox"
                   checked={form.agreedToTerms}
                   onChange={e => update('agreedToTerms', e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded accent-[#FF4D00]"
+                  className="mt-0.5 w-4 h-4 rounded accent-[#f59e0b]"
                 />
                 <span className="text-white/50 text-sm group-hover:text-white/70 transition-colors">
                   I confirm this RFQ is genuine and I intend to proceed with procurement.
@@ -584,7 +567,7 @@ export default function RfqCreationWizard() {
               >
                 {createRfq.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Posting your RFQ...
+                    <LoadingSpinner size="xs" /> Posting your RFQ...
                   </>
                 ) : (
                   <>Post RFQ →</>

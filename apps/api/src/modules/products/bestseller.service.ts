@@ -79,7 +79,12 @@ export class BestsellerService {
   private async calculateProductSnapshots(weekStart: Date, weekEnd: Date, prevWeekStart: Date, prevWeekEnd: Date): Promise<void> {
     const products = await this.prisma.product.findMany({
       where: { status: 'ACTIVE', deletedAt: null },
-      include: {
+      select: {
+        id: true,
+        companyId: true,
+        categoryId: true,
+        viewCount: true,
+        trustScoreSnapshot: true,
         company: { select: { trustScore: true } },
         category: { select: { id: true } },
       },
@@ -126,7 +131,7 @@ export class BestsellerService {
       return {
         productId: product.id,
         companyId: product.companyId,
-        categoryId: product.category?.id || null,
+        categoryId: product.categoryId || null,
         score,
         salesCount,
         revenue,
@@ -172,7 +177,8 @@ export class BestsellerService {
 
   private async calculateCategorySnapshots(weekStart: Date, weekEnd: Date, prevWeekStart: Date, prevWeekEnd: Date): Promise<void> {
     const categories = await this.prisma.category.findMany({
-      include: {
+      select: {
+        id: true,
         products: {
           where: { status: 'ACTIVE', deletedAt: null },
           select: { id: true },

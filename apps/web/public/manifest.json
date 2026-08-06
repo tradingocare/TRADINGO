@@ -4,13 +4,13 @@
   "description": "India's first TEM™ E-Marketplace connecting buyers and sellers through trust, technology, and transparent trading.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#00001C",
+  "theme_color": "#080b12",
   "orientation": "portrait-primary",
   "categories": ["business", "shopping", "ecommerce"],
   "lang": "en-IN",
   "icons": [
-    { "src": "/logo/trdn.png", "sizes": "792x547", "type": "image/png" },
-    { "src": "/logo/trdn.png", "sizes": "792x547", "type": "image/png", "purpose": "maskable" }
+    { "src": "/logo/trdn6.png", "sizes": "792x547", "type": "image/png" },
+    { "src": "/logo/trdn6.png", "sizes": "792x547", "type": "image/png", "purpose": "maskable" }
   ]
 }

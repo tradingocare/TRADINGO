@@ -22,8 +22,6 @@ export default function Section4AIImages({ vendor, onSave, onNext, onBack }: Sec
   const enhanceImages = useCallback(async () => {
     if (uploads.length === 0) return
     setEnhancing(true)
-    // Stub: simulate AI processing delay
-    await new Promise(r => setTimeout(r, 2000))
     setEnhanced(uploads)
     setEnhancing(false)
   }, [uploads])
@@ -65,11 +63,11 @@ export default function Section4AIImages({ vendor, onSave, onNext, onBack }: Sec
             <div className="flex flex-wrap gap-2 mb-4">
               {ENHANCEMENTS.map(e => (
                 <button key={e.value} onClick={() => setEnhancement(e.value)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold transition-all bg-surface"
                   style={{
-                    background: enhancement === e.value ? 'rgba(255,77,0,0.15)' : 'rgba(255,255,255,0.05)',
-                    border: enhancement === e.value ? '1px solid rgba(255,77,0,0.35)' : '1px solid rgba(255,255,255,0.1)',
-                    color: enhancement === e.value ? '#FF4D00' : 'rgba(255,255,255,0.6)',
+                    background: enhancement === e.value ? 'rgba(245, 158, 11, 0.15)' : '',
+                    border: enhancement === e.value ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid var(--border-color)',
+                    color: enhancement === e.value ? '#f59e0b' : 'rgba(255,255,255,0.6)',
                   }}>{e.label}</button>
               ))}
             </div>
@@ -85,9 +83,9 @@ export default function Section4AIImages({ vendor, onSave, onNext, onBack }: Sec
             )}
 
             {enhancing && (
-              <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="mt-4 p-4 rounded-xl bg-surface border border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full border-2 border-t-[#FF4D00] border-white/10 animate-spin" />
+                  <div className="w-6 h-6 rounded-full border-2 border-t-[#f59e0b] border-border animate-spin" />
                   <p className="text-white/60 text-sm">AI is processing your images...</p>
                 </div>
               </div>
@@ -111,8 +109,8 @@ export default function Section4AIImages({ vendor, onSave, onNext, onBack }: Sec
           </div>
         )}
 
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-          <p className="text-[#FF4D00] text-xs font-semibold mb-1">💡 Tips for best AI results:</p>
+        <div className="p-4 rounded-xl bg-surface border border-border">
+          <p className="text-[#f59e0b] text-xs font-semibold mb-1">💡 Tips for best AI results:</p>
           <ul className="text-white/40 text-xs space-y-1">
             <li>✓ Shoot in natural daylight</li>
             <li>✓ Single product per photo</li>
@@ -127,7 +125,7 @@ export default function Section4AIImages({ vendor, onSave, onNext, onBack }: Sec
         <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
           onClick={save} disabled={saving}
           className="px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-40"
-          style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', color:'#fff' }}>
+          style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff' }}>
           {saving ? 'Saving...' : enhanced.length > 0 ? 'Use These Images & Continue' : 'Skip & Continue'}
         </motion.button>
       </div>

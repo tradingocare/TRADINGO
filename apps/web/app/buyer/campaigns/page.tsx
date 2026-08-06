@@ -4,6 +4,8 @@ import { DashboardPageHeader, StatCard, StatCardSkeleton } from '@/components/da
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Table, THead, TR, TH, TBody, TD } from '@/components/ui/table';
 import { useActiveCampaigns, useMyClaims, useClaimReward, useCheckEligibility } from '@/hooks/use-campaign';
 import { Megaphone, Gift, Award, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -87,32 +89,27 @@ export default function BuyerCampaignsPage() {
           {claimsLoading ? (
             <p className="text-sm text-text-secondary">Loading claims...</p>
           ) : !claims?.length ? (
-            <p className="text-sm text-text-secondary">No claims yet.</p>
+            <EmptyState variant="empty" title="No claims yet" />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-2 font-medium">Campaign</th>
-                    <th className="pb-2 font-medium">Amount</th>
-                    <th className="pb-2 font-medium">Status</th>
-                    <th className="pb-2 font-medium">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <THead>
+                  <TR><TH>Campaign</TH><TH>Amount</TH><TH>Status</TH><TH>Date</TH></TR>
+                </THead>
+                <TBody>
                   {claims.map((claim) => (
-                    <tr key={claim.id} className="border-b last:border-0">
-                      <td className="py-2">{claim.campaign?.name ?? claim.campaignId}</td>
-                      <td className="py-2">{formatINR(Number(claim.amount))}</td>
-                      <td className="py-2">
+                    <TR key={claim.id}>
+                      <TD>{claim.campaign?.name ?? claim.campaignId}</TD>
+                      <TD>{formatINR(Number(claim.amount))}</TD>
+                      <TD>
                         {claim.status === 'PAID' ? <CheckCircle className="inline h-4 w-4 text-green-500" /> : claim.status === 'FAILED' ? <XCircle className="inline h-4 w-4 text-red-500" /> : <Clock className="inline h-4 w-4 text-yellow-500" />}
                         <span className="ml-1">{claim.status}</span>
-                      </td>
-                      <td className="py-2 text-text-secondary">{new Date(claim.claimedAt).toLocaleDateString()}</td>
-                    </tr>
+                      </TD>
+                      <TD className="text-text-secondary">{new Date(claim.claimedAt).toLocaleDateString()}</TD>
+                    </TR>
                   ))}
-                </tbody>
-              </table>
+                </TBody>
+              </Table>
             </div>
           )}
         </CardContent>

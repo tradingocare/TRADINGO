@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tradingo
+  labels:
+    name: tradingo
+    environment: production
+    app.kubernetes.io/name: tradingo
+    app.kubernetes.io/part-of: tradingo-platform

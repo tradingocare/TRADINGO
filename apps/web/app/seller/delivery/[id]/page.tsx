@@ -25,7 +25,7 @@ export default function SellerDeliveryDetailPage() {
   const { data: timeline } = useDeliveryTimeline(id);
   const updateStatus = useUpdateDeliveryStatus();
 
-  if (error) return (<div className="space-y-6"><DashboardPageHeader title="Delivery Detail" /><div className="flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] p-12"><AlertCircle className="h-12 w-12 text-red-500" /><p className="mt-4 text-lg font-medium text-white">Failed to load delivery</p></div></div>);
+  if (error) return (<div className="space-y-6"><DashboardPageHeader title="Delivery Detail" /><div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12"><AlertCircle className="h-12 w-12 text-red-500" /><p className="mt-4 text-lg font-medium text-text-primary">Failed to load delivery</p></div></div>);
   if (isLoading || !delivery) return <TableSkeleton rows={8} />;
 
   const canMarkDelivered = delivery.status === 'OUT_FOR_DELIVERY';
@@ -56,23 +56,23 @@ export default function SellerDeliveryDetailPage() {
           )}
 
           {/* Timeline */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Clock className="h-4 w-4" /> Timeline</h3>
-            {(!timeline || timeline.length === 0) ? <p className="text-sm text-white/50">No events.</p> : (
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Clock className="h-4 w-4" /> Timeline</h3>
+            {(!timeline || timeline.length === 0) ? <p className="text-sm text-text-tertiary">No events.</p> : (
               <div className="space-y-4">
                 {[...timeline].reverse().map((event: any) => (
                   <div key={event.id} className="flex gap-4">
                     <div className="flex flex-col items-center">
-                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-white/20'}`} />
-                      <div className="mt-1 h-full w-px bg-white/[0.06]" />
+                      <div className={`h-3 w-3 rounded-full ${statusColor[event.toStatus] || 'bg-text-tertiary'}`} />
+                      <div className="mt-1 h-full w-px bg-surface-secondary" />
                     </div>
                     <div className="pb-4">
                       <div className="flex items-center gap-2">
                         <StatusBadge status={event.toStatus} />
-                        {event.fromStatus && <span className="text-xs text-white/40">from <StatusBadge status={event.fromStatus} /></span>}
+                        {event.fromStatus && <span className="text-xs text-text-tertiary">from <StatusBadge status={event.fromStatus} /></span>}
                       </div>
-                      <p className="mt-1 text-xs text-white/50">{new Date(event.createdAt).toLocaleString('en-IN')}{event.changedByRole && ` — by ${event.changedByRole}`}</p>
-                      {event.note && <p className="mt-1 text-xs text-white/60">{event.note}</p>}
+                      <p className="mt-1 text-xs text-text-tertiary">{new Date(event.createdAt).toLocaleString('en-IN')}{event.changedByRole && ` — by ${event.changedByRole}`}</p>
+                      {event.note && <p className="mt-1 text-xs text-text-secondary">{event.note}</p>}
                     </div>
                   </div>
                 ))}
@@ -82,20 +82,20 @@ export default function SellerDeliveryDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><Package className="h-4 w-4" /> Delivery Info</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><Package className="h-4 w-4" /> Delivery Info</h3>
             <div className="space-y-3">
-              <div><p className="text-xs text-white/50">Status</p><StatusBadge status={delivery.status} /></div>
-              <div><p className="text-xs text-white/50">Delivery Number</p><p className="font-mono text-sm text-white">{delivery.deliveryNumber}</p></div>
-              <div><p className="text-xs text-white/50">Order</p><p className="text-sm text-white">{delivery.order?.orderNumber ?? '—'}</p></div>
-              <div><p className="text-xs text-white/50">Buyer</p><p className="text-sm text-white">{delivery.buyerCompany?.name ?? '—'}</p></div>
-              {delivery.deliveredAt && <div><p className="text-xs text-white/50">Delivered</p><p className="text-sm text-white">{new Date(delivery.deliveredAt).toLocaleString('en-IN')}</p></div>}
-              {delivery.confirmedAt && <div><p className="text-xs text-white/50">Confirmed</p><p className="text-sm text-white">{new Date(delivery.confirmedAt).toLocaleString('en-IN')}</p></div>}
+              <div><p className="text-xs text-text-tertiary">Status</p><StatusBadge status={delivery.status} /></div>
+              <div><p className="text-xs text-text-tertiary">Delivery Number</p><p className="font-mono text-sm text-text-primary">{delivery.deliveryNumber}</p></div>
+              <div><p className="text-xs text-text-tertiary">Order</p><p className="text-sm text-text-primary">{delivery.order?.orderNumber ?? '—'}</p></div>
+              <div><p className="text-xs text-text-tertiary">Buyer</p><p className="text-sm text-text-primary">{delivery.buyerCompany?.name ?? '—'}</p></div>
+              {delivery.deliveredAt && <div><p className="text-xs text-text-tertiary">Delivered</p><p className="text-sm text-text-primary">{new Date(delivery.deliveredAt).toLocaleString('en-IN')}</p></div>}
+              {delivery.confirmedAt && <div><p className="text-xs text-text-tertiary">Confirmed</p><p className="text-sm text-text-primary">{new Date(delivery.confirmedAt).toLocaleString('en-IN')}</p></div>}
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white/60">Actions</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-text-secondary">Actions</h3>
             <div className="space-y-3">
               {canMarkDelivered && (
                 <Button variant="accent" className="w-full" onClick={() => updateStatus.mutate({ deliveryId: id, status: 'DELIVERED' })} disabled={updateStatus.isPending}>
@@ -115,14 +115,14 @@ export default function SellerDeliveryDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/60"><FileText className="h-4 w-4" /> Documents</h3>
+          <div className="rounded-xl border border-border bg-surface p-6 backdrop-blur-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-text-secondary"><FileText className="h-4 w-4" /> Documents</h3>
             {delivery.documents?.length ? delivery.documents.map((doc: any) => (
               <a key={doc.id} href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm text-white/70 hover:text-orange-400 mb-2">
+                className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-secondary hover:text-orange-400 mb-2">
                 <FileText className="h-4 w-4" /> {doc.fileName}
               </a>
-            )) : <p className="text-sm text-white/50">No documents</p>}
+            )) : <p className="text-sm text-text-tertiary">No documents</p>}
           </div>
         </div>
       </div>

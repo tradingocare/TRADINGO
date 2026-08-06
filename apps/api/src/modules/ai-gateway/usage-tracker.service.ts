@@ -87,7 +87,7 @@ export class UsageTrackerService {
       date: startDate.toISOString().split('T')[0],
       totalRequests: result._count.id,
       totalTokens: result._sum.totalTokens || 0,
-      totalCost: Math.round((result._sum.estimatedCost || 0) * 100) / 100,
+      totalCost: Math.round(Number(result._sum.estimatedCost || 0) * 100) / 100,
       avgLatencyMs: Math.round(result._avg.latencyMs || 0),
       avgTokens: Math.round(result._avg.totalTokens || 0),
     }
@@ -105,7 +105,7 @@ export class UsageTrackerService {
       taskType: r.taskType,
       totalRequests: r._count.id,
       totalTokens: r._sum.totalTokens || 0,
-      totalCost: Math.round((r._sum.estimatedCost || 0) * 100) / 100,
+      totalCost: Math.round(Number(r._sum.estimatedCost || 0) * 100) / 100,
     }))
   }
 
@@ -121,7 +121,7 @@ export class UsageTrackerService {
       companyId: r.companyId,
       totalRequests: r._count.id,
       totalTokens: r._sum.totalTokens || 0,
-      totalCost: Math.round((r._sum.estimatedCost || 0) * 100) / 100,
+      totalCost: Math.round(Number(r._sum.estimatedCost || 0) * 100) / 100,
     }))
   }
 
@@ -140,16 +140,16 @@ export class UsageTrackerService {
     return {
       totalRequests: totalUsage._count.id,
       totalTokens: totalUsage._sum.totalTokens || 0,
-      totalCost: Math.round((totalUsage._sum.estimatedCost || 0) * 100) / 100,
+      totalCost: Math.round(Number(totalUsage._sum.estimatedCost || 0) * 100) / 100,
       todayRequests: todayUsage._count.id,
-      todayCost: Math.round((todayUsage._sum.estimatedCost || 0) * 100) / 100,
+      todayCost: Math.round(Number(todayUsage._sum.estimatedCost || 0) * 100) / 100,
       monthRequests: monthUsage._count.id,
-      monthCost: Math.round((monthUsage._sum.estimatedCost || 0) * 100) / 100,
+      monthCost: Math.round(Number(monthUsage._sum.estimatedCost || 0) * 100) / 100,
       providerBreakdown: providerBreakdown.map(p => ({
         provider: p.providerName || 'unknown',
         requests: p._count.id,
         tokens: p._sum.totalTokens || 0,
-        cost: Math.round((p._sum.estimatedCost || 0) * 100) / 100,
+        cost: Math.round(Number(p._sum.estimatedCost || 0) * 100) / 100,
       })),
     }
   }

@@ -65,7 +65,7 @@ async function QuoteContent({ id }: { id: string }) {
 
   return (
     <>
-      <section className="border-b border-border bg-surface-secondary/50 pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
+      <section className="border-b border-border pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
         <div className="container-main">
           <nav className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
             <span className="text-text-primary dark:text-dark-text-primary">Quote #{quote.id.slice(0, 8)}</span>

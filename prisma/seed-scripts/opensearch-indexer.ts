@@ -190,6 +190,62 @@ export async function indexCatalogToOpenSearch(
     totalErrors += 1;
   }
 
+  try {
+    const industries = await prisma.industry.findMany();
+    const industryDocs = industries.map((i) => ({
+      id: i.id,
+      name: i.name,
+      slug: i.slug,
+      description: i.description,
+      isActive: true,
+      createdAt: i.createdAt,
+      updatedAt: i.updatedAt,
+    }));
+    await indexBatch(industryDocs, 'INDUSTRY');
+    console.log(`Indexed ${industryDocs.length} Industry records`);
+  } catch (err) {
+    console.error('Error indexing Industry records:', err);
+    totalErrors += 1;
+  }
+
+  try {
+    const categories = await prisma.catalogCategory.findMany({
+      where: { isActive: true },
+    });
+    const categoryDocs = categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      description: c.description,
+      isActive: c.isActive,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+    await indexBatch(categoryDocs, 'CATEGORY');
+    console.log(`Indexed ${categoryDocs.length} CatalogCategory records`);
+  } catch (err) {
+    console.error('Error indexing CatalogCategory records:', err);
+    totalErrors += 1;
+  }
+
+  try {
+    const subcategories = await prisma.catalogSubcategory.findMany();
+    const subcategoryDocs = subcategories.map((s) => ({
+      id: s.id,
+      categoryId: s.categoryId,
+      name: s.name,
+      slug: s.slug,
+      isActive: true,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+    }));
+    await indexBatch(subcategoryDocs, 'SUBCATEGORY');
+    console.log(`Indexed ${subcategoryDocs.length} CatalogSubcategory records`);
+  } catch (err) {
+    console.error('Error indexing CatalogSubcategory records:', err);
+    totalErrors += 1;
+  }
+
   return { indexed: totalIndexed, errors: totalErrors };
 }
 
@@ -208,4 +264,16 @@ export async function reindexAll(
   } finally {
     await prisma.$disconnect();
   }
+}
+
+if (require.main === module) {
+  reindexAll()
+    .then((result) => {
+      console.log(`Reindex complete. indexed=${result.indexed}, errors=${result.errors}`);
+      process.exit(result.errors > 0 ? 1 : 0);
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
 }

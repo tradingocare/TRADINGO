@@ -5,16 +5,18 @@ import Link                             from 'next/link'
 import Image                            from 'next/image'
 import { motion, AnimatePresence }      from 'framer-motion'
 import {
-  Mail, Lock, Eye, EyeOff, Loader2,
+  Mail, Lock, Eye, EyeOff,
   ShoppingCart, Building2, Shield,
   ArrowRight, CheckCircle2, Sparkles,
   AlertCircle, ChevronRight, RefreshCw,
   X, Info, Fingerprint,
 } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 import apiClient from '@/lib/api/client'
 import { setAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
-import toast from 'react-hot-toast'
+import { toast } from '@/components/ui/use-toast'
 
 const ROLES = [
   {
@@ -104,6 +106,7 @@ export default function LoginClient() {
   const otpRefs = useRef<(HTMLInputElement|null)[]>([])
 
   const [socialLoading, setSocialLoading] = useState<'google'|'linkedin'|null>(null)
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const redirectTo = searchParams.get('next') || searchParams.get('redirect') || role.dashboard
 
@@ -140,11 +143,11 @@ export default function LoginClient() {
         password,
         role: role.key,
         rememberMe,
+        turnstileToken,
       })
       const data = res.data || res
       setAuth(data.user, data.accessToken)
       setAccessToken(data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('userRole', data.user.role)
       document.cookie = `userRole=${data.user.role}; path=/; max-age=86400; SameSite=Lax`
       toast.success(`Welcome back, ${data.user.name?.split(' ')[0]}!`)
@@ -174,6 +177,7 @@ export default function LoginClient() {
     try {
       await apiClient.post('/auth/send-login-otp', {
         identifier: identifier.trim(),
+        turnstileToken,
       })
       setOtpSent(true)
       setCountdown(60)
@@ -215,7 +219,6 @@ export default function LoginClient() {
       const data = res.data || res
       setAuth(data.user, data.accessToken)
       setAccessToken(data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('userRole', data.user.role)
       document.cookie = `userRole=${data.user.role}; path=/; max-age=86400; SameSite=Lax`
       toast.success('Welcome back!')
@@ -254,13 +257,13 @@ export default function LoginClient() {
   const RoleIcon = role.icon
 
   return (
-    <div className="min-h-screen flex" style={{ background:'#1D0001' }}>
+    <div className="min-h-screen flex" style={{ background:'var(--bg-base)' }}>
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         {[
           { c:'#9B5DE5', x:'-15%', y:'-20%', s:'55vw' },
           { c:'#3D8BFF', x:'75%',  y:'-10%', s:'45vw' },
-          { c:'#FF4D00', x:'35%',  y:'75%',  s:'50vw' },
+          { c:'#f59e0b', x:'35%',  y:'75%',  s:'50vw' },
           { c:'#2DE0E0', x:'-5%',  y:'65%',  s:'35vw' },
         ].map((b, i) => (
           <div key={i} className="absolute rounded-full"
@@ -279,7 +282,7 @@ export default function LoginClient() {
 
       <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] flex-col
                       relative overflow-hidden flex-shrink-0"
-        style={{ borderRight:'1px solid rgba(255,255,255,0.07)' }}>
+        style={{ borderRight:'1px solid var(--border-color)' }}>
 
         <div className="absolute inset-0"
           style={{
@@ -292,16 +295,8 @@ export default function LoginClient() {
         <div className="relative z-10 flex flex-col h-full p-10 xl:p-12">
 
           <Link href="/" className="flex items-center gap-3 mb-auto w-fit">
-            <Image src="/logo/trdn.png" alt="TRADINGO"
+            <Image src="/logo/trdn6.png" alt="TRADINGO"
               width={44} height={44} className="object-contain" />
-            <div>
-              <p className="text-white font-black text-lg leading-none">
-                TRADINGO
-              </p>
-              <p className="text-white/35 text-[10px] font-medium tracking-wider">
-                Trading Right. Go Bright.
-              </p>
-            </div>
           </Link>
 
           <AnimatePresence mode="wait">
@@ -358,15 +353,14 @@ export default function LoginClient() {
                   { v:'100%',  l:'Secure Payments' },
                 ].map(s => (
                   <div key={s.l}
-                    className="text-center py-3 px-2 rounded-2xl"
+                    className="text-center py-3 px-2 rounded-2xl bg-surface"
                     style={{
-                      background:'rgba(255,255,255,0.04)',
-                      border:'1px solid rgba(255,255,255,0.07)',
+                      border:'1px solid var(--border-color)',
                     }}>
-                    <p className="font-black text-white text-lg leading-none">
+                    <p className="font-black text-text-primary text-lg leading-none">
                       {s.v}
                     </p>
-                    <p className="text-white/30 text-[9px] mt-0.5">{s.l}</p>
+                    <p className="text-text-tertiary text-[9px] mt-0.5">{s.l}</p>
                   </div>
                 ))}
               </div>
@@ -374,7 +368,7 @@ export default function LoginClient() {
           </AnimatePresence>
 
           <div className="mt-auto pt-6"
-            style={{ borderTop:'1px solid rgba(255,255,255,0.07)' }}>
+            style={{ borderTop:'1px solid var(--border-color)' }}>
             <p className="text-white/25 text-[10px] mb-3">
               Trusted by India's MSMEs
             </p>
@@ -383,8 +377,8 @@ export default function LoginClient() {
                 <span key={t}
                   className="text-[9px] px-2.5 py-1 rounded-full font-semibold"
                   style={{
-                    background:'rgba(255,255,255,0.05)',
-                    border:'1px solid rgba(255,255,255,0.1)',
+                    
+                    border:'1px solid var(--border-color)',
                     color:'rgba(255,255,255,0.4)',
                   }}>
                   {t}
@@ -398,17 +392,17 @@ export default function LoginClient() {
       <div className="flex-1 flex flex-col min-h-screen overflow-y-auto">
 
         <div className="lg:hidden flex items-center justify-between px-5 py-4"
-          style={{ borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
+          style={{ borderBottom:'1px solid var(--border-color)' }}>
           <Link href="/">
-            <Image src="/logo/trdn.png" alt="TRADINGO"
+            <Image src="/logo/trdn6.png" alt="TRADINGO"
               width={36} height={36} className="object-contain" />
           </Link>
           <Link href="/register"
             className="text-xs font-bold px-3 py-1.5 rounded-full"
             style={{
-              background:'rgba(255,77,0,0.1)',
-              border:'1px solid rgba(255,77,0,0.25)',
-              color:'#FF4D00',
+              background:'rgba(0, 255, 255, 0.1)',
+              border:'1px solid rgba(0, 255, 255, 0.25)',
+              color:'var(--accent)',
             }}>
             Create Account
           </Link>
@@ -418,10 +412,9 @@ export default function LoginClient() {
                         px-4 py-8 lg:py-12">
           <div className="w-full max-w-md">
 
-            <div className="flex gap-1.5 p-1.5 rounded-2xl mb-7"
+            <div className="flex gap-1.5 p-1.5 rounded-2xl mb-7 bg-surface"
               style={{
-                background:'rgba(255,255,255,0.04)',
-                border:'1px solid rgba(255,255,255,0.08)',
+                border:'1px solid var(--border-color)',
               }}>
               {ROLES.map((r, i) => {
                 const Icon = r.icon
@@ -454,11 +447,10 @@ export default function LoginClient() {
               initial={{ opacity:0, y:16 }}
               animate={{ opacity:1, y:0 }}
               transition={{ duration:0.3 }}
-              className="rounded-3xl overflow-hidden"
+              className="rounded-3xl overflow-hidden bg-surface"
               style={{
-                background:'rgba(255,255,255,0.045)',
                 backdropFilter:'blur(28px)',
-                border:'1px solid rgba(255,255,255,0.09)',
+                border:'1px solid var(--border-color)',
                 boxShadow:'0 24px 72px rgba(0,0,0,0.45)',
               }}>
 
@@ -466,7 +458,7 @@ export default function LoginClient() {
                 style={{
                   background:`linear-gradient(180deg,
                     ${role.color}08, transparent)`,
-                  borderBottom:'1px solid rgba(255,255,255,0.06)',
+                  borderBottom:'1px solid var(--border-color)',
                 }}>
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-10 h-10 rounded-xl flex items-center
@@ -510,8 +502,8 @@ export default function LoginClient() {
                     <div>
                       <p className="font-bold text-xs"
                         style={{
-                          color: activeRole === 1 ? '#F2C94C' : '#9B5DE5',
-                        }}>
+                        color: activeRole === 1 ? 'var(--accent)' : '#9B5DE5',
+                      }}>
                         {role.loginNote.text}
                       </p>
                       <p className="text-white/45 text-[10px] mt-0.5 leading-relaxed">
@@ -550,16 +542,15 @@ export default function LoginClient() {
                       disabled={!!socialLoading}
                       whileHover={{ y:-1 }}
                       whileTap={{ scale:0.98 }}
-                      className="w-full flex items-center gap-3 px-4 py-3
-                                 rounded-xl font-semibold text-sm transition-all
-                                 disabled:opacity-50"
+className="w-full flex items-center gap-3 px-4 py-3
+                                  rounded-xl font-semibold text-sm transition-all
+                                  disabled:opacity-50 bg-bg-elevated"
                       style={{
-                        background:'rgba(255,255,255,0.07)',
-                        border:'1px solid rgba(255,255,255,0.12)',
+                        border:'1px solid var(--border-color)',
                         color:'rgba(255,255,255,0.85)',
                       }}>
                       {socialLoading === 'google'
-                        ? <Loader2 size={18} className="animate-spin text-white/50" />
+                        ? <LoadingSpinner size="sm" />
                         : (
                           <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] flex-shrink-0">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -579,16 +570,15 @@ export default function LoginClient() {
                       disabled={!!socialLoading}
                       whileHover={{ y:-1 }}
                       whileTap={{ scale:0.98 }}
-                      className="w-full flex items-center gap-3 px-4 py-3
-                                 rounded-xl font-semibold text-sm transition-all
-                                 disabled:opacity-50"
+className="w-full flex items-center gap-3 px-4 py-3
+                                  rounded-xl font-semibold text-sm transition-all
+                                  disabled:opacity-50 bg-bg-elevated"
                       style={{
-                        background:'rgba(255,255,255,0.07)',
-                        border:'1px solid rgba(255,255,255,0.12)',
+                        border:'1px solid var(--border-color)',
                         color:'rgba(255,255,255,0.85)',
                       }}>
                       {socialLoading === 'linkedin'
-                        ? <Loader2 size={18} className="animate-spin text-white/50" />
+                        ? <LoadingSpinner size="sm" />
                         : (
                           <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] flex-shrink-0">
                             <path fill="#0077B5" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
@@ -600,14 +590,12 @@ export default function LoginClient() {
                     </motion.button>
 
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 h-px"
-                        style={{ background:'rgba(255,255,255,0.08)' }} />
-                      <span className="text-white/25 text-[10px] font-semibold
+                      <div className="flex-1 h-px bg-surface" />
+                      <span className="text-text-tertiary text-[10px] font-semibold
                                        uppercase tracking-widest">
                         or sign in with
                       </span>
-                      <div className="flex-1 h-px"
-                        style={{ background:'rgba(255,255,255,0.08)' }} />
+                      <div className="flex-1 h-px bg-surface" />
                     </div>
                   </div>
                 )}
@@ -619,8 +607,8 @@ export default function LoginClient() {
                       className="flex-1 py-2 rounded-xl text-xs font-bold
                                  transition-all"
                       style={{
-                        background: !otpMode ? 'rgba(61,139,255,0.15)' : 'rgba(255,255,255,0.04)',
-                        border: !otpMode ? '1px solid rgba(61,139,255,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                        background: !otpMode ? 'rgba(61,139,255,0.15)' : 'transparent',
+                        border: !otpMode ? '1px solid rgba(61,139,255,0.35)' : '1px solid var(--border-color)',
                         color: !otpMode ? '#3D8BFF' : 'rgba(255,255,255,0.35)',
                       }}>
                       Password Login
@@ -628,10 +616,10 @@ export default function LoginClient() {
                     <button type="button"
                       onClick={() => { setOtpMode(true); setError('') }}
                       className="flex-1 py-2 rounded-xl text-xs font-bold
-                                 transition-all"
+                                 transition-all bg-surface"
                       style={{
-                        background: otpMode ? 'rgba(61,139,255,0.15)' : 'rgba(255,255,255,0.04)',
-                        border: otpMode ? '1px solid rgba(61,139,255,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                        background: otpMode ? 'rgba(61,139,255,0.15)' : 'transparent',
+                        border: otpMode ? '1px solid rgba(61,139,255,0.35)' : '1px solid var(--border-color)',
                         color: otpMode ? '#3D8BFF' : 'rgba(255,255,255,0.35)',
                       }}>
                       <span className="flex items-center justify-center gap-1">
@@ -666,12 +654,11 @@ export default function LoginClient() {
                         autoComplete="username"
                         className="w-full pl-10 pr-4 py-3.5 rounded-xl text-white
                                    text-sm placeholder-white/25 focus:outline-none
-                                   transition-all"
+                                   transition-all bg-surface-secondary"
                         style={{
-                          background:'rgba(255,255,255,0.06)',
                           border: error
                             ? '1px solid rgba(239,68,68,0.4)'
-                            : `1px solid rgba(255,255,255,0.1)`,
+                            : '1px solid var(--border-color)',
                         }}
                         maxLength={activeRole === 1 ? 10 : undefined}
                       />
@@ -714,14 +701,13 @@ export default function LoginClient() {
                           }}
                           placeholder="Your password"
                           autoComplete="current-password"
-                          className="w-full pl-10 pr-11 py-3.5 rounded-xl
-                                     text-white text-sm placeholder-white/25
-                                     focus:outline-none transition-all"
+className="w-full pl-10 pr-11 py-3.5 rounded-xl
+                                      text-white text-sm placeholder-white/25
+                                      focus:outline-none transition-all bg-surface-secondary"
                           style={{
-                            background:'rgba(255,255,255,0.06)',
                             border: error
                               ? '1px solid rgba(239,68,68,0.4)'
-                              : '1px solid rgba(255,255,255,0.1)',
+                              : '1px solid var(--border-color)',
                           }}
                         />
                         <button type="button"
@@ -752,7 +738,7 @@ export default function LoginClient() {
                             color:'#3D8BFF',
                           }}>
                           {otpLoading
-                            ? <><Loader2 size={15} className="animate-spin" />
+                            ? <><LoadingSpinner size="xs" />
                                 Sending OTP...</>
                             : <><Fingerprint size={15} />
                                 Send Login OTP</>
@@ -782,10 +768,10 @@ export default function LoginClient() {
                                            font-black text-xl rounded-xl
                                            focus:outline-none transition-all"
                                 style={{
-                                  background:'rgba(255,255,255,0.07)',
+                                  
                                   border: digit
                                     ? '1px solid rgba(61,139,255,0.5)'
-                                    : '1px solid rgba(255,255,255,0.12)',
+                                    : '1px solid var(--border-color)',
                                 }}
                               />
                             ))}
@@ -830,7 +816,7 @@ export default function LoginClient() {
                               boxShadow:'0 6px 20px rgba(61,139,255,0.3)',
                             }}>
                             {loading
-                              ? <><Loader2 size={15} className="animate-spin" />
+                              ? <><LoadingSpinner size="xs" />
                                   Verifying...</>
                               : <><CheckCircle2 size={15} />
                                   Verify & Sign In</>
@@ -850,9 +836,9 @@ export default function LoginClient() {
                                      transition-all"
                           style={{
                             background: rememberMe
-                              ? role.color : 'rgba(255,255,255,0.06)',
+                              ? role.color : 'var(--bg-elevated)',
                             border: rememberMe
-                              ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                              ? 'none' : '1px solid var(--border-color)',
                           }}>
                           {rememberMe && (
                             <span className="text-white text-[8px] font-black">✓</span>
@@ -861,6 +847,10 @@ export default function LoginClient() {
                         <span className="text-white/50 text-xs">Keep me signed in</span>
                       </label>
                     </div>
+                  )}
+
+                  {!otpMode && (
+                    <TurnstileWidget onToken={setTurnstileToken} />
                   )}
 
                   {!otpMode && (
@@ -876,17 +866,17 @@ export default function LoginClient() {
                         background: activeRole === 0
                           ? 'linear-gradient(135deg,#3D8BFF,#2DE0E0)'
                           : activeRole === 1
-                            ? 'linear-gradient(135deg,#FF4D00,#FF7A3D)'
+                            ? 'linear-gradient(135deg,#f59e0b,#fbbf24)'
                             : 'linear-gradient(135deg,#9B5DE5,#7B3FE4)',
                         color:'#fff',
                         boxShadow: activeRole === 0
                           ? '0 8px 24px rgba(61,139,255,0.3)'
                           : activeRole === 1
-                            ? '0 8px 24px rgba(255,77,0,0.3)'
+                            ? '0 8px 24px rgba(245, 158, 11, 0.3)'
                             : '0 8px 24px rgba(155,93,229,0.3)',
                       }}>
                       {loading
-                        ? <><Loader2 size={17} className="animate-spin" />
+                        ? <><LoadingSpinner size="sm" />
                             Signing in...</>
                         : <><Sparkles size={17} />
                             Sign In to {role.label} Account
@@ -897,8 +887,36 @@ export default function LoginClient() {
                 </form>
 
                 {activeRole !== 2 && (
+                  <>
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full" style={{ borderTop: '1px solid var(--border-color)' }} />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-3 text-text-tertiary bg-bg-base">or continue with</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/google`}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-semibold transition-all hover:scale-[1.02] bg-surface" style={{ border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.7)' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Google
+                      </a>
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/linkedin`}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-semibold transition-all hover:scale-[1.02] bg-surface" style={{ border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.7)' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        LinkedIn
+                      </a>
+                    </div>
+                  </>
+                )}
+
+                {activeRole !== 2 && (
                   <div className="flex items-center justify-center gap-1
-                                  flex-wrap text-[10px] text-white/25 pt-1">
+                                  flex-wrap text-[10px] text-text-tertiary pt-1">
                     <span>Having trouble?</span>
                     <Link href="/help/login"
                       className="hover:text-white/50 underline transition-colors">
@@ -926,8 +944,8 @@ export default function LoginClient() {
               transition={{ delay:0.25 }}
               className="mt-5 rounded-2xl overflow-hidden"
               style={{
-                background:'rgba(255,255,255,0.03)',
-                border:'1px solid rgba(255,255,255,0.08)',
+                
+                border:'1px solid var(--border-color)',
               }}>
               <div className="px-5 py-4">
                 <p className="text-white/50 text-xs text-center mb-3">
@@ -983,12 +1001,10 @@ export default function LoginClient() {
                 </div>
 
                 <div className="text-center mt-3">
-                  <Link href="/register/admin"
-                    className="text-[10px] text-white/25 hover:text-white/50
-                               transition-colors inline-flex items-center gap-1">
+                  <span className="text-[10px] text-white/25 inline-flex items-center gap-1">
                     <Shield size={10} />
-                    Admin / RM Access Request
-                  </Link>
+                    Admin / RM accounts provisioned by request
+                  </span>
                 </div>
               </div>
             </motion.div>

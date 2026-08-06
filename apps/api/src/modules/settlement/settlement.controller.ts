@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { SettlementService } from './settlement.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
@@ -7,6 +8,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateSettlementDto, QuerySettlementDto } from './dto/settlement.dto';
 
 @ApiTags('Settlements')
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/settlements')
 export class SettlementController {

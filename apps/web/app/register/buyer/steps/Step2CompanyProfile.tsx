@@ -3,17 +3,18 @@
 import { useState, useCallback } from 'react'
 import { Briefcase } from 'lucide-react'
 import type { CompanyProfileForm } from '@/types/buyer-registration'
+import { Select } from '@/components/ui/select'
 import StepCard from '../../vendor/components/StepCard'
 import FormField from '../../vendor/components/FormField'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
-const btnPrimary = { background: 'linear-gradient(135deg, #FF4D00, #FF7A3D)', color: '#fff', boxShadow: '0 4px 16px rgba(255,77,0,0.3)' }
-const btnSecondary = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }
+const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
+const btnSecondary = { background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
 const DESIGNATIONS = ['Proprietor', 'Partner', 'Director', 'CEO/MD', 'Procurement Manager', 'Purchase Head', 'Manager', 'Other']
 
@@ -97,7 +98,7 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
 
   return (
     <StepCard
-      icon={<Briefcase size={20} style={{ color: '#FF4D00' }} />}
+      icon={<Briefcase size={20} style={{ color: '#f59e0b' }} />}
       title="Company Profile"
       subtitle="Tell us about your business"
     >
@@ -108,11 +109,10 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
         </FormField>
 
         <FormField label="Designation" required error={touched.designation ? errors.designation : undefined}>
-          <select className={INPUT_CLASS} style={{ ...inputStyle(!!errors.designation && touched.designation), color: form.designation ? '#fff' : 'rgba(255,255,255,0.25)' }}
-            value={form.designation || ''} onChange={e => { set('designation', e.target.value); markTouched('designation') }}>
-            <option value="" disabled className="bg-[#1D0001]">Select designation</option>
-            {DESIGNATIONS.map(d => <option key={d} value={d} className="bg-[#1D0001]">{d}</option>)}
-          </select>
+          <Select value={form.designation || ''} onChange={e => { set('designation', e.target.value); markTouched('designation') }}>
+            <option value="" disabled>Select designation</option>
+            {DESIGNATIONS.map(d => <option key={d} value={d}>{d}</option>)}
+          </Select>
         </FormField>
 
         <FormField label="Company Type" required error={touched.companyType ? errors.companyType : undefined}>
@@ -123,9 +123,9 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
                 <button key={bt.value} type="button" onClick={() => { set('companyType', bt.value); markTouched('companyType') }}
                   className="px-3 py-2.5 rounded-xl text-xs font-medium text-left transition-all duration-200"
                   style={{
-                    background: selected ? 'rgba(255,77,0,0.15)' : 'rgba(255,255,255,0.04)',
-                    border: selected ? '1px solid rgba(255,77,0,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                    color: selected ? '#FF7A3D' : 'rgba(255,255,255,0.7)',
+                    background: selected ? 'rgba(245, 158, 11, 0.15)' : 'var(--bg-elevated)',
+                    border: selected ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
+                    color: selected ? '#fbbf24' : 'rgba(255,255,255,0.7)',
                   }}>
                   <p className="font-semibold">{bt.label}</p>
                   <p className="text-[10px] mt-0.5 text-white/40">{bt.desc}</p>
@@ -136,36 +136,32 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
         </FormField>
 
         <FormField label="Year Established" required error={touched.yearEstablished ? errors.yearEstablished : undefined}>
-          <select className={INPUT_CLASS} style={{ ...inputStyle(!!errors.yearEstablished && touched.yearEstablished), color: form.yearEstablished ? '#fff' : 'rgba(255,255,255,0.25)' }}
-            value={form.yearEstablished || ''} onChange={e => { set('yearEstablished', e.target.value); markTouched('yearEstablished') }}>
-            <option value="" disabled className="bg-[#1D0001]">Select year</option>
-            {YEARS.map(y => <option key={y} value={y} className="bg-[#1D0001]">{y}</option>)}
-          </select>
+          <Select value={form.yearEstablished || ''} onChange={e => { set('yearEstablished', e.target.value); markTouched('yearEstablished') }}>
+            <option value="" disabled>Select year</option>
+            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          </Select>
         </FormField>
 
         <FormField label="Industry" required error={touched.industry ? errors.industry : undefined}>
-          <select className={INPUT_CLASS} style={{ ...inputStyle(!!errors.industry && touched.industry), color: form.industry ? '#fff' : 'rgba(255,255,255,0.25)' }}
-            value={form.industry || ''} onChange={e => { set('industry', e.target.value); markTouched('industry') }}>
-            <option value="" disabled className="bg-[#1D0001]">Select industry</option>
-            {INDUSTRIES.map(i => <option key={i} value={i} className="bg-[#1D0001]">{i}</option>)}
-          </select>
+          <Select value={form.industry || ''} onChange={e => { set('industry', e.target.value); markTouched('industry') }}>
+            <option value="" disabled>Select industry</option>
+            {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+          </Select>
         </FormField>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Company Size" required error={touched.companySize ? errors.companySize : undefined}>
-            <select className={INPUT_CLASS} style={{ ...inputStyle(!!errors.companySize && touched.companySize), color: form.companySize ? '#fff' : 'rgba(255,255,255,0.25)' }}
-              value={form.companySize || ''} onChange={e => { set('companySize', e.target.value); markTouched('companySize') }}>
-              <option value="" disabled className="bg-[#1D0001]">Select</option>
-              {COMPANY_SIZES.map(s => <option key={s} value={s} className="bg-[#1D0001]">{s}</option>)}
-            </select>
+            <Select value={form.companySize || ''} onChange={e => { set('companySize', e.target.value); markTouched('companySize') }}>
+              <option value="" disabled>Select</option>
+              {COMPANY_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+            </Select>
           </FormField>
 
           <FormField label="Annual Procurement" required error={touched.annualProcurement ? errors.annualProcurement : undefined}>
-            <select className={INPUT_CLASS} style={{ ...inputStyle(!!errors.annualProcurement && touched.annualProcurement), color: form.annualProcurement ? '#fff' : 'rgba(255,255,255,0.25)' }}
-              value={form.annualProcurement || ''} onChange={e => { set('annualProcurement', e.target.value); markTouched('annualProcurement') }}>
-              <option value="" disabled className="bg-[#1D0001]">Select</option>
-              {ANNUAL_PROCUREMENT.map(a => <option key={a} value={a} className="bg-[#1D0001]">{a}</option>)}
-            </select>
+            <Select value={form.annualProcurement || ''} onChange={e => { set('annualProcurement', e.target.value); markTouched('annualProcurement') }}>
+              <option value="" disabled>Select</option>
+              {ANNUAL_PROCUREMENT.map(a => <option key={a} value={a}>{a}</option>)}
+            </Select>
           </FormField>
         </div>
 

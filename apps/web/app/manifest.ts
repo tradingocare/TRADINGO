@@ -13,12 +13,12 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['business', 'shopping', 'ecommerce'],
     lang: 'en-IN',
     icons: [
-      { src: '/logo/trdn.png', sizes: '792x547', type: 'image/png' },
-      { src: '/logo/trdn.png', sizes: '792x547', type: 'image/png', purpose: 'maskable' },
+      { src: '/logo/trdn6.png', sizes: '792x547', type: 'image/png' },
+      { src: '/logo/trdn6.png', sizes: '792x547', type: 'image/png', purpose: 'maskable' },
     ],
     screenshots: [
       {
-        src: '/logo/trdn.png',
+        src: '/logo/trdn6.png',
         sizes: '792x547',
         type: 'image/png',
         form_factor: 'wide',

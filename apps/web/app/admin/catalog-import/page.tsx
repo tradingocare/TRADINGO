@@ -7,8 +7,13 @@ import {
   StatusBadge,
   TableSkeleton,
 } from '@/components/dashboard';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Modal } from '@/components/ui/modal';
+import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import {
   Package,
@@ -357,17 +362,7 @@ export default function CatalogImportPage() {
         {jobsLoading ? (
           <TableSkeleton rows={5} />
         ) : jobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12">
-            <Database className="h-12 w-12 text-text-tertiary" />
-            <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">No import jobs yet</p>
-            <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
-              Start a new import to populate the catalog.
-            </p>
-            <Button variant="outline" className="mt-4" onClick={() => setShowImportDialog(true)}>
-              <Play className="mr-2 h-4 w-4" />
-              Start New Import
-            </Button>
-          </div>
+          <EmptyState icon={Database} title="No import jobs yet" description="Start a new import to populate the catalog." action={<Button variant="outline" onClick={() => setShowImportDialog(true)}><Play className="mr-2 h-4 w-4" /> Start New Import</Button>} />
         ) : (
           <>
             {jobs.map((job) => (
@@ -542,76 +537,60 @@ export default function CatalogImportPage() {
         )}
       </div>
 
-      {showImportDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setShowImportDialog(false)} />
-          <div className="relative z-10 w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-2xl dark:bg-dark-surface dark:border-dark-border">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-text-primary dark:text-dark-text-primary">Start New Import</h2>
-              <button onClick={() => setShowImportDialog(false)}>
-                <X className="h-5 w-5 text-text-tertiary hover:text-text-primary" />
+      <Modal open={showImportDialog} onClose={() => setShowImportDialog(false)} title="Start New Import">
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+              Import Type
+            </label>
+            <Select
+              value={importType}
+              onChange={(e) => setImportType(e.target.value as ImportJobType | 'ALL')}
+            >
+              <option value="ALL">All Types</option>
+              <option value="CATEGORY">Categories</option>
+              <option value="SUBCATEGORY">Subcategories</option>
+              <option value="PRODUCT_MASTER">Product Master</option>
+              <option value="SERVICE_MASTER">Service Master</option>
+            </Select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+              File Upload <span className="text-text-tertiary">(optional)</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border p-4 text-sm text-text-secondary hover:border-primary-500 hover:text-primary-600 dark:border-dark-border">
+              <Upload className="h-5 w-5" />
+              {importFile ? importFile.name : 'Upload CSV or JSON file'}
+              <input
+                type="file"
+                accept=".csv,.json"
+                className="hidden"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              />
+            </label>
+            {importFile && (
+              <button
+                onClick={() => setImportFile(null)}
+                className="mt-1 text-xs text-red-600 hover:text-red-700"
+              >
+                Remove file
               </button>
-            </div>
+            )}
+          </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                  Import Type
-                </label>
-                <select
-                  value={importType}
-                  onChange={(e) => setImportType(e.target.value as ImportJobType | 'ALL')}
-                  className="flex h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm ring-offset-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:bg-dark-surface dark:border-dark-border"
-                >
-                  <option value="ALL">All Types</option>
-                  <option value="CATEGORY">Categories</option>
-                  <option value="SUBCATEGORY">Subcategories</option>
-                  <option value="PRODUCT_MASTER">Product Master</option>
-                  <option value="SERVICE_MASTER">Service Master</option>
-                </select>
-              </div>
+          <Alert variant="info">If no file is provided, the system will use the pre-generated master catalog data.</Alert>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                  File Upload <span className="text-text-tertiary">(optional)</span>
-                </label>
-                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border p-4 text-sm text-text-secondary hover:border-primary-500 hover:text-primary-600 dark:border-dark-border">
-                  <Upload className="h-5 w-5" />
-                  {importFile ? importFile.name : 'Upload CSV or JSON file'}
-                  <input
-                    type="file"
-                    accept=".csv,.json"
-                    className="hidden"
-                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                  />
-                </label>
-                {importFile && (
-                  <button
-                    onClick={() => setImportFile(null)}
-                    className="mt-1 text-xs text-red-600 hover:text-red-700"
-                  >
-                    Remove file
-                  </button>
-                )}
-              </div>
-
-              <div className="rounded-lg bg-surface-secondary p-3 text-xs text-text-secondary dark:bg-dark-surface-secondary">
-                <AlertCircle className="mb-1 inline h-3.5 w-3.5" />
-                {' '}If no file is provided, the system will use the pre-generated master catalog data.
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleStartImport} disabled={importing}>
-                  {importing ? 'Starting...' : 'Start Import'}
-                </Button>
-              </div>
-            </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleStartImport} disabled={importing}>
+              {importing ? 'Starting...' : 'Start Import'}
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
 
       {toasts.length > 0 && (
         <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">

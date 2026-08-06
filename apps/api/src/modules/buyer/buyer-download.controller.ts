@@ -1,10 +1,14 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { BuyerDownloadService } from './buyer-download.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CreateDownloadDto } from './dto';
 
 @ApiTags('Buyer — Downloads')
+@Throttle(RateLimits.WRITE_GENERAL)
 @UseGuards(JwtAuthGuard)
 @Controller('buyer/downloads')
 export class BuyerDownloadController {
@@ -18,7 +22,7 @@ export class BuyerDownloadController {
 
   @Post()
   @ApiOperation({ summary: 'Record a download' })
-  create(@CurrentUser('sub') userId: string, @Body() body: { type: string; title: string; fileUrl: string; fileSize?: number; sourceId?: string; sourceModule?: string }) {
-    return this.service.create(userId, body);
+  create(@CurrentUser('sub') userId: string, @Body() dto: CreateDownloadDto) {
+    return this.service.create(userId, dto);
   }
 }

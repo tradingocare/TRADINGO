@@ -62,7 +62,7 @@ export class ProductAttributeDisplayService {
     }
 
     const sections: AttributeSectionDto[] = [];
-    const flattened: Record<string, any> = {};
+    const flattened: Record<string, unknown> = {};
 
     for (const section of template.sections) {
       const sectionFields: AttributeFieldDto[] = [];

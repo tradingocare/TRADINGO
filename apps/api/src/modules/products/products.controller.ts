@@ -1,4 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus, NotFoundException, ValidationPipe } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { ReviewsService } from './reviews.service';
 import { WishlistService } from './wishlist.service';
@@ -18,6 +21,8 @@ import { CreateQuestionDto } from './dto/create-question.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 
+@ApiTags('Products')
+@Throttle(RateLimits.MARKETPLACE_READ)
 @Controller('products')
 export class ProductsController {
   constructor(
@@ -42,12 +47,15 @@ export class ProductsController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create a new product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
   async create(@Body() dto: CreateProductDto, @CurrentUser('sub') userId: string) {
     return this.productsService.create(dto, userId);
   }
 
   @Get()
+  @ApiOperation({ summary: 'List all products' })
   @Public()
   async findAll(@Query() query: {
     cursor?: string; limit?: number; search?: string;
@@ -58,6 +66,7 @@ export class ProductsController {
   }
 
   @Get('admin/all')
+  @ApiOperation({ summary: 'List all products (admin)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   async adminFindAll(@Query('search') search?: string, @Query('status') status?: string, @Query('page') page = '1', @Query('limit') limit = '20') {
@@ -88,6 +97,7 @@ export class ProductsController {
   }
 
   @Get('companies/:companyId/products')
+  @ApiOperation({ summary: 'Get products by company' })
   @UseGuards(JwtAuthGuard)
   async findByCompany(
     @Param('companyId') companyId: string,
@@ -100,7 +110,9 @@ export class ProductsController {
   }
 
   @Get('search')
+  @ApiOperation({ summary: 'Search products' })
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   async search(@Query('q') query: string,
     @Query('categoryId') categoryId?: string,
     @Query('industryId') industryId?: string,
@@ -112,84 +124,111 @@ export class ProductsController {
   }
 
   @Get('bestsellers')
+  @ApiOperation({ summary: 'Get bestseller products' })
   @Public()
   async getBestsellers(@Query(new ValidationPipe({ transform: true })) query: BestsellerQueryDto) {
     return this.bestsellerService.getBestsellers(query);
   }
 
   @Get('trending')
+  @ApiOperation({ summary: 'Get trending products' })
   @Public()
   async getTrending(@Query(new ValidationPipe({ transform: true })) query: TrendingQueryDto) {
     return this.bestsellerService.getTrending(query);
   }
 
   @Get('categories/top')
+  @ApiOperation({ summary: 'Get top categories' })
   @Public()
   async getTopCategories(@Query(new ValidationPipe({ transform: true })) query: TopCategoriesQueryDto) {
     return this.bestsellerService.getTopCategories(query);
   }
 
   @Get('sellers/top')
+  @ApiOperation({ summary: 'Get top sellers' })
   @Public()
   async getTopSellers(@Query(new ValidationPipe({ transform: true })) query: TopSellersQueryDto) {
     return this.bestsellerService.getTopSellers(query);
   }
 
   @Get('near-me/top')
+  @ApiOperation({ summary: 'Get top near-me products' })
   @Public()
   async getNearMeTop(@Query(new ValidationPipe({ transform: true })) query: NearMeQueryDto) {
     return this.bestsellerService.getNearMeTop(query);
   }
 
+  @Get('lookup/:id')
+  @ApiOperation({ summary: 'Look up product by ID for checkout' })
+  @Public()
+  async lookupById(@Param('id') id: string) {
+    return this.productsService.findById(id);
+  }
+
   @Get(':slug')
+  @ApiOperation({ summary: 'Get product by slug' })
   @Public()
   async findBySlug(@Param('slug') slug: string) {
     return this.productsService.findBySlug(slug);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update a product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
   async update(@Param('id') id: string, @Body() dto: UpdateProductDto, @CurrentUser('sub') userId: string) {
     return this.productsService.update(id, dto, userId);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Delete a product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string, @CurrentUser('sub') userId: string) {
     await this.productsService.remove(id, userId);
   }
 
   @Post(':id/publish')
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Publish a product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
   @HttpCode(HttpStatus.OK)
   async publish(@Param('id') id: string, @CurrentUser('sub') userId: string) {
     return this.productsService.publish(id, userId);
   }
 
   @Post(':id/unpublish')
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Unpublish a product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
   @HttpCode(HttpStatus.OK)
   async unpublish(@Param('id') id: string, @CurrentUser('sub') userId: string) {
     return this.productsService.unpublish(id, userId);
   }
 
   @Post(':id/archive')
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Archive a product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
   @HttpCode(HttpStatus.OK)
   async archive(@Param('id') id: string, @CurrentUser('sub') userId: string) {
     return this.productsService.archive(id, userId);
   }
 
   @Post(':id/duplicate')
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Duplicate a product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
   @HttpCode(HttpStatus.CREATED)
   async duplicate(@Param('id') id: string, @CurrentUser('sub') userId: string) {
     return this.productsService.duplicate(id, userId);
   }
 
   @Patch(':id/inventory')
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update product inventory' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
   async updateInventory(
     @Param('id') id: string,
     @Body('availableQuantity') availableQuantity: number,
@@ -200,12 +239,14 @@ export class ProductsController {
   }
 
   @Get(':slug/related')
+  @ApiOperation({ summary: 'Get related products' })
   @Public()
   async getRelated(@Param('slug') slug: string, @Query('limit') limit?: number) {
     return this.productsService.findRelated(slug, limit);
   }
 
   @Get(':slug/reviews')
+  @ApiOperation({ summary: 'Get product reviews' })
   @Public()
   async getReviews(@Param('slug') slug: string, @Query('page') page?: number, @Query('limit') limit?: number) {
     const productId = await this.resolveProductId(slug);
@@ -213,6 +254,7 @@ export class ProductsController {
   }
 
   @Post(':slug/reviews')
+  @ApiOperation({ summary: 'Create a product review' })
   @UseGuards(JwtAuthGuard)
   async createReview(
     @Param('slug') slug: string,
@@ -224,6 +266,7 @@ export class ProductsController {
   }
 
   @Post(':slug/reviews/:id/helpful')
+  @ApiOperation({ summary: 'Mark review as helpful' })
   @Public()
   @HttpCode(HttpStatus.OK)
   async markHelpful(@Param('id') reviewId: string) {
@@ -231,6 +274,7 @@ export class ProductsController {
   }
 
   @Get(':slug/reviews/stats')
+  @ApiOperation({ summary: 'Get review statistics' })
   @Public()
   async getReviewStats(@Param('slug') slug: string) {
     const productId = await this.resolveProductId(slug);
@@ -238,6 +282,7 @@ export class ProductsController {
   }
 
   @Get(':slug/qa')
+  @ApiOperation({ summary: 'Get product Q&A' })
   @Public()
   async getQuestions(@Param('slug') slug: string, @Query('page') page?: number, @Query('limit') limit?: number) {
     const productId = await this.resolveProductId(slug);
@@ -245,6 +290,7 @@ export class ProductsController {
   }
 
   @Post(':slug/qa')
+  @ApiOperation({ summary: 'Ask a product question' })
   @UseGuards(JwtAuthGuard)
   async askQuestion(
     @Param('slug') slug: string,
@@ -256,6 +302,7 @@ export class ProductsController {
   }
 
   @Post(':slug/qa/:id/answer')
+  @ApiOperation({ summary: 'Answer a product question' })
   @UseGuards(JwtAuthGuard)
   async answerQuestion(
     @Param('id') qaId: string,
@@ -271,12 +318,14 @@ export class ProductsController {
   }
 
   @Get('wishlist')
+  @ApiOperation({ summary: 'Get user wishlist' })
   @UseGuards(JwtAuthGuard)
   async getWishlist(@CurrentUser('sub') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
     return this.wishlistService.getWishlist(userId, page, limit);
   }
 
   @Post('wishlist/:productId')
+  @ApiOperation({ summary: 'Add product to wishlist' })
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   async addToWishlist(
@@ -288,12 +337,14 @@ export class ProductsController {
   }
 
   @Delete('wishlist/:productId')
+  @ApiOperation({ summary: 'Remove product from wishlist' })
   @UseGuards(JwtAuthGuard)
   async removeFromWishlist(@Param('productId') productId: string, @CurrentUser('sub') userId: string) {
     return this.wishlistService.removeFromWishlist(userId, productId);
   }
 
   @Get('wishlist/:productId/check')
+  @ApiOperation({ summary: 'Check if product is in wishlist' })
   @UseGuards(JwtAuthGuard)
   async checkWishlist(@Param('productId') productId: string, @CurrentUser('sub') userId: string) {
     return this.wishlistService.isInWishlist(userId, productId);

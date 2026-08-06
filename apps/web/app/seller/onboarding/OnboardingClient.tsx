@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { useAuthStore } from '../../../store/auth-store'
 import { getAccessToken } from '../../../lib/auth'
 import api from '../../../lib/api/client'
-import toast from 'react-hot-toast'
+import { toast } from '@/components/ui/use-toast'
 import { CheckCircle2, Sparkles } from 'lucide-react'
 
 import Section1BasicInfo from './sections/Section1BasicInfo'
@@ -81,7 +81,7 @@ export default function OnboardingClient() {
         setVendor(d)
         calculateCompletion(d)
       })
-      .catch(() => {})
+      .catch(() => toast.error('Failed to load seller profile'))
       .finally(() => setLoading(false))
   }, [authReady])
 
@@ -140,6 +140,9 @@ export default function OnboardingClient() {
     try {
       await api.post('/seller/go-live')
       toast.success('Your store is now LIVE on TRADINGO!')
+      if (vendor?.id) {
+        api.post(`/location-intelligence/auto-geocode/${vendor.id}`).catch((err) => console.error('Auto-geocode failed:', err))
+      }
       router.push('/seller/dashboard')
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Error going live')
@@ -147,9 +150,9 @@ export default function OnboardingClient() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background:'#1D0001' }}>
+    <div className="min-h-screen flex items-center justify-center bg-bg-base">
       <div className="text-center">
-        <div className="w-12 h-12 rounded-full border-2 border-t-[#FF4D00] border-white/10 animate-spin mx-auto mb-4" />
+        <div className="w-12 h-12 rounded-full border-2 border-t-[#f59e0b] border-border animate-spin mx-auto mb-4" />
         <p className="text-white/40 text-sm">Loading your profile...</p>
       </div>
     </div>
@@ -166,12 +169,12 @@ export default function OnboardingClient() {
     : 'Getting Started'
 
   return (
-    <div className="min-h-screen" style={{ background:'#1D0001' }}>
+    <div className="min-h-screen bg-bg-base">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full opacity-12"
           style={{ background:'radial-gradient(circle,#9B5DE520,transparent 70%)', filter:'blur(80px)' }} />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-10"
-          style={{ background:'radial-gradient(circle,#FF4D0018,transparent 70%)', filter:'blur(80px)' }} />
+          style={{ background:'radial-gradient(circle,#f59e0b18,transparent 70%)', filter:'blur(80px)' }} />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
@@ -186,7 +189,7 @@ export default function OnboardingClient() {
           <div className="flex items-center gap-4">
             <div className="relative w-20 h-20">
               <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
-                <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+                <circle cx="40" cy="40" r="34" fill="none" stroke="var(--surface)" strokeWidth="7" />
                 <circle cx="40" cy="40" r="34" fill="none" stroke={scoreColor} strokeWidth="7"
                   strokeDasharray={`${2 * Math.PI * 34}`}
                   strokeDashoffset={`${2 * Math.PI * 34 * (1 - totalScore/100)}`}
@@ -204,7 +207,7 @@ export default function OnboardingClient() {
                 <motion.button whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
                   onClick={goLive}
                   className="mt-2 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
-                  style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)', color:'#fff' }}>
+                  style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', color:'#fff' }}>
                   <Sparkles size={11} /> Go Live!
                 </motion.button>
               )}
@@ -220,10 +223,10 @@ export default function OnboardingClient() {
             const active = activeSection === i
             return (
               <button key={s.key} onClick={() => setActiveSection(i)}
-                className="flex flex-col items-center gap-1.5 flex-shrink-0 px-3 py-2 rounded-xl transition-all duration-200"
+                className={`flex flex-col items-center gap-1.5 flex-shrink-0 px-3 py-2 rounded-xl transition-all duration-200 ${!active ? 'bg-surface' : ''}`}
                 style={{
-                  background: active ? 'rgba(255,77,0,0.12)' : 'rgba(255,255,255,0.04)',
-                  border: active ? '1px solid rgba(255,77,0,0.35)' : '1px solid rgba(255,255,255,0.07)',
+                  background: active ? 'rgba(245, 158, 11, 0.12)' : '',
+                  border: active ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid var(--border-color)',
                   minWidth: '75px',
                 }}>
                 <div className="flex items-center gap-1">
@@ -231,9 +234,9 @@ export default function OnboardingClient() {
                   {done && <CheckCircle2 size={11} className="text-green-400" />}
                 </div>
                 <span className="text-[9px] font-semibold text-white/60 text-center leading-tight whitespace-nowrap">{s.title}</span>
-                <div className="w-full h-1 rounded-full overflow-hidden bg-white/10">
+                <div className="w-full h-1 rounded-full overflow-hidden bg-surface-secondary">
                   <div className="h-full rounded-full transition-all"
-                    style={{ width:`${pct}%`, background: done ? '#4ade80' : active ? '#FF4D00' : '#6b7280' }} />
+                    style={{ width:`${pct}%`, background: done ? '#4ade80' : active ? '#f59e0b' : '#6b7280' }} />
                 </div>
                 <span className="text-[8px] text-white/25">{sectionScore}/{s.maxScore}</span>
               </button>

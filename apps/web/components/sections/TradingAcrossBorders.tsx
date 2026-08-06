@@ -3,116 +3,111 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, X, Bell, Mail, Store, ChevronRight } from 'lucide-react';
-import { MASTER_COUNTRIES } from '@/data/master-data';
+import { Globe, ChevronRight, ShieldCheck, Handshake, Zap } from 'lucide-react';
 
-const countries = MASTER_COUNTRIES.map(c => ({ code: c.code, name: c.name }));
+const countries = [
+  { code: 'IN', name: 'India' },
+  { code: 'BD', name: 'Bangladesh' },
+  { code: 'LK', name: 'Sri Lanka' },
+  { code: 'NP', name: 'Nepal' },
+  { code: 'BT', name: 'Bhutan' },
+  { code: 'AF', name: 'Afghanistan' },
+  { code: 'ID', name: 'Indonesia' },
+  { code: 'MY', name: 'Malaysia' },
+  { code: 'SG', name: 'Singapore' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'CN', name: 'China' },
+  { code: 'RU', name: 'Russia' },
+  { code: 'AE', name: 'UAE (Dubai)' },
+];
 
 export default function TradingAcrossBorders() {
   const [selected, setSelected] = useState('India');
-  const [showModal, setShowModal] = useState(false);
 
   const handleClick = (name: string) => {
     setSelected(name);
-    if (name !== 'India') setShowModal(true);
   };
 
+  const selectedCountry = countries.find(c => c.name === selected) || countries[0];
+  const selectedCountryCode = selectedCountry.code;
+
   return (
-    <section className="relative overflow-hidden py-24">
+    <section className="relative overflow-hidden py-20" style={{ background: 'var(--bg-base)' }}>
+      {/* Background Gradients & Glows */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-40 top-1/4 h-[500px] w-[500px] rounded-full bg-[rgba(212,175,55,0.04)] blur-[120px]" />
-        <div className="absolute -right-40 bottom-1/4 h-[400px] w-[400px] rounded-full bg-[rgba(212,175,55,0.03)] blur-[100px]" />
-        <div className="absolute inset-0 opacity-[0.015]"
-          style={{
-            backgroundImage: 'radial-gradient(circle, #D4AF37 1px, transparent 1px)',
-            backgroundSize: '48px 48px',
-          }} />
+        <div className="absolute -left-40 top-1/4 h-[500px] w-[500px] rounded-full bg-[rgba(0,180,255,0.03)] blur-[120px]" />
+        <div className="absolute -right-40 bottom-1/4 h-[400px] w-[400px] rounded-full bg-[rgba(168,85,247,0.03)] blur-[100px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-[1600px] px-6 sm:px-8 lg:px-12">
+        
+        {/* Top Feature Info Panel */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mx-auto max-w-5xl text-center"
+          className="mx-auto max-w-[1600px] text-center"
         >
-          <div className="relative overflow-hidden rounded-[32px] border border-[rgba(212,175,55,0.1)] bg-[rgba(255,255,255,0.015)] p-10 sm:p-14"
-            style={{
-              backdropFilter: 'blur(20px)',
-              boxShadow: '0 0 60px rgba(212,175,55,0.04), 0 8px 32px rgba(0,0,0,0.2)',
-            }}
-          >
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-[rgba(212,175,55,0.04)] blur-[60px]" />
-              <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-[rgba(212,175,55,0.03)] blur-[60px]" />
-            </div>
-
+          <div className="glass-panel-prism px-24 py-2 sm:px-32 sm:py-3 mb-16">
             <img
               src="/logo/trdn.png"
               alt="TRDN"
-              className="mx-auto h-12 w-auto opacity-60 sm:h-14"
+              className="mx-auto h-12 w-auto opacity-80 sm:h-14 drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]"
             />
 
             <div className="relative z-10 mt-6">
-              <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
+              <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
                 Trading Across Borders
               </span>
 
-              <h2 className="mt-5 whitespace-nowrap text-3xl font-black leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl">
+              <h2 className="mt-5 text-3xl font-extrabold leading-[1.1] tracking-tight text-primary sm:text-4xl lg:text-5xl">
                 The Future of{' '}
-                <span className="bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] bg-clip-text text-transparent">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-[#ff4d00]">
                   Global Trade
                 </span>{' '}
                 Starts Here
               </h2>
 
               <div className="mt-3 flex items-center justify-center gap-4">
-                <span className="h-px w-6 bg-[rgba(212,175,55,0.3)]" />
-                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#D4AF37]/60">
+                <span className="h-px w-6 bg-surface-tertiary" />
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber-400/60 sm:text-sm">
                   Connecting Businesses Beyond Boundaries
                 </p>
-                <span className="h-px w-8 bg-[rgba(212,175,55,0.3)]" />
+                <span className="h-px w-8 bg-surface-tertiary" />
               </div>
 
-              <div className="mx-auto mt-8 max-w-3xl space-y-4">
-                <p className="text-base leading-relaxed text-white/50 sm:text-lg">
-                  TRADINGO is evolving from a powerful Indian B2B marketplace into a{' '}
-                  <span className="font-medium text-white/70">Global Smart Trade System</span>{' '}
-                  powered by TRADHEXA. Our mission is to connect buyers, sellers, manufacturers,
-                  distributors and service providers across borders through trust, technology and
-                  transparency.
-                </p>
-
-                <div className="flex items-center gap-4">
-                  <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-                  <span className="text-[8px] text-white/20">●</span>
-                  <span className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-                </div>
-
-                <p className="text-base leading-relaxed text-white/40 sm:text-lg">
-                  We have started our journey in India and are progressively expanding our ecosystem
-                  to South Asia, Southeast Asia, the Middle East and global markets.
+              <div className="mx-auto mt-8 max-w-5xl space-y-4">
+                <p className="text-lg leading-relaxed text-text-secondary sm:text-xl">
+                  TRADINGO is evolving from a leading Indian B2B marketplace into a{' '}
+                  <span className="font-medium text-primary">Global Smart Trade System</span>{' '}
+                  powered by TRADHEXA&trade;. Our mission is to connect buyers, sellers, manufacturers,
+                  suppliers, distributors, exporters, importers, and service providers through a
+                  trusted, AI-powered ecosystem built on Trust, Technology, Intelligence, and Transparency.
+                  Starting in India, we are expanding across South Asia, Southeast Asia, the Middle East,
+                  and global markets to make international trade simpler, smarter, and more connected.
                 </p>
               </div>
 
               <div className="relative mt-10">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="h-px w-48 bg-gradient-to-r from-transparent via-[rgba(212,175,55,0.15)] to-transparent" />
+                  <span className="h-px w-48 bg-gradient-to-r from-transparent via-border to-transparent" />
                 </div>
-                <div className="relative flex items-center justify-center gap-6 rounded-2xl border border-[rgba(212,175,55,0.06)] bg-[rgba(255,255,255,0.01)] px-8 py-4">
-                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-white/50">Born in</p>
-                    <p className="text-lg font-black text-white">India</p>
+                <div className="relative flex flex-wrap items-center justify-center gap-4 sm:gap-6 rounded-2xl border border-border bg-surface-secondary px-6 py-3.5 max-w-2xl mx-auto">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Born in</span>
+                    <span className="text-base font-extrabold text-primary sm:text-lg">India</span>
                   </div>
-                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-white/50">Built for</p>
-                    <p className="text-lg font-black text-[#D4AF37]">the World</p>
+                  <div className="h-4 w-px bg-surface-tertiary hidden sm:block" />
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Built for</span>
+                    <span className="text-base font-extrabold text-amber-400 sm:text-lg">the World</span>
                   </div>
-                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-white/50">Powered by</p>
-                    <p className="text-lg font-black text-white/60">TRADHEXA</p>
+                  <div className="h-4 w-px bg-surface-tertiary hidden sm:block" />
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Powered by</span>
+                    <span className="text-base font-extrabold text-text-primary sm:text-lg">TRADHEXA</span>
                   </div>
                 </div>
               </div>
@@ -120,226 +115,211 @@ export default function TradingAcrossBorders() {
           </div>
         </motion.div>
 
+        {/* Region Selector - Premium Neon & Glass Layout */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-12"
+          className="mt-8"
         >
-          <div className="mb-8 text-center">
-            <h3 className="text-2xl font-black text-white sm:text-3xl">Select Your Region</h3>
-            <p className="mt-2 text-sm text-white/40">
-              Choose your country to explore TRADINGO&apos;s global expansion roadmap.
+          {/* Header Block matching mockup */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/5 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
+              <Globe className="h-3 w-3 text-amber-400" />
+              TRADING ACROSS BORDERS™
+            </div>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-primary sm:text-5xl">
+              Select Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">Region</span>
+            </h2>
+            <p className="mt-3 text-xs sm:text-sm text-text-secondary">
+               Born in India <span className="text-amber-500/50 mx-1.5">•</span> Built for Global Trade <span className="text-amber-500/50 mx-1.5">•</span> Powered by <span className="text-amber-400 font-semibold">TRADHEXA™</span>
             </p>
           </div>
 
-          <div className="mx-auto max-w-7xl rounded-[32px] border border-[rgba(212,175,55,0.12)] p-4 sm:p-6"
-            style={{
-              background: 'rgba(255,255,255,0.02)',
-              backdropFilter: 'blur(25px)',
-            }}
-          >
-            <div className="flex items-center justify-start gap-x-3 gap-y-0 overflow-x-auto flex-nowrap scrollbar-hide sm:justify-center sm:gap-x-4"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {countries.map((country, i) => {
-                const isSelected = selected === country.name;
-                return (
-                  <motion.button
-                    key={country.name}
-                    onClick={() => handleClick(country.name)}
-                    initial={{ opacity: 0, y: 15 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: 0.1 + i * 0.04 }}
-                    whileHover={{ scale: 1.08, y: -4 }}
-                    className="group flex cursor-pointer flex-col items-center gap-2.5 bg-transparent p-0"
-                    style={{ WebkitTapHighlightColor: 'transparent' }}
-                  >
-                    <div className="relative flex h-[44px] w-[44px] items-center justify-center sm:h-[56px] sm:w-[56px]">
-                    <div className={`absolute inset-0 rounded-full ${
-                      isSelected
-                        ? 'border-[3px] border-[#D4AF37]'
-                        : 'border-2 border-white/25'
-                    }`}
-                    style={
-                      isSelected
-                        ? { boxShadow: '0 0 24px rgba(212,175,55,0.55)' }
-                        : { boxShadow: '0 8px 20px rgba(0,0,0,0.35)' }
-                    }>
-                      <img
-                        src={`https://flagcdn.com/w80/${country.code.toLowerCase()}.png`}
-                        alt={country.name}
-                        className="h-full w-full rounded-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    {isSelected && (
-                      <motion.span
-                        layoutId="gold-ring"
-                        className="absolute inset-0 rounded-full border-[3px] border-[#D4AF37] pointer-events-none"
-                        style={{ boxShadow: '0 0 24px rgba(212,175,55,0.55)' }}
-                        animate={{ scale: [1, 1.04, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                      />
-                    )}
-                    <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.15] to-transparent" />
-                    {isSelected && (
-                      <motion.span
-                        layoutId="active-dot"
-                        className="absolute -bottom-1.5 h-1.5 w-1.5 rounded-full bg-[#D4AF37]"
-                        style={{ boxShadow: '0 0 8px rgba(212,175,55,0.6)' }}
-                      />
-                    )}
-                  </div>
-                    <span className={`text-[9px] sm:text-[10px] font-semibold transition-all duration-300 whitespace-nowrap ${
-                      isSelected ? 'text-[#D4AF37]' : 'text-white/50 group-hover:text-white/80'
-                    }`}>
-                      {country.name}
-                    </span>
-                  </motion.button>
-                );
-              })}
+          {/* Premium Flag Container matching mockup */}
+          <div className="relative mx-auto max-w-[1600px]">
+            {/* Under-card backlight ambient glow */}
+            <div className="absolute -inset-1.5 rounded-[24px] bg-gradient-to-r from-blue-500/5 via-amber-500/10 to-purple-500/5 blur-xl opacity-90" />
+            
+            {/* The main elongated glass card pill */}
+            <div className="relative rounded-[24px] border border-border bg-bg-elevated/40 backdrop-blur-2xl px-8 py-6 shadow-2xl">
+              
+              {/* Gold/Blue light streaks on top border */}
+              <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
+              <div className="absolute top-0 left-10 right-10 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
+
+              <div 
+                className="flex items-center justify-start gap-x-5 gap-y-0 overflow-x-auto flex-nowrap scrollbar-hide py-2 px-1 sm:justify-center"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {countries.map((country, i) => {
+                  const isSelected = selected === country.name;
+                  return (
+                    <motion.button
+                      key={country.name}
+                      onClick={() => handleClick(country.name)}
+                      whileHover={{ scale: 1.06 }}
+                      className="group flex cursor-pointer flex-col items-center gap-3 bg-transparent p-0 outline-none"
+                    >
+                      {/* Flag circle wrapper */}
+                      <div className="relative flex h-[50px] w-[50px] items-center justify-center sm:h-[60px] sm:w-[60px]">
+                        {/* Selected golden glow circle ring or regular metallic ring */}
+                        <div className={`absolute inset-0 rounded-full transition-all duration-300 ${
+                          isSelected 
+                            ? 'border-2 border-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.5)] scale-105' 
+                            : 'border border-border bg-surface-secondary group-hover:border-border'
+                        }`} />
+
+                        {/* Inner gold border highlight for selected */}
+                        {isSelected && (
+                          <div className="absolute inset-[3px] rounded-full border border-amber-300/50" />
+                        )}
+
+                        {/* Flag image */}
+                        <div className="h-[42px] w-[42px] overflow-hidden rounded-full sm:h-[50px] sm:w-[50px] relative z-10">
+                          <img
+                            src={`https://flagcdn.com/w80/${country.code.toLowerCase()}.png`}
+                            alt={country.name}
+                            className="h-full w-full object-cover rounded-full"
+                            loading="lazy"
+                          />
+                          {/* Top lighting sheen overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-white/5 to-transparent pointer-events-none" />
+                        </div>
+                      </div>
+
+                      {/* Small gold dot indicator under selected */}
+                      <div className="h-1 flex items-center justify-center relative -mt-1.5">
+                        {isSelected ? (
+                          <div className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.9)] animate-pulse" />
+                        ) : (
+                          <div className="h-1.5 w-1.5 rounded-full bg-transparent" />
+                        )}
+                      </div>
+
+                      {/* Flag Label */}
+                      <span className={`text-[10px] font-semibold tracking-wide transition-all duration-300 whitespace-nowrap ${
+                        isSelected 
+                          ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.45)] font-bold' 
+                          : 'text-text-tertiary group-hover:text-text-secondary'
+                      }`}>
+                        {country.name}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Mockup footer attributes */}
+          <div className="mt-8 flex items-center justify-center gap-8 text-sm text-text-tertiary max-w-2xl mx-auto rounded-full border border-border bg-surface-secondary py-3 px-8">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-amber-500/80" />
+              <span className="font-medium text-primary/80">Secure</span>
+            </div>
+            <span className="text-primary/10">|</span>
+            <div className="flex items-center gap-1.5">
+              <Handshake className="h-4 w-4 text-amber-500/80" />
+              <span className="font-medium text-primary/80">Transparent</span>
+            </div>
+            <span className="text-primary/10">|</span>
+            <div className="flex items-center gap-1.5">
+              <Zap className="h-4 w-4 text-amber-500/80" />
+              <span className="font-medium text-primary/80">Smart</span>
+            </div>
+            <span className="text-primary/10">|</span>
+            <div className="flex items-center gap-1.5">
+              <Globe className="h-4 w-4 text-amber-500/80" />
+              <span className="font-medium text-primary/80">Global</span>
             </div>
           </div>
         </motion.div>
 
-        <AnimatePresence>
-          {selected === 'India' && (
-            <motion.div
-              key="india-panel"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.4, ease: 'easeInOut' }}
-              className="mt-8 overflow-hidden rounded-2xl border border-[rgba(212,175,55,0.1)] bg-gradient-to-br from-[rgba(212,175,55,0.04)] to-transparent p-8 text-center"
-            >
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-[rgba(212,175,55,0.3)] shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
-                <img
-                  src="https://flagcdn.com/w80/in.png"
-                  alt="India"
-                  className="h-full w-full rounded-full object-cover"
-                />
-                <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.15] to-transparent" />
-              </div>
-              <h3 className="mt-4 text-2xl font-black text-white">Welcome to TRADINGO India</h3>
-              <p className="mt-2 text-sm text-white/40">India is our home and our launch market.</p>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/55">
-                Connect with verified buyers and sellers, explore RFQs, earn GOCASH rewards,
-                participate in TRADGO and experience secure, transparent and intelligent trading.
-              </p>
-              <Link href="/browse">
-                <motion.span
-                  whileHover={{ y: -2, scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#C9A84C] px-6 py-3 text-sm font-bold text-[#0B1220] shadow-lg"
-                >
-                  Explore India Marketplace <ChevronRight size={16} />
-                </motion.span>
-              </Link>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <AnimatePresence>
-        {showModal && (
+        {/* Dynamic welcome / expansion status panel (rendered inline below flags) */}
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-md"
-            style={{ background: 'rgba(0,0,0,0.4)' }}
+            key={selected}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3 }}
+            className="mt-12 overflow-hidden rounded-2xl border border-border bg-surface-secondary px-8 py-4 text-center max-w-[1600px] mx-auto backdrop-blur-md"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 24 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 24 }}
-              transition={{ type: 'spring', duration: 0.6, bounce: 0.3 }}
-              className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-[rgba(212,175,55,0.15)] p-0 shadow-2xl"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
-                backdropFilter: 'blur(30px)',
-              }}
-            >
-              <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -left-24 -top-24 h-48 w-48 rounded-full bg-[rgba(212,175,55,0.06)] blur-[80px]" />
-                <div className="absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-[rgba(212,175,55,0.04)] blur-[80px]" />
-                <div className="absolute inset-0 opacity-[0.015]"
-                  style={{
-                    backgroundImage: 'radial-gradient(circle, #D4AF37 1px, transparent 1px)',
-                    backgroundSize: '32px 32px',
-                  }} />
-              </div>
+            {/* Dynamic Flag Icon at the top */}
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-amber-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+              <img
+                src={`https://flagcdn.com/w160/${selectedCountryCode.toLowerCase()}.png`}
+                alt={selected}
+                className="h-full w-full object-cover rounded-full scale-105"
+              />
+            </div>
 
-              <button
-                onClick={() => setShowModal(false)}
-                className="absolute right-5 top-5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.05] text-white/40 transition-all hover:bg-white/[0.1] hover:text-white"
-              >
-                <X size={14} />
-              </button>
+            {selected === 'India' ? (
+              <>
+                <h3 className="mt-4 text-3xl font-black text-primary">Welcome to TRADINGO India</h3>
+                <p className="mt-2 text-base text-text-secondary sm:text-lg">India is our home and our launch market.</p>
+                <p className="mx-auto mt-4 max-w-4xl text-lg leading-relaxed text-text-secondary sm:text-xl">
+                  Connect with verified buyers, sellers, manufacturers, distributors, exporters,
+                  importers, and professional service providers. Discover high-value RFQs, unlock
+                  GOCASH rewards, participate in TRADGO, and experience the future of secure,
+                  transparent, and AI-powered global trade&mdash;all within one intelligent ecosystem.
+                </p>
+                  <Link href="/products">
+                  <motion.span
+                    whileHover={{ y: -2, scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-[#ff4d00] px-6 py-3 text-sm font-bold text-primary shadow-lg shadow-[#ff4d00]/20 cursor-pointer"
+                  >
+                    Explore India Marketplace <ChevronRight size={16} />
+                  </motion.span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <h3 className="mt-4 text-3xl font-black text-primary">Welcome to the TRADINGO Family</h3>
+                <p className="mt-1 text-sm font-semibold text-amber-400/80 sm:text-base">Global Expansion in Progress ({selected})</p>
 
-              <div className="relative z-10 p-8 text-center">
-                <motion.div
-                  animate={{ rotate: [0, 8, -8, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                  className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[rgba(212,175,55,0.08)]"
-                  style={{ border: '1px solid rgba(212,175,55,0.15)' }}
-                >
-                  <Globe className="h-10 w-10 text-[#D4AF37]" />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
-                >
-                  <h3 className="mt-5 text-xl font-black text-white sm:text-2xl">Welcome to the TRADINGO Family</h3>
-                  <p className="mt-1 text-xs font-semibold text-[#D4AF37]/70">Global Expansion in Progress</p>
-
-                  <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-white/50">
-                    Thank you for your interest in TRADINGO.
+                <div className="mx-auto mt-6 max-w-4xl space-y-4 text-base leading-relaxed text-text-secondary sm:text-lg">
+                  <p>Thank you for your interest in TRADINGO.</p>
+                  <p>
+                    TRADINGO – The Global Smart TRADHEXA B2B Marketplace is currently launched in India and is progressively expanding into international markets.
                   </p>
-
-                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-white/40">
-                    TRADINGO \u2013 The Global Smart TRADHEXA B2B Marketplace is currently launched in India and is progressively expanding into international markets.
-                  </p>
-
-                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-white/40">
+                  <p>
                     We are actively preparing localized experiences for your region and look forward to welcoming you very soon.
                   </p>
-
-                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-white/40">
+                  <p className="text-text-secondary font-medium">
                     We sincerely appreciate your patience and support.
                   </p>
-                </motion.div>
+                </div>
 
-                <div className="mt-6 flex flex-col gap-2.5">
-                  <button className="group flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#C9A84C] px-6 py-2.5 text-sm font-bold text-[#0B1220] transition-all hover:shadow-lg hover:shadow-[rgba(212,175,55,0.25)]">
-                    <Bell size={14} /> Notify Me When We Launch
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <button className="group flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-[#ff4d00] px-6 py-2.5 text-sm font-bold text-primary transition-all hover:shadow-lg hover:shadow-[#ff4d00]/25 cursor-pointer">
+                    Notify Me When We Launch
                   </button>
-                  <button className="group flex items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-6 py-2.5 text-sm font-semibold text-white/60 transition-all hover:bg-white/[0.08] hover:text-white">
-                    <Mail size={14} /> Join the Waiting List
+                  <button className="group flex items-center justify-center gap-2 rounded-full border border-border bg-surface-secondary px-6 py-2.5 text-sm font-semibold text-text-secondary transition-all hover:bg-surface-tertiary hover:text-primary cursor-pointer">
+                    Join the Waiting List
                   </button>
-                  <Link href="/browse">
-                    <button className="group flex w-full items-center justify-center gap-2 rounded-full border border-[rgba(212,175,55,0.15)] bg-[rgba(212,175,55,0.06)] px-6 py-2.5 text-sm font-semibold text-[#D4AF37] transition-all hover:bg-[rgba(212,175,55,0.1)]">
-                      <Store size={14} /> Explore TRADINGO India
+                <Link href="/products">
+                    <button className="group flex items-center justify-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-6 py-2.5 text-sm font-semibold text-amber-400 transition-all hover:bg-amber-500/10 cursor-pointer">
+                      Explore TRADINGO India
                     </button>
                   </Link>
                 </div>
 
-                <div className="mt-6 flex items-center justify-center gap-4 text-[10px] text-white/20">
+                <div className="mt-8 flex items-center justify-center gap-4 text-[10px] text-text-secondary max-w-md mx-auto border-t border-border pt-4">
                   <span>Coming Soon to Your Country.</span>
-                  <span className="h-3 w-px bg-white/[0.06]" />
-                  <span className="text-[#D4AF37]/40">Trade Without Borders.</span>
-                  <span className="h-3 w-px bg-white/[0.06]" />
+                  <span className="h-3 w-px bg-surface-tertiary" />
+                  <span className="text-amber-400/80">Trade Without Borders.</span>
+                  <span className="h-3 w-px bg-surface-tertiary" />
                   <span>Powered by TRADHEXA.</span>
                 </div>
-              </div>
-            </motion.div>
+              </>
+            )}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
     </section>
   );
 }

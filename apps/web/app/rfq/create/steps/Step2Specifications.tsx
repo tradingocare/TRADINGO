@@ -5,8 +5,8 @@ import FormField from './vendor-registration/components/FormField'
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
 
 const inputStyle = (hasError: boolean) => ({
-  background: 'rgba(255,255,255,0.06)',
-  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--bg-elevated)',
+  border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
   boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
 })
 
@@ -93,9 +93,9 @@ export default function Step2Specifications({ form, errors, update }: Step2Speci
           value={form.preferredRegions}
           onChange={e => update('preferredRegions', e.target.value)}
         >
-          <option value="" style={{ background: '#1D0001', color: 'rgba(255,255,255,0.5)' }}>Select preferred region</option>
+          <option value="" style={{ background: 'var(--bg-base)', color: 'rgba(255,255,255,0.5)' }}>Select preferred region</option>
           {regions.map(r => (
-            <option key={r} value={r} style={{ background: '#1D0001' }}>{r}</option>
+            <option key={r} value={r} style={{ background: 'var(--bg-base)' }}>{r}</option>
           ))}
         </select>
       </FormField>
@@ -118,9 +118,9 @@ export default function Step2Specifications({ form, errors, update }: Step2Speci
           value={form.paymentTerms}
           onChange={e => update('paymentTerms', e.target.value)}
         >
-          <option value="" style={{ background: '#1D0001', color: 'rgba(255,255,255,0.5)' }}>Select payment terms</option>
+          <option value="" style={{ background: 'var(--bg-base)', color: 'rgba(255,255,255,0.5)' }}>Select payment terms</option>
           {paymentTerms.map(p => (
-            <option key={p} value={p} style={{ background: '#1D0001' }}>{p}</option>
+            <option key={p} value={p} style={{ background: 'var(--bg-base)' }}>{p}</option>
           ))}
         </select>
       </FormField>

@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, HttpCode, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { SmartPoService } from './smart-po.service';
 import { UpdatePoDto } from './dto/update-po.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -10,6 +12,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Response } from 'express';
 
 @ApiTags('Smart Purchase Order Engine')
+@Throttle(RateLimits.ORDER_CREATE)
 @UseGuards(JwtAuthGuard)
 @Controller('smart-po')
 export class SmartPoController {
@@ -103,7 +106,7 @@ export class SmartPoController {
   @Get(':id/pdf')
   @ApiOperation({ summary: 'Get purchase order PDF HTML' })
   async getPdf(@CurrentUser('sub') userId: string, @Param('id') id: string, @Res() res: Response) {
-    const html = await this.poService.getPdfHtml(id);
+    const html = await this.poService.getPdfHtml(id, userId);
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Content-Disposition', `inline; filename="po-${id.slice(0, 8)}.html"`);
     res.send(html);

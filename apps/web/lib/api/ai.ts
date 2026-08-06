@@ -133,3 +133,184 @@ export function listBulkJobs(params?: { page?: number; limit?: number }) {
 export function getBulkStats() {
   return apiClient.get<{ total: number; pending: number; processing: number; completed: number; failed: number }>('/ai/bulk/stats').then(r => r.data);
 }
+
+// ─── P-3.3 AI Product Intelligence — New Endpoints ─────────────────
+
+export interface HighlightsResponse {
+  productId: string;
+  highlights: string[];
+  keySellingPoints: string[];
+  tags: string[];
+}
+
+export interface TagsResponse {
+  productId: string;
+  tags: string[];
+}
+
+export interface HsnGstResponse {
+  productId: string;
+  hsnCode: string;
+  gstRate: number;
+  description: string;
+}
+
+export interface RelatedProduct {
+  id: string;
+  name: string;
+  slug: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  brand: string | null;
+  similarity: number;
+  matchReason: string;
+}
+
+export interface MetaKeywordsResponse {
+  productId: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string[];
+  focusKeyphrase: string;
+}
+
+export function generateHighlights(data: { productId: string }) {
+  return apiClient.post<HighlightsResponse>('/ai/products/generate-highlights', data).then(r => r.data);
+}
+
+export function generateTags(data: { productId: string; count?: number }) {
+  return apiClient.post<TagsResponse>('/ai/products/generate-tags', data).then(r => r.data);
+}
+
+export function suggestHsnGst(data: { productId: string }) {
+  return apiClient.post<HsnGstResponse>('/ai/products/suggest-hsn-gst', data).then(r => r.data);
+}
+
+export function suggestRelatedProducts(data: { productId: string; limit?: number }) {
+  return apiClient.post<RelatedProduct[]>('/ai/products/suggest-related', data).then(r => r.data);
+}
+
+export function generateMetaKeywords(data: { productId: string }) {
+  return apiClient.post<MetaKeywordsResponse>('/ai/products/generate-meta-keywords', data).then(r => r.data);
+}
+
+// ─── P-3.3 Commerce Intelligence ────────────────────────────────────
+
+export interface SalesPotentialResponse {
+  productId: string;
+  productName: string;
+  salesPotential: number;
+  demandLevel: string;
+  competitionLevel: string;
+  competitorCount: number;
+  categoryRfqCount: number;
+  categoryOrderCount: number;
+  inStock: boolean;
+  estimatedMonthlyDemand: number;
+}
+
+export interface SuggestedPriceResponse {
+  productId: string;
+  currentPrice: number;
+  suggestedPrice: number;
+  avgCategoryPrice: number;
+  medianCategoryPrice: number;
+  suggestedMargin: number;
+  pricePosition: string;
+  competitorCount: number;
+}
+
+export interface DemandTrendResponse {
+  productId: string;
+  trend: string;
+  rfqCount: number;
+  orderCount: number;
+  quoteCount: number;
+  demandScore: number;
+}
+
+export interface CompetitionAnalysisResponse {
+  productId: string;
+  totalCompetitors: number;
+  brandCount: number;
+  avgCompetitorTrustScore: number;
+  competitors: Array<{ id: string; name: string; brand: string | null; minPrice: number | null; companyName: string | null; trustScore: number | null }>;
+  marketConcentration: string;
+}
+
+export interface SuggestedAdvertisingResponse {
+  productId: string;
+  suggestedDailyBudget: number;
+  suggestedMonthlyBudget: number;
+  suggestedKeywords: string[];
+  competitionLevel: string;
+  estimatedCpc: number;
+}
+
+export interface FullCommerceInsightsResponse {
+  productId: string;
+  salesPotential: SalesPotentialResponse | null;
+  suggestedPricing: SuggestedPriceResponse | null;
+  demandTrend: DemandTrendResponse | null;
+  competitionAnalysis: CompetitionAnalysisResponse | null;
+  suggestedAdvertising: SuggestedAdvertisingResponse | null;
+  overallCommerceScore: number;
+}
+
+export function getSalesPotential(productId: string) {
+  return apiClient.get<SalesPotentialResponse>(`/ai/commerce/sales-potential/${productId}`).then(r => r.data);
+}
+
+export function getSuggestedPrice(productId: string) {
+  return apiClient.get<SuggestedPriceResponse>(`/ai/commerce/suggested-price/${productId}`).then(r => r.data);
+}
+
+export function getDemandTrend(productId: string) {
+  return apiClient.get<DemandTrendResponse>(`/ai/commerce/demand-trend/${productId}`).then(r => r.data);
+}
+
+export function getCompetitionAnalysis(productId: string) {
+  return apiClient.get<CompetitionAnalysisResponse>(`/ai/commerce/competition/${productId}`).then(r => r.data);
+}
+
+export function getSuggestedAdvertising(productId: string) {
+  return apiClient.get<SuggestedAdvertisingResponse>(`/ai/commerce/advertising/${productId}`).then(r => r.data);
+}
+
+export function getFullCommerceInsights(productId: string) {
+  return apiClient.get<FullCommerceInsightsResponse>(`/ai/commerce/full-insights/${productId}`).then(r => r.data);
+}
+
+// ─── P-3.3 Product Completeness ─────────────────────────────────────
+
+export interface CompletenessField {
+  name: string;
+  status: 'present' | 'missing' | 'incomplete';
+  importance: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+}
+
+export interface ProductCompletenessResponse {
+  productId: string;
+  productName: string;
+  completionPercent: number;
+  totalFields: number;
+  presentFields: number;
+  missingFields: number;
+  incompleteFields: number;
+  fields: CompletenessField[];
+  grade: string;
+}
+
+export interface BulkCompletenessResponse {
+  results: ProductCompletenessResponse[];
+  total: number;
+}
+
+export function getProductCompleteness(productId: string) {
+  return apiClient.get<ProductCompletenessResponse>(`/ai/completeness/${productId}`).then(r => r.data);
+}
+
+export function getBulkCompleteness(productIds: string[]) {
+  return apiClient.post<BulkCompletenessResponse>('/ai/completeness/bulk', { productIds }).then(r => r.data);
+}

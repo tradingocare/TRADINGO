@@ -14,15 +14,28 @@ import { JobSchedulerService } from './job-scheduler.service';
 import { QueueNames } from './queues';
 import { AnalyticsModule } from '../modules/analytics/analytics.module';
 import { ProductsModule } from '../modules/products/products.module';
-import { TradTrustService } from '../modules/tradtrust/tradtrust.service';
+import { TradTrustModule } from '../modules/tradtrust/tradtrust.module';
+import { AiGatewayModule } from '../modules/ai-gateway/ai-gateway.module';
+import { AiOrchestratorModule } from '../modules/ai-orchestrator/ai-orchestrator.module';
+import { AiRuntimeModule } from '../modules/ai-runtime/ai-runtime.module';
 import { EscrowService, EscrowAnalyticsService } from '../modules/escrow';
 import { SettlementService, SettlementAnalyticsService } from '../modules/settlement';
 import { DisputeService, DisputeAnalyticsService, AdminService, AdminAssignmentService } from '../modules/dispute';
+import { PayoutService } from '../modules/payout/payout.service';
+import { PayoutProcessor } from './payout.processor';
+import { CommissionModule } from '../modules/commission/commission.module';
+import { PayoutModule } from '../modules/payout/payout.module';
 
 @Module({
   imports: [
     AnalyticsModule,
     ProductsModule,
+    TradTrustModule,
+    AiGatewayModule,
+    AiOrchestratorModule,
+    AiRuntimeModule,
+    CommissionModule,
+    PayoutModule,
     BullModule.registerQueue(
       { name: QueueNames.EMAIL },
       { name: QueueNames.EXPORT },
@@ -34,9 +47,11 @@ import { DisputeService, DisputeAnalyticsService, AdminService, AdminAssignmentS
       { name: QueueNames.SETTLEMENT },
       { name: QueueNames.DISPUTE },
       { name: QueueNames.ANALYTICS },
-        { name: QueueNames.MALWARE },
-        { name: QueueNames.BESTSELLER },
-        { name: QueueNames.AI },
+      { name: QueueNames.MALWARE },
+      { name: QueueNames.BESTSELLER },
+      { name: QueueNames.AI },
+      { name: QueueNames.TRACKING },
+      { name: QueueNames.PAYOUT },
     ),
   ],
   providers: [
@@ -50,7 +65,7 @@ import { DisputeService, DisputeAnalyticsService, AdminService, AdminAssignmentS
     DisputeProcessor,
     BestsellerProcessor,
     AiProcessor,
-    TradTrustService,
+    PayoutProcessor,
     EscrowService,
     EscrowAnalyticsService,
     SettlementService,
@@ -59,6 +74,7 @@ import { DisputeService, DisputeAnalyticsService, AdminService, AdminAssignmentS
     DisputeAnalyticsService,
     AdminService,
     AdminAssignmentService,
+    PayoutService,
     JobSchedulerService,
   ],
   exports: [BullModule],

@@ -1,52 +1,79 @@
 {
-  "family": "tradingo-api",
+  "family": "tradingo-production-api",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "executionRoleArn": "arn:aws:iam::__AWS_ACCOUNT_ID__:role/tradingo-production-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::__AWS_ACCOUNT_ID__:role/tradingo-production-ecs-task-role",
   "containerDefinitions": [
     {
-      "name": "tradingo-api",
-      "image": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/tradingo-api:latest",
+      "name": "api",
+      "image": "__AWS_ACCOUNT_ID__.dkr.ecr.ap-south-1.amazonaws.com/tradingo-production-api:latest",
       "essential": true,
       "portMappings": [
-        {
-          "containerPort": 3001,
-          "protocol": "tcp"
-        }
+        { "containerPort": 3001, "hostPort": 3001, "protocol": "tcp" },
+        { "containerPort": 9100, "hostPort": 9100, "protocol": "tcp" }
       ],
       "environment": [
         { "name": "NODE_ENV", "value": "production" },
-        { "name": "PORT", "value": "3001" }
+        { "name": "PORT", "value": "3001" },
+        { "name": "LOG_LEVEL", "value": "info" },
+        { "name": "FRONTEND_URL", "value": "https://tradingo.in" },
+        { "name": "AWS_REGION", "value": "ap-south-1" }
       ],
       "secrets": [
-        { "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/DATABASE_URL" },
-        { "name": "REDIS_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/REDIS_URL" },
-        { "name": "JWT_SECRET", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/JWT_SECRET" },
-        { "name": "JWT_REFRESH_SECRET", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/JWT_REFRESH_SECRET" },
-        { "name": "AWS_ACCESS_KEY_ID", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/AWS_ACCESS_KEY_ID" },
-        { "name": "AWS_SECRET_ACCESS_KEY", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/AWS_SECRET_ACCESS_KEY" },
-        { "name": "AWS_BUCKET", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/AWS_BUCKET" },
-        { "name": "CLOUDFRONT_DOMAIN", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/CLOUDFRONT_DOMAIN" },
-        { "name": "OPENSEARCH_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/OPENSEARCH_URL" },
-        { "name": "SENTRY_DSN", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/SENTRY_DSN" },
-        { "name": "CLICKHOUSE_URL", "valueFrom": "arn:aws:ssm:us-east-1:ACCOUNT_ID:parameter/tradingo/prod/CLICKHOUSE_URL" }
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/DATABASE_URL" },
+        { "name": "REDIS_URL", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/REDIS_URL" },
+        { "name": "JWT_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/JWT_SECRET" },
+        { "name": "JWT_REFRESH_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/JWT_REFRESH_SECRET" },
+        { "name": "RAZORPAY_KEY_ID", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/RAZORPAY_KEY_ID" },
+        { "name": "RAZORPAY_KEY_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/RAZORPAY_KEY_SECRET" },
+        { "name": "RAZORPAY_WEBHOOK_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/RAZORPAY_WEBHOOK_SECRET" },
+        { "name": "SENTRY_DSN", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/SENTRY_DSN" },
+        { "name": "SMTP_HOST", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/SMTP_HOST" },
+        { "name": "SMTP_USER", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/SMTP_USER" },
+        { "name": "SMTP_PASS", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/SMTP_PASS" },
+        { "name": "GOOGLE_CLIENT_ID", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/GOOGLE_CLIENT_ID" },
+        { "name": "GOOGLE_CLIENT_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/GOOGLE_CLIENT_SECRET" },
+        { "name": "LINKEDIN_CLIENT_ID", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/LINKEDIN_CLIENT_ID" },
+        { "name": "LINKEDIN_CLIENT_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/LINKEDIN_CLIENT_SECRET" },
+        { "name": "OPENSEARCH_URL", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/OPENSEARCH_URL" },
+        { "name": "OPENSEARCH_USERNAME", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/OPENSEARCH_USERNAME" },
+        { "name": "OPENSEARCH_PASSWORD", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/OPENSEARCH_PASSWORD" },
+        { "name": "CLICKHOUSE_URL", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/CLICKHOUSE_URL" },
+        { "name": "PAYMENT_MODE", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/PAYMENT_MODE" },
+        { "name": "AI_CACHE_ENABLED", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/AI_CACHE_ENABLED" },
+        { "name": "GOOGLE_MAPS_API_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/GOOGLE_MAPS_API_KEY" },
+        { "name": "TWILIO_ACCOUNT_SID", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/TWILIO_ACCOUNT_SID" },
+        { "name": "TWILIO_AUTH_TOKEN", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/TWILIO_AUTH_TOKEN" },
+        { "name": "TWILIO_PHONE_NUMBER", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/TWILIO_PHONE_NUMBER" },
+        { "name": "OPENROUTER_API_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/OPENROUTER_API_KEY" },
+        { "name": "OPENAI_API_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/OPENAI_API_KEY" },
+        { "name": "GEMINI_API_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/GEMINI_API_KEY" },
+        { "name": "GROQ_API_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/GROQ_API_KEY" },
+        { "name": "TAVILY_API_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/TAVILY_API_KEY" },
+        { "name": "FIRECRAWL_API_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/FIRECRAWL_API_KEY" },
+        { "name": "AI_VAULT_MASTER_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/AI_VAULT_MASTER_KEY" },
+        { "name": "STRIPE_PUBLISHABLE_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/STRIPE_PUBLISHABLE_KEY" },
+        { "name": "STRIPE_SECRET_KEY", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/STRIPE_SECRET_KEY" },
+        { "name": "STRIPE_WEBHOOK_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:__AWS_ACCOUNT_ID__:parameter/tradingo/production/STRIPE_WEBHOOK_SECRET" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/tradingo-api",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "api"
+          "awslogs-group": "/ecs/tradingo-production-api",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "api",
+          "awslogs-create-group": "true"
         }
       },
       "healthCheck": {
-        "command": ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"],
+        "command": ["CMD-SHELL", "curl -f http://localhost:3001/live || exit 1"],
         "interval": 30,
         "timeout": 5,
-        "retries": 3
+        "retries": 3,
+        "startPeriod": 60
       }
     }
   ]

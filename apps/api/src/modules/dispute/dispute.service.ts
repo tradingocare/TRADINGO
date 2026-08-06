@@ -1,10 +1,23 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
+import { NotificationType, Prisma, DisputeStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { DisputeAnalyticsService } from './dispute-analytics.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { AdminAssignmentService } from './admin-assignment.service';
+import {
+  CreateDisputeDto,
+  CreateBookingDisputeDto,
+  UpdateDisputeStatusDto,
+  AddMessageDto,
+  AddEvidenceDto,
+  ResolveDisputeDto,
+  AppealDisputeDto,
+  ReviewAppealDto,
+  QueryDisputeDto,
+  EscalateDisputeDto,
+} from './dto/dispute.dto';
 
 @Injectable()
 export class DisputeService {
@@ -48,7 +61,7 @@ export class DisputeService {
   async create(
     companyId: string,
     userId: string,
-    dto: any,
+    dto: CreateDisputeDto,
   ): Promise<any> {
     const order = await this.prisma.order.findUnique({ where: { id: dto.orderId } });
     if (!order || order.deletedAt) throw new NotFoundException('Order not found');
@@ -125,7 +138,7 @@ export class DisputeService {
       await this.notificationService.createWithTemplate(
         againstCompanyId,
         undefined,
-        'DISPUTE_CREATED' as any,
+        NotificationType.DISPUTE_CREATED,
         {
           disputeNumber,
           orderNumber: order.orderNumber,
@@ -157,7 +170,85 @@ export class DisputeService {
     });
   }
 
-  async findAll(companyId: string, query: any) {
+  async createBookingDispute(
+    companyId: string,
+    userId: string,
+    dto: CreateBookingDisputeDto,
+  ) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: dto.bookingId },
+      include: { escrow: true },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    const isBuyer = companyId === booking.clientId;
+    const againstCompanyId = isBuyer ? booking.companyId : booking.clientId;
+    const disputeNumber = `DSP-BK-${dto.bookingId.slice(0, 8).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+    const dispute = await this.prisma.$transaction(async (tx) => {
+      const d = await tx.dispute.create({
+        data: {
+          disputeNumber,
+          bookingId: dto.bookingId,
+          escrowId: booking.escrow?.id ?? null,
+          raisedByCompanyId: companyId,
+          againstCompanyId,
+          type: dto.type,
+          reason: dto.reason,
+          description: dto.description,
+          amount: dto.amount ?? null,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      });
+
+      await tx.disputeTimelineEvent.create({
+        data: {
+          disputeId: d.id,
+          type: 'DISPUTE_CREATED',
+          description: `Booking dispute raised: ${dto.description}`,
+          createdBy: userId,
+        },
+      });
+
+      if (booking.escrow?.status === 'HELD') {
+        await tx.escrow.update({
+          where: { id: booking.escrow.id },
+          data: { status: 'DISPUTED', disputedAt: new Date() },
+        });
+      }
+
+      return d;
+    });
+
+    await this.notificationService.createWithTemplate(
+      againstCompanyId,
+      undefined,
+      NotificationType.DISPUTE_OPENED,
+      { bookingId: dto.bookingId, disputeNumber, description: dto.description, type: dto.type, reason: dto.reason },
+    ).catch((err) => this.logger.warn(`Booking dispute notification failed: ${(err as Error).message}`));
+
+    await this.disputeAnalyticsService.trackEvent(
+      companyId,
+      dispute.id,
+      'DISPUTE_CREATED',
+      { bookingId: dto.bookingId, type: dto.type, reason: dto.reason },
+    );
+
+    return this.prisma.dispute.findUnique({
+      where: { id: dispute.id },
+      include: {
+        booking: { select: { id: true, status: true, paymentStatus: true, amount: true } },
+        messages: true,
+        evidence: true,
+        timeline: true,
+        resolution: true,
+        appeal: true,
+      },
+    });
+  }
+
+  async findAll(companyId: string, query: QueryDisputeDto) {
     const where: any = {
       OR: [{ raisedByCompanyId: companyId }, { againstCompanyId: companyId }],
     };
@@ -221,7 +312,7 @@ export class DisputeService {
     disputeId: string,
     companyId: string,
     userId: string,
-    dto: any,
+    dto: UpdateDisputeStatusDto,
   ) {
     const dispute = await this.prisma.dispute.findUnique({ where: { id: disputeId } });
     if (!dispute) throw new NotFoundException('Dispute not found');
@@ -258,7 +349,7 @@ export class DisputeService {
         },
       });
 
-      const escrow = await tx.escrow.findUnique({ where: { orderId: dispute.orderId } });
+      const escrow = dispute.orderId ? await tx.escrow.findUnique({ where: { orderId: dispute.orderId } }) : null;
       if (escrow) {
         if (dto.status === 'RESOLVED' || dto.status === 'PARTIALLY_RESOLVED') {
           const resolutionAction = dto.status === 'RESOLVED' ? 'RELEASED' : 'PARTIALLY_RELEASED';
@@ -287,7 +378,7 @@ export class DisputeService {
         await this.notificationService.createWithTemplate(
           dispute.raisedByCompanyId,
           undefined,
-          'DISPUTE_RESOLVED' as any,
+          NotificationType.DISPUTE_RESOLVED,
           { disputeNumber: dispute.disputeNumber, status: dto.status },
         );
       } catch (err) {
@@ -309,7 +400,7 @@ export class DisputeService {
         await this.notificationService.createWithTemplate(
           dispute.raisedByCompanyId,
           undefined,
-          'DISPUTE_REJECTED' as any,
+          NotificationType.DISPUTE_REJECTED,
           { disputeNumber: dispute.disputeNumber },
         );
       } catch (err) {
@@ -327,7 +418,7 @@ export class DisputeService {
     return result;
   }
 
-  async addMessage(disputeId: string, companyId: string, userId: string, dto: any) {
+  async addMessage(disputeId: string, companyId: string, userId: string, dto: AddMessageDto) {
     const dispute = await this.prisma.dispute.findUnique({
       where: { id: disputeId },
       include: { messages: true },
@@ -362,7 +453,7 @@ export class DisputeService {
       await this.notificationService.createWithTemplate(
         otherParty,
         undefined,
-        'DISPUTE_UPDATED' as any,
+        NotificationType.DISPUTE_UPDATED,
         { disputeNumber: dispute.disputeNumber, message: 'New message added to dispute' },
       );
     } catch (err) {
@@ -372,7 +463,7 @@ export class DisputeService {
     return message;
   }
 
-  async addEvidence(disputeId: string, companyId: string, userId: string, dto: any) {
+  async addEvidence(disputeId: string, companyId: string, userId: string, dto: AddEvidenceDto) {
     const dispute = await this.prisma.dispute.findUnique({
       where: { id: disputeId },
       include: { evidence: true },
@@ -434,7 +525,7 @@ export class DisputeService {
       await this.notificationService.createWithTemplate(
         otherParty,
         undefined,
-        'DISPUTE_EVIDENCE_REQUIRED' as any,
+        NotificationType.DISPUTE_EVIDENCE_REQUIRED,
         { disputeNumber: dispute.disputeNumber, fileName: dto.fileName },
       );
     } catch (err) {
@@ -444,7 +535,7 @@ export class DisputeService {
     return evidence;
   }
 
-  async escalate(disputeId: string, companyId: string, userId: string, dto?: any) {
+  async escalate(disputeId: string, companyId: string, userId: string, dto?: EscalateDisputeDto) {
     const dispute = await this.prisma.dispute.findUnique({ where: { id: disputeId } });
     if (!dispute) throw new NotFoundException('Dispute not found');
     if (
@@ -471,7 +562,7 @@ export class DisputeService {
           type: 'DISPUTE_ESCALATED',
           description: dto?.reason ?? 'Dispute escalated to admin',
           createdBy: userId,
-          metadata: dto?.reason ? { reason: dto.reason } as any : null,
+          metadata: dto?.reason ? { reason: dto.reason } as Prisma.InputJsonValue : Prisma.DbNull,
         },
       });
 
@@ -484,7 +575,7 @@ export class DisputeService {
       await this.notificationService.createWithTemplate(
         dispute.againstCompanyId,
         undefined,
-        'DISPUTE_ESCALATED' as any,
+        NotificationType.DISPUTE_ESCALATED,
         { disputeNumber: dispute.disputeNumber, reason: dto?.reason ?? 'Escalated to admin' },
       );
     } catch (err) {
@@ -501,7 +592,7 @@ export class DisputeService {
     return result;
   }
 
-  async resolveDispute(disputeId: string, userId: string, dto: any) {
+  async resolveDispute(disputeId: string, userId: string, dto: ResolveDisputeDto) {
     const dispute = await this.prisma.dispute.findUnique({
       where: { id: disputeId },
       include: { resolution: true },
@@ -533,7 +624,7 @@ export class DisputeService {
       const updated = await tx.dispute.update({
         where: { id: disputeId },
         data: {
-          status: targetStatus as any,
+          status: targetStatus as DisputeStatus,
           [timestampField]: new Date(),
           updatedBy: userId,
         },
@@ -548,7 +639,7 @@ export class DisputeService {
         },
       });
 
-      const escrow = await tx.escrow.findUnique({ where: { orderId: dispute.orderId } });
+      const escrow = dispute.orderId ? await tx.escrow.findUnique({ where: { orderId: dispute.orderId } }) : null;
       if (escrow) {
         if (targetStatus === 'REFUNDED') {
           await tx.escrow.update({
@@ -576,8 +667,8 @@ export class DisputeService {
         dispute.raisedByCompanyId,
         undefined,
         targetStatus === 'REFUNDED'
-          ? 'DISPUTE_REFUNDED' as any
-          : 'DISPUTE_RESOLVED' as any,
+          ? NotificationType.DISPUTE_REFUNDED
+          : NotificationType.DISPUTE_RESOLVED,
         {
           disputeNumber: dispute.disputeNumber,
           resolutionType: dto.resolutionType,
@@ -609,7 +700,7 @@ export class DisputeService {
     return result;
   }
 
-  async appeal(disputeId: string, companyId: string, userId: string, dto: any) {
+  async appeal(disputeId: string, companyId: string, userId: string, dto: AppealDisputeDto) {
     const dispute = await this.prisma.dispute.findUnique({
       where: { id: disputeId },
       include: { appeal: true },
@@ -658,7 +749,7 @@ export class DisputeService {
       await this.notificationService.createWithTemplate(
         dispute.againstCompanyId,
         undefined,
-        'DISPUTE_APPEALED' as any,
+        NotificationType.DISPUTE_APPEALED,
         { disputeNumber: dispute.disputeNumber, reason: dto.reason },
       );
     } catch (err) {
@@ -670,7 +761,7 @@ export class DisputeService {
     return result;
   }
 
-  async reviewAppeal(disputeId: string, userId: string, dto: any) {
+  async reviewAppeal(disputeId: string, userId: string, dto: ReviewAppealDto) {
     const dispute = await this.prisma.dispute.findUnique({
       where: { id: disputeId },
       include: { appeal: true },
@@ -679,7 +770,7 @@ export class DisputeService {
     if (!dispute.appeal) throw new BadRequestException('No appeal found for this dispute');
 
     const accepted = dto.decision === 'ACCEPTED' || dto.decision === 'accepted';
-    const newStatus = accepted ? 'UNDER_REVIEW' : (dispute.status === 'APPEALED' ? 'RESOLVED' : dispute.status as any);
+    const newStatus: DisputeStatus = accepted ? 'UNDER_REVIEW' as DisputeStatus : (dispute.status === 'APPEALED' ? 'RESOLVED' as DisputeStatus : dispute.status);
 
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.disputeAppeal.update({
@@ -695,7 +786,7 @@ export class DisputeService {
 
       const updated = await tx.dispute.update({
         where: { id: disputeId },
-        data: { status: newStatus as any, updatedBy: userId },
+        data: { status: newStatus, updatedBy: userId },
       });
 
       await tx.disputeTimelineEvent.create({
@@ -736,7 +827,7 @@ export class DisputeService {
 
   async processExpiredDisputes() {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const expiredStatuses: any = ['OPEN', 'EVIDENCE_PENDING', 'NEGOTIATION'];
+    const expiredStatuses: DisputeStatus[] = ['OPEN', 'EVIDENCE_PENDING', 'NEGOTIATION'];
 
     const disputes = await this.prisma.dispute.findMany({
       where: {
@@ -829,7 +920,7 @@ export class DisputeService {
           type: 'ARBITRATOR_ASSIGNED',
           description: `Arbitrator assigned via ${admin.reason}`,
           createdBy: 'system',
-          metadata: { adminId: admin.adminId } as any,
+          metadata: { adminId: admin.adminId } as Prisma.InputJsonValue,
         },
       });
 
@@ -854,13 +945,13 @@ export class DisputeService {
       await this.notificationService.createWithTemplate(
         dispute.raisedByCompanyId,
         undefined,
-        'DISPUTE_ESCALATED' as any,
+        NotificationType.DISPUTE_ESCALATED,
         { disputeNumber: dispute.disputeNumber, reason: 'Admin arbitration started' },
       );
       await this.notificationService.createWithTemplate(
         dispute.againstCompanyId,
         undefined,
-        'DISPUTE_ESCALATED' as any,
+        NotificationType.DISPUTE_ESCALATED,
         { disputeNumber: dispute.disputeNumber, reason: 'Admin arbitration started' },
       );
     } catch (err) {
@@ -914,13 +1005,13 @@ export class DisputeService {
       await this.notificationService.createWithTemplate(
         dispute.raisedByCompanyId,
         undefined,
-        'DISPUTE_ARBITRATION_OVERDUE' as any,
+        NotificationType.DISPUTE_ARBITRATION_OVERDUE,
         { disputeNumber: dispute.disputeNumber },
       );
       await this.notificationService.createWithTemplate(
         dispute.againstCompanyId,
         undefined,
-        'DISPUTE_ARBITRATION_OVERDUE' as any,
+        NotificationType.DISPUTE_ARBITRATION_OVERDUE,
         { disputeNumber: dispute.disputeNumber },
       );
     } catch (err) {

@@ -5,7 +5,9 @@ import { DashboardPageHeader } from '@/components/dashboard';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { StatusBadge } from '@/components/dashboard/status-badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { apiClient } from '@/lib/api/client';
+import { EmptyState } from '@/components/ui/empty-state';
 import { MessageSquare, Bug, Lightbulb, Star, Download } from 'lucide-react';
 
 interface FeedbackEntry {
@@ -30,7 +32,7 @@ export default function FeedbackDashboardPage() {
   useEffect(() => {
     apiClient.get<FeedbackEntry[]>('/beta-feedback')
       .then((r) => setEntries(Array.isArray(r.data) ? r.data : []))
-      .catch(() => {})
+      .catch(() => { console.error('Failed to load feedback'); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -112,22 +114,22 @@ export default function FeedbackDashboardPage() {
         <CardContent className="pt-6">
           <div className="mb-4 flex items-center gap-3">
             <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Submissions</h3>
-            <select
+            <Select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="ml-auto rounded-md border border-border bg-surface px-3 py-1 text-sm text-text-primary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary"
+              className="ml-auto w-auto"
             >
               <option value="all">All</option>
               <option value="bug">Bug Reports</option>
               <option value="feature">Feature Requests</option>
               <option value="nps">NPS</option>
-            </select>
+            </Select>
             <span className="text-sm text-text-secondary">{filtered.length} entries</span>
           </div>
           {loading ? (
             <p className="text-sm text-text-secondary">Loading...</p>
           ) : filtered.length === 0 ? (
-            <p className="text-sm text-text-secondary">No submissions yet</p>
+            <EmptyState title="No submissions yet" />
           ) : (
             <div className="space-y-2">
               {filtered.map((entry) => (

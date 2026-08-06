@@ -4,16 +4,40 @@ import { captureError, addBreadcrumb } from '@/lib/monitoring/sentry';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+let csrfToken: string | null = null;
+let csrfPromise: Promise<string | null> | null = null;
+
+async function fetchCsrfToken(): Promise<string | null> {
+  try {
+    const res = await axios.get(`${BASE_URL}/auth/csrf`, { withCredentials: true, timeout: 5000 });
+    csrfToken = res.data?.token ?? null;
+  } catch {
+    csrfToken = null;
+  }
+  return csrfToken;
+}
+
+function ensureCsrfToken(): Promise<string | null> {
+  if (csrfToken) return Promise.resolve(csrfToken);
+  if (!csrfPromise) csrfPromise = fetchCsrfToken();
+  return csrfPromise;
+}
+
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
+  withCredentials: true,
 });
 
-apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = getAccessToken();
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const method = (config.method ?? 'get').toUpperCase();
+  if (method !== 'GET' && config.headers && !config.headers.Authorization) {
+    config.headers['x-csrf-token'] = (await ensureCsrfToken()) ?? '';
   }
   return config;
 });
@@ -22,7 +46,19 @@ let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'statusCode' in response.data &&
+      'message' in response.data &&
+      'data' in response.data &&
+      'timestamp' in response.data
+    ) {
+      response.data = (response.data as any).data;
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
@@ -66,15 +102,24 @@ apiClient.interceptors.response.use(
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return false;
-
-    const res = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+    const res = await axios.post(`${BASE_URL}/auth/refresh`, {}, {
+      withCredentials: true,
+      headers: { 'x-csrf-token': (await ensureCsrfToken()) ?? '' },
+    });
     setAccessToken(res.data.accessToken);
-    localStorage.setItem('refreshToken', res.data.refreshToken || refreshToken);
     return true;
   } catch {
-    return false;
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return false;
+    try {
+      const res = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken }, {
+        headers: { 'x-csrf-token': (await ensureCsrfToken()) ?? '' },
+      });
+      setAccessToken(res.data.accessToken);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

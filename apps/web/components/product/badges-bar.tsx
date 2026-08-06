@@ -36,10 +36,10 @@ const SHOW_MAP: Record<string, (product: BadgesBarProduct) => boolean> = {
 };
 
 const BADGE_STYLES: Record<string, { bg: string; border: string; color: string }> = {
-  success: { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', color: '#4ade80' },
-  warning: { bg: 'rgba(242,201,76,0.12)', border: 'rgba(242,201,76,0.3)', color: '#F2C94C' },
-  accent:  { bg: 'rgba(255,77,0,0.12)', border: 'rgba(255,77,0,0.3)', color: '#FF4D00' },
-  default: { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' },
+  success: { bg: 'color-mix(in srgb, var(--status-success) 12%, transparent)', border: 'color-mix(in srgb, var(--status-success) 30%, transparent)', color: 'var(--status-success)' },
+  warning: { bg: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: 'color-mix(in srgb, var(--accent) 30%, transparent)', color: 'var(--accent)' },
+  accent:  { bg: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: 'color-mix(in srgb, var(--accent) 30%, transparent)', color: 'var(--accent)' },
+  default: { bg: 'color-mix(in srgb, var(--bg-surface) 90%, transparent)', border: 'var(--border-color)', color: 'var(--text-primary)' },
 };
 
 export function BadgesBar({ product, className }: BadgesBarProps) {

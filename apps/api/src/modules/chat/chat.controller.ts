@@ -1,13 +1,16 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { ChatService } from './chat.service';
 import { ChatAnalyticsService } from './chat-analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CreateConversationDto, SearchMessagesDto, ReportMessageDto, UploadUrlDto } from './dto/chat.dto';
+import { CreateConversationDto, SendMessageDto, SearchMessagesDto, ReportMessageDto, UploadUrlDto } from './dto/chat.dto';
 
 @ApiTags('TRADCONNECT')
+@Throttle(RateLimits.CHAT_MESSAGE)
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/tradconnect')
 export class ChatController {
@@ -81,7 +84,7 @@ export class ChatController {
     @Param('companyId') companyId: string,
     @Param('conversationId') conversationId: string,
     @CurrentUser('sub') userId: string,
-    @Body() dto: any,
+    @Body() dto: SendMessageDto,
   ) {
     return this.chatService.sendMessage(conversationId, companyId, userId, dto);
   }

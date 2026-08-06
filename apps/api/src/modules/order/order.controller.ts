@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 import { OrderService } from './order.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
@@ -8,6 +10,7 @@ import { CreateOrderDto, UpdateOrderDto, CancelOrderDto, CreateReturnDto, Create
 import { OrderStatus } from '@prisma/client';
 
 @ApiTags('ORDERS')
+@Throttle(RateLimits.ORDER_CREATE)
 @UseGuards(JwtAuthGuard, CompanyOwnerGuard)
 @Controller('companies/:companyId/orders')
 export class OrderController {

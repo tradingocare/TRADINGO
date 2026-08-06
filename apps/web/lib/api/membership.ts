@@ -63,7 +63,21 @@ export interface AuditLog {
   createdAt: string
 }
 
+export interface CurrentSubscription {
+  subscriptionStatus: string;
+  subscriptionPlan: string | null;
+  subscriptionActivatedAt: string | null;
+  subscriptionExpiresAt: string | null;
+  currentPlanId: string | null;
+}
+
 // Public endpoints
+export const getCurrentPlan = () =>
+  api.get('/membership/current').then(r => {
+    const d = r.data?.data || r.data || r
+    return d as CurrentSubscription
+  })
+
 export const getLaunchPlans = () =>
   api.get('/membership/plans/launch').then(r => {
     const d = r.data?.data || r.data || r

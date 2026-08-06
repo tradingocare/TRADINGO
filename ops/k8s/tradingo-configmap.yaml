@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tradingo-config
+  namespace: tradingo
+  labels:
+    app.kubernetes.io/name: tradingo
+    app.kubernetes.io/part-of: tradingo-platform
+data:
+  NODE_ENV: "production"
+  PORT: "3001"
+  NEXT_PUBLIC_API_URL: "https://api.tradingo.in/api/v1"
+  FRONTEND_URL: "https://tradingo.in"
+  CORS_ORIGIN: "https://tradingo.in"
+  LOG_LEVEL: "info"
+  REDIS_PREFIX: "tradingo"
+  S3_REGION: "us-east-1"
+  S3_BUCKET: "tradingo-uploads"
+  CLOUDFRONT_DOMAIN: "d1xabc2def3ghi.cloudfront.net"
+  OPENSEARCH_URL: "https://opensearch.tradingo.internal:9200"
+  CLICKHOUSE_URL: "http://clickhouse:8123"
+  PAYMENT_MODE: "production"
+  SMTP_HOST: "email-smtp.us-east-1.amazonaws.com"
+  SMTP_PORT: "587"
+  SMTP_FROM: "noreply@tradingo.in"
+  SENTRY_ENABLED: "true"
+  METRICS_PORT: "9100"
+  API_BODYLIMIT: "104857600"
+  RATE_LIMIT_TTL: "60"
+  RATE_LIMIT_MAX: "100"
+  JWT_EXPIRY: "15m"
+  JWT_REFRESH_EXPIRY: "7d"
+  BACKUP_S3_BUCKET: "tradingo-backups"
+  BACKUP_RETENTION_DAYS: "30"
+  BACKUP_SCHEDULE: "0 2 * * *"

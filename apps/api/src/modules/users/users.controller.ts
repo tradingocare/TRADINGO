@@ -1,4 +1,6 @@
 import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,13 +10,17 @@ import { Permissions } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UpdateUserDto, UserFilterDto } from './dto/user.dto';
 import { Role } from '../../common/enums/role.enum';
+import { RateLimits } from '../../common/constants/rate-limits.const';
 
+@ApiTags('Users')
+@Throttle(RateLimits.WRITE_GENERAL)
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @ApiOperation({ summary: 'List all users' })
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN')
   async findAll(@Query() query: UserFilterDto) {
@@ -22,11 +28,13 @@ export class UsersController {
   }
 
   @Get('me')
+  @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@CurrentUser('sub') userId: string) {
     return this.usersService.findById(userId);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
   async findOne(@Param('id') id: string, @CurrentUser('sub') userId: string) {
     if (id !== userId) {
       const requester = await this.usersService.findById(userId);
@@ -38,6 +46,7 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a user' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
@@ -47,6 +56,7 @@ export class UsersController {
   }
 
   @Patch(':id/role')
+  @ApiOperation({ summary: 'Update user role' })
   @UseGuards(RolesGuard, PermissionsGuard)
   @Roles('SUPER_ADMIN', 'ADMIN')
   @Permissions('users:write:role')
@@ -59,6 +69,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a user' })
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN')
   async remove(@Param('id') id: string, @CurrentUser('sub') userId: string) {

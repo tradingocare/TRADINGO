@@ -1,6 +1,7 @@
 'use client'
 
 import { Shield, TrendingUp, TrendingDown, Clock, AlertTriangle, Info } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { RankBadge } from '@/components/shared/RankBadge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,22 +29,22 @@ const gradeColors: Record<string, { bg: string; text: string; ring: string }> = 
   'A+': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', ring: 'ring-emerald-500/30' },
   'A': { bg: 'bg-green-500/20', text: 'text-green-400', ring: 'ring-green-500/30' },
   'B+': { bg: 'bg-blue-500/20', text: 'text-blue-400', ring: 'ring-blue-500/30' },
-  'B': { bg: 'bg-amber-500/20', text: 'text-amber-400', ring: 'ring-amber-500/30' },
-  'C': { bg: 'bg-orange-500/20', text: 'text-orange-400', ring: 'ring-orange-500/30' },
+  'B': { bg: 'bg-accent-500/20', text: 'text-accent-500', ring: 'ring-accent-500/30' },
+  'C': { bg: 'bg-accent-500/20', text: 'text-accent-500', ring: 'ring-accent-500/30' },
   'D': { bg: 'bg-red-500/20', text: 'text-red-400', ring: 'ring-red-500/30' },
 }
 
 const riskColors: Record<string, { bg: string; text: string }> = {
   'Low': { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-  'Medium': { bg: 'bg-amber-500/10', text: 'text-amber-400' },
-  'High': { bg: 'bg-orange-500/10', text: 'text-orange-400' },
+  'Medium': { bg: 'bg-accent-500/10', text: 'text-accent-500' },
+  'High': { bg: 'bg-accent-500/10', text: 'text-accent-500' },
   'Critical': { bg: 'bg-red-500/10', text: 'text-red-400' },
 }
 
 function getScoreBarColor(score: number): string {
   if (score >= 80) return 'bg-emerald-500'
   if (score >= 60) return 'bg-blue-500'
-  if (score >= 40) return 'bg-amber-500'
+  if (score >= 40) return 'bg-accent-500'
   return 'bg-red-500'
 }
 
@@ -68,12 +69,7 @@ function BreakdownBar({ item }: { item: BreakdownItem }) {
           {item.score}/100
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-surface-secondary dark:bg-dark-surface-secondary overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${getScoreBarColor(item.score)}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <Progress value={item.score} size="sm" variant={item.score >= 80 ? 'success' : item.score >= 60 ? 'info' : item.score >= 40 ? 'warning' : 'danger'} />
       <div className="text-[10px] text-text-secondary/60 dark:text-dark-text-secondary/60">
         {item.contribution >= 0 ? `+${item.contribution}` : item.contribution} pts of {item.maxContribution} max
       </div>

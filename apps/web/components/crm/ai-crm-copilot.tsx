@@ -1,28 +1,34 @@
 'use client'
 import { useState } from 'react'
-import { Sparkles, Loader2, TrendingUp, Target, AlertTriangle, MessageSquare, FileText, BarChart3, Lightbulb, ArrowRight, Users } from 'lucide-react'
+import { Sparkles, TrendingUp, Target, AlertTriangle, MessageSquare, FileText, BarChart3, Lightbulb, ArrowRight, Users } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Tabs, type Tab } from '@/components/ui/tabs'
+
+interface CrmActionRequest {
+  leadData: Record<string, unknown>
+}
 
 interface AiCrmCopilotProps {
   leadId: string
   leadData: Record<string, unknown>
-  onScoring: (data: any) => Promise<any>
-  onNextBestAction: (data: any) => Promise<any>
-  onConversionProbability: (data: any) => Promise<any>
-  onInsights: (data: any) => Promise<any>
-  onSentiment: (data: any) => Promise<any>
-  onDealRisk: (data: any) => Promise<any>
-  onRecommendedActions: (data: any) => Promise<any>
-  onCommunicationTips: (data: any) => Promise<any>
+  onScoring: (data: CrmActionRequest) => Promise<unknown>
+  onNextBestAction: (data: CrmActionRequest) => Promise<unknown>
+  onConversionProbability: (data: CrmActionRequest) => Promise<unknown>
+  onInsights: (data: CrmActionRequest) => Promise<unknown>
+  onSentiment: (data?: Record<string, never>) => Promise<unknown>
+  onDealRisk: (data: CrmActionRequest) => Promise<unknown>
+  onRecommendedActions: (data: CrmActionRequest) => Promise<unknown>
+  onCommunicationTips: (data: CrmActionRequest) => Promise<unknown>
   isGenerating: boolean
 }
 
 type CopilotTab = 'insights' | 'actions' | 'risk' | 'communication'
 
-const TABS: { key: CopilotTab; label: string; icon: typeof TrendingUp }[] = [
-  { key: 'insights', label: 'Insights', icon: BarChart3 },
-  { key: 'actions', label: 'Actions', icon: ArrowRight },
-  { key: 'risk', label: 'Risk', icon: AlertTriangle },
-  { key: 'communication', label: 'Comm.', icon: MessageSquare },
+const tabs: Tab[] = [
+  { value: 'insights', label: 'Insights', icon: <BarChart3 className="h-3.5 w-3.5" /> },
+  { value: 'actions', label: 'Actions', icon: <ArrowRight className="h-3.5 w-3.5" /> },
+  { value: 'risk', label: 'Risk', icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+  { value: 'communication', label: 'Comm.', icon: <MessageSquare className="h-3.5 w-3.5" /> },
 ]
 
 export function AiCrmCopilot({
@@ -36,49 +42,38 @@ export function AiCrmCopilot({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <Sparkles className="h-4 w-4 text-orange-400" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+        <Sparkles className="h-4 w-4 text-accent-500" />
         AI CRM Copilot
       </div>
 
-      <div className="flex gap-1 border-b border-white/[0.06] text-xs overflow-x-auto">
-        {TABS.map(t => {
-          const Icon = t.icon
-          return (
-            <button key={t.key} onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-1 px-2 py-1.5 border-b-2 whitespace-nowrap transition-colors ${activeTab === t.key ? 'border-orange-400 text-orange-300' : 'border-transparent text-white/40 hover:text-white/60'}`}>
-              <Icon className="h-3 w-3" />
-              {t.label}
-            </button>
-          )
-        })}
-      </div>
+      <Tabs tabs={tabs} value={activeTab} onChange={v => setActiveTab(v as CopilotTab)} />
 
       {activeTab === 'insights' && (
         <div className="space-y-2">
-          <p className="text-xs text-white/50">AI-powered lead insights and scoring.</p>
+          <p className="text-xs text-text-secondary">AI-powered lead insights and scoring.</p>
           <button onClick={() => onScoring({ leadData })}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-orange-500/10 hover:border-orange-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TrendingUp className="h-3.5 w-3.5 text-orange-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-accent-500/10 hover:border-accent-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <TrendingUp className="h-3.5 w-3.5 text-accent-500" />}
             AI Lead Scoring
           </button>
           <button onClick={() => onConversionProbability({ leadData })}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-green-500/10 hover:border-green-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Target className="h-3.5 w-3.5 text-green-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-green-500/10 hover:border-green-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <Target className="h-3.5 w-3.5 text-green-400" />}
             Conversion Probability
           </button>
           <button onClick={() => onInsights({ leadData })}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-blue-500/10 hover:border-blue-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Users className="h-3.5 w-3.5 text-blue-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-blue-500/10 hover:border-blue-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <Users className="h-3.5 w-3.5 text-blue-400" />}
             Deep Lead Insights
           </button>
           <button onClick={() => onSentiment({})}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-amber-500/10 hover:border-amber-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BarChart3 className="h-3.5 w-3.5 text-amber-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-accent-500/10 hover:border-accent-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <BarChart3 className="h-3.5 w-3.5 text-accent-500" />}
             Sentiment Analysis
           </button>
         </div>
@@ -86,17 +81,17 @@ export function AiCrmCopilot({
 
       {activeTab === 'actions' && (
         <div className="space-y-2">
-          <p className="text-xs text-white/50">Recommended actions and next steps.</p>
+          <p className="text-xs text-text-secondary">Recommended actions and next steps.</p>
           <button onClick={() => onNextBestAction({ leadData })}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-purple-500/10 hover:border-purple-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5 text-purple-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-purple-500/10 hover:border-purple-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <ArrowRight className="h-3.5 w-3.5 text-purple-400" />}
             Next Best Action
           </button>
           <button onClick={() => onRecommendedActions({ leadData })}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-cyan-500/10 hover:border-cyan-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lightbulb className="h-3.5 w-3.5 text-cyan-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-cyan-500/10 hover:border-cyan-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <Lightbulb className="h-3.5 w-3.5 text-cyan-400" />}
             Recommended Actions
           </button>
         </div>
@@ -104,11 +99,11 @@ export function AiCrmCopilot({
 
       {activeTab === 'risk' && (
         <div className="space-y-2">
-          <p className="text-xs text-white/50">Deal risk detection and alerts.</p>
+          <p className="text-xs text-text-secondary">Deal risk detection and alerts.</p>
           <button onClick={() => onDealRisk({ leadData })}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AlertTriangle className="h-3.5 w-3.5 text-red-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <AlertTriangle className="h-3.5 w-3.5 text-red-400" />}
             Deal Risk Detection
           </button>
         </div>
@@ -116,17 +111,17 @@ export function AiCrmCopilot({
 
       {activeTab === 'communication' && (
         <div className="space-y-2">
-          <p className="text-xs text-white/50">Personalized communication guidance.</p>
+          <p className="text-xs text-text-secondary">Personalized communication guidance.</p>
           <button onClick={() => onCommunicationTips({ leadData })}
             disabled={isGenerating}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.06] text-sm hover:bg-indigo-500/10 hover:border-indigo-500/30 disabled:opacity-50 transition-colors">
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5 text-indigo-400" />}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-indigo-500/10 hover:border-indigo-500/30 disabled:opacity-50 transition-colors">
+            {isGenerating ? <LoadingSpinner size="xs" color="accent" /> : <MessageSquare className="h-3.5 w-3.5 text-indigo-400" />}
             Communication Tips
           </button>
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-[10px] text-white/30 pt-2">
+      <div className="flex items-center gap-2 text-[10px] text-text-tertiary pt-2">
         <Lightbulb className="h-3 w-3" />
         Powered by AI Gateway
       </div>

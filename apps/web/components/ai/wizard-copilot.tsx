@@ -1,8 +1,10 @@
 'use client'
 import { useState, useCallback } from 'react'
-import { Sparkles, Loader2 } from 'lucide-react'
+import { Sparkles, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToast } from '@/components/ui/use-toast'
 import { apiClient } from '@/lib/api-client'
+import { QualityBadge } from '@/components/enterprise-catalog/quality-badge'
 
 interface AiActionButtonProps {
   label: string
@@ -18,11 +20,11 @@ export function AiActionButton({ label, loading, onClick, variant = 'ghost' }: A
       disabled={loading}
       className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
         variant === 'primary'
-          ? 'bg-orange-500 text-white hover:bg-orange-600'
-          : 'border border-orange-500/20 text-orange-400 hover:bg-orange-500/10'
+          ? 'bg-accent-500 text-black hover:bg-accent-500/80'
+          : 'border border-accent-500/20 text-accent-500 hover:bg-accent-500/10'
       }`}
     >
-      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+      {loading ? <LoadingSpinner size="xs" color="accent" /> : <Sparkles className="h-3 w-3" />}
       {label}
     </button>
   )
@@ -74,22 +76,24 @@ export function WizardCopilot({
   formValues,
   aiLoading,
   onGenerate,
+  productId,
 }: {
   currentStep: number
   formValues: Record<string, any>
   aiLoading: Record<string, boolean>
   onGenerate: (action: string, apiCall: () => Promise<any>, onResult: (data: any) => void) => void
+  productId?: string
 }) {
   const v = formValues
   const ctx = buildContext(v)
 
-  const actions = getStepActions(currentStep, ctx, onGenerate)
+  const actions = getStepActions(currentStep, ctx, onGenerate, productId)
   if (!actions.length) return null
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-orange-500/10 bg-orange-500/[0.03] px-4 py-3">
-      <Sparkles className="h-3.5 w-3.5 text-orange-400 shrink-0" />
-      <span className="text-xs font-medium text-orange-400/80 mr-1">AI</span>
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-accent-500/10 bg-accent-500/[0.03] px-4 py-3">
+      <Sparkles className="h-3.5 w-3.5 text-accent-500 shrink-0" />
+      <span className="text-xs font-medium text-accent-500/80 mr-1">AI</span>
       {actions.map((a) => (
         <AiActionButton key={a.key} label={a.label} loading={!!aiLoading[a.key]} onClick={a.onClick} />
       ))}
@@ -101,10 +105,25 @@ function getStepActions(
   step: number,
   ctx: Record<string, unknown>,
   onGenerate: (action: string, apiCall: () => Promise<any>, onResult: (data: any) => void) => void,
+  productId?: string,
 ) {
   switch (step) {
     case 1:
       return [
+        {
+          key: 'generateTitle',
+          label: 'Generate Title',
+          onClick: () =>
+            onGenerate(
+              'generateTitle',
+              () => apiClient.post('/ai/products/generate-title', { ...ctx, productId: ctx.draftId || '' }),
+              (data) => {
+                if (data?.title && typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('wizard-ai-fill', { detail: { name: data.title } }))
+                }
+              },
+            ),
+        },
         {
           key: 'generateDescription',
           label: 'Generate Description',
@@ -165,6 +184,20 @@ function getStepActions(
               (data) => {
                 if (data?.specs && typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('wizard-ai-fill', { detail: { specs: data.specs } }))
+                }
+              },
+            ),
+        },
+        {
+          key: 'suggestAttributes',
+          label: 'Suggest Attributes',
+          onClick: () =>
+            onGenerate(
+              'suggestAttributes',
+              () => apiClient.post('/ai/products/suggest-attributes', { ...ctx, productId: ctx.draftId || '' }),
+              (data) => {
+                if (data?.attributes && typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('wizard-ai-fill', { detail: { attributes: data.attributes } }))
                 }
               },
             ),
@@ -257,7 +290,7 @@ function getStepActions(
           onClick: () =>
             onGenerate(
               'calculateScore',
-              () => apiClient.post(`/ai/quality/calculate/${ctx.draftId || ''}`, {}),
+              () => apiClient.post(`/ai/quality/calculate/${productId || ctx.draftId || ''}`, {}),
               (data) => {
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('wizard-ai-fill', { detail: { score: data } }))
@@ -265,6 +298,48 @@ function getStepActions(
               },
             ),
         },
+        ...(productId ? [{
+          key: 'checkDuplicates',
+          label: 'Check Duplicates',
+          onClick: () =>
+            onGenerate(
+              'checkDuplicates',
+              () => apiClient.post('/ai/quality/detect-duplicates', { productId }),
+              (data) => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('wizard-ai-fill', { detail: { duplicates: data } }))
+                }
+              },
+            ),
+        }] : []),
+        ...(productId ? [{
+          key: 'generateHighlights',
+          label: 'AI Highlights',
+          onClick: () =>
+            onGenerate(
+              'generateHighlights',
+              () => apiClient.post('/ai/products/generate-highlights', { productId }),
+              (data) => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('wizard-ai-fill', { detail: { highlights: data } }))
+                }
+              },
+            ),
+        }] : []),
+        ...(productId ? [{
+          key: 'suggestCommerce',
+          label: 'Commerce Intel',
+          onClick: () =>
+            onGenerate(
+              'suggestCommerce',
+              () => apiClient.get(`/ai/commerce/full-insights/${productId}`),
+              (data) => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('wizard-ai-fill', { detail: { commerce: data } }))
+                }
+              },
+            ),
+        }] : []),
       ]
     default:
       return []

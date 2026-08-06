@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { PrismaService } from '../../prisma/prisma.service';
 import { RfqAnalyticsService } from '../rfq/rfq-analytics.service';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, MatchStatus, type Rfq, type RfqLocation, type Prisma } from '@prisma/client';
 
 const WEIGHTS = {
   CATEGORY: 0.45,
@@ -27,6 +27,31 @@ const VENDOR_REACH_LIMITS: Record<string, number> = {
   TRADE_ELITE: Infinity,
   TRADBUY: 50,
 };
+
+export interface ScoredVendor {
+  vendorId: string;
+  categoryScore: number;
+  geoScore: number;
+  trustScore: number;
+  responseScore: number;
+  tradgoScore: number;
+  planScore: number;
+  finalScore: number;
+}
+
+interface MatchVendor {
+  id: string;
+  name: string;
+  trustScore: number;
+  responseRate: number;
+  goCashBalance: number;
+  subscriptionPlan: string | null;
+  subscriptionStatus: string;
+  categories: { categoryId: string }[];
+  locations?: Array<{ city: string; state: string; country: string; pincode?: string | null; stateCode?: string | null }>;
+  parentCategoryIds?: string[];
+  industryIds?: string[];
+}
 
 @Injectable()
 export class TradmatchService {
@@ -89,7 +114,7 @@ export class TradmatchService {
     return match;
   }
 
-  private async scoreAndRankVendors(rfq: any, maxVendors: number) {
+  private async scoreAndRankVendors(rfq: Rfq, maxVendors: number) {
     const rfqLocation = await this.prisma.rfqLocation.findFirst({
       where: { rfqId: rfq.id, isPrimary: true },
     }) ?? await this.prisma.rfqLocation.findFirst({ where: { rfqId: rfq.id } });
@@ -98,7 +123,7 @@ export class TradmatchService {
 
     if (candidates.length < Math.min(maxVendors, 5)) {
       const expanded = await this.expandCategory(rfq.categoryId, rfq.companyId);
-      const existingIds = new Set(candidates.map((c: any) => c.id));
+      const existingIds = new Set(candidates.map((c) => c.id));
       for (const v of expanded) {
         if (!existingIds.has(v.id)) candidates.push(v);
       }
@@ -106,20 +131,20 @@ export class TradmatchService {
 
     if (candidates.length < Math.min(maxVendors, 3) && rfqLocation) {
       const radiusVendors = await this.expandRadius(rfqLocation, rfq.companyId, rfq.categoryId);
-      const existingIds = new Set(candidates.map((c: any) => c.id));
+      const existingIds = new Set(candidates.map((c) => c.id));
       for (const v of radiusVendors) {
         if (!existingIds.has(v.id)) candidates.push(v);
       }
     }
 
-    const scored = candidates.map((vendor: any) => this.calculateScore(vendor, rfq, rfqLocation));
+    const scored = candidates.map((vendor) => this.calculateScore(vendor, rfq, rfqLocation));
 
-    scored.sort((a: any, b: any) => b.finalScore - a.finalScore);
+    scored.sort((a, b) => b.finalScore - a.finalScore);
 
     return scored.slice(0, maxVendors);
   }
 
-  private calculateScore(vendor: any, rfq: any, rfqLocation: any) {
+  private calculateScore(vendor: MatchVendor, rfq: Rfq, rfqLocation: RfqLocation | null): ScoredVendor {
     const categoryScore = this.categoryMatchScore(vendor, rfq);
     const geoScore = this.geoMatchScore(vendor, rfqLocation);
     const trustScore = (vendor.trustScore ?? 0) / 100;
@@ -139,16 +164,16 @@ export class TradmatchService {
     return { vendorId: vendor.id, categoryScore, geoScore, trustScore, responseScore, tradgoScore, planScore, finalScore };
   }
 
-  private categoryMatchScore(vendor: any, rfq: any): number {
+  private categoryMatchScore(vendor: MatchVendor, rfq: Rfq): number {
     if (!rfq.categoryId) return 0.5;
-    const vendorCategoryIds = (vendor.categories ?? []).map((cc: any) => cc.categoryId);
+    const vendorCategoryIds = (vendor.categories ?? []).map((cc) => cc.categoryId);
     if (vendorCategoryIds.includes(rfq.categoryId)) return 1.0;
     if (vendor.parentCategoryIds?.includes(rfq.categoryId)) return 0.8;
-    if (vendor.industryIds?.includes(rfq.industryId)) return 0.5;
+    if (vendor.industryIds?.includes(rfq.industryId ?? '')) return 0.5;
     return 0.3;
   }
 
-  private geoMatchScore(vendor: any, rfqLocation: any): number {
+  private geoMatchScore(vendor: MatchVendor, rfqLocation: RfqLocation | null): number {
     if (!rfqLocation) return 0.5;
     const vendorLocation = vendor.locations?.[0];
     if (!vendorLocation) return 0.3;
@@ -159,7 +184,7 @@ export class TradmatchService {
     return 0.1;
   }
 
-  private async findVendorsByCategory(categoryId: string | null, buyerCompanyId: string) {
+  private async findVendorsByCategory(categoryId: string | null, buyerCompanyId: string): Promise<MatchVendor[]> {
     if (!categoryId) return [];
     return this.prisma.company.findMany({
       where: {
@@ -177,7 +202,7 @@ export class TradmatchService {
     });
   }
 
-  private async expandCategory(categoryId: string | null, buyerCompanyId: string) {
+  private async expandCategory(categoryId: string | null, buyerCompanyId: string): Promise<MatchVendor[]> {
     if (!categoryId) return [];
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
@@ -185,7 +210,7 @@ export class TradmatchService {
     });
     if (!category) return [];
 
-    const childIds = category.children.map((c: any) => c.id);
+    const childIds = category.children.map((c) => c.id);
     if (childIds.length === 0) return [];
 
     return this.prisma.company.findMany({
@@ -205,8 +230,8 @@ export class TradmatchService {
     });
   }
 
-  private async expandRadius(rfqLocation: any, buyerCompanyId: string, categoryId: string | null) {
-    const where: any = {
+  private async expandRadius(rfqLocation: RfqLocation, buyerCompanyId: string, categoryId: string | null): Promise<MatchVendor[]> {
+    const where: Prisma.CompanyWhereInput = {
       id: { not: buyerCompanyId },
       status: 'ACTIVE',
       subscriptionStatus: { not: 'CANCELLED' },
@@ -230,9 +255,9 @@ export class TradmatchService {
     });
   }
 
-  private async broadcastMatches(rfqId: string, matches: any[]) {
+  private async broadcastMatches(rfqId: string, matches: ScoredVendor[]) {
     const now = new Date();
-    const data = matches.map((m: any) => ({
+    const data = matches.map((m) => ({
       rfqId,
       companyId: m.vendorId,
       matchScore: m.finalScore,
@@ -242,7 +267,7 @@ export class TradmatchService {
       responseScore: m.responseScore,
       tradgoScore: m.tradgoScore,
       planScore: m.planScore,
-      status: 'SENT' as any,
+      status: MatchStatus.SENT,
       sentAt: now,
       matchedAt: now,
     }));
@@ -253,7 +278,7 @@ export class TradmatchService {
       data: {
         action: 'RFQ_MATCHES_CREATED',
         resource: `rfq:${rfqId}`,
-        metadata: { matchCount: data.length, vendorIds: matches.map((m: any) => m.vendorId) },
+        metadata: { matchCount: data.length, vendorIds: matches.map((m) => m.vendorId) },
       },
     });
 

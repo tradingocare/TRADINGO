@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { DashboardPageHeader } from '@/components/dashboard';
 import { Input } from '@/components/ui/input';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useBuyerDownloads } from '@/hooks';
-import { Download, FileText, FileImage, FileArchive, File, Search, Loader2 } from 'lucide-react';
+import { Download, FileText, FileImage, FileArchive, File, Search } from 'lucide-react';
 
 const typeConfig: Record<string, { icon: any; color: string }> = {
   CATALOGUE: { icon: FileText, color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' },
@@ -32,7 +33,7 @@ export default function BuyerDownloadsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-text-tertiary" /></div>
+        <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
           <Download className="h-12 w-12 text-text-tertiary" />
@@ -45,7 +46,7 @@ export default function BuyerDownloadsPage() {
             const cfg = typeConfig[dl.type] ?? { icon: File, color: 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary' };
             const Icon = cfg.icon;
             return (
-              <div key={dl.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-[#FF5A1F]/20 dark:bg-dark-surface dark:border-dark-border">
+              <div key={dl.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-[#f97316]/20 dark:bg-dark-surface dark:border-dark-border">
                 <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${cfg.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
@@ -59,7 +60,7 @@ export default function BuyerDownloadsPage() {
                   </div>
                 </div>
                 <a href={dl.fileUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#FF5A1F]/10 px-3 py-2 text-xs font-medium text-[#FF5A1F] transition-colors hover:bg-[#FF5A1F]/20">
+                  className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#f97316]/10 px-3 py-2 text-xs font-medium text-[#f97316] transition-colors hover:bg-[#f97316]/20">
                   <Download className="h-3.5 w-3.5" /> Download
                 </a>
               </div>
