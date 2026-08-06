@@ -7,6 +7,7 @@ import { OrderTimelineService } from './order-timeline.service';
 import { OrderDocumentService } from './order-document.service';
 import { OrderAnalyticsService } from './order-analytics.service';
 import { ChatService } from '../chat/chat.service';
+import { NotificationService } from '../notification/notification.service';
 
 const mockPrisma = () => ({
   company: { findFirst: jest.fn() },
@@ -55,6 +56,7 @@ describe('OrderService', () => {
         { provide: OrderDocumentService, useValue: documentService },
         { provide: OrderAnalyticsService, useValue: analytics },
         { provide: ChatService, useValue: chatService },
+        { provide: NotificationService, useValue: { createWithTemplate: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -163,7 +165,7 @@ describe('OrderService', () => {
     });
 
     it('should require buyer role for delivery confirmation', async () => {
-      prisma.order.findUnique.mockResolvedValue({ id: 'order-1', buyerCompanyId: 'c1', sellerCompanyId: 'c2', deletedAt: null, status: 'DISPATCHED' });
+      prisma.order.findUnique.mockResolvedValue({ id: 'order-1', buyerCompanyId: 'c1', sellerCompanyId: 'c2', deletedAt: null, status: 'IN_TRANSIT' });
       await expect(service.updateStatus('order-1', 'c2', 'u1', 'DELIVERED')).rejects.toThrow(ForbiddenException);
     });
   });
@@ -181,7 +183,7 @@ describe('OrderService', () => {
       prisma.order.findUnique.mockResolvedValue({ id: 'order-1', buyerCompanyId: 'c1', sellerCompanyId: 'c2', deletedAt: null, status: 'DISPATCHED' });
       prisma.orderLocation.findUnique.mockResolvedValue({ id: 'loc-1', orderId: 'order-1', deliveryStatus: 'DISPATCHED', city: 'Mumbai' });
       prisma.orderLocation.update.mockResolvedValue({ id: 'loc-1', deliveryStatus: 'DELIVERED' });
-      prisma.orderLocation.count.mockResolvedValue(0);
+      prisma.orderLocation.count.mockResolvedValue(1);
       prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'DELIVERED' });
       const result = await service.deliverLocation('order-1', 'loc-1', 'c1', 'u1');
       expect(result.deliveryStatus).toBe('DELIVERED');

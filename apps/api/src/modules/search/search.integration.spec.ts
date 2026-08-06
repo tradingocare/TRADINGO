@@ -58,7 +58,7 @@ describe('Search Flow Integration', () => {
         index,
         id,
         body,
-        refresh: 'wait_for',
+        refresh: false,
       });
     });
 
@@ -81,7 +81,7 @@ describe('Search Flow Integration', () => {
       await service.indexDocument(index, id, complexBody);
 
       expect(mockClient.index).toHaveBeenCalledWith({
-        index, id, body: complexBody, refresh: 'wait_for',
+        index, id, body: complexBody, refresh: false,
       });
     });
 

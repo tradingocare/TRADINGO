@@ -1,19 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SettlementProcessor } from './settlement.processor';
-import { PrismaService } from '../prisma/prisma.service';
-import { createMockPrisma } from '../common/test/test-utils';
+import { SettlementService } from '../modules/settlement/settlement.service';
+import { QueueNames, SettlementJobTypes } from './queues';
 
 describe('SettlementProcessor', () => {
   let processor: SettlementProcessor;
-  let prisma: ReturnType<typeof createMockPrisma>;
+  let settlementService: { processSettlements: jest.Mock; processRetries: jest.Mock };
 
   beforeEach(async () => {
-    prisma = createMockPrisma();
+    settlementService = {
+      processSettlements: jest.fn().mockResolvedValue(undefined),
+      processRetries: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SettlementProcessor,
-        { provide: PrismaService, useValue: prisma },
+        { provide: SettlementService, useValue: settlementService },
       ],
     }).compile();
 
@@ -26,16 +29,24 @@ describe('SettlementProcessor', () => {
   });
 
   describe('process', () => {
-    it('should process settlement job', async () => {
-      const job = { data: { settlementId: 'settle-1' }, id: 'job-1' };
+    it('should process settlements job', async () => {
+      const job = { data: { type: SettlementJobTypes.PROCESS_SETTLEMENTS }, id: 'job-1' };
       const result = await processor.process(job as any);
-      expect(result).toBeDefined();
+      expect(result).toBeUndefined();
+      expect(settlementService.processSettlements).toHaveBeenCalled();
     });
 
-    it('should handle missing settlement data', async () => {
-      const job = { data: {}, id: 'job-2' };
+    it('should process retries job', async () => {
+      const job = { data: { type: SettlementJobTypes.PROCESS_RETRIES }, id: 'job-2' };
+      await processor.process(job as any);
+      expect(settlementService.processRetries).toHaveBeenCalled();
+    });
+
+    it('should handle missing settlement data gracefully', async () => {
+      const job = { data: {}, id: 'job-3' };
       const result = await processor.process(job as any);
-      expect(result).toBeDefined();
+      expect(result).toBeUndefined();
+      expect(settlementService.processSettlements).not.toHaveBeenCalled();
     });
   });
 });

@@ -47,7 +47,7 @@ describe('SearchService', () => {
         index: 'products',
         id: 'doc-1',
         body: { name: 'Test', price: 100 },
-        refresh: 'wait_for',
+        refresh: false,
       });
     });
   });

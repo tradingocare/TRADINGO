@@ -1,17 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { QuoteService } from './quote.service';
+import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const mockDate = new Date('2026-06-13T12:00:00Z');
 
 const makePrisma = () => {
   const prisma = {
-    rfq: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
+    rfq: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn().mockResolvedValue({}) },
     rfqVendorMatch: { findFirst: jest.fn(), updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
     quote: { findFirst: jest.fn(), findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn().mockResolvedValue({}), updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
     quoteLineItem: { findMany: jest.fn() },
     quoteEvent: { create: jest.fn().mockResolvedValue({}) },
+    company: { findUnique: jest.fn() },
     $transaction: jest.fn(),
   };
   prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
@@ -90,6 +92,7 @@ describe('QuoteService', () => {
       providers: [
         QuoteService,
         { provide: PrismaService, useValue: prisma },
+        { provide: NotificationService, useValue: { createWithTemplate: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -305,6 +308,7 @@ describe('QuoteService', () => {
 
     it('should withdraw a submitted quote', async () => {
       prisma.quote.findFirst.mockResolvedValue(mockQuote({ status: 'SUBMITTED' }));
+      prisma.rfq.findUnique.mockResolvedValue({ id: 'rfq-1', title: 'Test RFQ', createdBy: 'buyer-user', companyId: 'buyer-1' });
       prisma.quote.update.mockResolvedValue(mockQuote({ status: 'WITHDRAWN', withdrawnAt: mockDate }));
 
       const result = await service.withdraw('rfq-1', 'quote-1', 'user-1', 'Changed mind');
@@ -351,6 +355,11 @@ describe('QuoteService', () => {
     it('should accept a quote and reject others in transaction', async () => {
       prisma.rfq.findFirst.mockResolvedValue(mockRfq());
       prisma.quote.findFirst.mockResolvedValue(mockQuote({ status: 'SUBMITTED' }));
+      prisma.quote.findMany.mockResolvedValue([
+        { id: 'quote-2', createdBy: 'user-2', companyId: 'vendor-2' },
+        { id: 'quote-3', createdBy: 'user-3', companyId: 'vendor-3' },
+      ]);
+      prisma.company.findUnique.mockResolvedValue({ id: 'buyer-1', name: 'Buyer Corp' });
       prisma.quote.update.mockResolvedValue(mockQuote({ status: 'ACCEPTED' }));
       prisma.quote.findUnique.mockResolvedValue(mockQuote({ status: 'ACCEPTED' }));
 
@@ -442,9 +451,10 @@ describe('QuoteService', () => {
     it('should expire overdue quotes and track events', async () => {
       prisma.quote.updateMany.mockResolvedValue({ count: 2 });
       prisma.quote.findMany.mockResolvedValue([
-        { id: 'q1', companyId: 'v1', rfqId: 'rfq-1' },
-        { id: 'q2', companyId: 'v2', rfqId: 'rfq-1' },
+        { id: 'q1', companyId: 'v1', rfqId: 'rfq-1', createdBy: 'u1' },
+        { id: 'q2', companyId: 'v2', rfqId: 'rfq-1', createdBy: 'u2' },
       ]);
+      prisma.rfq.findMany.mockResolvedValue([{ id: 'rfq-1', title: 'Test RFQ' }]);
 
       const count = await service.expireOverdueQuotes();
 

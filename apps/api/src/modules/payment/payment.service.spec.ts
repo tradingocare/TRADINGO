@@ -3,8 +3,14 @@ import { PaymentService } from './payment.service';
 import { RazorpayService } from './gateways/razorpay.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { StripeService } from './gateways/stripe.service';
+import { MembershipService } from '../membership/membership.service';
+import { EscrowService } from '../escrow/escrow.service';
+import { NotificationService } from '../notification/notification.service';
 
 const mockPrisma = {
+  $transaction: jest.fn(),
   company: {
     findFirst: jest.fn(),
   },
@@ -35,6 +41,9 @@ const mockPrisma = {
     create: jest.fn(),
     count: jest.fn(),
   },
+  auditLog: {
+    create: jest.fn(),
+  },
 };
 
 const mockRazorpayService = {
@@ -42,6 +51,27 @@ const mockRazorpayService = {
   verifyPayment: jest.fn(),
   createRefund: jest.fn(),
   getKeyId: jest.fn().mockReturnValue('rzp_test_key'),
+};
+
+const mockStripeService = {
+  createOrder: jest.fn(),
+  verifyPayment: jest.fn(),
+};
+
+const mockMembershipService = {
+  activateSubscription: jest.fn(),
+};
+
+const mockEscrowService = {
+  hold: jest.fn(),
+};
+
+const mockNotificationService = {
+  createWithTemplate: jest.fn().mockResolvedValue(undefined),
+};
+
+const mockEventEmitter = {
+  emit: jest.fn(),
 };
 
 describe('PaymentService', () => {
@@ -54,11 +84,17 @@ describe('PaymentService', () => {
         PaymentService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: RazorpayService, useValue: mockRazorpayService },
+        { provide: StripeService, useValue: mockStripeService },
+        { provide: MembershipService, useValue: mockMembershipService },
+        { provide: EscrowService, useValue: mockEscrowService },
+        { provide: NotificationService, useValue: mockNotificationService },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 
     service = module.get<PaymentService>(PaymentService);
     razorpay = module.get<RazorpayService>(RazorpayService);
+    mockPrisma.$transaction.mockImplementation((cb: any) => cb(mockPrisma));
     jest.clearAllMocks();
   });
 

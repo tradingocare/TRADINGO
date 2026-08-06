@@ -5,6 +5,9 @@ import { ChatPresenceService } from './chat-presence.service';
 import { ChatAnalyticsService } from './chat-analytics.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 class MockSocket {
   id = 'socket-1';
@@ -36,13 +39,16 @@ describe('ChatGateway', () => {
   let chatPresence: jest.Mocked<ChatPresenceService>;
   let chatAnalytics: jest.Mocked<ChatAnalyticsService>;
   let prisma: any;
+  let configService: any;
 
   beforeEach(async () => {
     prisma = {
+      user: { findUnique: jest.fn() },
       conversationParticipant: { findMany: jest.fn(), findUnique: jest.fn(), updateMany: jest.fn() },
       companyOwner: { findFirst: jest.fn() },
     };
     jwtService = { verify: jest.fn(), sign: jest.fn() } as any;
+    configService = { get: jest.fn().mockReturnValue('test-secret') } as any;
     chatService = {
       sendMessage: jest.fn(),
       deleteMessage: jest.fn(),
@@ -55,10 +61,13 @@ describe('ChatGateway', () => {
       providers: [
         ChatGateway,
         { provide: JwtService, useValue: jwtService },
+        { provide: ConfigService, useValue: configService },
         { provide: PrismaService, useValue: prisma },
         { provide: ChatService, useValue: chatService },
         { provide: ChatPresenceService, useValue: chatPresence },
         { provide: ChatAnalyticsService, useValue: chatAnalytics },
+        { provide: AuditLogService, useValue: { create: jest.fn().mockResolvedValue(undefined), log: jest.fn().mockResolvedValue(undefined) } },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
@@ -86,6 +95,7 @@ describe('ChatGateway', () => {
       const socket = new MockSocket();
       socket.handshake.auth = { token: 'good-token' };
       jwtService.verify.mockReturnValue({ sub: 'u1' });
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', isActive: true });
       prisma.conversationParticipant.findMany.mockResolvedValue([]);
 
       await gateway.handleConnection(socket as any);
@@ -98,6 +108,7 @@ describe('ChatGateway', () => {
       const socket = new MockSocket();
       socket.handshake.auth = { token: 'good-token' };
       jwtService.verify.mockReturnValue({ sub: 'u1' });
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', isActive: true });
       prisma.conversationParticipant.findMany.mockResolvedValue([]);
       gateway.server.emit = jest.fn();
 
@@ -111,6 +122,7 @@ describe('ChatGateway', () => {
     it('should send message and broadcast', async () => {
       const socket = new MockSocket('u1');
       jwtService.verify.mockReturnValue({ sub: 'u1' });
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', isActive: true });
       prisma.conversationParticipant.findMany.mockResolvedValue([]);
       await gateway.handleConnection(socket as any);
 

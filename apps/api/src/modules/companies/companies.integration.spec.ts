@@ -18,7 +18,9 @@ const mockPrisma = {
   auditLog: { create: jest.fn() },
   companyOnboardingLog: { findFirst: jest.fn(), create: jest.fn() },
   subscriptionEvent: { create: jest.fn() },
+  $transaction: jest.fn(),
 };
+mockPrisma.$transaction.mockImplementation((cb: any) => cb(mockPrisma));
 const mockSearch = { indexDocument: jest.fn(), search: jest.fn(), deleteDocument: jest.fn() };
 const mockGuard = { canActivate: jest.fn(() => true) };
 
@@ -66,7 +68,7 @@ describe('Company Flow Integration', () => {
   it('rejects duplicate company slug', async () => {
     mockPrisma.company.findUnique.mockResolvedValue({ id: 'existing' });
 
-    await expect(controller.create({ name: 'Test Co', businessType: 'MANUFACTURER', email: 'c@t.com', organizationId: 'o1', status: 'ACTIVE' } as any, 'u1'))
+    await expect(controller.create({ name: 'Test Co', slug: 'existing', businessType: 'MANUFACTURER', email: 'c@t.com', organizationId: 'o1', status: 'ACTIVE' } as any, 'u1'))
       .rejects.toThrow('Company slug already exists');
   });
 
@@ -87,6 +89,7 @@ describe('Company Flow Integration', () => {
   });
 
   it('updates company and re-indexes', async () => {
+    mockPrisma.company.findFirst.mockResolvedValue({ id: 'c1' });
     mockPrisma.company.update.mockResolvedValue({ id: 'c1', name: 'Updated', slug: 'co', owners: [], locations: [], categories: [], trustScore: 0, verificationLevel: 'UNVERIFIED' });
     mockSearch.indexDocument.mockResolvedValue(undefined);
 
@@ -107,6 +110,7 @@ describe('Company Flow Integration', () => {
   });
 
   it('manages company owners', async () => {
+    mockPrisma.company.findFirst.mockResolvedValue({ id: 'c1' });
     mockPrisma.companyOwner.create.mockResolvedValue({ id: 'co1', companyId: 'c1', userId: 'u2' });
     await controller.addOwner('c1', 'u2', 'u1');
     expect(mockPrisma.companyOwner.create).toHaveBeenCalledWith({ data: { companyId: 'c1', userId: 'u2' } });

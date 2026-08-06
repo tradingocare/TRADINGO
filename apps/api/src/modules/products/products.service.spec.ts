@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
+import { ProductAttributeDisplayService } from './services/product-attribute-display.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 describe('ProductsService', () => {
   let service: ProductsService;
-  let prisma: Record<string, Record<string, jest.Mock>>;
+  let prisma: Record<string, any>;
   let searchService: Record<string, jest.Mock>;
 
   const mockProduct = {
@@ -47,7 +49,9 @@ describe('ProductsService', () => {
       companyOwner: { findUnique: jest.fn() },
       user: { findUnique: jest.fn() },
       auditLog: { create: jest.fn() },
+      $transaction: jest.fn(),
     };
+    prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
 
     searchService = {
       indexDocument: jest.fn(),
@@ -60,6 +64,8 @@ describe('ProductsService', () => {
         ProductsService,
         { provide: PrismaService, useValue: prisma },
         { provide: SearchService, useValue: searchService },
+        { provide: ProductAttributeDisplayService, useValue: { getDisplayAttributes: jest.fn().mockResolvedValue([]), enrichProduct: jest.fn() } },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
@@ -159,6 +165,7 @@ describe('ProductsService', () => {
   describe('findBySlug', () => {
     it('should return product by slug', async () => {
       prisma.product.findFirst.mockResolvedValue(mockProduct);
+      prisma.product.update.mockResolvedValue({ ...mockProduct, viewCount: 1 });
       const result = await service.findBySlug('comp-1-test-product');
       expect(result.id).toBe('prod-1');
     });
@@ -342,6 +349,7 @@ describe('ProductsService', () => {
 
     it('should return empty results when no hits', async () => {
       searchService.search.mockResolvedValue({ hits: [], total: 0 });
+      prisma.product.findMany.mockResolvedValue([]);
       const result = await service.searchProducts('nothing');
       expect(result.data).toHaveLength(0);
       expect(result.meta.total).toBe(0);

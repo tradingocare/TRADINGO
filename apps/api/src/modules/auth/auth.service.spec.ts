@@ -2,10 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { getQueueToken } from '@nestjs/bullmq';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../common/services/redis.service';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { SmsService } from '../sms/sms.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { NotificationService } from '../notification/notification.service';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -70,6 +74,7 @@ describe('AuthService', () => {
         findUnique: jest.fn(),
         delete: jest.fn(),
         deleteMany: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -97,6 +102,10 @@ describe('AuthService', () => {
         { provide: RedisService, useValue: redisService },
         { provide: getQueueToken('email'), useValue: emailQueue },
         { provide: JwtService, useValue: jwtService },
+        { provide: SmsService, useValue: { send: jest.fn(), sendOtp: jest.fn(), sendTransactional: jest.fn() } },
+        { provide: AuditLogService, useValue: { log: jest.fn().mockResolvedValue(undefined), create: jest.fn().mockResolvedValue(undefined) } },
+        { provide: NotificationService, useValue: { create: jest.fn().mockResolvedValue({ id: 'notif-1' }), createWithTemplate: jest.fn().mockResolvedValue({ id: 'notif-1' }) } },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         {
           provide: ConfigService,
           useValue: {

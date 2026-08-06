@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { SearchService } from '../search/search.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { createMockPrisma } from '../../common/test/test-utils';
 import { TradfindService } from './tradfind.service';
 import { ProductSearchService } from './services/product-search.service';
 import { CompanySearchService } from './services/company-search.service';
@@ -39,6 +41,7 @@ describe('TradfindService', () => {
       search: jest.fn(),
       client: { search: jest.fn() },
     };
+    mockSearchService.search.mockResolvedValue(mockSearchResult());
 
     const mockProductSearch = { search: jest.fn() };
     const mockCompanySearch = { search: jest.fn() };
@@ -60,6 +63,7 @@ describe('TradfindService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TradfindService,
+        { provide: PrismaService, useValue: createMockPrisma() },
         { provide: SearchService, useValue: mockSearchService },
         { provide: ProductSearchService, useValue: mockProductSearch },
         { provide: CompanySearchService, useValue: mockCompanySearch },
@@ -99,7 +103,7 @@ describe('TradfindService', () => {
 
       const result = await service.globalSearch({ q: 'test', page: 1, limit: 10 });
 
-      expect(searchService.search).toHaveBeenCalledTimes(4);
+      expect(searchService.search).toHaveBeenCalledTimes(6);
       expect(result.products).toHaveLength(1);
       expect(result.companies).toEqual([]);
       expect(result.categories).toEqual([]);

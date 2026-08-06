@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import { NotificationService } from './notification.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -64,6 +63,7 @@ describe('NotificationService', () => {
 
     it('should queue email notifications', async () => {
       prisma.notification.create.mockResolvedValue(mockNotification);
+      prisma.notification.findUnique.mockResolvedValue(mockNotification);
       await service.create('company-1', {
         userId: 'user-1',
         type: NotificationType.GENERIC,
@@ -76,8 +76,10 @@ describe('NotificationService', () => {
 
     it('should create with template when templateName provided', async () => {
       prisma.notification.create.mockResolvedValue(mockNotification);
+      prisma.notificationPreference.findMany.mockResolvedValue([]);
       const result = await service.createWithTemplate('company-1', 'user-1', NotificationType.GENERIC, { name: 'User' });
       expect(result).toBeDefined();
+      expect(prisma.notificationDelivery.create).toHaveBeenCalled();
     });
   });
 
@@ -85,41 +87,42 @@ describe('NotificationService', () => {
     it('should return paginated notifications', async () => {
       prisma.notification.findMany.mockResolvedValue([mockNotification]);
       prisma.notification.count.mockResolvedValue(1);
-      const result: any = await service.findAll('company-1', { page: 1, limit: 20 });
+      const result: any = await service.findAll('company-1', { limit: '20' });
       expect(result).toBeDefined();
     });
 
     it('should return empty list when no notifications', async () => {
       prisma.notification.findMany.mockResolvedValue([]);
       prisma.notification.count.mockResolvedValue(0);
-      const result: any = await service.findAll('company-1', { page: 1, limit: 20 });
+      const result: any = await service.findAll('company-1', { limit: '20' });
+      expect(result.items).toEqual([]);
     });
 
     it('should filter by type', async () => {
       prisma.notification.findMany.mockResolvedValue([mockNotification]);
       prisma.notification.count.mockResolvedValue(1);
-      await service.findAll('company-1', { type: NotificationType.GENERIC, page: 1, limit: 20 });
+      await service.findAll('company-1', { type: NotificationType.GENERIC, limit: '20' });
     });
 
-    it('should filter by read status', async () => {
+    it('should filter by unread status', async () => {
       prisma.notification.findMany.mockResolvedValue([]);
       prisma.notification.count.mockResolvedValue(0);
-      await service.findAll('company-1', { isRead: false, page: 1, limit: 20 });
+      await service.findAll('company-1', { unreadOnly: true, limit: '20' });
     });
   });
 
   describe('markAsRead', () => {
     it('should mark notification as read', async () => {
-      prisma.notification.findUnique.mockResolvedValue(mockNotification);
-      prisma.notification.update.mockResolvedValue({ ...mockNotification, readAt: new Date() });
-      const result = await service.markAsRead('notif-1', 'company-1');
+      prisma.notification.updateMany.mockResolvedValue({ count: 1 });
+      const result: any = await service.markAsRead('company-1', 'notif-1');
       expect(result).toBeDefined();
-      expect(prisma.notification.update).toHaveBeenCalled();
+      expect(prisma.notification.updateMany).toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException for missing notification', async () => {
-      prisma.notification.findUnique.mockResolvedValue(null);
-      await expect(service.markAsRead('nonexistent', 'company-1')).rejects.toThrow(NotFoundException);
+    it('should return zero count for missing notification', async () => {
+      prisma.notification.updateMany.mockResolvedValue({ count: 0 });
+      const result: any = await service.markAsRead('company-1', 'nonexistent');
+      expect(result.count).toBe(0);
     });
   });
 
@@ -127,13 +130,13 @@ describe('NotificationService', () => {
     it('should return unread count', async () => {
       prisma.notification.count.mockResolvedValue(5);
       const result = await service.getUnreadCount('company-1');
-      expect(result).toBe(5);
+      expect(result).toEqual({ count: 5 });
     });
 
     it('should return zero when no unread', async () => {
       prisma.notification.count.mockResolvedValue(0);
       const result = await service.getUnreadCount('company-1');
-      expect(result).toBe(0);
+      expect(result).toEqual({ count: 0 });
     });
   });
 
@@ -149,7 +152,7 @@ describe('NotificationService', () => {
     it('should soft delete a notification', async () => {
       prisma.notification.findUnique.mockResolvedValue(mockNotification);
       prisma.notification.updateMany.mockResolvedValue({ count: 1 });
-      const result = await service.softDelete('notif-1', 'company-1');
+      const result = await service.softDelete('company-1', 'notif-1');
       expect(result).toBeUndefined();
     });
   });

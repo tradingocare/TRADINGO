@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RfqProcessor } from './rfq.processor';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../modules/notification/notification.service';
+import { NotificationType } from '@prisma/client';
 
 const mockDate = new Date('2026-06-13T12:00:00Z');
 
 describe('RfqProcessor', () => {
   let processor: RfqProcessor;
   let prisma: any;
+  let notificationService: { createWithTemplate: jest.Mock };
 
   beforeEach(async () => {
     jest.useFakeTimers({ advanceTimers: false });
@@ -16,11 +19,13 @@ describe('RfqProcessor', () => {
       quote: { updateMany: jest.fn(), findMany: jest.fn() },
       quoteEvent: { create: jest.fn().mockResolvedValue({}) },
     };
+    notificationService = { createWithTemplate: jest.fn().mockResolvedValue({ id: 'notif-1' }) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RfqProcessor,
         { provide: PrismaService, useValue: prisma },
+        { provide: NotificationService, useValue: notificationService },
       ],
     }).compile();
 

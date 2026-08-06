@@ -22,6 +22,8 @@ describe('CampaignService', () => {
     currency: 'GOCASH',
     startsAt: new Date('2026-01-01'),
     endsAt: new Date('2026-12-31'),
+    startDate: new Date('2026-01-01'),
+    endDate: new Date('2026-12-31'),
     maxClaimsPerUser: 1,
     maxClaimsPerCompany: 5,
     dailyLimit: 1000,
@@ -65,14 +67,15 @@ describe('CampaignService', () => {
   describe('create', () => {
     it('should create a campaign with rules and targets', async () => {
       prisma.campaign.create.mockResolvedValue(mockCampaign);
+      prisma.campaign.findUnique.mockResolvedValue(mockCampaign);
 
       const result = await service.create({
         name: 'Summer Sale',
         type: 'DISCOUNT' as any,
         status: 'ACTIVE' as any,
         budget: 100000,
-        startsAt: new Date('2026-01-01'),
-        endsAt: new Date('2026-12-31'),
+        startDate: '2026-01-01T00:00:00.000Z',
+        endDate: '2026-12-31T00:00:00.000Z',
         rewardAmount: 100,
         rewardType: 'GOCASH',
         rules: [],
@@ -85,14 +88,15 @@ describe('CampaignService', () => {
 
     it('should create campaign without optional rules/targets', async () => {
       prisma.campaign.create.mockResolvedValue(mockCampaign);
+      prisma.campaign.findUnique.mockResolvedValue(mockCampaign);
 
       const result = await service.create({
         name: 'Simple Campaign',
         type: 'SIGNUP_BONUS' as any,
         status: 'ACTIVE' as any,
         budget: 50000,
-        startsAt: new Date('2026-01-01'),
-        endsAt: new Date('2026-12-31'),
+        startDate: '2026-01-01T00:00:00.000Z',
+        endDate: '2026-12-31T00:00:00.000Z',
         rewardAmount: 50,
         rewardType: 'GOCASH',
       }, 'user-1');
@@ -151,8 +155,9 @@ describe('CampaignService', () => {
   describe('claimReward', () => {
     it('should claim reward for active campaign', async () => {
       prisma.campaign.findUnique.mockResolvedValue(mockCampaign);
-      prisma.campaignClaim.findFirst.mockResolvedValue(null);
+      prisma.gOCASH_Wallet.findUnique.mockResolvedValue({ id: 'wallet-1' });
       prisma.campaignClaim.create.mockResolvedValue({ ...mockClaim, status: 'APPROVED' });
+      prisma.campaignClaim.findUnique.mockResolvedValue({ ...mockClaim, status: 'APPROVED' });
       prisma.campaignAnalytics.upsert.mockResolvedValue({ id: 'analytics-1', campaignId: 'camp-1', totalClaims: 1, totalSpent: 100 });
       prisma.campaign.update.mockResolvedValue(mockCampaign);
 
@@ -163,7 +168,7 @@ describe('CampaignService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.status).toBe('APPROVED');
+      expect(result?.status).toBe('APPROVED');
     });
 
     it('should reject claim for inactive campaign', async () => {
@@ -173,20 +178,20 @@ describe('CampaignService', () => {
     });
 
     it('should reject claim for expired campaign', async () => {
-      prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, endsAt: new Date('2020-01-01') });
+      prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, endDate: new Date('2020-01-01') });
       await expect(service.claimReward({ campaignId: 'camp-1', userId: 'user-2', companyId: 'company-2' }))
         .rejects.toThrow(BadRequestException);
     });
 
     it('should reject duplicate claim', async () => {
-      prisma.campaign.findUnique.mockResolvedValue(mockCampaign);
-      prisma.campaignClaim.findFirst.mockResolvedValue(mockClaim);
+      prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, perUserLimit: 1 });
+      prisma.campaignClaim.count.mockResolvedValue(1);
       await expect(service.claimReward({ campaignId: 'camp-1', userId: 'user-2', companyId: 'company-2' }))
         .rejects.toThrow(BadRequestException);
     });
 
     it('should reject claim when budget exhausted', async () => {
-      prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, budget: 1000, spent: 1000 });
+      prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, budget: 1000, remainingBudget: 0 });
       await expect(service.claimReward({ campaignId: 'camp-1', userId: 'user-2', companyId: 'company-2' }))
         .rejects.toThrow(BadRequestException);
     });
@@ -209,8 +214,8 @@ describe('CampaignService', () => {
 
   describe('delete', () => {
     it('should delete a campaign', async () => {
-      prisma.campaign.findUnique.mockResolvedValue(mockCampaign);
-      prisma.campaign.delete.mockResolvedValue(mockCampaign);
+      prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, status: 'DRAFT' });
+      prisma.campaign.update.mockResolvedValue(mockCampaign);
       const result = await service.delete('camp-1');
       expect(result).toBeDefined();
     });

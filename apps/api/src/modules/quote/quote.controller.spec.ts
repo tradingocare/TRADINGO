@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Reflector } from '@nestjs/core';
 import { QuoteController } from './quote.controller';
 import { QuoteService } from './quote.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { createMockPrisma } from '../../common/test/test-utils';
 
 describe('QuoteController', () => {
   let controller: QuoteController;
@@ -21,7 +24,11 @@ describe('QuoteController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [QuoteController],
-      providers: [{ provide: QuoteService, useValue: mockService }],
+      providers: [
+        { provide: QuoteService, useValue: mockService },
+        { provide: PrismaService, useValue: createMockPrisma() },
+        { provide: Reflector, useValue: new Reflector() },
+      ],
     }).compile();
 
     controller = module.get<QuoteController>(QuoteController);

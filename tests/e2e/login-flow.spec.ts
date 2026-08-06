@@ -8,8 +8,8 @@ test.describe('Login Flow', () => {
     const page = await context.newPage();
     const flow = createFlowHelper(page);
     await flow.navigate('/login');
-    await expect(page.locator('input[type="email"]').first()).toBeVisible();
-    await expect(page.locator('input[type="password"]').first()).toBeVisible();
+    await expect(page.locator('input[autocomplete="username"]').first()).toBeVisible();
+    await expect(page.locator('input[autocomplete="current-password"], input[type="password"]').first()).toBeVisible();
     await expect(page.locator('button[type="submit"]').first()).toBeVisible();
     await context.close();
   });
@@ -39,11 +39,11 @@ test.describe('Login Flow', () => {
     const page = await context.newPage();
     const flow = createFlowHelper(page);
     await flow.navigate('/login');
-    await flow.fillField('input[type="email"]', 'invalid@test.com');
-    await flow.fillField('input[type="password"]', 'wrongpassword');
+    await flow.fillField('input[autocomplete="username"]', 'invalid@test.com');
+    await flow.fillField('input[autocomplete="current-password"], input[type="password"]', 'wrongpassword');
     await flow.clickButton('Sign In');
     await page.waitForTimeout(2000);
-    const errorMsg = page.locator('text=invalid, text=error, text=failed, text=incorrect').first();
+    const errorMsg = page.locator('text=invalid, text=error, text=failed, text=incorrect, text=not found').first();
     await expect(errorMsg).toBeVisible({ timeout: 10000 });
     await context.close();
   });

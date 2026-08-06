@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { TurnstileGuard } from '../../common/guards/turnstile.guard';
 import { CanActivate } from '@nestjs/common';
 
 describe('AuthController', () => {
@@ -21,9 +23,14 @@ describe('AuthController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: authService }],
+      providers: [
+        { provide: AuthService, useValue: authService },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(TurnstileGuard)
       .useValue(mockGuard)
       .compile();
 

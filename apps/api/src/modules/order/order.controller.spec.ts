@@ -1,10 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderController } from './order.controller';
 import { OrderService } from './order.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
+import { CanActivate } from '@nestjs/common';
 
 describe('OrderController', () => {
   let controller: OrderController;
   let service: jest.Mocked<OrderService>;
+
+  const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
 
   const mockService = {
     create: jest.fn(),
@@ -28,8 +34,16 @@ describe('OrderController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [OrderController],
-      providers: [{ provide: OrderService, useValue: mockService }],
-    }).compile();
+      providers: [
+        { provide: OrderService, useValue: mockService },
+        { provide: PrismaService, useValue: { companyOwner: { findFirst: jest.fn() } } },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(CompanyOwnerGuard)
+      .useValue(mockGuard)
+      .compile();
 
     controller = module.get<OrderController>(OrderController);
     service = module.get(OrderService);

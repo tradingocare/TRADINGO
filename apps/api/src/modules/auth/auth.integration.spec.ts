@@ -2,16 +2,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { getQueueToken } from '@nestjs/bullmq';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../common/services/redis.service';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { TurnstileGuard } from '../../common/guards/turnstile.guard';
+import { SmsService } from '../sms/sms.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { NotificationService } from '../notification/notification.service';
+import { CanActivate } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 const mockPrisma = {
   user: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
-  session: { create: jest.fn(), findUnique: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
+  session: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn().mockResolvedValue(undefined), delete: jest.fn(), deleteMany: jest.fn(), updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
 };
 const mockRedis = { get: jest.fn(), set: jest.fn(), del: jest.fn(), exists: jest.fn(), incr: jest.fn(), expire: jest.fn() };
 const mockJwt = { sign: jest.fn(), verify: jest.fn() };
@@ -48,6 +55,7 @@ describe('Auth Flow Integration', () => {
 
   beforeEach(async () => {
     configureModule();
+    const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -57,8 +65,17 @@ describe('Auth Flow Integration', () => {
         { provide: JwtService, useValue: mockJwt },
         { provide: ConfigService, useValue: mockConfig },
         { provide: getQueueToken('email'), useValue: mockEmailQueue },
+        { provide: SmsService, useValue: { send: jest.fn(), sendOtp: jest.fn(), sendTransactional: jest.fn() } },
+        { provide: AuditLogService, useValue: { log: jest.fn().mockResolvedValue(undefined), create: jest.fn().mockResolvedValue(undefined) } },
+        { provide: NotificationService, useValue: { create: jest.fn().mockResolvedValue({ id: 'notif-1' }), createWithTemplate: jest.fn().mockResolvedValue({ id: 'notif-1' }) } },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(TurnstileGuard)
+      .useValue(mockGuard)
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     service = module.get<AuthService>(AuthService);
@@ -129,7 +146,7 @@ describe('Auth Flow Integration', () => {
       mockRedis.incr.mockResolvedValue(3);
 
       await expect(controller.login({ identifier: 'test@example.com', password: 'WrongPass1!' }))
-        .rejects.toThrow('Invalid credentials');
+        .rejects.toThrow('Incorrect password');
       expect(mockRedis.expire).toHaveBeenCalled();
       expect(mockPrisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ loginAttempts: 3 }),
@@ -153,7 +170,7 @@ describe('Auth Flow Integration', () => {
       const result = await controller.refresh({ refreshToken: 'valid-refresh-token' });
 
       expect(result.accessToken).toBe('mock-access-token');
-      expect(mockPrisma.session.delete).toHaveBeenCalledWith({ where: { id: 'session-1' } });
+      expect(mockPrisma.session.updateMany).toHaveBeenCalledWith({ where: { id: 'session-1', isActive: true }, data: { isActive: false } });
     });
 
     it('rejects expired session', async () => {
@@ -164,35 +181,35 @@ describe('Auth Flow Integration', () => {
         user: { id: 'user-1', email: 'test@example.com', role: 'USER', permissions: [] },
       });
 
-      await expect(controller.refresh({ refreshToken: 'expired-token' })).rejects.toThrow('Session expired or not found');
+      await expect(controller.refresh({ refreshToken: 'expired-token' })).rejects.toThrow('Session expired');
     });
   });
 
   describe('Logout Flow', () => {
     it('logs out specific session when refresh token provided', async () => {
       mockJwt.verify.mockReturnValue({ sub: 'user-1', sessionId: 'session-1' });
-      mockPrisma.session.delete.mockResolvedValue({});
+      mockPrisma.session.update.mockResolvedValue(undefined);
 
       await controller.logout('user-1', 'valid-refresh-token');
 
-      expect(mockPrisma.session.delete).toHaveBeenCalledWith({ where: { id: 'session-1' } });
+      expect(mockPrisma.session.update).toHaveBeenCalledWith({ where: { id: 'session-1' }, data: { isActive: false } });
     });
 
     it('deletes all sessions on logout without token', async () => {
-      mockPrisma.session.deleteMany.mockResolvedValue({ count: 2 });
+      mockPrisma.session.updateMany.mockResolvedValue({ count: 2 });
 
       await controller.logout('user-1', undefined);
 
-      expect(mockPrisma.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } });
+      expect(mockPrisma.session.updateMany).toHaveBeenCalledWith({ where: { userId: 'user-1' }, data: { isActive: false } });
     });
 
     it('deletes all sessions when refresh token is invalid', async () => {
       mockJwt.verify.mockImplementation(() => { throw new Error('Invalid token'); });
-      mockPrisma.session.deleteMany.mockResolvedValue({ count: 2 });
+      mockPrisma.session.updateMany.mockResolvedValue({ count: 2 });
 
       await controller.logout('user-1', 'bad-token');
 
-      expect(mockPrisma.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } });
+      expect(mockPrisma.session.updateMany).toHaveBeenCalledWith({ where: { userId: 'user-1' }, data: { isActive: false } });
     });
   });
 

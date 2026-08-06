@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TradfindController } from './tradfind.controller';
 import { TradfindService } from './tradfind.service';
+import { SearchAnalyticsService } from './services/search-analytics.service';
 
 describe('TradfindController', () => {
   let controller: TradfindController;
@@ -18,11 +19,13 @@ describe('TradfindController', () => {
       getTrendingSearches: jest.fn(),
       getDiscoveryFeed: jest.fn(),
     };
+    const mockSearchAnalytics = { trackSearch: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TradfindController],
       providers: [
         { provide: TradfindService, useValue: mockTradfindService },
+        { provide: SearchAnalyticsService, useValue: mockSearchAnalytics },
       ],
     }).compile();
 

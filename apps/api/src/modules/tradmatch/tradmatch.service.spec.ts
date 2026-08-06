@@ -3,6 +3,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { TradmatchService } from './tradmatch.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RfqAnalyticsService } from '../rfq/rfq-analytics.service';
+import { NotificationService } from '../notification/notification.service';
 
 const mockAnalytics = {
   trackEvent: jest.fn(),
@@ -10,11 +11,12 @@ const mockAnalytics = {
 };
 
 const makePrisma = () => ({
-  rfq: { findFirst: jest.fn() },
+  rfq: { findFirst: jest.fn(), findUnique: jest.fn() },
   rfqLocation: { findFirst: jest.fn() },
   company: { findUnique: jest.fn(), findMany: jest.fn() },
   category: { findUnique: jest.fn() },
   rfqVendorMatch: { count: jest.fn(), createMany: jest.fn(), findMany: jest.fn(), findFirst: jest.fn() },
+  auditLog: { create: jest.fn().mockResolvedValue({}) },
 });
 
 const mockDate = new Date('2026-06-13T12:00:00Z');
@@ -56,6 +58,7 @@ describe('TradmatchService', () => {
         TradmatchService,
         { provide: PrismaService, useValue: prisma },
         { provide: RfqAnalyticsService, useValue: mockAnalytics },
+        { provide: NotificationService, useValue: { createWithTemplate: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

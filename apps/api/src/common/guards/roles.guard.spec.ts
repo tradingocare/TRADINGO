@@ -42,9 +42,9 @@ describe('RolesGuard', () => {
       expect(() => guard.canActivate(mockContext as any)).toThrow(ForbiddenException);
     });
 
-    it('should return true when empty roles array', () => {
+    it('should throw ForbiddenException when empty roles array', () => {
       reflector.getAllAndOverride.mockReturnValue([]);
-      expect(guard.canActivate(mockContext as any)).toBe(true);
+      expect(() => guard.canActivate(mockContext as any)).toThrow(ForbiddenException);
     });
   });
 });

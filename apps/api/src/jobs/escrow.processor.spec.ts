@@ -1,19 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EscrowProcessor } from './escrow.processor';
-import { PrismaService } from '../prisma/prisma.service';
-import { createMockPrisma } from '../common/test/test-utils';
+import { EscrowService } from '../modules/escrow/escrow.service';
+import { QueueNames, EscrowJobTypes } from './queues';
 
 describe('EscrowProcessor', () => {
   let processor: EscrowProcessor;
-  let prisma: ReturnType<typeof createMockPrisma>;
+  let escrowService: { processAutoRelease: jest.Mock };
 
   beforeEach(async () => {
-    prisma = createMockPrisma();
+    escrowService = {
+      processAutoRelease: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EscrowProcessor,
-        { provide: PrismaService, useValue: prisma },
+        { provide: EscrowService, useValue: escrowService },
       ],
     }).compile();
 
@@ -26,16 +28,18 @@ describe('EscrowProcessor', () => {
   });
 
   describe('process', () => {
-    it('should process escrow release job', async () => {
-      const job = { data: { escrowId: 'escrow-1', action: 'release' }, id: 'job-1' };
+    it('should process escrow auto-release job', async () => {
+      const job = { data: { type: EscrowJobTypes.AUTO_RELEASE }, id: 'job-1' };
       const result = await processor.process(job as any);
-      expect(result).toBeDefined();
+      expect(result).toBeUndefined();
+      expect(escrowService.processAutoRelease).toHaveBeenCalled();
     });
 
-    it('should handle missing escrow gracefully', async () => {
+    it('should handle unknown job type gracefully', async () => {
       const job = { data: {}, id: 'job-2' };
       const result = await processor.process(job as any);
-      expect(result).toBeDefined();
+      expect(result).toBeUndefined();
+      expect(escrowService.processAutoRelease).not.toHaveBeenCalled();
     });
   });
 });

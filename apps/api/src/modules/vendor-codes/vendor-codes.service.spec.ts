@@ -64,8 +64,11 @@ describe('VendorCodesService', () => {
       mockPrisma.company.update.mockResolvedValue({} as any);
       mockPrisma.codeAttribution.findUnique.mockResolvedValue(null);
       mockPrisma.codeAttribution.create.mockResolvedValue({} as any);
+      const now = new Date();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yy = String(now.getFullYear()).slice(-2);
       const code = await service.generateVendorCode('company-high');
-      expect(code).toBe('TRV06269999');
+      expect(code).toBe(`TRV${mm}${yy}9999`);
     });
   });
 

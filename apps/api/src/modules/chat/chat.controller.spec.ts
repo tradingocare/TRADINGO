@@ -2,6 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ChatAnalyticsService } from './chat-analytics.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
+import { CanActivate } from '@nestjs/common';
 
 describe('ChatController', () => {
   let controller: ChatController;
@@ -30,13 +34,20 @@ describe('ChatController', () => {
   };
 
   beforeEach(async () => {
+    const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ChatController],
       providers: [
         { provide: ChatService, useValue: mockService },
         { provide: ChatAnalyticsService, useValue: mockAnalytics },
+        { provide: PrismaService, useValue: { companyOwner: { findFirst: jest.fn() }, company: { findUnique: jest.fn() } } },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(CompanyOwnerGuard)
+      .useValue(mockGuard)
+      .compile();
 
     controller = module.get<ChatController>(ChatController);
     service = module.get(ChatService);

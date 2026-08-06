@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+﻿import { Test, TestingModule } from '@nestjs/testing';
 import { NearMeService } from '../near-me.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 
@@ -7,7 +7,7 @@ describe('NearMeService', () => {
   let prisma: any;
 
   const mockPrisma = {
-    $queryRawUnsafe: jest.fn(),
+    $queryRaw: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -51,7 +51,7 @@ describe('NearMeService', () => {
 
   describe('searchProducts', () => {
     it('should return empty result when no products found', async () => {
-      mockPrisma.$queryRawUnsafe
+      mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ total: 0 }]);
 
@@ -69,17 +69,17 @@ describe('NearMeService', () => {
     });
 
     it('should search with default params', async () => {
-      mockPrisma.$queryRawUnsafe
+      mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ total: 0 }]);
 
       await service.searchProducts({ lat: 0, lng: 0, radiusKm: 25, page: 1, limit: 20 });
 
-      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
     });
 
     it('should apply category filter', async () => {
-      mockPrisma.$queryRawUnsafe
+      mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ total: 0 }]);
 
@@ -88,11 +88,11 @@ describe('NearMeService', () => {
         categoryId: 'cat1', page: 1, limit: 20,
       });
 
-      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalled();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalled();
     });
 
     it('should apply price range filters', async () => {
-      mockPrisma.$queryRawUnsafe
+      mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ total: 0 }]);
 
@@ -101,11 +101,11 @@ describe('NearMeService', () => {
         minPrice: 100, maxPrice: 5000, page: 1, limit: 20,
       });
 
-      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalled();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalled();
     });
 
     it('should apply verified and tradgo filters', async () => {
-      mockPrisma.$queryRawUnsafe
+      mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ total: 0 }]);
 
@@ -114,11 +114,11 @@ describe('NearMeService', () => {
         verifiedOnly: true, tradgoOnly: true, page: 1, limit: 20,
       });
 
-      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalled();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalled();
     });
 
     it('should apply trust score and delivery time filters', async () => {
-      mockPrisma.$queryRawUnsafe
+      mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ total: 0 }]);
 
@@ -127,11 +127,11 @@ describe('NearMeService', () => {
         minTrustScore: 50, deliveryTime: '7 days', page: 1, limit: 20,
       });
 
-      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalled();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalled();
     });
 
     it('should support sort by trust', async () => {
-      mockPrisma.$queryRawUnsafe
+      mockPrisma.$queryRaw
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ total: 0 }]);
 
@@ -140,7 +140,7 @@ describe('NearMeService', () => {
         sort: 'trust', page: 1, limit: 20,
       });
 
-      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalled();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalled();
     });
 
     it('should support pagination', async () => {
@@ -153,7 +153,7 @@ describe('NearMeService', () => {
         categoryName: 'Category', imageUrl: null,
       }));
 
-      mockPrisma.$queryRawUnsafe
+      mockPrisma.$queryRaw
         .mockResolvedValueOnce(mockProducts)
         .mockResolvedValueOnce([{ total: 45 }]);
 
@@ -170,7 +170,7 @@ describe('NearMeService', () => {
     });
 
     it('should handle query errors gracefully', async () => {
-      mockPrisma.$queryRawUnsafe.mockRejectedValue(new Error('DB error'));
+      mockPrisma.$queryRaw.mockRejectedValue(new Error('DB error'));
 
       const result = await service.searchProducts({
         lat: 19.076, lng: 72.8777, radiusKm: 25,
@@ -184,7 +184,7 @@ describe('NearMeService', () => {
 
   describe('getCategories', () => {
     it('should return categories with product counts', async () => {
-      mockPrisma.$queryRawUnsafe.mockResolvedValue([
+      mockPrisma.$queryRaw.mockResolvedValue([
         { id: 'cat1', name: 'Electronics', slug: 'electronics', icon: null, productCount: 15 },
         { id: 'cat2', name: 'Food', slug: 'food', icon: null, productCount: 8 },
       ]);
@@ -197,7 +197,7 @@ describe('NearMeService', () => {
     });
 
     it('should return empty array when no categories', async () => {
-      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
       const result = await service.getCategories(0, 0, 5);
       expect(result).toEqual([]);
     });
@@ -205,7 +205,7 @@ describe('NearMeService', () => {
 
   describe('getSellers', () => {
     it('should return sellers with product counts', async () => {
-      mockPrisma.$queryRawUnsafe.mockResolvedValue([
+      mockPrisma.$queryRaw.mockResolvedValue([
         {
           id: 'c1', name: 'Acme Corp', slug: 'acme', trustScore: 85,
           verificationLevel: 'LEVEL_2', isTradgo: false, geographicReach: null,
@@ -221,30 +221,30 @@ describe('NearMeService', () => {
     });
 
     it('should apply seller filters', async () => {
-      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
 
       await service.getSellers(19.076, 72.8777, 25, {
         minTrustScore: 70, verifiedOnly: true, tradgoOnly: true,
       });
 
-      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalled();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalled();
     });
   });
 
   describe('getRadiusBreakdown', () => {
     it('should return breakdown for all 8 radius steps', async () => {
-      mockPrisma.$queryRawUnsafe.mockResolvedValue([{ count: 5 }]);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: 5 }]);
 
       const result = await service.getRadiusBreakdown(19.076, 72.8777);
 
       expect(result).toHaveLength(8);
       expect(result[0].radius).toBe(5);
       expect(result[0].label).toBe('5 km');
-      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledTimes(8);
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(8);
     });
 
     it('should handle zero counts', async () => {
-      mockPrisma.$queryRawUnsafe.mockResolvedValue([{ count: 0 }]);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: 0 }]);
 
       const result = await service.getRadiusBreakdown(0, 0);
 
