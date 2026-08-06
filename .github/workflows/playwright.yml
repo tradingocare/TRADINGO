@@ -128,6 +128,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           JWT_SECRET: e2e-jwt-secret-0123456789abcdef0123456789abcdef
           JWT_REFRESH_SECRET: e2e-jwt-refresh-secret-0123456789abcdef0123456789abcdef
+          JWT_EXPIRES_IN: 12h
           OPENSEARCH_URL: http://localhost:9200
           EMAIL_FROM: noreply@tradingo.com
           PAYMENT_MODE: test
