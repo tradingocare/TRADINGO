@@ -92,7 +92,7 @@ jobs:
           DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
 
       - name: Seed database
-        run: pnpm db:seed
+        run: pnpm seed
         env:
           DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
 
