@@ -133,7 +133,7 @@ jobs:
           PAYMENT_MODE: test
           AI_VAULT_MASTER_KEY: e2e-ai-vault-master-key-0123456789abcdef0123456789
         run: |
-          node apps/web/.next/standalone/apps/web/server.js > /tmp/web.log 2>&1 &
+          PORT=3000 HOSTNAME=0.0.0.0 node apps/web/.next/standalone/apps/web/server.js > /tmp/web.log 2>&1 &
           pnpm --filter @tradingo/api start > /tmp/api.log 2>&1 &
           READY=0
           for i in $(seq 1 60); do
