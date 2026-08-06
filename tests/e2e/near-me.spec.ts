@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { loginAs, BUYER_USER } from '../helpers/auth';
 import { navigateTo, waitForSettled } from '../helpers/navigation';
 
@@ -11,7 +11,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await context.close();
   });
 
@@ -20,7 +20,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await expect(page.locator('h1').first()).toContainText('Near Me');
     await expect(page.locator('text=km').first()).toBeVisible({ timeout: 10000 });
@@ -32,7 +32,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const radiusOptions = ['5', '10', '25', '50', '100'];
     for (const km of radiusOptions) {
@@ -47,7 +47,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const radiusBtn = page.locator('button:has-text("100 km")').first();
     await radiusBtn.click();
@@ -62,7 +62,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const sortButton = page.locator('button:has-text("Distance"), button:has-text("Sort")').first();
     await expect(sortButton).toBeVisible({ timeout: 10000 });
@@ -74,7 +74,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const filterButton = page.locator('button:has-text("Filter")').first();
     await expect(filterButton).toBeVisible({ timeout: 10000 });
@@ -86,7 +86,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const locateBtn = page.locator('button:has-text("My Location"), button:has-text("Use My Location")').first();
     await expect(locateBtn).toBeVisible({ timeout: 10000 });
@@ -98,13 +98,13 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me?lat=19.076&lng=72.8777&radius=50&sort=trust');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await expect(page).toHaveURL(/radius=50/);
     await expect(page).toHaveURL(/sort=trust/);
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await expect(page).toHaveURL(/radius=50/);
     await expect(page).toHaveURL(/sort=trust/);
@@ -116,7 +116,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me?lat=-90&lng=0&radius=5');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.waitForTimeout(3000);
     const emptyState = page.locator('text=No products found').first();
@@ -129,7 +129,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const mapToggle = page.locator('button:has-text("Show Map"), button:has-text("Hide Map")').first();
     await expect(mapToggle).toBeVisible({ timeout: 10000 });
@@ -141,7 +141,7 @@ test.describe('Near Me — Product Discovery', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.waitForTimeout(1000);
     const listButton = page.locator('button[aria-label="Show list view"]').first();

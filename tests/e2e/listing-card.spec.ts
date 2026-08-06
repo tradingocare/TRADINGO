@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+﻿import { test, expect, Page } from '@playwright/test';
 
 const SCREENSHOT_DIR = 'docs/review/listing-card';
 
@@ -11,7 +11,7 @@ async function findCard(page: Page, title: string) {
 test.describe('Product Listing Card — 8-Group Upgrade', () => {
   test('default card renders pricing, badges, trust and social proof', async ({ page }) => {
     await page.goto('/products');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const card = await findCard(page, 'Industrial PCB Board 4-Layer');
 
     await expect(card).toContainText('MOQ 100', { timeout: 10000 });
@@ -31,7 +31,7 @@ test.describe('Product Listing Card — 8-Group Upgrade', () => {
 
   test('qty tier pills are selectable and Buy passes the selected qty', async ({ page }) => {
     await page.goto('/products');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const pill = page.locator('button[aria-label^="Quantity"]').first();
     await expect(pill).toBeVisible({ timeout: 20000 });
@@ -45,7 +45,7 @@ test.describe('Product Listing Card — 8-Group Upgrade', () => {
 
   test('cards without tier data still render actions and info link', async ({ page }) => {
     await page.goto('/products');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const card = await findCard(page, 'Industrial Grade Solvent 99.9%');
 
     await expect(card.getByRole('button', { name: /RFQ|Buy|Chat|Save|Cmp/ }).first()).toBeVisible();

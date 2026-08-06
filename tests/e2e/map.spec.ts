@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { loginAs, BUYER_USER } from '../helpers/auth';
 
 test.describe('Map Integration', () => {
@@ -7,7 +7,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const mapEl = page.locator('.leaflet-container').first();
     await expect(mapEl).toBeVisible({ timeout: 15000 });
@@ -19,7 +19,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.waitForTimeout(2000);
     const zoomIn = page.locator('.leaflet-control-zoom-in').first();
@@ -34,7 +34,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const locateBtn = page.locator('button[aria-label="Use current location"]').first();
     await expect(locateBtn).toBeVisible({ timeout: 10000 });
@@ -46,7 +46,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.waitForTimeout(2000);
     const legend = page.locator('[role="status"]').first();
@@ -59,7 +59,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.waitForTimeout(2000);
     const radiusInfo = page.locator('text=Radius').first();
@@ -72,7 +72,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me?lat=19.076&lng=72.8777&radius=20000');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.waitForTimeout(3000);
     const markers = page.locator('.custom-product-marker, .custom-product-marker-verified, .leaflet-marker-icon').first();
@@ -88,7 +88,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const mapToggle = page.locator('button:has-text("Hide Map")').first();
     if (await mapToggle.isVisible()) {
@@ -105,7 +105,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const mapRegion = page.locator('[aria-label="Product discovery map"]').first();
     await expect(mapRegion).toBeVisible({ timeout: 15000 });
@@ -117,7 +117,7 @@ test.describe('Map Integration', () => {
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
     await page.goto('/buyer/near-me');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const mapBtn = page.locator('button[aria-label="Show map view"]').first();
     const listBtn = page.locator('button[aria-label="Show list view"]').first();

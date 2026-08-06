@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { createFlowHelper } from '../helpers/business-flows';
 
 test.describe('Registration Flow', () => {
@@ -73,7 +73,7 @@ test.describe('Registration Flow', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('/register/buyer');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const turnstile = page.locator('[class*="turnstile"], iframe[src*="challenges.cloudflare"]').first();
     await expect(turnstile).toBeVisible({ timeout: 10000 });
     await context.close();

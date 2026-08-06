@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+﻿import { Page, expect } from '@playwright/test';
 import { loginAs, TestUser } from './auth';
 
 export interface BusinessFlowResult {
@@ -16,7 +16,7 @@ export class BusinessFlowHelper {
 
   async navigate(path: string): Promise<void> {
     await this.page.goto(path);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('load');
   }
 
   async fillField(selector: string, value: string): Promise<void> {
@@ -57,7 +57,7 @@ export class BusinessFlowHelper {
 
   async waitForSettled(): Promise<void> {
     await this.page.waitForTimeout(500);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('load');
   }
 }
 

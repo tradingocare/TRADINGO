@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { createFlowHelper } from '../helpers/business-flows';
 import { BUYER_USER, SELLER_USER } from '../helpers/auth';
 
@@ -18,7 +18,7 @@ test.describe('Login Flow', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const forgotLink = page.locator('a[href*="forgot"]').first();
     await expect(forgotLink).toBeVisible({ timeout: 10000 });
     await context.close();
@@ -28,7 +28,7 @@ test.describe('Login Flow', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const registerLink = page.locator('a[href*="register"]').first();
     await expect(registerLink).toBeVisible({ timeout: 10000 });
     await context.close();
@@ -52,7 +52,7 @@ test.describe('Login Flow', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const turnstile = page.locator('[class*="turnstile"], iframe[src*="challenges.cloudflare"]').first();
     await expect(turnstile).toBeVisible({ timeout: 10000 });
     await context.close();
@@ -72,7 +72,7 @@ test.describe('Login Flow', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const socialButtons = page.locator('button:has-text("Google"), button:has-text("LinkedIn")').first();
     await expect(socialButtons).toBeVisible({ timeout: 10000 });
     await context.close();

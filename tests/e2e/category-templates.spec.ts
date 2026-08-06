@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { loginAs, ADMIN_USER } from '../helpers/auth';
 
 test.describe('Category Templates (Admin)', () => {
@@ -7,7 +7,7 @@ test.describe('Category Templates (Admin)', () => {
     const page = await context.newPage();
     await loginAs(page, ADMIN_USER);
     await page.goto('/admin/category-templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toContainText('Template', { timeout: 10000 });
     await context.close();
   });
@@ -17,7 +17,7 @@ test.describe('Category Templates (Admin)', () => {
     const page = await context.newPage();
     await loginAs(page, ADMIN_USER);
     await page.goto('/admin/category-templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const newBtn = page.locator('a[href*="/admin/category-templates/new"], button:has-text("New Template")').first();
     await expect(newBtn).toBeVisible({ timeout: 10000 });
     await context.close();
@@ -28,7 +28,7 @@ test.describe('Category Templates (Admin)', () => {
     const page = await context.newPage();
     await loginAs(page, ADMIN_USER);
     await page.goto('/admin/category-templates/new');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toContainText('New', { timeout: 10000 });
     await context.close();
   });
