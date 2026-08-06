@@ -58,18 +58,25 @@ export async function loginAs(page: Page, user: TestUser): Promise<void> {
   const roleKey = resolveRoleKey(user);
   const auth = await cachedAuthFor(roleKey);
 
-  const content = `(a) => {
+  const script = (a: { accessToken: string; refreshToken: string; userRole: string }) => {
     localStorage.setItem('accessToken', a.accessToken);
     localStorage.setItem('refreshToken', a.refreshToken);
     localStorage.setItem('userRole', a.userRole);
-  }(${JSON.stringify(auth)})`;
+    document.cookie = `userRole=${a.userRole}; path=/; max-age=86400; SameSite=Lax`;
+  };
 
-  const script = { content };
-  const handle = (await page.addInitScript(script)) as unknown as InitScriptHandle;
+  const handle = (await page.addInitScript(script, auth)) as unknown as InitScriptHandle;
   initScripts.set(page, handle);
 
   await page.goto(ROLE_DASHBOARD[roleKey]);
   await page.waitForLoadState('load');
+
+  // Fast self-check: the app must see the injected token or the dashboard will
+  // bounce us back to /login.
+  const got = await page.evaluate(() => localStorage.getItem('accessToken') ?? '');
+  if (!got) {
+    throw new Error(`loginAs(${roleKey}): accessToken not present in localStorage after navigation to ${ROLE_DASHBOARD[roleKey]}`);
+  }
 }
 
 export async function logout(page: Page): Promise<void> {
