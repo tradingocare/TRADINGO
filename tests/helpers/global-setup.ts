@@ -69,7 +69,6 @@ async function loginOnce(user: typeof BUYER): Promise<CachedAuth> {
       password: user.password,
       role: user.roleKey,
       rememberMe: true,
-      turnstileToken: 'e2e-dummy',
     }),
   });
 
