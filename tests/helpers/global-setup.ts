@@ -58,12 +58,18 @@ function loadCache(): Record<string, CachedAuth> {
 async function loginOnce(user: typeof BUYER): Promise<CachedAuth> {
   const loginRes = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      // Non-empty Authorization header short-circuits the CSRF preHandler
+      // (fastify csrf-protection skips requests with an auth header).
+      Authorization: 'Bearer e2e-preflight',
+    },
     body: JSON.stringify({
       identifier: user.identifier,
       password: user.password,
       role: user.roleKey,
       rememberMe: true,
+      turnstileToken: 'e2e-dummy',
     }),
   });
 
