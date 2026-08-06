@@ -1,5 +1,7 @@
 const tsEslint = require('@typescript-eslint/eslint-plugin');
 const tsParser = require('@typescript-eslint/parser');
+const reactHooks = require('eslint-plugin-react-hooks');
+const nextPlugin = require('@next/eslint-plugin-next');
 
 module.exports = [
   {
@@ -19,10 +21,17 @@ module.exports = [
     },
     plugins: {
       '@typescript-eslint': tsEslint,
+      'react-hooks': reactHooks,
+      '@next/next': nextPlugin,
     },
     rules: {
       ...tsEslint.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'react-hooks/exhaustive-deps': 'warn',
+      '@next/next/no-img-element': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-require-imports': 'warn',
+      '@typescript-eslint/no-unused-expressions': 'warn',
+      '@typescript-eslint/no-empty-object-type': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/prefer-optional-chain': 'warn',
