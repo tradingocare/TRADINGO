@@ -67,14 +67,12 @@ export async function loginAs(page: Page, user: TestUser): Promise<void> {
       name: 'accessToken',
       value: auth.accessToken,
       url: 'http://localhost:3000',
-      path: '/',
       sameSite: 'Lax',
     },
     {
       name: 'userRole',
       value: auth.userRole,
       url: 'http://localhost:3000',
-      path: '/',
       sameSite: 'Lax',
     },
   ]);

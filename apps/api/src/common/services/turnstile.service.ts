@@ -11,6 +11,10 @@ export class TurnstileService {
     this.secretKey = this.configService.get<string>('TURNSTILE_SECRET_KEY') || '';
   }
 
+  get isConfigured(): boolean {
+    return this.secretKey.length > 0;
+  }
+
   async verify(token: string, ip?: string): Promise<{ success: boolean; error?: string }> {
     if (!this.secretKey) {
       this.logger.warn('Turnstile secret key not configured — skipping verification');

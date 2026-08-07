@@ -144,7 +144,17 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
   }
 
   const handleNext = () => {
-    if (!validate()) return
+    if (!validate()) {
+      setTouched({
+        firstName: true,
+        lastName: true,
+        email: true,
+        mobile: true,
+        password: true,
+        confirmPassword: true,
+      })
+      return
+    }
     onNext({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -163,6 +173,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <FormField label="First Name" required error={touched.firstName ? errors.firstName : undefined}>
             <input
+              name="name"
               className={INPUT_CLASS}
               style={inputStyle(!!errors.firstName && touched.firstName)}
               placeholder="First name"
@@ -191,6 +202,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
               className={INPUT_CLASS} style={{ ...inputStyle(!!errors.email && touched.email), paddingLeft: '40px' }}
               placeholder="you@company.com"
               type="email"
+              name="email"
               value={email}
               onChange={e => { setEmail(e.target.value); if (emailVerified) setEmailVerified(false); setShowEmailOtp(false) }}
               onBlur={() => markTouched('email')}
@@ -314,6 +326,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
               style={inputStyle(!!errors.password && touched.password)}
               placeholder="Create a password"
               type={showPassword ? 'text' : 'password'}
+              name="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               onBlur={() => markTouched('password')}

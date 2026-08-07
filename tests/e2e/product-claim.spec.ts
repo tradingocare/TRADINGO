@@ -29,7 +29,7 @@ test.describe('Product Claim Flow', () => {
     await page.goto('/seller/products/claim');
     await page.waitForLoadState('load');
 
-    const inputs = page.locator('form input, form textarea, form select').first();
+    const inputs = page.locator('form input, form textarea, form select').filter({ visible: true }).first();
     await expect(inputs).toBeVisible({ timeout: 10000 });
     await context.close();
   });

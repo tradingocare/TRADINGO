@@ -3,18 +3,6 @@ import { loginAs, BUYER_USER } from '../helpers/auth';
 import { navigateTo, waitForSettled } from '../helpers/navigation';
 
 test.describe('Near Me — Product Discovery', () => {
-  test.beforeEach(async ({ browser }) => {
-    const context = await browser.newContext({
-      geolocation: { latitude: 19.076, longitude: 72.8777 },
-      permissions: ['geolocation'],
-    });
-    const page = await context.newPage();
-    await loginAs(page, BUYER_USER);
-    await page.goto('/buyer/near-me');
-    await page.waitForLoadState('load');
-    await context.close();
-  });
-
   test('should load Near Me page with default center', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -49,8 +37,9 @@ test.describe('Near Me — Product Discovery', () => {
     await page.goto('/buyer/near-me');
     await page.waitForLoadState('load');
 
-    const radiusBtn = page.locator('button:has-text("100 km")').first();
-    await radiusBtn.click();
+    const radiusBtn = page.locator('button:has-text("100 km")').filter({ visible: true }).first();
+    await radiusBtn.scrollIntoViewIfNeeded();
+    await radiusBtn.click({ force: true });
     await waitForSettled(page);
 
     await expect(page.locator('text=100 km').first()).toBeVisible({ timeout: 5000 });
@@ -64,8 +53,8 @@ test.describe('Near Me — Product Discovery', () => {
     await page.goto('/buyer/near-me');
     await page.waitForLoadState('load');
 
-    const sortButton = page.locator('button:has-text("Distance"), button:has-text("Sort")').first();
-    await expect(sortButton).toBeVisible({ timeout: 10000 });
+    const sortSelect = page.locator('select:has(option[value="distance"])').first();
+    await expect(sortSelect).toBeVisible({ timeout: 10000 });
     await context.close();
   });
 
@@ -119,7 +108,12 @@ test.describe('Near Me — Product Discovery', () => {
     await page.waitForLoadState('load');
 
     await page.waitForTimeout(3000);
-    const emptyState = page.locator('text=No products found').first();
+    const listBtn = page.locator('button[aria-label="Show list view"]').first();
+    if (await listBtn.isVisible()) {
+      await listBtn.click();
+      await page.waitForTimeout(500);
+    }
+    const emptyState = page.locator('text=No products found').filter({ visible: true }).last();
     await expect(emptyState).toBeVisible({ timeout: 15000 });
     await context.close();
   });

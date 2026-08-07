@@ -44,7 +44,7 @@ test.describe('Product Listing Flow', () => {
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/products/new');
     await page.waitForLoadState('load');
-    const stepIndicator = page.locator('[class*="step"], [aria-label*="step"], [role="progressbar"]').first();
+    const stepIndicator = page.locator('button[aria-label^="Step"], [class*="step"], [role="progressbar"]').first();
     await expect(stepIndicator).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -54,9 +54,9 @@ test.describe('Product Listing Flow', () => {
     const page = await context.newPage();
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
-    await flow.navigate('/browse');
+    await flow.navigate('/products');
     await page.waitForLoadState('load');
-    const productsSection = page.locator('[class*="product"], [class*="card"]').first();
+    const productsSection = page.locator('section.rounded-2xl, [class*="product"], [class*="card"]').first();
     await expect(productsSection).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -66,7 +66,7 @@ test.describe('Product Listing Flow', () => {
     const page = await context.newPage();
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
-    await flow.navigate('/browse?search=test');
+    await flow.navigate('/products?search=test');
     await page.waitForLoadState('load');
     await expect(page).toHaveURL(/search=test/);
     await context.close();

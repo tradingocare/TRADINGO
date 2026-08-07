@@ -33,7 +33,7 @@ test.describe('Seller Geo-location Management', () => {
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
 
-    const badges = page.locator('text=Not Set, text=Set, text=Pending Sync');
+    const badges = page.getByText(/Not Set|Set|Pending Sync/i);
     await expect(badges.first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -59,7 +59,7 @@ test.describe('Seller Geo-location Management', () => {
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
 
-    const searchInput = page.locator('input[placeholder*="Search"]').first();
+    const searchInput = page.locator('input[placeholder*="Search"]').filter({ visible: true }).first();
     await expect(searchInput).toBeVisible({ timeout: 10000 });
     await context.close();
   });

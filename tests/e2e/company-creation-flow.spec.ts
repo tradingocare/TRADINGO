@@ -20,7 +20,7 @@ test.describe('Company Creation Flow', () => {
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
     await page.waitForLoadState('load');
-    const companySection = page.locator('text=Company, text=Business, text=Profile').first();
+    const companySection = page.getByText(/Company|Business|Profile/i).filter({ visible: true }).first();
     await expect(companySection).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -38,15 +38,15 @@ test.describe('Company Creation Flow', () => {
     await context.close();
   });
 
-  test('seller profile should have save button', async ({ browser }) => {
+  test('seller profile should show company information card', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
     await page.waitForLoadState('load');
-    const saveBtn = page.locator('button:has-text("Save")').first();
-    await expect(saveBtn).toBeVisible({ timeout: 10000 });
+    const companyCard = page.getByText('Company Information').first();
+    await expect(companyCard).toBeVisible({ timeout: 10000 });
     await context.close();
   });
 

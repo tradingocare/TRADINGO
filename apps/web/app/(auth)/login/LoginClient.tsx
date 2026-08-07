@@ -150,6 +150,7 @@ export default function LoginClient() {
       setAccessToken(data.accessToken)
       localStorage.setItem('userRole', data.user.role)
       document.cookie = `userRole=${data.user.role}; path=/; max-age=86400; SameSite=Lax`
+      document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`
       toast.success(`Welcome back, ${data.user.name?.split(' ')[0]}!`)
       router.push(redirectTo)
     } catch (err: any) {
@@ -221,6 +222,7 @@ export default function LoginClient() {
       setAccessToken(data.accessToken)
       localStorage.setItem('userRole', data.user.role)
       document.cookie = `userRole=${data.user.role}; path=/; max-age=86400; SameSite=Lax`
+      document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`
       toast.success('Welcome back!')
       router.push(redirectTo)
     } catch {

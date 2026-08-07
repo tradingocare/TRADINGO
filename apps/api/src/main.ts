@@ -230,6 +230,10 @@ async function bootstrap() {
     if (String(request.url).includes('/payments/webhook/')) return done();
     if (String(request.url).endsWith('/membership/webhook')) return done();
     if (request.headers?.authorization) return done();
+    // Requests from the configured frontend origin are not cross-site forgeries
+    // (mirrors the CORS allowlist — same-origin proxied traffic in production).
+    const trustedOrigin = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    if (request.headers?.origin && request.headers.origin === trustedOrigin) return done();
     if (typeof fastifyApp.csrfProtection === 'function') {
       fastifyApp.csrfProtection(request, reply, (err?: any) => {
         if (err) {

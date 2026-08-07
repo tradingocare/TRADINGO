@@ -31,6 +31,9 @@ export default function BuyerRegisterPage() {
         </div>
         <div className="flex-1 flex items-start justify-center px-4 py-8">
           <div className="w-full max-w-2xl">
+            <h1 className="mb-6 text-center text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Register
+            </h1>
             <BuyerRegistrationWizard />
           </div>
         </div>
