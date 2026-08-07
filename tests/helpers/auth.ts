@@ -58,6 +58,29 @@ export async function loginAs(page: Page, user: TestUser): Promise<void> {
   const roleKey = resolveRoleKey(user);
   const auth = await cachedAuthFor(roleKey);
 
+  // The Next.js proxy (middleware-utils.ts) verifies the accessToken COOKIE
+  // server-side on every /seller|/buyer|/admin navigation. Cookies set from
+  // page JS run too late (proxy already decided), so they must be attached at
+  // the context level, where they are sent with the request.
+  await page.context().addCookies([
+    {
+      name: 'accessToken',
+      value: auth.accessToken,
+      url: 'http://localhost:3000',
+      path: '/',
+      sameSite: 'Lax',
+    },
+    {
+      name: 'userRole',
+      value: auth.userRole,
+      url: 'http://localhost:3000',
+      path: '/',
+      sameSite: 'Lax',
+    },
+  ]);
+
+  // The SPA reads tokens from localStorage - keep injecting on every
+  // navigation so client-side API calls carry the Authorization header.
   const script = (a: { accessToken: string; refreshToken: string; userRole: string }) => {
     localStorage.setItem('accessToken', a.accessToken);
     localStorage.setItem('refreshToken', a.refreshToken);

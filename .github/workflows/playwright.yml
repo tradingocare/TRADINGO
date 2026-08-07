@@ -119,7 +119,7 @@ jobs:
           ls -la apps/web/.next/standalone/apps/web
 
       - name: Install Playwright browsers
-        run: pnpm --filter @tradingo/web exec playwright install chromium --with-deps
+        run: pnpm --filter @tradingo/web exec playwright install chromium webkit --with-deps
 
       - name: Start application
         env:
