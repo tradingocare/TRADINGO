@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 function normalizeStatus(status: string): string {
-  return status.toLowerCase().replace(/[ _]/g, '-');
+  return (status || '').toLowerCase().replace(/[ _]/g, '-');
 }
 
 const statusStyles: Record<string, string> = {

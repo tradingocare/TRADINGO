@@ -105,8 +105,11 @@ export function NewProductWizard() {
   }, [showToast, router]);
 
   useEffect(() => {
-    apiClient.get<{ data: { id: string; name: string }[] }>('/categories?page=1&limit=100')
-      .then(res => setCategories(res.data || []))
+    apiClient.get<{ data: { data?: { id: string; name: string }[] } }>('/categories?page=1&limit=100')
+      .then(res => {
+        const list = Array.isArray(res?.data) ? res.data : res?.data?.data;
+        setCategories(Array.isArray(list) ? list : []);
+      })
       .catch(() => { showToast({ title: 'Failed to load categories', variant: 'destructive' }); });
   }, []);
 

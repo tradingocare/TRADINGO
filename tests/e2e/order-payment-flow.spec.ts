@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { createFlowHelper } from '../helpers/business-flows';
 import { BUYER_USER, SELLER_USER } from '../helpers/auth';
 
@@ -9,7 +9,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/orders');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -20,7 +20,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/orders');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const filters = page.locator('button:has-text("All"), button:has-text("Pending"), button:has-text("Completed")');
     const count = await filters.count();
     expect(count).toBeGreaterThanOrEqual(0);
@@ -33,7 +33,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/orders');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -44,7 +44,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/payments');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -55,7 +55,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/po');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -66,7 +66,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/po');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -77,7 +77,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/shipment');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -88,7 +88,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/shipment');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -99,7 +99,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/delivery');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -110,7 +110,7 @@ test.describe('Order & Payment Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login({ email: process.env.E2E_ADMIN_EMAIL || 'e2e-admin@tradingo.com', password: process.env.E2E_ADMIN_PASSWORD || 'TestAdmin@123', name: 'E2E Admin' });
     await flow.navigate('/admin/payments');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });

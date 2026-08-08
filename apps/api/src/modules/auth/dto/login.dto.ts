@@ -19,4 +19,9 @@ export class LoginDto {
   @IsBoolean()
   @ApiPropertyOptional({ description: 'Remember me flag' })
   rememberMe?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Turnstile token for bot protection' })
+  turnstileToken?: string;
 }

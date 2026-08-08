@@ -45,6 +45,23 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
+const AUTH_ENDPOINTS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/login-otp',
+  '/auth/send-login-otp',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/change-password',
+  '/auth/social-login',
+];
+
+function isAuthRequest(url: string | undefined): boolean {
+  if (!url) return false;
+  return AUTH_ENDPOINTS.some((ep) => url.includes(ep));
+}
+
 apiClient.interceptors.response.use(
   (response) => {
     if (
@@ -71,7 +88,7 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (status === 401 && !originalRequest._retry) {
+    if (status === 401 && !originalRequest._retry && !isAuthRequest(url)) {
       if (!isRefreshing) {
         isRefreshing = true;
         refreshPromise = refreshAccessToken();

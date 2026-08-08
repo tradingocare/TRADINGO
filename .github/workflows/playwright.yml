@@ -41,7 +41,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U tradingo -d tradingo_e2e"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -112,8 +112,14 @@ jobs:
       - name: Build application
         run: pnpm build
 
+      - name: Prepare standalone web output
+        run: |
+          cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+          cp -r apps/web/public apps/web/.next/standalone/apps/web/public
+          ls -la apps/web/.next/standalone/apps/web
+
       - name: Install Playwright browsers
-        run: pnpm --filter @tradingo/web exec playwright install chromium --with-deps
+        run: pnpm --filter @tradingo/web exec playwright install chromium webkit --with-deps
 
       - name: Start application
         env:
@@ -122,15 +128,30 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           JWT_SECRET: e2e-jwt-secret-0123456789abcdef0123456789abcdef
           JWT_REFRESH_SECRET: e2e-jwt-refresh-secret-0123456789abcdef0123456789abcdef
+          JWT_EXPIRES_IN: 12h
           OPENSEARCH_URL: http://localhost:9200
           EMAIL_FROM: noreply@tradingo.com
           PAYMENT_MODE: test
           AI_VAULT_MASTER_KEY: e2e-ai-vault-master-key-0123456789abcdef0123456789
         run: |
-          pnpm --filter @tradingo/api start &
-          pnpm --filter @tradingo/web start &
-          sleep 10
-          curl --retry 5 --retry-delay 5 --retry-connrefused http://localhost:3000
+          PORT=3000 HOSTNAME=0.0.0.0 node apps/web/.next/standalone/apps/web/server.js > /tmp/web.log 2>&1 &
+          pnpm --filter @tradingo/api start > /tmp/api.log 2>&1 &
+          READY=0
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 >/dev/null 2>&1 && curl -sf http://localhost:3001/health >/dev/null 2>&1; then
+              echo "OK: web:3000 and api:3001 healthy after $((i * 2))s"
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$READY" != "1" ]; then
+            echo "=== WEB LOG ==="
+            tail -60 /tmp/web.log || true
+            echo "=== API LOG ==="
+            tail -60 /tmp/api.log || true
+            exit 1
+          fi
 
       - name: Run Playwright tests
         run: pnpm test:e2e

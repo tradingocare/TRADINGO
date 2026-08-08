@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { createFlowHelper } from '../helpers/business-flows';
 import { BUYER_USER, SELLER_USER } from '../helpers/auth';
 
@@ -9,7 +9,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login({ email: process.env.E2E_ADMIN_EMAIL || 'e2e-admin@tradingo.com', password: process.env.E2E_ADMIN_PASSWORD || 'TestAdmin@123', name: 'E2E Admin' });
     await flow.navigate('/admin/finance');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -20,7 +20,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login({ email: process.env.E2E_ADMIN_EMAIL || 'e2e-admin@tradingo.com', password: process.env.E2E_ADMIN_PASSWORD || 'TestAdmin@123', name: 'E2E Admin' });
     await flow.navigate('/admin/finance');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const tabs = page.locator('[role="tab"], button:has-text("Overview"), button:has-text("Revenue"), button:has-text("Settlements")');
     const count = await tabs.count();
     expect(count).toBeGreaterThan(0);
@@ -33,7 +33,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login({ email: process.env.E2E_ADMIN_EMAIL || 'e2e-admin@tradingo.com', password: process.env.E2E_ADMIN_PASSWORD || 'TestAdmin@123', name: 'E2E Admin' });
     await flow.navigate('/admin/disputes');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -44,7 +44,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/gocash');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -55,7 +55,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/gocash');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -66,7 +66,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login({ email: process.env.E2E_ADMIN_EMAIL || 'e2e-admin@tradingo.com', password: process.env.E2E_ADMIN_PASSWORD || 'TestAdmin@123', name: 'E2E Admin' });
     await flow.navigate('/admin/wallets');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -77,7 +77,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login({ email: process.env.E2E_ADMIN_EMAIL || 'e2e-admin@tradingo.com', password: process.env.E2E_ADMIN_PASSWORD || 'TestAdmin@123', name: 'E2E Admin' });
     await flow.navigate('/admin/finance');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const settlementSection = page.locator('text=Settlement, text=Settlement').first();
     if (await settlementSection.isVisible().catch(() => false)) {
       await expect(settlementSection).toBeVisible({ timeout: 5000 });
@@ -91,7 +91,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/billing/invoices');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -102,7 +102,7 @@ test.describe('Escrow & Settlement Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/billing/history');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });

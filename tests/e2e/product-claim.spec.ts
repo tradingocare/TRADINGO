@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { loginAs, SELLER_USER } from '../helpers/auth';
 
 test.describe('Product Claim Flow', () => {
@@ -7,7 +7,7 @@ test.describe('Product Claim Flow', () => {
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/claim');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toContainText('Claim', { timeout: 10000 });
     await context.close();
   });
@@ -17,7 +17,7 @@ test.describe('Product Claim Flow', () => {
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/product-claims');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('h1').first()).toContainText('Claims', { timeout: 10000 });
     await context.close();
   });
@@ -27,9 +27,9 @@ test.describe('Product Claim Flow', () => {
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/claim');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
-    const inputs = page.locator('form input, form textarea, form select').first();
+    const inputs = page.locator('form input, form textarea, form select').filter({ visible: true }).first();
     await expect(inputs).toBeVisible({ timeout: 10000 });
     await context.close();
   });

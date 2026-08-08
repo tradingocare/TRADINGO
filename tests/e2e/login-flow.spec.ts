@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth-fixture';
+﻿import { test, expect } from '../fixtures/auth-fixture';
 import { createFlowHelper } from '../helpers/business-flows';
 import { BUYER_USER, SELLER_USER } from '../helpers/auth';
 
@@ -18,7 +18,7 @@ test.describe('Login Flow', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const forgotLink = page.locator('a[href*="forgot"]').first();
     await expect(forgotLink).toBeVisible({ timeout: 10000 });
     await context.close();
@@ -28,8 +28,8 @@ test.describe('Login Flow', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
-    const registerLink = page.locator('a[href*="register"]').first();
+    await page.waitForLoadState('load');
+    const registerLink = page.locator('a[href*="register"]').filter({ visible: true }).first();
     await expect(registerLink).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -43,7 +43,7 @@ test.describe('Login Flow', () => {
     await flow.fillField('input[autocomplete="current-password"], input[type="password"]', 'wrongpassword');
     await flow.clickButton('Sign In');
     await page.waitForTimeout(2000);
-    const errorMsg = page.locator('text=invalid, text=error, text=failed, text=incorrect, text=not found').first();
+    const errorMsg = page.getByText(/invalid|error|failed|incorrect|not found/i).first();
     await expect(errorMsg).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -51,9 +51,16 @@ test.describe('Login Flow', () => {
   test('should have turnstile widget on login form', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    await page.route('**/turnstile/v0/api.js', (route) =>
+      route.fulfill({
+        contentType: 'application/javascript',
+        body: `window.turnstile = { render: (el, opts) => { const f = document.createElement('iframe'); f.src = 'https://challenges.cloudflare.com/turnstile/v0/mock'; f.width = '300'; f.height = '65'; f.style.border = 'none'; el.appendChild(f); return 'mock-widget'; }, remove: () => {}, reset: () => {} };`,
+      }),
+    );
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
-    const turnstile = page.locator('[class*="turnstile"], iframe[src*="challenges.cloudflare"]').first();
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(1000);
+    const turnstile = page.locator('iframe[src*="challenges.cloudflare"]').first();
     await expect(turnstile).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -72,7 +79,7 @@ test.describe('Login Flow', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const socialButtons = page.locator('button:has-text("Google"), button:has-text("LinkedIn")').first();
     await expect(socialButtons).toBeVisible({ timeout: 10000 });
     await context.close();

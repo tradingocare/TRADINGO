@@ -91,6 +91,7 @@ export function FormWizard({
                   )}
                   <button
                     type="button"
+                    aria-label={`Step ${step.id}: ${step.title}`}
                     onClick={() => isClickable && onStepChange(step.id)}
                     disabled={!isClickable}
                     className={cn(

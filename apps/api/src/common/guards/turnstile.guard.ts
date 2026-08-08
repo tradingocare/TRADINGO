@@ -11,6 +11,7 @@ export class TurnstileGuard implements CanActivate {
 
     if (!token) {
       if (process.env.NODE_ENV === 'development') return true;
+      if (!this.turnstileService.isConfigured) return true;
       throw new HttpException({ status: 'error', message: 'Turnstile token required' }, HttpStatus.FORBIDDEN);
     }
 

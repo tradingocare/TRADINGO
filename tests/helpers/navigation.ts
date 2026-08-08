@@ -1,8 +1,8 @@
-import { Page, expect } from '@playwright/test';
+﻿import { Page, expect } from '@playwright/test';
 
 export async function navigateTo(page: Page, path: string): Promise<void> {
   await page.goto(path);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
 }
 
 export async function expectPageTitle(page: Page, title: string): Promise<void> {
@@ -25,5 +25,5 @@ export async function expectNoConsoleErrors(page: Page): Promise<void> {
 
 export async function waitForSettled(page: Page): Promise<void> {
   await page.waitForTimeout(500);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
 }

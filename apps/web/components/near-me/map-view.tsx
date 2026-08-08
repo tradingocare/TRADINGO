@@ -75,12 +75,12 @@ function MapViewInner({ center, radiusKm, products, className }: MapViewProps) {
   }
 
   return (
+    <div role="region" aria-label="Product discovery map" className="h-full w-full">
     <MapContainer
       center={[center.lat, center.lng]}
       zoom={10}
       className={`h-full w-full rounded-xl z-0 ${className || ''}`}
       zoomControl={true}
-      aria-label="Product discovery map"
     >
       <TileLayer
         url={TILE_URL}
@@ -102,6 +102,7 @@ function MapViewInner({ center, radiusKm, products, className }: MapViewProps) {
         </Marker>
       ))}
     </MapContainer>
+    </div>
   );
 }
 

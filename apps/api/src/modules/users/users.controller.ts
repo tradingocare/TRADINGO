@@ -29,6 +29,7 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
   async getProfile(@CurrentUser('sub') userId: string) {
     return this.usersService.findById(userId);
   }

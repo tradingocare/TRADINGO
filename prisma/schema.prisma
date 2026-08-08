@@ -505,6 +505,7 @@ model Company {
   onboardedByCode             String?
   subscriptionStatus          SubscriptionStatus          @default(TRIAL)
   subscriptionPlan            PlanType?
+  isTradgoElite               Boolean                     @default(false)
   subscriptionActivatedAt     DateTime?
   subscriptionExpiresAt       DateTime?
   subscriptionGraceStart      DateTime?

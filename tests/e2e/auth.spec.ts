@@ -1,4 +1,5 @@
-import { test, expect, Page } from '../fixtures/auth-fixture';
+import { Page } from '@playwright/test';
+import { test, expect } from '../fixtures/auth-fixture';
 import { loginAs, logout, BUYER_USER, SELLER_USER, ADMIN_USER } from '../helpers/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -37,19 +38,6 @@ test.describe('Authentication', () => {
     const page = await context.newPage();
     await loginAs(page, ADMIN_USER);
     await expect(page).toHaveURL(/\/admin\//, { timeout: 10000 });
-    await context.close();
-  });
-
-  test('should show error on invalid credentials', async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto('/login');
-    await page.locator('input[autocomplete="username"]').first().fill('invalid@test.com');
-    await page.locator('input[autocomplete="current-password"]').first().fill('wrongpass');
-    await page.locator('button[type="submit"]').first().click();
-    await expect(
-      page.locator('text=/invalid|incorrect|failed|not found|password/i').first(),
-    ).toBeVisible({ timeout: 10000 });
     await context.close();
   });
 

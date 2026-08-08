@@ -1,4 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+import {
+  Prisma,
+  ProductStatus,
+  CompanyStatus,
+  ProductType,
+  BusinessType,
+  VerificationLevel,
+  StockStatus,
+} from '@prisma/client';
 import { SearchService } from '../../search/search.service';
 import { GeoSearchService } from './geo-search.service';
 import { SearchRankingService } from './search-ranking.service';
@@ -9,6 +18,24 @@ import { ProductSearchDto } from '../dto/product-search.dto';
 import { SearchSort } from '../enums/search.enums';
 import { UnifiedSearchResult, FacetCount, SearchFacets, SpellCorrection } from '../interfaces/search-types';
 import { PRODUCTS_INDEX } from '../tradfind.config';
+import { buildProductIndexDoc, ProductIndexInput } from '../../products/product-index.doc';
+
+const PRODUCT_FALLBACK_INCLUDE = {
+  company: {
+    include: { locations: { orderBy: { isPrimary: 'desc' as const } } },
+  },
+  category: true,
+  industry: true,
+  inventory: true,
+  media: { orderBy: { sortOrder: 'asc' as const } },
+  specifications: { orderBy: { sortOrder: 'asc' as const } },
+  priceSlabs: { orderBy: { minQty: 'asc' as const } },
+  catalogItem: { include: { subcategory: true } },
+} as const satisfies Prisma.ProductInclude;
+
+type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: typeof PRODUCT_FALLBACK_INCLUDE;
+}>;
 
 @Injectable()
 export class ProductSearchService {
@@ -198,8 +225,214 @@ export class ProductSearchService {
       return result;
     } catch (err) {
       this.logger.error(`Product search failed: ${(err as Error).message}`);
-      return { hits: [], total: 0, page, limit };
+      try {
+        const fallback = await this.fallbackToPrisma(dto);
+        this.logger.log(`OpenSearch unavailable — served ${fallback.hits.length} products from PostgreSQL fallback`);
+        return fallback;
+      } catch (fbErr) {
+        this.logger.error(`Prisma fallback for product search failed: ${(fbErr as Error).message}`);
+        return { hits: [], total: 0, page, limit };
+      }
     }
+  }
+
+  /**
+   * Resilience fallback: serve products from PostgreSQL when OpenSearch is unavailable.
+   * Mirrors the OpenSearch hit shape via buildProductIndexDoc so the API contract is unchanged.
+   */
+  private async fallbackToPrisma(
+    dto: ProductSearchDto,
+  ): Promise<UnifiedSearchResult<Record<string, unknown>>> {
+    const page = dto.page || 1;
+    const limit = Math.min(Math.max(dto.limit || 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where = this.buildFallbackWhere(dto);
+    const orderBy = this.buildFallbackOrderBy(dto);
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: PRODUCT_FALLBACK_INCLUDE,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    let hits = products.map((p) => buildProductIndexDoc(this.toIndexInput(p)));
+
+    if (dto.sort === SearchSort.PRICE_ASC || dto.sort === SearchSort.PRICE_DESC) {
+      const dir = dto.sort === SearchSort.PRICE_ASC ? 1 : -1;
+      hits = hits.sort((a, b) => {
+        const pa = Number(a.minPrice) || 0;
+        const pb = Number(b.minPrice) || 0;
+        return pa === pb ? 0 : pa < pb ? -dir : dir;
+      });
+    }
+
+    return { hits, total, page, limit };
+  }
+
+  private buildFallbackWhere(dto: ProductSearchDto): Prisma.ProductWhereInput {
+    const companyFilter: Prisma.CompanyWhereInput = { status: CompanyStatus.ACTIVE };
+
+    const where: Prisma.ProductWhereInput = {
+      status: ProductStatus.ACTIVE,
+      deletedAt: null,
+    };
+
+    if (dto.q && dto.q.trim()) {
+      const q = dto.q.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { shortDescription: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { brand: { contains: q, mode: 'insensitive' } },
+        { sku: { contains: q, mode: 'insensitive' } },
+        { company: { name: { contains: q, mode: 'insensitive' } } },
+        { category: { name: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+
+    if (dto.categoryId) where.categoryId = dto.categoryId;
+    if (dto.industryId) where.industryId = dto.industryId;
+    if (dto.brand) where.brand = { equals: dto.brand, mode: 'insensitive' };
+    if (dto.productType) where.productType = dto.productType as ProductType;
+    if (dto.subCategory) {
+      where.catalogItem = {
+        subcategory: { name: { equals: dto.subCategory, mode: 'insensitive' } },
+      };
+    }
+
+    if (dto.moq !== undefined) where.moq = { lte: dto.moq };
+    else if (dto.minMoq !== undefined) where.moq = { gte: dto.minMoq };
+
+    const priceConditions: Prisma.ProductPriceSlabWhereInput[] = [];
+    if (dto.minPrice !== undefined) priceConditions.push({ price: { gte: dto.minPrice } });
+    if (dto.maxPrice !== undefined) priceConditions.push({ price: { lte: dto.maxPrice } });
+    if (priceConditions.length === 1) {
+      where.priceSlabs = { some: priceConditions[0] };
+    } else if (priceConditions.length > 1) {
+      where.priceSlabs = { some: { AND: priceConditions } };
+    }
+
+    if (dto.verificationLevel) companyFilter.verificationLevel = dto.verificationLevel as VerificationLevel;
+    if (dto.verified) {
+      companyFilter.verificationLevel = {
+        in: [VerificationLevel.LEVEL_1, VerificationLevel.LEVEL_2, VerificationLevel.LEVEL_3, VerificationLevel.LEVEL_4],
+      };
+    }
+    if (dto.businessType) companyFilter.businessType = dto.businessType as BusinessType;
+    if (dto.minTrustScore !== undefined) companyFilter.trustScore = { gte: dto.minTrustScore };
+
+    const locationConditions: Prisma.CompanyLocationWhereInput[] = [];
+    if (dto.city) locationConditions.push({ city: { equals: dto.city, mode: 'insensitive' } });
+    if (dto.state) locationConditions.push({ state: { equals: dto.state, mode: 'insensitive' } });
+    if (locationConditions.length === 1) {
+      companyFilter.locations = { some: locationConditions[0] };
+    } else if (locationConditions.length > 1) {
+      companyFilter.locations = { some: { AND: locationConditions } };
+    }
+
+    if (dto.inStock) {
+      where.inventory = { stockStatus: { not: StockStatus.OUT_OF_STOCK } };
+    }
+
+    where.company = companyFilter;
+    return where;
+  }
+
+  private buildFallbackOrderBy(
+    dto: ProductSearchDto,
+  ): Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] {
+    switch (dto.sort) {
+      case SearchSort.TRUST_SCORE:
+      case SearchSort.RATING:
+        return [{ company: { trustScore: 'desc' } }, { createdAt: 'desc' }];
+      case SearchSort.POPULARITY:
+        return [{ isFeatured: 'desc' }, { company: { trustScore: 'desc' } }, { createdAt: 'desc' }];
+      case SearchSort.PRICE_ASC:
+      case SearchSort.PRICE_DESC:
+        return [{ createdAt: 'desc' }]; // price ordering applied in-memory via min slab price
+      case SearchSort.LATEST:
+      case SearchSort.NEWEST:
+      case SearchSort.RELEVANCE:
+      default:
+        return [{ createdAt: 'desc' }];
+    }
+  }
+
+  private toIndexInput(p: ProductWithRelations): ProductIndexInput {
+    return {
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      shortDescription: p.shortDescription,
+      description: p.description,
+      productType: p.productType,
+      status: p.status,
+      brand: p.brand,
+      model: p.model,
+      sku: p.sku,
+      moq: p.moq,
+      unit: p.unit,
+      visibilityRadius: p.visibilityRadius,
+      isFeatured: p.isFeatured,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      originalPrice: p.originalPrice != null ? Number(p.originalPrice) : null,
+      monthlyOrders: p.monthlyOrders,
+      deliveryEta: p.deliveryEta,
+      freeDeliveryAbove: p.freeDeliveryAbove != null ? Number(p.freeDeliveryAbove) : null,
+      gstInvoiceAvailable: p.gstInvoiceAvailable,
+      tradeCreditEligible: p.tradeCreditEligible,
+      returnPolicy: p.returnPolicy,
+      warrantyPeriod: p.warrantyPeriod != null ? String(p.warrantyPeriod) : null,
+      certifications: p.certifications,
+      company: {
+        id: p.company.id,
+        name: p.company.name,
+        slug: p.company.slug,
+        trustScore: p.company.trustScore,
+        verificationLevel: p.company.verificationLevel,
+        businessType: p.company.businessType,
+        establishedYear: p.company.establishedYear ?? undefined,
+        gstNumber: p.company.gstNumber ?? undefined,
+        certifications: p.company.certifications,
+        locations: p.company.locations.map((l) => ({
+          city: l.city,
+          state: l.state,
+          country: l.country,
+          isPrimary: l.isPrimary,
+        })),
+      },
+      category: p.category ? { id: p.category.id, name: p.category.name } : null,
+      industry: p.industry ? { id: p.industry.id, name: p.industry.name } : null,
+      inventory: p.inventory
+        ? { availableQuantity: p.inventory.availableQuantity, stockStatus: p.inventory.stockStatus }
+        : null,
+      media: p.media.map((m) => ({ url: m.url, type: m.type, sortOrder: m.sortOrder })),
+      specifications: p.specifications.map((s) => ({ key: s.key, value: s.value })),
+      priceSlabs: p.priceSlabs.map((s) => ({
+        minQty: s.minQty,
+        maxQty: s.maxQty,
+        price: Number(s.price),
+        currency: s.currency,
+      })),
+      catalogItem: p.catalogItem
+        ? {
+            id: p.catalogItem.id,
+            slug: p.catalogItem.slug,
+            keywords: p.catalogItem.keywords,
+            synonyms: p.catalogItem.synonyms,
+            subcategory: p.catalogItem.subcategory ? { name: p.catalogItem.subcategory.name } : null,
+          }
+        : null,
+    };
   }
 
   private parseAggregations(aggs: any): SearchFacets {
