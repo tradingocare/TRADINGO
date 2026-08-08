@@ -47,13 +47,6 @@ export default defineConfig({
       name: 'mobile',
       use: {
         ...devices['iPhone 13'],
-        launchOptions: {
-          args: [
-            '--use-fake-device-for-media-stream',
-            '--use-fake-ui-for-media-stream',
-            '--allow-geolocation',
-          ],
-        },
       },
     },
   ],
