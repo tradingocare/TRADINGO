@@ -20,7 +20,9 @@ EMAIL="${EMAIL:-admin@${DOMAIN}}"
 REPO_URL="${REPO_URL:-https://github.com/tradingocare/TRADINGO.git}"
 BRANCH="${BRANCH:-main}"
 COMPOSE_FILE="docker-compose.prod.yml"
-ENV_FILE=".env.production"
+# Real secrets live ONLY in the gitignored .env.production.local.
+# The tracked .env.production is a placeholder template and must NEVER be used or overwritten.
+ENV_FILE=".env.production.local"
 
 compose() {
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
@@ -109,7 +111,21 @@ setup_repo() {
 # ── Generate Secrets ───────────────────────────────────
 generate_secrets() {
   info "Generating production secrets..."
-  
+
+  # Fail-fast: never write into the tracked placeholder template.
+  if [ "$ENV_FILE" = ".env.production" ]; then
+    fail "Refusing to write secrets into the tracked template .env.production. ENV_FILE must point to .env.production.local"
+  fi
+
+  # Fail-fast: refuse to silently overwrite an existing secrets file (would rotate all secrets).
+  if [ -f "$ENV_FILE" ]; then
+    warn "$ENV_FILE already exists — re-running rotates ALL secrets and drops any founder-supplied values."
+    read -rp "Overwrite $ENV_FILE? Existing values will be lost. (y/N): " OVERWRITE_ANS
+    if [ "${OVERWRITE_ANS:-N}" != "y" ] && [ "${OVERWRITE_ANS:-N}" != "Y" ]; then
+      fail "Aborted — $ENV_FILE not modified."
+    fi
+  fi
+
   # Generate strong random values
   local jwt_secret jwt_refresh_secret db_password redis_password ai_vault_key grafana_password
   
@@ -140,7 +156,7 @@ generate_secrets() {
     echo
   fi
   
-  # Write .env.production
+  # Write .env.production.local (gitignored — never commit)
   cat > "$ENV_FILE" << ENVEOF
 # TRADINGO — Production Environment (auto-generated)
 # ============================================
@@ -353,7 +369,7 @@ setup_ssl_renewal() {
   project_dir="$(pwd)"
 
   # Add certbot renewal cron with an explicit repo path.
-  printf '0 3 * * * root certbot renew --quiet --post-hook "cd %s && docker compose --env-file .env.production -f docker-compose.prod.yml restart nginx"\n' "$project_dir" \
+  printf '0 3 * * * root certbot renew --quiet --post-hook "cd %s && docker compose --env-file .env.production.local -f docker-compose.prod.yml restart nginx"\n' "$project_dir" \
     | sudo tee /etc/cron.d/certbot-renew >/dev/null
   
   ok "SSL auto-renewal configured (daily 3 AM)"
@@ -426,9 +442,9 @@ print_summary() {
   echo
   echo "  Next steps:"
   echo "    1. Configure DNS A records for your domain"
-  echo "    2. Run: docker compose --env-file .env.production -f docker-compose.prod.yml logs -f"
+  echo "    2. Run: docker compose --env-file .env.production.local -f docker-compose.prod.yml logs -f"
   echo "    3. Visit https://${DOMAIN}"
-  echo "    4. Configure missing services in .env.production:"
+  echo "    4. Configure missing services in .env.production.local:"
   echo "       - AI API keys (OpenAI, OpenRouter, etc.)"
   echo "       - OAuth (Google, LinkedIn)"
   echo "       - Twilio SMS"
@@ -438,8 +454,8 @@ print_summary() {
   echo "    5. Run POST-LAUNCH-CHECKLIST.md steps"
   echo
   echo "  To update after changes:"
-  echo "    docker compose --env-file .env.production -f docker-compose.prod.yml pull"
-  echo "    docker compose --env-file .env.production -f docker-compose.prod.yml up -d"
+  echo "    docker compose --env-file .env.production.local -f docker-compose.prod.yml pull"
+  echo "    docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d"
   echo
 }
 

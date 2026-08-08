@@ -99,10 +99,10 @@ bash scripts/deploy/deploy-vps.sh
 
 ```bash
 # Check all services
-docker compose --env-file .env.production -f docker-compose.prod.yml ps
+docker compose --env-file .env.production.local -f docker-compose.prod.yml ps
 
 # View logs
-docker compose --env-file .env.production -f docker-compose.prod.yml logs -f
+docker compose --env-file .env.production.local -f docker-compose.prod.yml logs -f
 
 # Run smoke tests
 bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000
@@ -121,7 +121,7 @@ bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000
 
 ## 6. Day-2 Configuration
 
-After the base deployment is running, configure these services in `.env.production`:
+After the base deployment is running, configure these services in `.env.production.local`:
 
 ### Required for core features:
 
@@ -157,10 +157,10 @@ After the base deployment is running, configure these services in `.env.producti
 | **Analytics** | `CLICKHOUSE_URL`, `CLICKHOUSE_USERNAME`, `CLICKHOUSE_PASSWORD` |
 | **OpenSearch** | `OPENSEARCH_USERNAME`, `OPENSEARCH_PASSWORD` |
 
-After updating `.env.production`:
+After updating `.env.production.local`:
 
 ```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d
 ```
 
 ---
@@ -216,7 +216,7 @@ bash scripts/deploy/manage.sh cleanup        # prune unused images/volumes
 Certificates auto-renew daily at 3 AM via cron. To manually renew:
 
 ```bash
-sudo certbot renew --quiet --post-hook "docker compose --env-file .env.production -f docker-compose.prod.yml restart nginx"
+sudo certbot renew --quiet --post-hook "docker compose --env-file .env.production.local -f docker-compose.prod.yml restart nginx"
 ```
 
 ---
@@ -227,8 +227,8 @@ If a deployment fails:
 
 ```bash
 # Rollback to previous Docker image
-docker compose --env-file .env.production -f docker-compose.prod.yml pull
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production.local -f docker-compose.prod.yml pull
+docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d
 
 # Database rollback (if migration caused issues)
 bash scripts/deploy/manage.sh restore backups/tradingo-<PREVIOUS_DATE>.sql.gz

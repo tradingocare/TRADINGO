@@ -11,7 +11,7 @@
 | File | Git tracked | Purpose |
 |---|---|---|
 | `.env.production` | **YES (template only)** | Placeholder reference. NEVER contains real values. Boot guards make a naive deploy fail fast. |
-| `.env.production.local` | **NO** (ignored via `.env.*.local`) | Real generated secrets + founder-provided values. Local verification source. `docker-compose.prod.yml api` reads `env_file: .env.production` — for a real local prod-style run use `--env-file .env.production.local`. |
+| `.env.production.local` | **NO** (ignored via `.env.*.local`) | Real generated secrets + founder-provided values. Local verification source. `docker-compose.prod.yml` containers read `env_file: .env.production.local`; all ops scripts (`deploy-vps.sh`, `manage.sh`, `backup-db.sh`) default to it and fail fast when it is missing or if pointed at the tracked template. |
 | `apps/api/.env` | NO | Development environment (dev DB, dev JWT). |
 | `.env` (repo root) | NO | Docker Compose dev variables (`POSTGRES_PASSWORD`, `REDIS_PASSWORD`, etc.). |
 
