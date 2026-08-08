@@ -291,7 +291,7 @@ setup_ssl() {
   
   # Create ssl directory and symlink certs
   mkdir -p infrastructure/nginx/ssl
-  if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+  if sudo test -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"; then
     sudo cp "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" infrastructure/nginx/ssl/fullchain.pem
     sudo cp "/etc/letsencrypt/live/${DOMAIN}/privkey.pem" infrastructure/nginx/ssl/privkey.pem
     sudo chown -R "$USER:$USER" infrastructure/nginx/ssl/
