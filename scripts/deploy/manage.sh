@@ -7,9 +7,24 @@ set -euo pipefail
 # ============================================
 
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
-COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-.env.production}"
+# Real secrets live ONLY in the gitignored .env.production.local.
+# The tracked .env.production is a placeholder template and must NEVER be used at runtime.
+COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-.env.production.local}"
 PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$PROJECT_DIR"
+
+# Fail-fast: never operate against the tracked placeholder template.
+if [ "$COMPOSE_ENV_FILE" = ".env.production" ]; then
+  echo "[TRADINGO] ERROR: refusing to use the tracked placeholder template .env.production. Use .env.production.local." >&2
+  exit 1
+fi
+
+# Fail-fast: production secrets must be configured before any management command can run.
+if [ ! -f "$COMPOSE_ENV_FILE" ]; then
+  echo "[TRADINGO] ERROR: $COMPOSE_ENV_FILE not found. Production secrets must be configured first." >&2
+  echo "[TRADINGO] Copy .env.production.local.example to .env.production.local and fill in real values." >&2
+  exit 1
+fi
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 info()  { echo -e "${BLUE}[INFO]${NC}  $1"; }

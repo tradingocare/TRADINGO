@@ -67,7 +67,7 @@ services:
     ports:
       - "127.0.0.1:3001:3001"
     env_file:
-      - .env.production
+      - .env.production.local
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -102,7 +102,7 @@ services:
     networks:
       - tradingo-net
     env_file:
-      - .env.production
+      - .env.production.local
     environment:
       PRISMA_MIGRATE_DISABLED: "false"
     extra_hosts:
@@ -133,7 +133,7 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     env_file:
-      - .env.production
+      - .env.production.local
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -242,6 +242,7 @@ services:
       - grafana_data:/var/lib/grafana
       - ./ops/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./ops/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./ops/monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s

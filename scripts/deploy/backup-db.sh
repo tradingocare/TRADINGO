@@ -8,10 +8,25 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
-COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-.env.production}"
+# Real secrets live ONLY in the gitignored .env.production.local.
+# The tracked .env.production is a placeholder template and must NEVER be used at runtime.
+COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-.env.production.local}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 TIMESTAMP=$(date -u '+%Y%m%d-%H%M%S')
+
+# Fail-fast: never operate against the tracked placeholder template.
+if [ "$COMPOSE_ENV_FILE" = ".env.production" ]; then
+  echo "[Backup] ERROR: refusing to use the tracked placeholder template .env.production. Use .env.production.local." >&2
+  exit 1
+fi
+
+# Fail-fast: production secrets must be configured before any backup can run.
+if [ ! -f "$COMPOSE_ENV_FILE" ]; then
+  echo "[Backup] ERROR: $COMPOSE_ENV_FILE not found. Production secrets must be configured first." >&2
+  echo "[Backup] Copy .env.production.local.example to .env.production.local and fill in real values." >&2
+  exit 1
+fi
 
 mkdir -p "$BACKUP_DIR"
 

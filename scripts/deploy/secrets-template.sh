@@ -7,7 +7,7 @@
 
 echo "=== TRADINGO — API Key Setup ==="
 echo "Fill in your production API keys below."
-echo "Press Enter to skip any (can be set later in .env.production)"
+echo "Press Enter to skip any (can be set later in .env.production.local)"
 echo
 
 # Required for payments

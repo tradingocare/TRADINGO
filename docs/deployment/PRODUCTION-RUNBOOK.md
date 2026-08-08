@@ -32,9 +32,12 @@ This runbook covers the production deployment, operations, and incident response
 
 ### Docker Compose (Self-Hosted)
 - **File**: `docker-compose.prod.yml`
-- **Services**: postgres, redis, api, web, nginx, prometheus, postgres-exporter, grafana
-- **Network**: tradingo-net (bridge)
+- **Services (12)**: postgres, redis, api, api-migrate (one-shot migration), web, nginx, prometheus, prometheus-postgres-exporter, grafana, alertmanager, redis-exporter, node-exporter
+- **Network**: tradingo-net (bridge); only nginx binds public ports (80/443); all other services bind 127.0.0.1
 - **Volumes**: postgres_data, redis_data, prometheus_data, grafana_data
+- **Startup order**: postgres+redis healthy → api-migrate (prisma migrate deploy, must exit 0) → api → web → nginx; monitoring services run in parallel
+- **Secrets file**: `.env.production.local` (gitignored, chmod 600) — schema in `.env.production.local.example`
+- **Full preparation report**: `docs/deployment/VPS_DEPLOYMENT_PREPARATION_REPORT.md` (ports, DNS, TLS, firewall, deploy/rollback, smoke tests)
 
 ### Kubernetes (Orchestrated)
 - **Directory**: `ops/k8s/` (14 manifests)
@@ -61,9 +64,13 @@ This runbook covers the production deployment, operations, and incident response
 
 | Endpoint | Type | Auth | Dependencies | Expected Response |
 |----------|------|------|-------------|-------------------|
-| `GET /api/v1/live` | Liveness | None | None | `{"status":"ok","timestamp":"..."}` |
-| `GET /api/v1/ready` | Readiness | None | PostgreSQL, Redis | `{"status":"ok","checks":{"database":"up","redis":"up"}}` |
-| `GET /api/v1/health` | Full Health | None | PostgreSQL, Redis, OpenSearch | `{"status":"ok","checks":{"database":"up","redis":"up","opensearch":"up"}}` |
+| `GET /live` | Liveness | None | None | `{"status":"ok","timestamp":"..."}` |
+| `GET /ready` | Readiness | None | PostgreSQL, Redis | `{"status":"ok","checks":{"database":"up","redis":"up"}}` |
+| `GET /health` | Full Health | None | PostgreSQL, Redis, OpenSearch | `{"status":"ok","checks":{"database":"up","redis":"up","opensearch":"up"}}` |
+| `GET /api/v1/health/diagnostics` | Deep diagnostics | None | all 5 backends | per-backend up/down |
+| `GET /api/v1/metrics` | Prometheus metrics | None | none | Prometheus text format |
+
+> Note: `live`/`ready`/`health` are excluded from the `api/v1` global prefix (main.ts) — they live at the root, matching compose healthchecks and `scripts/deploy/smoke-test.sh`. `/health/diagnostics` and `/metrics` are under the prefix.
 
 ## Deployment Procedure
 
@@ -80,16 +87,16 @@ export JWT_REFRESH_SECRET=<64-char-random>
 ### Docker Compose Deploy
 ```bash
 # Build images
-docker compose --env-file .env.production -f docker-compose.prod.yml build
+docker compose --env-file .env.production.local -f docker-compose.prod.yml build
 
-# Apply database migrations
-docker compose --env-file .env.production -f docker-compose.prod.yml run --rm api npx prisma migrate deploy
+# Apply database migrations (one-shot api-migrate service)
+docker compose --env-file .env.production.local -f docker-compose.prod.yml run --rm api-migrate
 
 # Start all services
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d
 
 # Verify health
-curl http://localhost:3001/api/v1/health
+curl http://localhost:3001/live
 ```
 
 ### Kubernetes Deploy
@@ -200,9 +207,9 @@ cp /data/dump.rdb /backups/redis-$(date +%Y%m%d).rdb
 ### Rollback
 ```bash
 # Docker Compose
-docker compose --env-file .env.production -f docker-compose.prod.yml down
+docker compose --env-file .env.production.local -f docker-compose.prod.yml down
 # Revert to previous image tag
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d
 
 # Database rollback (if migration reversible)
 npx prisma migrate down
