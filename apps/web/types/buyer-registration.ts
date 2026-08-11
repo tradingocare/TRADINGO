@@ -6,7 +6,6 @@ export interface PersonalInfoForm {
   password: string
   confirmPassword: string
   emailVerified?: boolean
-  mobileVerified?: boolean
 }
 
 export interface CompanyProfileForm {

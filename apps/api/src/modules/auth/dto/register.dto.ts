@@ -1,5 +1,5 @@
-import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, MinLength, Matches, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
   @IsEmail()
@@ -18,4 +18,10 @@ export class RegisterDto {
   @MinLength(1)
   @ApiProperty({ description: 'User display name' })
   name: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^[6-9]\d{9}$/, { message: 'Mobile must be a valid 10-digit Indian mobile number' })
+  @ApiPropertyOptional({ description: 'Mobile number (10 digits, optional)' })
+  mobile?: string;
 }

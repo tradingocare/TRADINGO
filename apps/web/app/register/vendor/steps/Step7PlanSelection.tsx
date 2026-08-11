@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, Star, Zap, Crown, Shield, Tag, UserCheck, AlertCircle, AlertTriangle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { setAccessToken } from '@/lib/auth'
 import StepCard from '../components/StepCard'
 import api from '@/lib/api/client'
 import type { VendorRegistrationState, PlanSelectionForm } from '@/types/vendor-registration'
@@ -59,9 +61,12 @@ interface Props {
   onNext: (data: PlanSelectionForm) => void
   onBack: () => void
   onClearDraft: () => void
+  mode?: 'register' | 'existing'
 }
 
-export default function Step7PlanSelection({ allData, onNext, onBack, onClearDraft }: Props) {
+export default function Step7PlanSelection({ allData, onNext, onBack, onClearDraft, mode = 'register' }: Props) {
+  const router = useRouter()
+  const isExisting = mode === 'existing'
   const [selectedPlan, setSelectedPlan] = useState('trade_start')
   const [referralCode, setReferralCode] = useState('')
   const [rmCode, setRmCode] = useState('')
@@ -115,54 +120,66 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
     if (!allChecked) return
     setIsSubmitting(true)
     setSubmitError(null)
+    const payload: Record<string, any> = {
+      businessName: bi.businessName,
+      tradeName: bi.tradeName,
+      businessType: bi.businessType,
+      sellerType: bi.sellerType,
+      yearEstablished: bi.yearEstablished,
+      totalEmployees: bi.totalEmployees,
+      annualTurnover: bi.annualTurnover,
+      website: bi.website,
+      ownerName: cc.ownerName,
+      designation: cc.designation,
+      email: cc.email,
+      mobileNumber: cc.mobileNumber,
+      alternateMobile: cc.alternateMobile,
+      panNumber: (allData.pan || {}).panNumber,
+      panHolderName: (allData.pan || {}).panHolderName,
+      dateOfBirth: (allData.pan || {}).dateOfBirth,
+      hasGst: gst.hasGst || false,
+      gstNumber: gst.gstNumber,
+      gstExemptReason: gst.gstExemptReason,
+      description: bp.description,
+      tagline: bp.tagline,
+      primaryCategory: bp.primaryCategory,
+      secondaryCategories: bp.secondaryCategories || [],
+      productTypes: bp.productTypes,
+      moqRange: bp.moqRange,
+      supplyCapacity: bp.supplyCapacity,
+      leadTime: bp.leadTime,
+      exportCapability: bp.exportCapability || false,
+      exportCountries: bp.exportCountries,
+      addressLine1: bp.addressLine1,
+      addressLine2: bp.addressLine2,
+      city: bp.city,
+      district: bp.district,
+      state: bp.state,
+      pincode: bp.pincode,
+      accountHolderName: bd.accountHolderName,
+      accountNumber: bd.accountNumber,
+      ifscCode: bd.ifscCode,
+      accountType: bd.accountType,
+      planId: selectedPlan,
+      referralCode: referralCode.trim() || undefined,
+      rmCode: rmCode.trim() || undefined,
+    }
+    if (!isExisting) {
+      payload.password = cc.password
+    }
     try {
-      await api.post('/auth/register/vendor', {
-        businessName: bi.businessName,
-        tradeName: bi.tradeName,
-        businessType: bi.businessType,
-        sellerType: bi.sellerType,
-        yearEstablished: bi.yearEstablished,
-        totalEmployees: bi.totalEmployees,
-        annualTurnover: bi.annualTurnover,
-        website: bi.website,
-        ownerName: cc.ownerName,
-        designation: cc.designation,
-        email: cc.email,
-        mobileNumber: cc.mobileNumber,
-        alternateMobile: cc.alternateMobile,
-        password: cc.password,
-        panNumber: (allData.pan || {}).panNumber,
-        panHolderName: (allData.pan || {}).panHolderName,
-        dateOfBirth: (allData.pan || {}).dateOfBirth,
-        hasGst: gst.hasGst || false,
-        gstNumber: gst.gstNumber,
-        gstExemptReason: gst.gstExemptReason,
-        description: bp.description,
-        tagline: bp.tagline,
-        primaryCategory: bp.primaryCategory,
-        secondaryCategories: bp.secondaryCategories || [],
-        productTypes: bp.productTypes,
-        moqRange: bp.moqRange,
-        supplyCapacity: bp.supplyCapacity,
-        leadTime: bp.leadTime,
-        exportCapability: bp.exportCapability || false,
-        exportCountries: bp.exportCountries,
-        addressLine1: bp.addressLine1,
-        addressLine2: bp.addressLine2,
-        city: bp.city,
-        district: bp.district,
-        state: bp.state,
-        pincode: bp.pincode,
-        accountHolderName: bd.accountHolderName,
-        accountNumber: bd.accountNumber,
-        ifscCode: bd.ifscCode,
-        accountType: bd.accountType,
-        planId: selectedPlan,
-        referralCode: referralCode.trim() || undefined,
-        rmCode: rmCode.trim() || undefined,
-      })
+      let res = await api.post(isExisting ? '/auth/vendor/onboarding' : '/auth/register/vendor', payload)
+      let accessToken = res?.data?.accessToken
+      if (!isExisting && accessToken) {
+        res = await api.post('/auth/vendor/onboarding', payload)
+        accessToken = res?.data?.accessToken
+      }
       setIsSuccess(true)
       onClearDraft()
+      if (accessToken) {
+        setAccessToken(accessToken)
+        document.cookie = `userRole=SELLER; path=/; max-age=86400; SameSite=Lax`
+      }
     } catch (err: any) {
       setSubmitError(err?.response?.data?.message || err?.message || 'Registration failed. Please try again.')
     } finally {
@@ -170,12 +187,16 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
     }
   }
 
+  const goToSellerDashboard = () => {
+    router.push('/seller/dashboard')
+  }
+
   if (isSuccess) {
     return (
       <StepCard
         icon={<CheckCircle2 size={20} style={{ color: '#4ade80' }} />}
-        title="Registration Complete!"
-        subtitle="Welcome to TRADINGO"
+        title="Vendor Mode Activated!"
+        subtitle="Your seller workspace is ready"
       >
         <div className="flex flex-col items-center py-8 gap-4">
           <motion.div
@@ -188,19 +209,19 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
             <CheckCircle2 size={40} className="text-green-400" />
           </motion.div>
           <div className="text-center">
-            <h3 className="text-white font-bold text-xl mb-2">Welcome to TRADINGO!</h3>
+            <h3 className="text-white font-bold text-xl mb-2">Welcome to your Seller Workspace!</h3>
             <p className="text-white/50 text-sm leading-relaxed max-w-sm">
-              Your account is under review (1-2 working days). We&apos;ll send you a confirmation via email and SMS.
+              Vendor mode is now active on your account. Your buyer features remain available — switch between Buyer and Seller whenever you want.
             </p>
           </div>
-          <div
-            className="rounded-xl p-4 mt-4"
-            style={{ background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.15)' }}
+          <button
+            type="button"
+            onClick={goToSellerDashboard}
+            className="px-8 py-3.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]"
+            style={btnPrimary}
           >
-            <p className="text-white/60 text-xs text-center">
-              Meanwhile, check out our <span className="text-[#fbbf24] font-semibold">Help Center</span> for seller tips
-            </p>
-          </div>
+            Go to Seller Dashboard →
+          </button>
         </div>
       </StepCard>
     )
@@ -377,27 +398,63 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
 
         <div className="flex flex-col gap-3">
           {[
-            { checked: agreedTerms, set: setAgreedTerms, text: "I agree to TRADINGO's Terms & Conditions and Seller Agreement" },
-            { checked: agreedPrivacy, set: setAgreedPrivacy, text: "I agree to TRADINGO's Privacy Policy and consent to data processing" },
-            { checked: agreedAccuracy, set: setAgreedAccuracy, text: "I confirm all information provided is accurate" },
-          ].map((item, i) => (
-            <label
-              key={i}
-              className="flex items-start gap-3 cursor-pointer group"
-              onClick={() => item.set(!item.checked)}
-            >
-              <div
-                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200"
-                style={{
-                  background: item.checked ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : 'var(--bg-elevated)',
-                  border: item.checked ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
-                }}
+            {
+              checked: agreedTerms, set: setAgreedTerms,
+              text: "I agree to TRADINGO's Terms & Conditions and Seller Agreement",
+              docs: [{ word: 'Terms & Conditions', href: '/terms' }, { word: 'Seller Agreement', href: '/seller-agreement' }],
+            },
+            {
+              checked: agreedPrivacy, set: setAgreedPrivacy,
+              text: "I agree to TRADINGO's Privacy Policy and consent to data processing",
+              docs: [{ word: 'Privacy Policy', href: '/privacy' }],
+            },
+            { checked: agreedAccuracy, set: setAgreedAccuracy, text: "I confirm all information provided is accurate", docs: [] },
+          ].map((item, i) => {
+            const parts: ReactNode[] = []
+            let remaining = item.text
+            let cursor = 0
+            for (const doc of item.docs) {
+              const idx = remaining.indexOf(doc.word, cursor)
+              if (idx === -1) continue
+              parts.push(remaining.slice(cursor, idx))
+              parts.push(
+                <a key={doc.href + i} href={doc.href} target="_blank" rel="noopener noreferrer"
+                  className="text-[#fbbf24] underline hover:text-[#fde68a]">
+                  {doc.word}
+                </a>
+              )
+              cursor = idx + doc.word.length
+            }
+            parts.push(remaining.slice(cursor))
+            return (
+              <label
+                key={i}
+                className="flex items-start gap-3 cursor-pointer group"
+                onClick={() => item.set(!item.checked)}
               >
-                {item.checked && <CheckCircle2 size={12} className="text-white" />}
-              </div>
-              <span className="text-white/60 text-xs leading-relaxed group-hover:text-white/80 transition-colors">{item.text}</span>
-            </label>
-          ))}
+                <div
+                  className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200"
+                  style={{
+                    background: item.checked ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : 'var(--bg-elevated)',
+                    border: item.checked ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
+                  }}
+                >
+                  {item.checked && <CheckCircle2 size={12} className="text-white" />}
+                </div>
+                <span className="text-white/60 text-xs leading-relaxed group-hover:text-white/80 transition-colors">{parts}</span>
+              </label>
+            )
+          })}
+          <p className="text-white/30 text-[10px] leading-relaxed pl-8">
+            Read:{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#fbbf24]/70 underline hover:text-[#fde68a]">Terms &amp; Conditions</a>
+            {' · '}
+            <a href="/seller-agreement" target="_blank" rel="noopener noreferrer" className="text-[#fbbf24]/70 underline hover:text-[#fde68a]">Seller Agreement</a>
+            {' · '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#fbbf24]/70 underline hover:text-[#fde68a]">Privacy Policy</a>
+            {' · '}
+            <a href="/disclaimer" target="_blank" rel="noopener noreferrer" className="text-[#fbbf24]/70 underline hover:text-[#fde68a]">Disclaimer</a>
+          </p>
         </div>
 
         {submitError && (

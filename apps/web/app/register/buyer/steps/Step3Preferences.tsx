@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import type { BuyerPreferencesForm, BuyerRegistrationState } from '@/types/buyer-registration'
+import { CheckCircle2 } from 'lucide-react'
+import type { BuyerConfirmationForm, BuyerPreferencesForm, BuyerRegistrationState } from '@/types/buyer-registration'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
 
@@ -27,7 +28,7 @@ const SUPPLIER_OPTIONS: { value: BuyerPreferencesForm['preferredSuppliers']; lab
 
 interface Props {
   data: BuyerRegistrationState
-  onNext: (data: Partial<BuyerPreferencesForm>) => void
+  onNext: (data: Partial<BuyerPreferencesForm> & Partial<BuyerConfirmationForm>) => void
   onBack: () => void
   onClearDraft: () => void
 }
@@ -43,7 +44,9 @@ export default function Step3Preferences({
   const [notificationEmail, setNotificationEmail] = useState(data.preferences?.notificationEmail ?? true)
   const [notificationSms, setNotificationSms] = useState(data.preferences?.notificationSms ?? true)
   const [newsletter, setNewsletter] = useState(data.preferences?.newsletter ?? false)
-  const [errors, setErrors] = useState<{ categories?: string }>({})
+  const [agreedToTerms, setAgreedToTerms] = useState(data.confirmation?.agreedToTerms ?? false)
+  const [agreedToPrivacyPolicy, setAgreedToPrivacyPolicy] = useState(data.confirmation?.agreedToPrivacyPolicy ?? false)
+  const [errors, setErrors] = useState<{ categories?: string; legal?: string }>({})
 
   const toggleCategory = (cat: string) => {
     setPrimaryCategories(prev => {
@@ -58,6 +61,10 @@ export default function Step3Preferences({
       setErrors({ categories: 'Select at least 1 category' })
       return
     }
+    if (!agreedToTerms || !agreedToPrivacyPolicy) {
+      setErrors(prev => ({ ...prev, legal: 'You must accept the Terms & Conditions and Privacy Policy before submitting' }))
+      return
+    }
     setErrors({})
    onNext({
   primaryCategories,
@@ -65,6 +72,8 @@ export default function Step3Preferences({
   notificationEmail,
   notificationSms,
   newsletter,
+  agreedToTerms,
+  agreedToPrivacyPolicy,
 })
   }
 
@@ -152,9 +161,61 @@ export default function Step3Preferences({
           </div>
         </div>
 
+        <div>
+          <p className="text-white/90 text-sm font-medium mb-3">Legal Acknowledgement *</p>
+          <div
+            className="rounded-xl px-4 py-4 space-y-3"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
+          >
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input type="checkbox" className="sr-only" checked={agreedToTerms}
+                onChange={e => setAgreedToTerms(e.target.checked)} />
+              <div
+                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200"
+                style={{
+                  background: agreedToTerms ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : 'var(--bg-elevated)',
+                  border: agreedToTerms ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
+                  boxShadow: agreedToTerms ? '0 0 0 3px rgba(245,159,11,0.15)' : 'none',
+                }}
+              >
+                {agreedToTerms && <CheckCircle2 size={12} className="text-white" />}
+              </div>
+              <span className="text-white/60 text-xs leading-relaxed group-hover:text-white/80 transition-colors">
+                I have read and agree to TRADINGO's{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#fbbf24] underline hover:text-[#fde68a]">Terms &amp; Conditions</a>,{' '}
+                <a href="/disclaimer" target="_blank" rel="noopener noreferrer" className="text-[#fbbf24] underline hover:text-[#fde68a]">Disclaimer</a> and{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#fbbf24] underline hover:text-[#fde68a]">Privacy Policy</a>
+              </span>
+            </label>
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input type="checkbox" className="sr-only" checked={agreedToPrivacyPolicy}
+                onChange={e => setAgreedToPrivacyPolicy(e.target.checked)} />
+              <div
+                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200"
+                style={{
+                  background: agreedToPrivacyPolicy ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : 'var(--bg-elevated)',
+                  border: agreedToPrivacyPolicy ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
+                  boxShadow: agreedToPrivacyPolicy ? '0 0 0 3px rgba(245,159,11,0.15)' : 'none',
+                }}
+              >
+                {agreedToPrivacyPolicy && <CheckCircle2 size={12} className="text-white" />}
+              </div>
+              <span className="text-white/60 text-xs leading-relaxed group-hover:text-white/80 transition-colors">
+                I confirm the information provided is accurate and consent to the processing of my business information by TRADINGO
+              </span>
+            </label>
+          </div>
+          {errors.legal && <p className="text-red-400 text-xs mt-2">{errors.legal}</p>}
+        </div>
+
         <div className="flex gap-3 pt-2">
           <button onClick={onBack} className="flex-1 py-3 rounded-xl text-sm font-medium transition-all" style={btnSecondary}>Back</button>
-          <button onClick={handleSubmit} className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all" style={btnPrimary}>Continue</button>
+          <button onClick={handleSubmit}
+            disabled={!agreedToTerms || !agreedToPrivacyPolicy}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
+            style={{ ...btnPrimary, opacity: !agreedToTerms || !agreedToPrivacyPolicy ? 0.5 : 1, cursor: !agreedToTerms || !agreedToPrivacyPolicy ? 'not-allowed' : 'pointer' }}>
+            Continue
+          </button>
         </div>
       </div>
     </StepCard>

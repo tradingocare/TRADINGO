@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, User, Lock } from 'lucide-react';
+import { Mail, User, Lock, CheckCircle2 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { apiClient } from '@/lib/api-client';
 import { setAccessToken } from '@/lib/auth';
@@ -19,6 +19,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { PasswordStrength } from '@/components/ui/password-strength';
 import { usePageTracking, useTracking } from '@/hooks/use-tracking';
 import { TrackingEvent } from '@/lib/tracking/events';
+import { getDashboardForRole } from '@/lib/auth/redirects';
 
 const registerSchema = z
   .object({
@@ -56,6 +57,8 @@ export default function RegisterFormCard({
   const { track } = useTracking();
   const [serverError, setServerError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToPrivacyPolicy, setAgreedToPrivacyPolicy] = useState(false);
   usePageTracking(TrackingEvent.REGISTRATION_START, { role: initialRole });
 
   const {
@@ -74,6 +77,10 @@ export default function RegisterFormCard({
 
   const onSubmit = async (data: RegisterForm) => {
     setServerError(null);
+    if (!agreedToTerms || !agreedToPrivacyPolicy) {
+      setServerError('You must accept the Terms & Conditions and Privacy Policy before creating your account');
+      return;
+    }
     try {
       const res = await apiClient.post<{
         user: { id: string; email: string; name: string; role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN'; isVerified: boolean; createdAt: string };
@@ -92,7 +99,7 @@ export default function RegisterFormCard({
       document.cookie = `accessToken=${res.accessToken}; path=/; max-age=86400; SameSite=Lax`;
       document.cookie = `userRole=${res.user.role}; path=/; max-age=86400; SameSite=Lax`;
       track(TrackingEvent.REGISTRATION_COMPLETE, { properties: { userId: res.user.id, role: data.role, method: 'email' } });
-      router.push(data.role === 'seller' ? '/register/seller' : '/register/buyer');
+      router.push(getDashboardForRole(res.user.role));
     } catch (err: any) {
       setServerError(err.message || 'Registration failed');
     }
@@ -215,7 +222,50 @@ export default function RegisterFormCard({
 
             <TurnstileWidget onToken={setTurnstileToken} />
 
-            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+            <div
+              className="space-y-3 rounded-lg border border-border bg-surface p-4 dark:border-dark-border dark:bg-dark-surface"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary dark:text-dark-text-tertiary">
+                Legal Acknowledgement *
+              </p>
+              <label className="flex cursor-pointer items-start gap-3 group">
+                <input type="checkbox" className="sr-only" checked={agreedToTerms}
+                  onChange={e => setAgreedToTerms(e.target.checked)} />
+                <div
+                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all"
+                  style={{
+                    background: agreedToTerms ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : 'transparent',
+                    borderColor: agreedToTerms ? 'rgba(245,158,11,0.5)' : 'var(--border-color)',
+                  }}
+                >
+                  {agreedToTerms && <CheckCircle2 size={12} className="text-white" />}
+                </div>
+                <span className="text-xs leading-relaxed text-text-secondary group-hover:text-text-primary dark:text-dark-text-secondary">
+                  I have read and agree to TRADINGO's{' '}
+                  <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-accent-500 underline hover:text-accent-600 dark:text-accent-400">Terms &amp; Conditions</Link>,{' '}
+                  <Link href="/disclaimer" target="_blank" rel="noopener noreferrer" className="font-medium text-accent-500 underline hover:text-accent-600 dark:text-accent-400">Disclaimer</Link> and{' '}
+                  <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-accent-500 underline hover:text-accent-600 dark:text-accent-400">Privacy Policy</Link>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 group">
+                <input type="checkbox" className="sr-only" checked={agreedToPrivacyPolicy}
+                  onChange={e => setAgreedToPrivacyPolicy(e.target.checked)} />
+                <div
+                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all"
+                  style={{
+                    background: agreedToPrivacyPolicy ? 'linear-gradient(135deg, #f59e0b, #fbbf24)' : 'transparent',
+                    borderColor: agreedToPrivacyPolicy ? 'rgba(245,158,11,0.5)' : 'var(--border-color)',
+                  }}
+                >
+                  {agreedToPrivacyPolicy && <CheckCircle2 size={12} className="text-white" />}
+                </div>
+                <span className="text-xs leading-relaxed text-text-secondary group-hover:text-text-primary dark:text-dark-text-secondary">
+                  I confirm the information provided is accurate and consent to the processing of my business information by TRADINGO
+                </span>
+              </label>
+            </div>
+
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || !agreedToTerms || !agreedToPrivacyPolicy}>
               {isSubmitting ? (
                 <>
                   <LoadingSpinner size="sm" />

@@ -77,6 +77,10 @@ export default function BuyerRegistrationWizard() {
   }
 
   const handleSubmit = async (finalPreferences?: any) => {
+    if (!finalPreferences?.agreedToTerms || !finalPreferences?.agreedToPrivacyPolicy) {
+      setSubmitError('Please accept the Terms & Conditions and Privacy Policy before submitting')
+      return
+    }
     setSubmitting(true)
     setSubmitError(null)
     try {

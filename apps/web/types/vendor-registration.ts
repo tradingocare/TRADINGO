@@ -18,7 +18,6 @@ export interface ContactCredentialsForm {
   password: string
   confirmPassword: string
   emailVerified?: boolean
-  mobileVerified?: boolean
 }
 
 export interface PANForm {

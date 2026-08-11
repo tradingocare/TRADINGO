@@ -47,7 +47,13 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = await this.prisma.user.create({
-      data: { email: dto.email, passwordHash, name: dto.name },
+      data: {
+        email: dto.email,
+        passwordHash,
+        name: dto.name,
+        mobile: dto.mobile || null,
+        role: 'BUYER',
+      },
     });
 
     const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
@@ -100,8 +106,8 @@ export class AuthService {
     // Role check
     if (dto.role && dto.role !== 'any') {
       const roleMap: Record<string,string[]> = {
-        buyer:  ['buyer', 'VIEWER'],
-        vendor: ['vendor','seller','MANAGER'],
+        buyer:  ['buyer', 'VIEWER', 'SELLER', 'BUYER'],
+        vendor: ['vendor','seller','MANAGER','SELLER'],
         admin:  ['admin','super_admin','rm','SUPER_ADMIN','ADMIN'],
       };
       if (!roleMap[dto.role]?.includes(user.role as string))
@@ -598,10 +604,34 @@ export class AuthService {
         email: dto.email,
         passwordHash,
         name: dto.ownerName,
-        role: 'VIEWER',
+        mobile: dto.mobileNumber || null,
+        role: 'BUYER',
       },
     });
 
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
+    await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
+
+    await this.emailQueue.add(QueueNames.EMAIL, {
+      type: EmailJobTypes.SEND_WELCOME_EMAIL,
+      to: user.email,
+      subject: 'Welcome to TRADINGO',
+      template: 'welcome',
+      context: { name: dto.ownerName, businessName: dto.businessName },
+    });
+
+    this.logger.log(`Vendor account created (Buyer role): ${dto.email}`);
+
+    return {
+      success: true,
+      message: 'Account created. Your seller capability activates on completing vendor onboarding.',
+      userId: user.id,
+      role: 'BUYER',
+      ...tokens,
+    };
+  }
+
+  private async createVendorCompany(userId: string, dto: CreateVendorDto) {
     const slug = dto.businessName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -618,15 +648,15 @@ export class AuthService {
         email: dto.email,
         mobile: dto.mobileNumber,
         description: dto.description,
-        createdBy: user.id,
-        updatedBy: user.id,
+        createdBy: userId,
+        updatedBy: userId,
         onboardingStatus: 'ACCOUNT_CREATED',
         onboardingStartedAt: new Date(),
       },
     });
 
     await this.prisma.companyOwner.create({
-      data: { companyId: company.id, userId: user.id, isPrimary: true },
+      data: { companyId: company.id, userId, isPrimary: true },
     });
 
     await this.prisma.companyLocation.create({
@@ -643,22 +673,80 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
+    return company;
+  }
+
+  async vendorOnboarding(userId: string, dto: CreateVendorDto) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const existingCompany = await this.prisma.companyOwner.findFirst({ where: { userId: user.id } });
+    if (existingCompany) {
+      throw new ConflictException('A business is already linked to this account');
+    }
+
+    if (user.role === 'SELLER') {
+      throw new ConflictException('Vendor capability is already active on this account');
+    }
+
+    const existingPan = await this.prisma.company.findFirst({ where: { panNumber: dto.panNumber } });
+    if (existingPan) {
+      throw new ConflictException('PAN number already registered');
+    }
+
+    const company = await this.createVendorCompany(user.id, dto);
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { role: 'SELLER', mobile: user.mobile || dto.mobileNumber || null },
+      select: { id: true, email: true, name: true, role: true, permissions: true },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'VENDOR_ONBOARDING_COMPLETED',
+        resource: `user:${user.id}`,
+        metadata: { newRole: 'SELLER', oldRole: user.role, companyId: company.id } as any,
+        ipAddress: null,
+      },
+    });
+
+    this.eventEmitter.emit('vendor.capability.activated', {
+      userId: user.id,
+      companyId: company.id,
+      newRole: 'SELLER',
+      oldRole: user.role,
+    });
+
+    this.notification.create(user.id, {
+      userId: user.id,
+      type: 'SYSTEM_ANNOUNCEMENT' as any,
+      channel: 'IN_APP',
+      title: 'Vendor Mode Activated',
+      body: 'Your seller workspace is now active. Your buyer features remain available.',
+      metadata: { companyId: company.id } as any,
+      sourceModule: 'auth',
+    }).catch((err) => this.logger.error('Failed to send vendor activation notification', err));
+
+    const tokens = await this.generateTokens(user.id, user.email, updated.role, updated.permissions);
     await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
 
     await this.emailQueue.add(QueueNames.EMAIL, {
       type: EmailJobTypes.SEND_WELCOME_EMAIL,
       to: user.email,
-      subject: 'Welcome to TRADINGO',
+      subject: 'Welcome to TRADINGO Seller',
       template: 'welcome',
-      context: { name: dto.ownerName, businessName: dto.businessName },
+      context: { name: user.name, businessName: dto.businessName },
     });
 
-    this.logger.log(`Vendor registered: ${dto.email} → Company: ${company.id}`);
+    this.logger.log(`Vendor capability activated: ${user.email} → Company: ${company.id}`);
 
     return {
       success: true,
-      message: 'Registration successful. Your account is under review.',
+      message: 'Vendor mode activated. Your buyer features remain available.',
       userId: user.id,
       companyId: company.id,
       ...tokens,
@@ -677,7 +765,8 @@ export class AuthService {
         email: dto.email,
         passwordHash,
         name: dto.fullName,
-        role: 'VIEWER',
+        mobile: dto.mobileNumber || null,
+        role: 'BUYER',
       },
     });
 

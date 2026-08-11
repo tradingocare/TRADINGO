@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api/client'
 import type { ContactCredentialsForm } from '@/types/vendor-registration'
+import { isDisposableEmail } from '@/lib/auth/email-security'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
 import { Select } from '@/components/ui/select'
@@ -16,35 +17,31 @@ const inputStyle = (hasError: boolean) => ({
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
 const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
 
-const DISPOSABLE_DOMAINS = ['mailinator.com', 'tempmail.com', 'guerrillamail.com', 'throwamail.com', 'yopmail.com', 'trashmail.com', 'guerrillamailblock.com', 'sharklasers.com', 'grr.la', 'dispostable.com']
-
 const DESIGNATIONS = ['Proprietor', 'Partner', 'Director', 'CEO/MD', 'Manager', 'Authorized Signatory', 'Other']
 
 interface Props {
   data: Partial<ContactCredentialsForm>
   onNext: (data: ContactCredentialsForm) => void
   onBack: () => void
+  mode?: 'register' | 'existing'
+  existingUser?: { email?: string; mobile?: string; name?: string } | null
 }
 
-export default function Step2ContactCredentials({ data, onNext, onBack }: Props) {
-  const [ownerName, setOwnerName] = useState(data.ownerName ?? '')
+export default function Step2ContactCredentials({ data, onNext, onBack, mode = 'register', existingUser }: Props) {
+  const isExisting = mode === 'existing'
+  const [ownerName, setOwnerName] = useState(data.ownerName ?? existingUser?.name ?? '')
   const [designation, setDesignation] = useState(data.designation ?? '')
-  const [mobileNumber, setMobileNumber] = useState(data.mobileNumber ?? '')
+  const [mobileNumber, setMobileNumber] = useState(data.mobileNumber ?? existingUser?.mobile ?? '')
   const [alternateMobile, setAlternateMobile] = useState(data.alternateMobile ?? '')
-  const [email, setEmail] = useState(data.email ?? '')
+  const [email, setEmail] = useState(data.email ?? existingUser?.email ?? '')
   const [password, setPassword] = useState(data.password ?? '')
   const [confirmPassword, setConfirmPassword] = useState(data.confirmPassword ?? '')
   const [showPassword, setShowPassword] = useState(false)
 
-  const [mobileVerified, setMobileVerified] = useState(data.mobileVerified ?? false)
-  const [emailVerified, setEmailVerified] = useState(data.emailVerified ?? false)
-  const [showMobileOtp, setShowMobileOtp] = useState(false)
+  const [emailVerified, setEmailVerified] = useState(isExisting && !data.email ? true : (data.emailVerified ?? false))
   const [showEmailOtp, setShowEmailOtp] = useState(false)
-  const [mobileOtp, setMobileOtp] = useState('')
   const [emailOtp, setEmailOtp] = useState('')
-  const [mobileCountdown, setMobileCountdown] = useState(0)
   const [emailCountdown, setEmailCountdown] = useState(0)
-  const [mobileOtpError, setMobileOtpError] = useState('')
   const [emailOtpError, setEmailOtpError] = useState('')
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -52,14 +49,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
 
   const isMobileValid = /^[6-9]\d{9}$/.test(mobileNumber)
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  const isEmailDisposable = DISPOSABLE_DOMAINS.some(d => email.toLowerCase().endsWith('@' + d) || email.toLowerCase().endsWith('.' + d))
-
-  useEffect(() => {
-    if (mobileCountdown > 0) {
-      const t = setTimeout(() => setMobileCountdown(c => c - 1), 1000)
-      return () => clearTimeout(t)
-    }
-  }, [mobileCountdown])
+  const isEmailDisposable = isDisposableEmail(email)
 
   useEffect(() => {
     if (emailCountdown > 0) {
@@ -67,6 +57,15 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
       return () => clearTimeout(t)
     }
   }, [emailCountdown])
+
+  useEffect(() => {
+    if (isExisting && existingUser) {
+      setOwnerName(prev => prev || existingUser.name || '')
+      setMobileNumber(prev => prev || existingUser.mobile || '')
+      setEmail(prev => prev || existingUser.email || '')
+      setEmailVerified(true)
+    }
+  }, [isExisting, existingUser])
 
   const getPasswordStrength = (pw: string): { label: string; color: string; width: string } => {
     if (pw.length < 8) return { label: 'Weak', color: '#ef4444', width: '25%' }
@@ -88,43 +87,19 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
     else if (!/^[a-zA-Z\s]+$/.test(ownerName.trim())) e.ownerName = 'Letters and spaces only'
     if (!designation) e.designation = 'Select designation'
     if (!isMobileValid) e.mobileNumber = 'Enter a valid 10-digit mobile (starts 6-9)'
-    if (!mobileVerified) e.mobileNumber = 'Mobile must be verified'
     if (email && !isEmailValid) e.email = 'Enter a valid email'
     if (email && isEmailDisposable) e.email = 'Disposable email addresses are not allowed'
     if (!isEmailValid || !email) e.email = 'Email is required'
     if (!emailVerified) e.email = 'Email must be verified'
-    if (!password || password.length < 8) e.password = 'Minimum 8 characters'
-    if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
+    if (!isExisting) {
+      if (!password || password.length < 8) e.password = 'Minimum 8 characters'
+      if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
+    }
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }))
-
-  const sendMobileOtp = async () => {
-    if (!isMobileValid) return
-    setShowMobileOtp(true)
-    setMobileCountdown(60)
-    setMobileOtp('')
-    setMobileOtpError('')
-    try {
-      await api.post('/auth/send-otp', { type: 'mobile', value: mobileNumber })
-    } catch {
-      setMobileOtpError('Failed to send OTP. Please try again.')
-    }
-  }
-
-  const verifyMobileOtp = async () => {
-    if (!mobileOtp) return
-    try {
-      await api.post('/auth/verify-otp', { type: 'mobile', value: mobileNumber, otp: mobileOtp })
-      setMobileVerified(true)
-      setShowMobileOtp(false)
-      setMobileOtp('')
-    } catch {
-      setMobileOtpError('Invalid OTP. Please try again.')
-    }
-  }
 
   const sendEmailOtp = async () => {
     if (!isEmailValid || isEmailDisposable) return
@@ -155,7 +130,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
     if (!validate()) return
     onNext({
       ownerName: ownerName.trim(), designation, mobileNumber, alternateMobile: alternateMobile.trim() || undefined,
-      email: email.trim(), password, confirmPassword, mobileVerified, emailVerified,
+      email: email.trim(), password, confirmPassword, emailVerified,
     })
   }
 
@@ -180,30 +155,9 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
               +91
             </div>
             <input className={INPUT_CLASS} style={{ ...inputStyle(!!errors.mobileNumber && touched.mobileNumber), flex: 1 }} placeholder="9876543210" maxLength={10}
-              value={mobileNumber} onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setMobileNumber(v); if (mobileVerified) setMobileVerified(false); setShowMobileOtp(false) }}
-              onBlur={() => markTouched('mobileNumber')} disabled={mobileVerified} />
-            {!mobileVerified && isMobileValid && !showMobileOtp && (
-              <button type="button" onClick={sendMobileOtp} className="px-4 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:opacity-90"
-                style={btnPrimary}>Send OTP</button>
-            )}
+              value={mobileNumber} onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setMobileNumber(v) }}
+              onBlur={() => markTouched('mobileNumber')} />
           </div>
-          {mobileVerified && <p className="text-green-400 text-xs flex items-center gap-1 mt-1">✓ Mobile Verified</p>}
-          {showMobileOtp && !mobileVerified && (
-            <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
-              <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to +91 {mobileNumber}</p>
-              <div className="flex gap-2 items-center">
-                <input className={INPUT_CLASS} style={{ ...inputStyle(false), letterSpacing: '0.3em', textAlign: 'center', maxWidth: 160 }} placeholder="000000" maxLength={6}
-                  value={mobileOtp} onChange={e => { setMobileOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setMobileOtpError('') }} />
-                <button type="button" onClick={verifyMobileOtp} className="px-4 py-3 rounded-xl text-xs font-bold hover:opacity-90" style={btnPrimary}>Verify</button>
-              </div>
-              {mobileOtpError && <p className="text-red-400 text-[10px] mt-1">{mobileOtpError}</p>}
-              <p className="text-white/30 text-[10px] mt-2">
-                {mobileCountdown > 0 ? `Resend OTP in ${mobileCountdown}s` : (
-                  <button type="button" onClick={sendMobileOtp} className="underline hover:text-white/60">Resend OTP</button>
-                )}
-              </p>
-            </div>
-          )}
         </FormField>
 
         <FormField label="Alternate Mobile" error={touched.alternateMobile ? errors.alternateMobile : undefined}>
@@ -217,64 +171,76 @@ export default function Step2ContactCredentials({ data, onNext, onBack }: Props)
         <FormField label="Email Address" required error={touched.email ? errors.email : undefined}>
           <input className={INPUT_CLASS} style={inputStyle(!!errors.email && touched.email)} placeholder="you@company.com" type="email"
             value={email} onChange={e => { setEmail(e.target.value); if (emailVerified) setEmailVerified(false); setShowEmailOtp(false) }}
-            onBlur={() => markTouched('email')} disabled={emailVerified} />
+            onBlur={() => markTouched('email')} disabled={emailVerified} readOnly={isExisting} />
           {emailVerified && <p className="text-green-400 text-xs flex items-center gap-1 mt-1">✓ Email Verified</p>}
-          {isEmailValid && isEmailDisposable && <p className="text-red-400 text-[10px] mt-1">Disposable email addresses are not allowed</p>}
-          {!emailVerified && isEmailValid && !isEmailDisposable && !showEmailOtp && (
-            <button type="button" onClick={sendEmailOtp} className="mt-2 px-4 py-2 rounded-xl text-xs font-bold hover:opacity-90" style={btnPrimary}>Send Email OTP</button>
+          {isExisting ? (
+            <p className="text-white/40 text-[10px] mt-1">Using the email of your verified account</p>
+          ) : (
+            <>
+              {isEmailValid && isEmailDisposable && <p className="text-red-400 text-[10px] mt-1">Disposable email addresses are not allowed</p>}
+              {!emailVerified && isEmailValid && !isEmailDisposable && !showEmailOtp && (
+                <button type="button" onClick={sendEmailOtp} className="mt-2 px-4 py-2 rounded-xl text-xs font-bold hover:opacity-90" style={btnPrimary}>Send Email OTP</button>
+              )}
+              {showEmailOtp && !emailVerified && (
+                <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
+                  <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to {email}</p>
+                  <div className="flex gap-2 items-center">
+                    <input className={INPUT_CLASS} style={{ ...inputStyle(false), letterSpacing: '0.3em', textAlign: 'center', maxWidth: 160 }} placeholder="000000" maxLength={6}
+                      value={emailOtp} onChange={e => { setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setEmailOtpError('') }} />
+                    <button type="button" onClick={verifyEmailOtp} className="px-4 py-3 rounded-xl text-xs font-bold hover:opacity-90" style={btnPrimary}>Verify</button>
+                  </div>
+                  {emailOtpError && <p className="text-red-400 text-[10px] mt-1">{emailOtpError}</p>}
+                  <p className="text-white/30 text-[10px] mt-2">
+                    {emailCountdown > 0 ? `Resend OTP in ${emailCountdown}s` : (
+                      <button type="button" onClick={sendEmailOtp} className="underline hover:text-white/60">Resend OTP</button>
+                    )}
+                  </p>
+                </div>
+              )}
+            </>
           )}
-          {showEmailOtp && !emailVerified && (
-            <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
-              <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to {email}</p>
-              <div className="flex gap-2 items-center">
-                <input className={INPUT_CLASS} style={{ ...inputStyle(false), letterSpacing: '0.3em', textAlign: 'center', maxWidth: 160 }} placeholder="000000" maxLength={6}
-                  value={emailOtp} onChange={e => { setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setEmailOtpError('') }} />
-                <button type="button" onClick={verifyEmailOtp} className="px-4 py-3 rounded-xl text-xs font-bold hover:opacity-90" style={btnPrimary}>Verify</button>
+        </FormField>
+
+        {!isExisting && (
+          <>
+            <FormField label="Password" required error={touched.password ? errors.password : undefined}>
+              <div className="relative">
+                <input className={INPUT_CLASS} style={inputStyle(!!errors.password && touched.password)} placeholder="Min 8 characters"
+                  type={showPassword ? 'text' : 'password'} value={password}
+                  onChange={e => setPassword(e.target.value)} onBlur={() => markTouched('password')} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs hover:text-white/60">
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
               </div>
-              {emailOtpError && <p className="text-red-400 text-[10px] mt-1">{emailOtpError}</p>}
-              <p className="text-white/30 text-[10px] mt-2">
-                {emailCountdown > 0 ? `Resend OTP in ${emailCountdown}s` : (
-                  <button type="button" onClick={sendEmailOtp} className="underline hover:text-white/60">Resend OTP</button>
+              {password.length > 0 && (
+                <div className="mt-2">
+                  <div className="h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+                    <div className="h-full rounded-full transition-all duration-300" style={{ width: strength.width, background: strength.color }} />
+                  </div>
+                  <p className="text-[10px] mt-1" style={{ color: strength.color }}>{strength.label}</p>
+                </div>
+              )}
+            </FormField>
+
+            <FormField label="Confirm Password" required error={touched.confirmPassword ? errors.confirmPassword : undefined}>
+              <div className="relative">
+                <input className={INPUT_CLASS} style={inputStyle(!!errors.confirmPassword && touched.confirmPassword)} placeholder="Re-enter password"
+                  type={showPassword ? 'text' : 'password'} value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)} onBlur={() => markTouched('confirmPassword')} />
+                {confirmPassword && confirmPassword === password && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400 text-sm">✓</span>
                 )}
-              </p>
-            </div>
-          )}
-        </FormField>
-
-        <FormField label="Password" required error={touched.password ? errors.password : undefined}>
-          <div className="relative">
-            <input className={INPUT_CLASS} style={inputStyle(!!errors.password && touched.password)} placeholder="Min 8 characters"
-              type={showPassword ? 'text' : 'password'} value={password}
-              onChange={e => setPassword(e.target.value)} onBlur={() => markTouched('password')} />
-            <button type="button" onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs hover:text-white/60">
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
-          </div>
-          {password.length > 0 && (
-            <div className="mt-2">
-              <div className="h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-elevated)' }}>
-                <div className="h-full rounded-full transition-all duration-300" style={{ width: strength.width, background: strength.color }} />
               </div>
-              <p className="text-[10px] mt-1" style={{ color: strength.color }}>{strength.label}</p>
-            </div>
-          )}
-        </FormField>
+            </FormField>
+          </>
+        )}
 
-        <FormField label="Confirm Password" required error={touched.confirmPassword ? errors.confirmPassword : undefined}>
-          <div className="relative">
-            <input className={INPUT_CLASS} style={inputStyle(!!errors.confirmPassword && touched.confirmPassword)} placeholder="Re-enter password"
-              type={showPassword ? 'text' : 'password'} value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)} onBlur={() => markTouched('confirmPassword')} />
-            {confirmPassword && confirmPassword === password && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400 text-sm">✓</span>
-            )}
+        {!isExisting && (
+          <div className="p-3 rounded-xl text-white/50 text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
+            Your Login ID on TRADINGO will be your PAN Number — entered in Step 3.
           </div>
-        </FormField>
-
-        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
-          Your Login ID on TRADINGO will be your PAN Number — entered in Step 3.
-        </div>
+        )}
 
         <div className="flex gap-3">
           <button onClick={onBack} className="flex-1 py-3.5 rounded-xl font-semibold text-sm transition-all hover:opacity-80" style={btnSecondary}>← Back</button>

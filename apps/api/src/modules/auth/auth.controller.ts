@@ -75,6 +75,20 @@ export class AuthController {
     return result;
   }
 
+  @Post('vendor/onboarding')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Activate vendor capability on an existing account' })
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  async vendorOnboarding(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateVendorDto,
+    @Res({ passthrough: true }) res?: FastifyReply,
+  ) {
+    const result = await this.authService.vendorOnboarding(userId, dto);
+    if (res && 'refreshToken' in result) this.setRefreshTokenCookie(res, (result as any).refreshToken);
+    return result;
+  }
+
   @Post('register/buyer')
   @UseGuards(TurnstileGuard)
   @ApiOperation({ summary: 'Register a new buyer' })

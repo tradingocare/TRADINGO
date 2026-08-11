@@ -29,15 +29,10 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
   const [password, setPassword] = useState(data.password ?? '')
   const [confirmPassword, setConfirmPassword] = useState(data.confirmPassword ?? '')
   const [emailVerified, setEmailVerified] = useState(data.emailVerified ?? false)
-  const [mobileVerified, setMobileVerified] = useState(data.mobileVerified ?? false)
   const [emailOtp, setEmailOtp] = useState('')
-  const [mobileOtp, setMobileOtp] = useState('')
   const [emailOtpError, setEmailOtpError] = useState('')
-  const [mobileOtpError, setMobileOtpError] = useState('')
   const [showEmailOtp, setShowEmailOtp] = useState(false)
-  const [showMobileOtp, setShowMobileOtp] = useState(false)
   const [emailCountdown, setEmailCountdown] = useState(0)
-  const [mobileCountdown, setMobileCountdown] = useState(0)
   const [showPassword, setShowPassword] = useState(false)
   const [confirmingPassword, setConfirmingPassword] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -53,13 +48,6 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
       return () => clearTimeout(t)
     }
   }, [emailCountdown])
-
-  useEffect(() => {
-    if (mobileCountdown > 0) {
-      const t = setTimeout(() => setMobileCountdown(c => c - 1), 1000)
-      return () => clearTimeout(t)
-    }
-  }, [mobileCountdown])
 
   const getPasswordStrength = (pw: string): { label: string; color: string; width: string } => {
     if (pw.length < 8) return { label: 'Weak', color: '#ef4444', width: '25%' }
@@ -83,7 +71,6 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
     if (!isEmailValid) e.email = 'Please enter a valid email address'
     if (!emailVerified) e.email = 'Email verification is required'
     if (!isMobileValid) e.mobile = 'Please enter a valid 10-digit mobile number'
-    if (!mobileVerified) e.mobile = 'Mobile verification is required'
     if (!password || password.length < 8) e.password = 'Password must be at least 8 characters'
     if (!confirmPassword) e.confirmPassword = 'Please confirm your password'
     if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
@@ -118,31 +105,6 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
     }
   }
 
-  const sendMobileOtp = async () => {
-    if (!isMobileValid) return
-    setShowMobileOtp(true)
-    setMobileCountdown(60)
-    setMobileOtp('')
-    setMobileOtpError('')
-    try {
-      await api.post('/auth/send-otp', { type: 'mobile', value: mobile })
-    } catch {
-      setMobileOtpError('Failed to send OTP. Please try again.')
-    }
-  }
-
-  const verifyMobileOtp = async () => {
-    if (!mobileOtp) return
-    try {
-      await api.post('/auth/verify-otp', { type: 'mobile', value: mobile, otp: mobileOtp })
-      setMobileVerified(true)
-      setShowMobileOtp(false)
-      setMobileOtp('')
-    } catch {
-      setMobileOtpError('Invalid OTP. Please try again.')
-    }
-  }
-
   const handleNext = () => {
     if (!validate()) {
       setTouched({
@@ -163,7 +125,6 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
       password: password,
       confirmPassword: confirmPassword,
       emailVerified: emailVerified,
-      mobileVerified: mobileVerified,
     })
   }
 
@@ -268,55 +229,10 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
               maxLength={10}
               inputMode="numeric"
               value={mobile}
-              onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setMobile(v); if (mobileVerified) setMobileVerified(false); setShowMobileOtp(false) }}
+              onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setMobile(v) }}
               onBlur={() => markTouched('mobile')}
-              disabled={mobileVerified}
             />
           </div>
-          {mobileVerified && (
-            <p className="text-green-400 text-xs flex items-center gap-1 mt-1">
-              <CheckCircle2 size={12} /> Mobile Verified
-            </p>
-          )}
-          {isMobileValid && !mobileVerified && !showMobileOtp && (
-            <button
-              type="button"
-              onClick={sendMobileOtp}
-              className="mt-2 px-4 py-2 rounded-xl text-xs font-bold hover:opacity-90"
-              style={btnPrimary}
-            >
-              Send Mobile OTP
-            </button>
-          )}
-          {showMobileOtp && !mobileVerified && (
-            <div className="mt-3 p-3 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
-              <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to +91 {mobile}</p>
-              <div className="flex gap-2 items-center">
-                <input
-                  className={INPUT_CLASS}
-                  style={{ ...inputStyle(false), letterSpacing: '0.3em', textAlign: 'center', maxWidth: 160 }}
-                  placeholder="000000"
-                  maxLength={6}
-                  value={mobileOtp}
-                  onChange={e => { setMobileOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setMobileOtpError('') }}
-                />
-                <button
-                  type="button"
-                  onClick={verifyMobileOtp}
-                  className="px-4 py-3 rounded-xl text-xs font-bold hover:opacity-90"
-                  style={btnPrimary}
-                >
-                  Verify
-                </button>
-              </div>
-              {mobileOtpError && <p className="text-red-400 text-[10px] mt-1">{mobileOtpError}</p>}
-              <p className="text-white/30 text-[10px] mt-2">
-                {mobileCountdown > 0 ? `Resend OTP in ${mobileCountdown}s` : (
-                  <button type="button" onClick={sendMobileOtp} className="underline hover:text-white/60">Resend OTP</button>
-                )}
-              </p>
-            </div>
-          )}
         </FormField>
 
         <FormField label="Password" required error={touched.password ? errors.password : undefined}>
