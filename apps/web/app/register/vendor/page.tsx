@@ -1,13 +1,20 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import VendorRegistrationWizard from './VendorRegistrationWizard'
+import { getSellerEntryTarget } from '@/lib/auth/redirects'
 
 export const metadata: Metadata = {
   title: 'Register as Seller — TRADINGO',
   description: 'Join TRADINGO as a verified seller. Zero commission. AI-powered buyer matching. GST invoicing. Start selling to 5L+ verified buyers across India.',
 }
 
-export default function VendorRegisterPage() {
+export default async function VendorRegisterPage() {
+  const role = (await cookies()).get('userRole')?.value ?? '';
+  if (role) {
+    redirect(getSellerEntryTarget(role));
+  }
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -20,7 +27,7 @@ export default function VendorRegisterPage() {
         <div className="flex items-center justify-between px-6 py-4"
           style={{ borderBottom: '1px solid var(--border-color)' }}>
           <Link href="/">
-            <img src="/logo/trdn6.png" alt="TRADINGO" className="h-9 w-9 object-contain" />
+            <img src="/logo/trdn5.png" alt="TRADINGO" className="h-9 w-9 object-contain" />
           </Link>
           <p className="text-text-secondary text-xs">
             Already have an account?{' '}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import apiClient from '@/lib/api/client'
 import type { PANForm } from '@/types/vendor-registration'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
@@ -31,6 +32,7 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
   const [panCardImage, setPanCardImage] = useState<File | null>(null)
   const [panCardPreview, setPanCardPreview] = useState<string | null>(null)
   const [verifying, setVerifying] = useState(false)
+  const [verifyError, setVerifyError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -44,16 +46,34 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
     const upper = val.toUpperCase().slice(0, 10)
     setPanNumber(upper)
     if (panVerified) { setPanVerified(false); setPanHolderName('') }
+    setVerifyError('')
   }
 
-  const verifyPan = () => {
+  const verifyPan = async () => {
     if (!isPanValid) return
     setVerifying(true)
-    setTimeout(() => {
-      setPanHolderName('RAJESH KUMAR')
-      setPanVerified(true)
+    setVerifyError('')
+    try {
+      const res = await apiClient.post('/auth/verify-pan', { panNumber })
+      const result = res.data
+      if (result?.verified) {
+        setPanHolderName(result.holderName || panHolderName)
+        setPanVerified(true)
+      } else {
+        setPanVerified(false)
+        setVerifyError(result?.message || 'PAN could not be verified')
+      }
+    } catch (err: any) {
+      setPanVerified(false)
+      const status = err?.response?.status
+      if (status === 429) setVerifyError('Too many attempts. Please try again later.')
+      else if (status === 504 || err?.code === 'ECONNABORTED') setVerifyError('Verification provider timed out. Please try again.')
+      else if (status >= 500) setVerifyError('Verification provider unavailable. Please try again.')
+      else if (status === 400) setVerifyError(err?.response?.data?.message?.[0] || 'Invalid PAN format')
+      else setVerifyError('PAN verification failed. Please try again.')
+    } finally {
       setVerifying(false)
-    }, 1000)
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,6 +135,7 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
             )}
           </div>
           {panVerified && <p className="text-green-400 text-xs flex items-center gap-1 mt-1">✓ PAN Verified</p>}
+          {!panVerified && verifyError && <p className="text-red-400 text-xs mt-1">{verifyError}</p>}
         </FormField>
 
         <FormField label="PAN Holder Name" required error={touched.panHolderName ? errors.panHolderName : undefined}>

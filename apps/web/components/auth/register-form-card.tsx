@@ -19,7 +19,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { PasswordStrength } from '@/components/ui/password-strength';
 import { usePageTracking, useTracking } from '@/hooks/use-tracking';
 import { TrackingEvent } from '@/lib/tracking/events';
-import { getDashboardForRole } from '@/lib/auth/redirects';
+import { getDashboardForRole, getSellerEntryTarget } from '@/lib/auth/redirects';
 
 const registerSchema = z
   .object({
@@ -106,21 +106,23 @@ export default function RegisterFormCard({
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:py-12">
       {showHeading && (
-        <h1 className="mb-6 text-center text-2xl font-bold text-text-primary">Register</h1>
+        <h1 className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary dark:text-dark-text-tertiary">
+          Register
+        </h1>
       )}
       <Card className="w-full max-w-md">
-        <CardHeader className="items-center space-y-4 text-center">
+        <CardHeader className="items-center space-y-4 px-5 text-center sm:px-6">
           <Link href="/">
-            <TradingoLogo height={36} />
+            <TradingoLogo height={44} />
           </Link>
           <div>
-            <CardTitle>Create account</CardTitle>
+            <CardTitle className="text-2xl font-bold sm:text-3xl">Create account</CardTitle>
             <CardDescription>Join Tradingo today</CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-5 sm:px-6">
           {serverError && (
             <div className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
               {serverError}
@@ -134,7 +136,7 @@ export default function RegisterFormCard({
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-                <Input id="name" type="text" placeholder="John Doe" className="pl-10" {...register('name')} />
+                <Input id="name" type="text" placeholder="John Doe" className="h-11 pl-10 sm:h-10" {...register('name')} />
               </div>
               {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
@@ -145,7 +147,7 @@ export default function RegisterFormCard({
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-                <Input id="email" type="email" placeholder="you@example.com" className="pl-10" {...register('email')} />
+                <Input id="email" type="email" placeholder="you@example.com" className="h-11 pl-10 sm:h-10" {...register('email')} />
               </div>
               {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
             </div>
@@ -160,7 +162,7 @@ export default function RegisterFormCard({
                   id="password"
                   type="password"
                   placeholder="Create a strong password"
-                  className="pl-10"
+                  className="h-11 pl-10 sm:h-10"
                   {...register('password')}
                 />
               </div>
@@ -178,7 +180,7 @@ export default function RegisterFormCard({
                   id="confirmPassword"
                   type="password"
                   placeholder="Repeat your password"
-                  className="pl-10"
+                  className="h-11 pl-10 sm:h-10"
                   {...register('confirmPassword')}
                 />
               </div>
@@ -240,7 +242,7 @@ export default function RegisterFormCard({
                 >
                   {agreedToTerms && <CheckCircle2 size={12} className="text-white" />}
                 </div>
-                <span className="text-xs leading-relaxed text-text-secondary group-hover:text-text-primary dark:text-dark-text-secondary">
+                <span className="text-[13px] leading-relaxed text-text-secondary group-hover:text-text-primary sm:text-xs dark:text-dark-text-secondary">
                   I have read and agree to TRADINGO's{' '}
                   <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-accent-500 underline hover:text-accent-600 dark:text-accent-400">Terms &amp; Conditions</Link>,{' '}
                   <Link href="/disclaimer" target="_blank" rel="noopener noreferrer" className="font-medium text-accent-500 underline hover:text-accent-600 dark:text-accent-400">Disclaimer</Link> and{' '}
@@ -259,7 +261,7 @@ export default function RegisterFormCard({
                 >
                   {agreedToPrivacyPolicy && <CheckCircle2 size={12} className="text-white" />}
                 </div>
-                <span className="text-xs leading-relaxed text-text-secondary group-hover:text-text-primary dark:text-dark-text-secondary">
+                <span className="text-[13px] leading-relaxed text-text-secondary group-hover:text-text-primary sm:text-xs dark:text-dark-text-secondary">
                   I confirm the information provided is accurate and consent to the processing of my business information by TRADINGO
                 </span>
               </label>
@@ -291,7 +293,7 @@ export default function RegisterFormCard({
           <div className="grid grid-cols-2 gap-3">
             <a
               href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/google`}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-secondary sm:py-2 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.1-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -303,7 +305,7 @@ export default function RegisterFormCard({
             </a>
             <a
               href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/linkedin`}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-secondary sm:py-2 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M20.283 10.356h-8.327v3.451h4.792c-.446 2.193-2.313 3.453-4.792 3.453a5.27 5.27 0 0 1-5.279-5.28 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.397.447 3.29 1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233a8.908 8.908 0 0 0-8.934 8.934 8.907 8.907 0 0 0 8.934 8.934c4.467 0 8.529-3.249 8.529-8.934 0-.528-.081-1.097-.202-1.625z"/>
@@ -322,13 +324,17 @@ export default function RegisterFormCard({
           <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 dark:border-dark-border">
             <Link
               href="/register/buyer"
-              className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary"
+              className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-secondary sm:py-2 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary"
             >
               Register as Buyer
             </Link>
             <Link
-              href="/register/seller"
-              className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary"
+              href="/register/vendor"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push(getSellerEntryTarget());
+              }}
+              className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-secondary sm:py-2 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary"
             >
               Become a Seller
             </Link>

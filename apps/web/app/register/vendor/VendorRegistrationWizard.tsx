@@ -94,7 +94,6 @@ export default function VendorRegistrationWizard({ mode = 'register' }: Props) {
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY)
-    setState(INITIAL_STATE)
   }
 
   const progressPct = ((step - 1) / (STEPS.length - 1)) * 100

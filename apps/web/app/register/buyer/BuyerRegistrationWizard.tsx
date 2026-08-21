@@ -108,6 +108,7 @@ export default function BuyerRegistrationWizard() {
         state: ba.state || '',
         pincode: ba.pincode || '',
         primaryCategoriesRequired: (pr.primaryCategories?.length || 0) > 0,
+        primaryCategories: pr.primaryCategories || [],
         preferredSuppliers: pr.preferredSuppliers || 'local',
         notificationEmail: pr.notificationEmail ?? true,
         notificationSms: pr.notificationSms ?? true,

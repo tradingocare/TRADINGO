@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import apiClient from '@/lib/api/client'
 import type { GSTForm } from '@/types/vendor-registration'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
@@ -40,6 +41,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
   const [gstCertPreview, setGstCertPreview] = useState<string | null>(null)
   const [gstExemptReason, setGstExemptReason] = useState(data.gstExemptReason ?? '')
   const [verifying, setVerifying] = useState(false)
+  const [verifyError, setVerifyError] = useState('')
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
@@ -51,19 +53,32 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
   const handleGstChange = (val: string) => {
     const upper = val.toUpperCase().slice(0, 15)
     setGstNumber(upper)
+    setVerifyError('')
     if (gstVerified) { setGstVerified(false); setGstBusinessName(''); setGstAddress(''); setGstState('') }
   }
 
-  const verifyGst = () => {
+  const verifyGst = async () => {
     if (!isGstValid) return
     setVerifying(true)
-    setTimeout(() => {
-      setGstBusinessName('KUMAR TRADING CO')
-      setGstAddress('123 Main Road, Patna, Bihar 800001')
-      setGstState('Bihar')
-      setGstVerified(true)
+    setVerifyError('')
+    try {
+      const res = await apiClient.post('/auth/verify-gst', { gstNumber })
+      const data = res.data?.data ?? res.data
+      if (data?.verified) {
+        setGstBusinessName(data.businessName ?? '')
+        setGstAddress(data.address ?? '')
+        setGstState(data.state ?? '')
+        setGstVerified(true)
+      } else {
+        setVerifyError(data?.message ?? 'Verification failed. Please try again.')
+      }
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string }
+      const msg = e?.response?.data?.message ?? e?.message ?? 'Verification failed. Please try again.'
+      setVerifyError(typeof msg === 'string' ? msg : 'Verification failed. Please try again.')
+    } finally {
       setVerifying(false)
-    }, 1000)
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +103,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
     if (hasGst) {
       if (!gstNumber) e.gstNumber = 'GST number is required'
       else if (!isGstValid) e.gstNumber = 'Invalid GSTIN format (15 characters)'
-      if (!gstVerified) e.gstNumber = 'GST must be verified'
+      else if (!gstVerified) e.gstNumber = 'GST must be verified'
     } else {
       if (!gstExemptReason) e.gstExemptReason = 'Select a reason'
     }
@@ -146,6 +161,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
                 )}
               </div>
               {gstVerified && <p className="text-green-400 text-xs flex items-center gap-1 mt-1">✓ GST Verified</p>}
+              {!gstVerified && verifyError && <p className="text-red-400 text-xs flex items-center gap-1 mt-1">{verifyError}</p>}
             </FormField>
 
             {gstVerified && (
