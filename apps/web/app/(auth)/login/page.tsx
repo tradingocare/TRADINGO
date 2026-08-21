@@ -3,9 +3,9 @@ import { Suspense }      from 'react'
 import LoginClient       from './LoginClient'
 
 export const metadata: Metadata = {
-  title: 'Sign In � TRADINGO',
+  title: 'Sign In — TRADINGO',
   description:
-    'Sign in to TRADINGO � India\'s Smart B2B Marketplace. '
+    'Sign in to TRADINGO — India\'s Smart B2B Marketplace. '
     + 'Access your buyer, seller, or admin dashboard.',
 }
 

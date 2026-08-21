@@ -93,7 +93,7 @@ export default function ForgotPasswordPage() {
 
         <div className="text-center mb-8">
           <Link href="/">
-            <Image src="/logo/trdn6.png" alt="TRADINGO"
+            <Image src="/logo/trdn5.png" alt="TRADINGO"
               width={44} height={44} className="object-contain mx-auto mb-3" />
           </Link>
         </div>
@@ -400,12 +400,12 @@ export default function ForgotPasswordPage() {
             <Link href="/login" className="hover:text-text-secondary">
               ? Back to Sign In
             </Link>
-            <span>�</span>
+            <span>·</span>
             <a href="mailto:support@tradingo.in"
               className="hover:text-text-secondary">
               Support: support@tradingo.in
             </a>
-            <span>�</span>
+            <span>·</span>
             <a href="tel:+911800000000"
               className="hover:text-text-secondary">
               1800-XXX-XXXX

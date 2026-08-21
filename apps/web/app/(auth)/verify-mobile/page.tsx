@@ -9,6 +9,7 @@ import { TradingoLogo } from '@/components/shared/tradingo-logo';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { OtpInput } from '@/components/ui/otp-input';
+import { getDashboardForRole, getRoleFromCookie } from '@/lib/auth/redirects';
 
 const MASKED_PHONE = '+1 (***) ***-1234';
 
@@ -72,7 +73,7 @@ export default function VerifyMobilePage() {
             </div>
           </CardHeader>
           <CardContent className="text-center">
-            <Button className="w-full" size="lg" onClick={() => router.push('/dashboard')}>
+            <Button className="w-full" size="lg" onClick={() => router.push(getDashboardForRole(getRoleFromCookie()))}>
               Go to dashboard
             </Button>
           </CardContent>

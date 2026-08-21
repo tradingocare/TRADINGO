@@ -36,6 +36,36 @@ describe('getRouteDecision', () => {
       const result = getRouteDecision('/admin/dashboard', null);
       expect(result.redirect).toMatch(/^\/login\?next=/);
     });
+
+    it('redirects guest from /register/vendor-onboarding to login with next param', () => {
+      const result = getRouteDecision('/register/vendor-onboarding', null);
+      expect(result.redirect).toMatch(/^\/login\?next=%2Fregister%2Fvendor-onboarding/);
+    });
+  });
+
+  describe('vendor-onboarding wizard (buyer → seller upgrade)', () => {
+    it('allows authenticated BUYER to reach /register/vendor-onboarding', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/register/vendor-onboarding', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('allows authenticated VIEWER to reach /register/vendor-onboarding', () => {
+      const payload = makePayload({ role: ROLES.VIEWER });
+      const result = getRouteDecision('/register/vendor-onboarding', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('bounces authenticated SELLER from /register/vendor-onboarding to their dashboard', () => {
+      const payload = makePayload({ role: ROLES.SELLER });
+      const result = getRouteDecision('/register/vendor-onboarding', payload);
+      expect(result.redirect).toBe('/seller/dashboard');
+    });
+
+    it('does not leak the wizard to guests via isAuthPage fallback', () => {
+      const result = getRouteDecision('/register/vendor-onboarding', null);
+      expect(result.redirect).toContain('/login');
+    });
   });
 
   describe('expired token handling', () => {
@@ -65,10 +95,10 @@ describe('getRouteDecision', () => {
   });
 
   describe('role-based route restrictions', () => {
-    it('redirects buyer (VIEWER) trying to access admin route to seller dashboard', () => {
+    it('redirects buyer (VIEWER) trying to access admin route to buyer dashboard', () => {
       const payload = makePayload({ role: ROLES.VIEWER });
       const result = getRouteDecision('/admin/users', payload);
-      expect(result.redirect).toBe('/seller/dashboard');
+      expect(result.redirect).toBe('/buyer/dashboard');
     });
 
     it('allows admin to access admin routes', () => {
@@ -97,16 +127,16 @@ describe('getRouteDecision', () => {
   });
 
   describe('auth page protection (login redirect)', () => {
-    it('redirects logged-in VIEWER from /login to seller dashboard', () => {
+    it('redirects logged-in VIEWER from /login to buyer dashboard', () => {
       const payload = makePayload({ role: ROLES.VIEWER });
       const result = getRouteDecision('/login', payload);
-      expect(result.redirect).toBe('/seller/dashboard');
+      expect(result.redirect).toBe('/buyer/dashboard');
     });
 
-    it('redirects logged-in VIEWER from /register to seller dashboard', () => {
+    it('redirects logged-in VIEWER from /register to buyer dashboard', () => {
       const payload = makePayload({ role: ROLES.VIEWER });
       const result = getRouteDecision('/register', payload);
-      expect(result.redirect).toBe('/seller/dashboard');
+      expect(result.redirect).toBe('/buyer/dashboard');
     });
 
     it('redirects logged-in ADMIN from /login to admin dashboard', () => {
@@ -211,7 +241,7 @@ describe('getDashboardForRole', () => {
   it('returns /admin/dashboard for ADMIN', () => expect(getDashboardForRole('ADMIN')).toBe('/admin/dashboard'));
   it('returns /admin/dashboard for SUPER_ADMIN', () => expect(getDashboardForRole('SUPER_ADMIN')).toBe('/admin/dashboard'));
   it('returns /seller/dashboard for MANAGER', () => expect(getDashboardForRole('MANAGER')).toBe('/seller/dashboard'));
-  it('returns /seller/dashboard for VIEWER', () => expect(getDashboardForRole('VIEWER')).toBe('/seller/dashboard'));
+  it('returns /buyer/dashboard for VIEWER', () => expect(getDashboardForRole('VIEWER')).toBe('/buyer/dashboard'));
   it('returns /seller/dashboard for unknown role', () => expect(getDashboardForRole('SELLER')).toBe('/seller/dashboard'));
 });
 
