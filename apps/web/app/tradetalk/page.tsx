@@ -10,7 +10,15 @@ import { FeatureCards } from '@/components/shared/feature-cards';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
 import { Accordion } from '@/components/ui/accordion';
+import { Section } from '@/components/shared/section';
 import type { LucideIcon } from 'lucide-react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: { absolute: 'TradeTalk | Global Business Networking Platform | TRADINGO' },
+  description:
+    'Connect with businesses, professionals, buyers, suppliers, and TRADINGO Verified Partners worldwide. Build trusted relationships, exchange ideas, discover business opportunities, and expand your network through TradeTalk.',
+};
 
 const BENEFITS: { icon: LucideIcon; title: string; desc: string }[] = [
   { icon: Network, title: 'Business Networking', desc: 'Connect with verified businesses across India\'s largest B2B ecosystem.' },
@@ -119,14 +127,6 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SectionWrapper({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
-  return (
-    <section id={id} className={`border-t border-border px-4 py-20 sm:py-24 ${className}`}>
-      <div className="mx-auto max-w-6xl">{children}</div>
-    </section>
-  );
-}
-
 function IconBox({ icon: Icon, size = 'md' }: { icon: LucideIcon; size?: 'sm' | 'md' | 'lg' }) {
   const sizeMap = { sm: 'h-9 w-9 rounded-lg', md: 'h-10 w-10 rounded-lg', lg: 'h-12 w-12 rounded-xl' };
   const iconSizeMap = { sm: 'h-4 w-4', md: 'h-5 w-5', lg: 'h-6 w-6' };
@@ -152,16 +152,13 @@ export default function TradeTalkPage() {
           <div className="glass-card-lg mx-auto max-w-4xl p-8 text-center sm:p-12">
             <Pill>Coming Soon</Pill>
             <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              <span className="text-gradient">TradeTalk</span>
-              <sup className="-top-6 ml-1 text-[10px] font-normal text-text-tertiary">TM</sup>
+              Build Your Global Business Network
             </h1>
             <p className="mt-3 text-base text-accent/70 sm:text-lg">
               Business Community
             </p>
             <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-text-secondary sm:text-lg">
-              India&apos;s Exclusive Business Community for TRADINGO Verified Partners.
-              <br />
-              <span className="text-text-primary">Network. Collaborate. Grow.</span>
+              Connect with businesses, professionals, buyers, suppliers, and TRADINGO Verified Partners across industries and locations worldwide. Build meaningful business relationships, exchange ideas, share expertise, discover new opportunities, and grow your professional network through TradeTalk.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
@@ -190,7 +187,7 @@ export default function TradeTalkPage() {
       <Separator />
 
       {/* 2. About */}
-      <SectionWrapper id="about">
+      <Section id="about">
         <AnimatedSection>
           <div className="mx-auto max-w-4xl text-center">
             <Pill>About</Pill>
@@ -214,12 +211,12 @@ export default function TradeTalkPage() {
             </div>
           </div>
         </AnimatedSection>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 
       {/* 3. Benefits */}
-      <SectionWrapper>
+      <Section>
         <SectionHeader
           title="Why TradeTalk?"
           subtitle="Everything you need to grow your business network"
@@ -238,12 +235,12 @@ export default function TradeTalkPage() {
             ))}
           </div>
         </AnimatedSection>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 
       {/* 4. Features */}
-      <SectionWrapper id="features">
+      <Section id="features">
         <SectionHeader
           title="Features"
           subtitle="Enterprise-grade networking capabilities built for business"
@@ -269,12 +266,12 @@ export default function TradeTalkPage() {
             </AnimatedSection>
           ))}
         </div>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 
       {/* 5. Community Preview (Locked) */}
-      <SectionWrapper>
+      <Section>
         <SectionHeader
           title="Communities"
           subtitle="Preview of communities coming to TradeTalk"
@@ -305,12 +302,12 @@ export default function TradeTalkPage() {
             ))}
           </div>
         </AnimatedSection>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 
       {/* 6. Statistics */}
-      <SectionWrapper>
+      <Section>
         <SectionHeader
           title="Community in Numbers"
           subtitle="Real-time community metrics — coming soon"
@@ -323,12 +320,12 @@ export default function TradeTalkPage() {
             </div>
           ))}
         </div>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 
       {/* 7. Membership */}
-      <SectionWrapper id="membership">
+      <Section id="membership">
         <AnimatedSection>
           <div className="mx-auto max-w-3xl text-center">
             <Pill>Membership</Pill>
@@ -364,12 +361,12 @@ export default function TradeTalkPage() {
             </div>
           </div>
         </AnimatedSection>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 
       {/* 8. Roadmap */}
-      <SectionWrapper>
+      <Section>
         <SectionHeader
           title="Future Roadmap"
           subtitle="What&apos;s coming to TradeTalk"
@@ -385,12 +382,12 @@ export default function TradeTalkPage() {
             ))}
           </div>
         </AnimatedSection>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 
       {/* 9. FAQ */}
-      <SectionWrapper id="faq">
+      <Section id="faq">
         <SectionHeader
           title="Frequently Asked Questions"
           subtitle="Everything you need to know about TradeTalk"
@@ -405,12 +402,12 @@ export default function TradeTalkPage() {
             type="multiple"
           />
         </div>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 
       {/* 10. Community Guidelines */}
-      <SectionWrapper>
+      <Section>
         <SectionHeader
           title="Community Guidelines"
           subtitle="Our commitment to professional, respectful business networking"
@@ -425,7 +422,7 @@ export default function TradeTalkPage() {
             ))}
           </div>
         </div>
-      </SectionWrapper>
+      </Section>
 
       <Separator />
 

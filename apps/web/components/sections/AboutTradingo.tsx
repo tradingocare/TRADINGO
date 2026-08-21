@@ -13,7 +13,7 @@ const features = [
 
 export default function AboutTradingo() {
   return (
-    <section className="relative overflow-hidden py-28 sm:py-36">
+    <section className="relative overflow-hidden py-14 sm:py-20">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-60 top-0 h-[600px] w-[600px] rounded-full bg-[rgba(96,165,250,0.04)] blur-[160px]" />
         <div className="absolute -right-60 bottom-0 h-[500px] w-[500px] rounded-full bg-[rgba(255,77,0,0.03)] blur-[140px]" />
@@ -35,11 +35,11 @@ export default function AboutTradingo() {
               <div className="absolute -bottom-32 -right-32 h-64 w-64 rounded-full bg-[rgba(255,77,0,0.04)] blur-[80px]" />
             </div>
 
-            <div className="relative z-10 flex flex-col items-center px-8 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
-              <img src="/logo/trdn6.png" alt="TRADINGO" loading="lazy"
+            <div className="relative z-10 flex flex-col items-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+              <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy"
                 className="mx-auto h-10 w-auto opacity-40 sm:h-12" />
               <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent-500">
-                ✨ What is TRADINGO?
+                {'\u2728'} What is TRADINGO?
               </span>
 
               <h2 className="mt-5 text-center text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
@@ -49,8 +49,8 @@ export default function AboutTradingo() {
                 </span>
               </h2>
 
-              <p className="mx-auto mt-4 max-w-3xl text-center text-base leading-relaxed text-text-secondary">
-                TRADINGO is India&apos;s first Global Smart Trade System powered by TRADHEXA&trade;.
+              <p className="mx-auto mt-4 max-w-7xl text-center text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
+                TRADINGO is a global trade platform powered by TRADHEXA&trade;.
                 It is an AI-powered trade ecosystem that connects manufacturers, suppliers,
                 distributors, exporters, importers, service providers, and buyers through one
                 unified platform. By combining intelligent business discovery, verified business
@@ -61,13 +61,13 @@ export default function AboutTradingo() {
 
               <Link href="/about-tradingo">
                 <motion.span whileHover={{ y: -1 }}
-                  className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/5 px-4 py-1.5 text-[11px] font-medium text-accent-light transition-all hover:bg-accent/10">
+                  className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/5 px-4 py-1.5 text-xs font-medium text-accent-light transition-all hover:bg-accent/10">
                   Learn More About TRADINGO &rarr;
                 </motion.span>
               </Link>
             </div>
 
-            <div className="relative z-10 grid gap-4 md:gap-5 sm:grid-cols-2 lg:grid-cols-4 px-8 pb-12 sm:px-12 sm:pb-16 lg:px-16 lg:pb-20">
+            <div className="relative z-10 grid gap-4 md:gap-5 sm:grid-cols-2 lg:grid-cols-4 px-6 pb-10 sm:px-10 sm:pb-14 lg:px-14 lg:pb-16">
               {features.map((f, idx) => (
                 <motion.div key={f.title}
                   initial={{ opacity: 0, y: 20 }}
@@ -86,8 +86,8 @@ export default function AboutTradingo() {
                   </div>
                   <div className="relative z-10 flex flex-col h-full px-5 md:px-6 py-5 md:py-6 pl-7 md:pl-8">
                     <span className="text-2xl md:text-3xl">{f.emoji}</span>
-                    <h3 className="mt-3 text-sm md:text-[15px] font-bold text-text-primary">{f.title}</h3>
-                    <p className="mt-2 text-[11px] md:text-xs leading-relaxed text-text-secondary flex-1">{f.desc}</p>
+                    <h3 className="mt-3 text-base md:text-lg font-bold text-text-primary">{f.title}</h3>
+                    <p className="mt-2 text-xs md:text-sm leading-relaxed text-text-secondary flex-1">{f.desc}</p>
                   </div>
                 </motion.div>
               ))}

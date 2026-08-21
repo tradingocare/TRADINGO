@@ -35,7 +35,7 @@ const CityCardImage = ({ src, alt }: { src: string; alt: string }) => {
   if (error) {
     return (
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-[#04050a] flex flex-col items-center justify-center p-4">
-        <span className="text-3xl opacity-20 filter drop-shadow-[0_0_15px_rgba(0,180,255,0.4)]">🏙️</span>
+        <span className="text-3xl opacity-20 filter drop-shadow-[0_0_15px_rgba(0,180,255,0.4)]">{'\uD83C\uDFD9\uFE0F'}</span>
       </div>
     );
   }
@@ -114,24 +114,24 @@ export default function BusinessCities() {
   };
 
   return (
-    <section className="relative overflow-hidden py-20">
+    <section className="relative overflow-hidden py-14 sm:py-16 lg:py-20">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-40 top-1/3 h-[400px] w-[400px] rounded-full bg-[rgba(0,255,255,0.03)] blur-[120px]" />
         <div className="absolute -right-40 bottom-1/3 h-[300px] w-[300px] rounded-full bg-[rgba(0,255,255,0.02)] blur-[100px]" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
-        <div className="glass-panel-prism p-8 sm:p-10">
+        <div className="glass-panel-prism p-6 sm:p-8">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-[rgba(0,255,255,0.04)] blur-[60px]" />
             <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-[rgba(0,255,255,0.03)] blur-[60px]" />
           </div>
 
           <div className="relative z-10 flex flex-col items-center text-center">
-            <Link href="/products">
+            <Link href="/trading">
               <img
-                src="/logo/trdn6.png"
-                alt="TRDN"
+                src="/logo/trdn5.png"
+                alt="TRADINGO"
                 className="mx-auto mb-4 h-10 w-auto opacity-50 transition-opacity hover:opacity-70 sm:h-12"
               />
             </Link>
@@ -141,16 +141,16 @@ export default function BusinessCities() {
             <h2 className="mt-4 text-3xl font-black tracking-tight text-primary sm:text-4xl lg:text-5xl">
               Explore India&apos;s Business Cities
             </h2>
-            <p className="mt-2 max-w-3xl text-base leading-relaxed text-text-secondary">
-              Discover India&apos;s major manufacturing, trading and industrial hubs powered by TRADHEXA&trade; Intelligence. Explore live marketplace data across 15+ cities — track active sellers, product listings, service providers, and buyer demand in real-time.
+            <p className="mx-auto mt-2 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
+              Discover India&apos;s major manufacturing, trading and industrial hubs powered by TRADHEXA&trade; Intelligence. Explore live marketplace data across 15+ cities &mdash; track active sellers, product listings, service providers, and buyer demand in real-time.
             </p>
-            <Link href="/products" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-surface-secondary px-5 py-2.5 text-[11px] font-semibold text-accent-500 transition-all hover:bg-surface-tertiary hover:shadow-[0_0_15px_rgba(255,77,0,0.15)]">
+            <Link href="/trading" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-surface-secondary px-5 py-2.5 text-xs font-semibold text-accent-500 transition-all hover:bg-surface-tertiary hover:shadow-[0_0_15px_rgba(255,77,0,0.15)]">
               Browse All Cities <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
         </div>
 
-        <div className="relative mt-10">
+        <div className="relative mt-8">
           <button
             onClick={() => scroll('left')}
             className="absolute -left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-bg-elevated/80 text-primary/60 backdrop-blur-xl transition-all hover:border-border hover:text-primary sm:flex"
@@ -175,15 +175,14 @@ export default function BusinessCities() {
             {[...cities, ...cities].map((city, i) => (
               <Link
                 key={`${city.id}-${i}`}
-                href={`/products?city=${city.slug}`}
+                href={`/trading?city=${city.slug}`}
                 className="group/card flex-shrink-0"
               >
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  className="glass-card-subtle relative w-[280px] overflow-hidden"
-                  style={{ width: '320px' }}
+                  className="glass-card-subtle relative w-[min(320px,82vw)] overflow-hidden"
                 >
                   <div className="relative h-[180px] w-full overflow-hidden">
                     <CityCardImage src={city.image} alt={city.name} />
@@ -192,10 +191,10 @@ export default function BusinessCities() {
                       <h3 className="text-lg font-black text-primary">{city.name}</h3>
                       <div className="mt-0.5 flex items-center gap-1.5">
                         <MapPin size={10} className="text-accent-500" />
-                        <span className="text-[11px] font-medium text-text-secondary">{city.state}</span>
+                        <span className="text-xs sm:text-sm font-medium text-text-secondary">{city.state}</span>
                       </div>
                     </div>
-                    <Badge variant="warning" className="absolute right-3 top-3 px-2.5 py-0.5 text-[9px] font-bold backdrop-blur-md">
+                    <Badge variant="warning" className="absolute right-3 top-3 px-2.5 py-0.5 text-[10px] font-bold backdrop-blur-md">
                       {city.growth}
                     </Badge>
                   </div>
@@ -203,7 +202,7 @@ export default function BusinessCities() {
                   <div className="p-4 bg-surface-secondary/80">
                     <div className="flex items-center gap-1.5">
                       <TrendingUp size={11} className="text-accent-500" />
-                      <span className="text-[10px] font-semibold text-text-tertiary">{city.industry}</span>
+                      <span className="text-xs sm:text-sm font-semibold text-text-tertiary">{city.industry}</span>
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2">
@@ -216,10 +215,10 @@ export default function BusinessCities() {
                         <div key={stat.label}
                           className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-secondary px-2 py-1.5 transition-all hover:bg-surface-tertiary"
                         >
-                          <span className="text-[11px] leading-none">{stat.icon}</span>
+                          <span className="text-xs sm:text-sm leading-none">{stat.icon}</span>
                           <div className="min-w-0">
-                            <span className="block text-[11px] font-bold leading-none text-primary tabular-nums">{stat.value}</span>
-                            <span className="mt-0.5 block text-[7px] leading-none text-text-secondary">{stat.label}</span>
+                            <span className="block text-xs sm:text-sm font-bold leading-none text-primary tabular-nums">{stat.value}</span>
+                            <span className="mt-0.5 block text-[10px] leading-none text-text-secondary sm:text-[11px]">{stat.label}</span>
                           </div>
                         </div>
                       ))}
@@ -240,7 +239,7 @@ export default function BusinessCities() {
           </button>
         </div>
 
-        <Link href="/products" className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-accent-500 transition-colors hover:text-[#FF7A33] sm:hidden">
+        <Link href="/trading" className="mt-4 flex items-center justify-center gap-1.5 text-xs font-semibold text-accent-500 transition-colors hover:text-[#FF7A33] sm:hidden">
           View All <ArrowRight size={13} />
         </Link>
       </div>

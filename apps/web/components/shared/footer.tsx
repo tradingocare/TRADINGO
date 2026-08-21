@@ -71,7 +71,7 @@ export function Footer() {
         <div className="absolute -left-40 top-1/4 h-[400px] w-[400px] rounded-full bg-[rgba(59,130,246,0.025)] blur-[100px]" />
         <div className="absolute -right-40 bottom-1/4 h-[350px] w-[350px] rounded-full bg-[rgba(34,197,94,0.015)] blur-[90px]" />
       </div>
-      <div className="mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12 py-10">
+      <div className="container-wide py-10">
 
         {/* 5-card top row */}
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
@@ -93,9 +93,12 @@ export function Footer() {
                 <TradingoLogo height={32} showText={false} />
               </Link>
               <p className="text-sm leading-relaxed text-text-secondary">
-                A Global AI-Powered Smart Trade System built on the TRADHEXA platform,
-                enabling intelligent commerce, trusted business networking, enterprise services, and
-                cross-border trade through one unified ecosystem.
+                Find, Compare &amp; Buy Products and Services — Explore a wide range of
+                products, raw materials, daily essentials, machinery, business supplies, and
+                professional services from verified manufacturers, traders, distributors,
+                and service providers worldwide. Compare products and prices, connect directly
+                with sellers, request quotations, and choose the right option for your business
+                or everyday needs.
               </p>
               <div className="mt-5 flex gap-3">
                 {SOCIAL_ICONS.map((s) => (
@@ -259,7 +262,7 @@ export function Footer() {
             </div>
             <div className="relative z-10 p-5 sm:p-6 pl-6 sm:pl-7">
               <div className="flex flex-col items-center gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex items-center gap-4 text-center lg:text-left">
+                <div className="flex flex-shrink-0 items-center gap-4 text-center lg:text-left">
                   <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg" style={{ background: `${cardAccents[0]}15`, border: `1px solid ${cardAccents[0]}30` }}>
                     <Send className="h-4 w-4" style={{ color: cardAccents[0] }} />
                   </span>
@@ -267,13 +270,13 @@ export function Footer() {
                     <h3 className="text-sm font-bold tracking-tight text-text-primary sm:text-base">
                       Subscribe to Newsletter
                     </h3>
-                    <p className="mt-0.5 whitespace-nowrap text-xs leading-relaxed text-text-tertiary">
+                    <p className="mt-0.5 text-xs leading-relaxed text-text-tertiary lg:whitespace-nowrap">
                       Get the latest product updates, marketplace insights, and exclusive Tradingo news.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex w-full flex-col items-center gap-2 lg:w-auto lg:flex-row lg:gap-3">
+                <div className="flex w-full flex-col items-center gap-2 lg:w-auto lg:min-w-0 lg:flex-row lg:gap-3">
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     if (!email || subscribing) return;
@@ -289,7 +292,7 @@ export function Footer() {
                       setSubscribing(false);
                     }
                   }} className="flex w-full gap-2 sm:w-auto sm:flex-row">
-                    <div className="relative min-w-[200px]">
+                    <div className="relative min-w-0 w-full">
                       <input
                         type="email"
                         value={email}
