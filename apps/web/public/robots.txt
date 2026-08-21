@@ -6,4 +6,4 @@ Disallow: /admin/
 Disallow: /seller/
 Disallow: /buyer/
 
-Sitemap: https://www.tradingo.com/sitemap.xml
+Sitemap: https://tradingo.in/sitemap.xml
