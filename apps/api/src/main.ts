@@ -259,6 +259,8 @@ async function bootstrap() {
   app.enableCors({
     origin: configService.get<string>('FRONTEND_URL', 'http://localhost:3000'),
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
   });
 
   // Global prefix (exclude k8s probes)
@@ -360,6 +362,13 @@ async function bootstrap() {
   const metricsServer = createServer(async (_req, res) => {
     res.writeHead(200, { 'Content-Type': register.contentType });
     res.end(await register.metrics());
+  });
+  metricsServer.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      logger.warn('Metrics server port 9100 already in use — skipping internal metrics server');
+    } else {
+      logger.error(`Metrics server error: ${err.message}`);
+    }
   });
   metricsServer.listen(9100, '127.0.0.1');
 

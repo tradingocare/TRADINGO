@@ -92,4 +92,11 @@ export const validationSchema = Joi.object({
   GA4_API_SECRET: Joi.string().allow(''),
   TURNSTILE_SECRET_KEY: Joi.string().allow(''),
   TURNSTILE_SITE_KEY: Joi.string().allow(''),
+  PAN_VERIFY_API_URL: Joi.string().uri().allow(''),
+  PAN_VERIFY_API_KEY: Joi.string().allow(''),
+  GST_VERIFY_API_URL: Joi.string().uri().allow(''),
+  GST_VERIFY_API_KEY: Joi.string().allow(''),
+  EMAIL_PROVIDER: Joi.string().valid('ses', 'resend').default('ses'),
+  RESEND_API_KEY: Joi.string().allow(''),
+  RESEND_FROM: Joi.string().email().allow(''),
 });

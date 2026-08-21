@@ -10,6 +10,8 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { SmsService } from '../sms/sms.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { NotificationService } from '../notification/notification.service';
+import { MembershipService } from '../membership/membership.service';
+import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -20,6 +22,15 @@ import * as bcrypt from 'bcrypt';
 interface MockPrisma {
   user: Record<string, jest.Mock>;
   session: Record<string, jest.Mock>;
+  company: Record<string, jest.Mock>;
+  companyOwner: Record<string, jest.Mock>;
+  companyLocation: Record<string, jest.Mock>;
+  category: Record<string, jest.Mock>;
+  companyCategory: Record<string, jest.Mock>;
+  sellerPayoutAccount: Record<string, jest.Mock>;
+  newsletterSubscriber: Record<string, jest.Mock>;
+  auditLog: Record<string, jest.Mock>;
+  $transaction: jest.Mock;
 }
 
 interface MockRedis {
@@ -47,6 +58,10 @@ describe('AuthService', () => {
   let redisService: MockRedis;
   let jwtService: MockJwt;
   let emailQueue: MockQueue;
+  let notificationService: Record<string, jest.Mock>;
+  let membershipService: Record<string, jest.Mock>;
+  let vendorCodesService: Record<string, jest.Mock>;
+  let eventEmitter: { emit: jest.Mock };
 
   const mockUser = {
     id: 'user-1',
@@ -61,13 +76,69 @@ describe('AuthService', () => {
     isActive: true,
   };
 
+  const vendorDto = {
+    businessName: 'Test Biz',
+    businessType: 'Private Limited',
+    sellerType: 'Manufacturer',
+    yearEstablished: '2020',
+    totalEmployees: '10',
+    annualTurnover: '1 Cr',
+    ownerName: 'Owner',
+    designation: 'Director',
+    email: 'vendor@example.com',
+    mobileNumber: '9876543210',
+    password: 'Pass@1234',
+    panNumber: 'ABCDE1234F',
+    panHolderName: 'Owner',
+    hasGst: false,
+    description: 'desc',
+    primaryCategory: 'Steel',
+    productTypes: 'Pipes',
+    moqRange: '1-10',
+    supplyCapacity: '100',
+    leadTime: '7 days',
+    exportCapability: false,
+    addressLine1: 'Addr',
+    city: 'Patna',
+    district: 'Patna',
+    state: 'Bihar',
+    pincode: '800001',
+    accountHolderName: 'Owner',
+    accountNumber: '1234567890',
+    ifscCode: 'SBIN0001234',
+    accountType: 'current',
+    planId: 'trade_smart',
+    referralCode: 'REF1',
+    rmCode: 'RM1',
+  } as any;
+
+  const buyerDto = {
+    email: 'buyer@example.com',
+    password: 'Pass@1234',
+    fullName: 'Buyer',
+    companyName: 'Buy Co',
+    businessType: 'Private Limited',
+    mobileNumber: '9876543210',
+    industry: 'Steel',
+    companySize: '10',
+    annualProcurement: '10 Cr',
+    addressLine1: 'Addr',
+    city: 'Patna',
+    district: 'Patna',
+    state: 'Bihar',
+    pincode: '800001',
+    notificationEmail: true,
+    notificationSms: false,
+    newsletter: true,
+  } as any;
+
   beforeEach(async () => {
     prisma = {
       user: {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
         create: jest.fn(),
-        update: jest.fn(),
+        update: jest.fn().mockResolvedValue({ id: 'user-1', email: 'vendor@example.com', name: 'Test', role: 'SELLER', permissions: [] }),
       },
       session: {
         create: jest.fn(),
@@ -76,6 +147,23 @@ describe('AuthService', () => {
         deleteMany: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
+      company: {
+        create: jest.fn().mockResolvedValue({ id: 'company-1', assignedRmId: null, assignedAt: null, name: 'Test Biz' }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      companyOwner: {
+        create: jest.fn().mockResolvedValue({}),
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      companyLocation: { create: jest.fn().mockResolvedValue({}), findFirst: jest.fn().mockResolvedValue(null) },
+      category: { findMany: jest.fn().mockResolvedValue([]) },
+      companyCategory: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      sellerPayoutAccount: { upsert: jest.fn().mockResolvedValue({}) },
+      newsletterSubscriber: { upsert: jest.fn().mockResolvedValue({}) },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
+      $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
     };
 
     redisService = {
@@ -94,6 +182,18 @@ describe('AuthService', () => {
     };
 
     emailQueue = { add: jest.fn() };
+    notificationService = {
+      create: jest.fn().mockResolvedValue({ id: 'notif-1' }),
+      createWithTemplate: jest.fn().mockResolvedValue({ id: 'notif-1' }),
+      upsertPreference: jest.fn().mockResolvedValue({ id: 'pref-1' }),
+      initializeDefaultPreferences: jest.fn().mockResolvedValue(undefined),
+    };
+    membershipService = { enrollTrial: jest.fn().mockResolvedValue({ success: true, status: 'TRIAL' }) };
+    vendorCodesService = {
+      assignReferral: jest.fn().mockResolvedValue(undefined),
+      getCodeOwner: jest.fn().mockResolvedValue({ type: 'RM', userId: 'rm-1', name: 'RM' }),
+    };
+    eventEmitter = { emit: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -104,8 +204,10 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: SmsService, useValue: { send: jest.fn(), sendOtp: jest.fn(), sendTransactional: jest.fn() } },
         { provide: AuditLogService, useValue: { log: jest.fn().mockResolvedValue(undefined), create: jest.fn().mockResolvedValue(undefined) } },
-        { provide: NotificationService, useValue: { create: jest.fn().mockResolvedValue({ id: 'notif-1' }), createWithTemplate: jest.fn().mockResolvedValue({ id: 'notif-1' }) } },
-        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+        { provide: NotificationService, useValue: notificationService },
+        { provide: MembershipService, useValue: membershipService },
+        { provide: VendorCodesService, useValue: vendorCodesService },
+        { provide: EventEmitter2, useValue: eventEmitter },
         {
           provide: ConfigService,
           useValue: {
@@ -211,6 +313,70 @@ describe('AuthService', () => {
       expect(redisService.incr).toHaveBeenCalledWith('lock:user:nonexistent@example.com');
     });
 
+    it('resolves PAN login through CompanyOwner when User.panNumber is null', async () => {
+      const sellerUser = {
+        id: 'seller-1',
+        email: 'seller@example.com',
+        mobile: '9876543210',
+        panNumber: null,
+        name: 'Seller',
+        role: 'SELLER',
+        status: 'active',
+        permissions: [],
+        passwordHash: 'hashed',
+        isActive: true,
+      };
+      redisService.exists.mockResolvedValue(false);
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.companyOwner.findFirst.mockResolvedValue({ user: sellerUser });
+      prisma.user.update.mockResolvedValue({});
+      prisma.session.create.mockResolvedValue({ id: 'session-1' });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.login({ identifier: 'aakcn7471r', password: 'Pass@1234', role: 'vendor' });
+
+      expect(result.accessToken).toBe('mock-token');
+      expect(prisma.companyOwner.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ company: { panNumber: 'AAKCN7471R' } }),
+          include: { user: true },
+        }),
+      );
+    });
+
+    it('matches User.panNumber directly and never queries CompanyOwner', async () => {
+      redisService.exists.mockResolvedValue(false);
+      prisma.user.findFirst.mockResolvedValue({ ...mockUser, panNumber: 'ABCDE1234F', role: 'SELLER' });
+      prisma.user.update.mockResolvedValue({});
+      prisma.session.create.mockResolvedValue({ id: 'session-1' });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.login({ identifier: 'ABCDE1234F', password: 'Pass@1234', role: 'vendor' });
+
+      expect(result.accessToken).toBe('mock-token');
+      expect(prisma.companyOwner.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('rejects PAN not owned by any user with generic Invalid credentials', async () => {
+      redisService.exists.mockResolvedValue(false);
+      redisService.incr.mockResolvedValue(1);
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.companyOwner.findFirst.mockResolvedValue(null);
+
+      await expect(service.login({ identifier: 'ZZZZZ9999Z', password: 'Pass@1234' }))
+        .rejects.toThrow(UnauthorizedException);
+    });
+
+    it('never resolves email/mobile identifiers through CompanyOwner', async () => {
+      redisService.exists.mockResolvedValue(false);
+      redisService.incr.mockResolvedValue(1);
+      prisma.user.findFirst.mockResolvedValue(null);
+
+      await expect(service.login({ identifier: 'someone@example.com', password: 'any' }))
+        .rejects.toThrow(UnauthorizedException);
+      expect(prisma.companyOwner.findFirst).not.toHaveBeenCalled();
+    });
+
     describe('verifyEmail', () => {
       it('verifies email with valid token', async () => {
         redisService.get.mockResolvedValue('user-1');
@@ -258,6 +424,164 @@ describe('AuthService', () => {
 
       await expect(service.refreshTokens('invalid-token'))
         .rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('vendorOnboarding', () => {
+    function mockBuyerUser() {
+      prisma.user.findFirst.mockResolvedValue({ ...mockUser, id: 'user-1', email: 'vendor@example.com', role: 'BUYER', mobile: null });
+    }
+
+    it('reuses an owned professional company when PAN matches (F6)', async () => {
+      mockBuyerUser();
+      prisma.companyOwner.findMany.mockResolvedValue([
+        { userId: 'user-1', isPrimary: false, company: { id: 'prof-co', panNumber: 'AAAAA9999A', gstNumber: null, businessType: 'PROFESSIONAL', companyStructure: null, name: 'Prof Co' } },
+      ]);
+      prisma.company.update.mockResolvedValue({ id: 'prof-co' });
+
+      const result = await service.vendorOnboarding('user-1', { ...vendorDto, panNumber: 'AAAAA9999A', planId: undefined, referralCode: undefined, rmCode: undefined });
+
+      expect(prisma.company.create).not.toHaveBeenCalled();
+      expect(prisma.company.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'prof-co' } }));
+      expect(result.companyId).toBe('prof-co');
+    });
+
+    it('rejects a PAN that conflicts with an owned identity-bearing company (F7)', async () => {
+      mockBuyerUser();
+      prisma.companyOwner.findMany.mockResolvedValue([
+        { userId: 'user-1', isPrimary: true, company: { id: 'prof-co', panNumber: 'AAAAA9999A', gstNumber: null, businessType: 'PROFESSIONAL', companyStructure: null, name: 'Prof Co' } },
+      ]);
+
+      await expect(service.vendorOnboarding('user-1', { ...vendorDto, panNumber: 'BBBBB9999B' }))
+        .rejects.toThrow(ConflictException);
+      expect(prisma.company.create).not.toHaveBeenCalled();
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it('runs all persisted writes in a single transaction and completes activation', async () => {
+      mockBuyerUser();
+
+      const result = await service.vendorOnboarding('user-1', vendorDto);
+
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+      expect(prisma.company.create).toHaveBeenCalled();
+      expect(membershipService.enrollTrial).toHaveBeenCalledWith('company-1', 'trade_smart', prisma);
+      expect(vendorCodesService.assignReferral).toHaveBeenCalledWith('company-1', expect.any(String), prisma);
+      expect(prisma.company.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'company-1' },
+        data: expect.objectContaining({ assignedRmId: 'rm-1' }),
+      }));
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ action: 'ASSIGN_RM' }),
+      }));
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ action: 'VENDOR_ONBOARDING_COMPLETED' }),
+      }));
+      expect(prisma.sellerPayoutAccount.upsert).toHaveBeenCalled();
+      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'user-1' },
+        data: expect.objectContaining({ role: 'SELLER' }),
+      }));
+      expect(eventEmitter.emit).toHaveBeenCalled();
+      expect(emailQueue.add).toHaveBeenCalled();
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('rolls back and skips all side effects when a late membership step fails', async () => {
+      mockBuyerUser();
+      membershipService.enrollTrial.mockRejectedValueOnce(new Error('plan failure'));
+
+      await expect(service.vendorOnboarding('user-1', vendorDto)).rejects.toThrow('plan failure');
+
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
+      expect(prisma.sellerPayoutAccount.upsert).not.toHaveBeenCalled();
+      expect(eventEmitter.emit).not.toHaveBeenCalled();
+      expect(emailQueue.add).not.toHaveBeenCalled();
+      expect(notificationService.create).not.toHaveBeenCalled();
+    });
+
+    it('preserves an existing assignedRmId and does not write ASSIGN_RM audit', async () => {
+      mockBuyerUser();
+      prisma.company.create.mockResolvedValueOnce({ id: 'company-1', assignedRmId: 'rm-99', assignedAt: new Date(), name: 'Test Biz' });
+
+      const result = await service.vendorOnboarding('user-1', vendorDto);
+
+      expect(prisma.company.update).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ action: 'ASSIGN_RM' }),
+      }));
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('rejects an invalid rmCode inside the transaction', async () => {
+      mockBuyerUser();
+      vendorCodesService.getCodeOwner.mockResolvedValueOnce(null);
+
+      await expect(service.vendorOnboarding('user-1', vendorDto)).rejects.toThrow(ConflictException);
+
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
+      expect(emailQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('succeeds when all optional fields are omitted', async () => {
+      mockBuyerUser();
+      const minimal = { ...vendorDto, planId: undefined, referralCode: undefined, rmCode: undefined, accountNumber: undefined, ifscCode: undefined };
+
+      const result = await service.vendorOnboarding('user-1', minimal);
+
+      expect(membershipService.enrollTrial).not.toHaveBeenCalled();
+      expect(vendorCodesService.assignReferral).not.toHaveBeenCalled();
+      expect(prisma.company.update).not.toHaveBeenCalled();
+      expect(prisma.sellerPayoutAccount.upsert).not.toHaveBeenCalled();
+      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'user-1' },
+        data: expect.objectContaining({ role: 'SELLER' }),
+      }));
+      expect(emailQueue.add).toHaveBeenCalled();
+    });
+  });
+
+  describe('registerBuyer', () => {
+    it('runs all persisted writes in a single transaction including newsletter', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'user-1', email: 'buyer@example.com', name: 'Buyer', role: 'BUYER', permissions: [] });
+
+      const result = await service.registerBuyer(buyerDto);
+
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+      expect(prisma.company.create).toHaveBeenCalled();
+      expect(prisma.companyOwner.create).toHaveBeenCalled();
+      expect(prisma.companyLocation.create).toHaveBeenCalled();
+      expect(notificationService.initializeDefaultPreferences).toHaveBeenCalledWith('company-1', 'user-1', prisma);
+      expect(notificationService.upsertPreference).toHaveBeenCalledTimes(2);
+      expect(prisma.newsletterSubscriber.upsert).toHaveBeenCalled();
+      expect(emailQueue.add).toHaveBeenCalled();
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('rolls back and skips all side effects when preference initialization fails', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'user-1', email: 'buyer@example.com', name: 'Buyer', role: 'BUYER', permissions: [] });
+      notificationService.initializeDefaultPreferences.mockRejectedValueOnce(new Error('pref failure'));
+
+      await expect(service.registerBuyer(buyerDto)).rejects.toThrow('pref failure');
+
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+      expect(prisma.newsletterSubscriber.upsert).not.toHaveBeenCalled();
+      expect(prisma.session.create).not.toHaveBeenCalled();
+      expect(emailQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('skips newsletter when not requested', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'user-1', email: 'buyer@example.com', name: 'Buyer', role: 'BUYER', permissions: [] });
+
+      await service.registerBuyer({ ...buyerDto, newsletter: false });
+
+      expect(prisma.newsletterSubscriber.upsert).not.toHaveBeenCalled();
+      expect(emailQueue.add).toHaveBeenCalled();
     });
   });
 });

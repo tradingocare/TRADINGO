@@ -1,4 +1,5 @@
 import { Injectable, Logger, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -125,11 +126,12 @@ export class VendorCodesService {
     return this.prisma.codeAttribution.findUnique({ where: { code } });
   }
 
-  async assignReferral(companyId: string, referralCode: string) {
+  async assignReferral(companyId: string, referralCode: string, client?: Prisma.TransactionClient | PrismaService) {
+    const db = client ?? this.prisma;
     const owner = await this.getCodeOwner(referralCode);
     if (!owner) throw new ConflictException('Invalid referral code');
 
-    const company = await this.prisma.company.findFirst({
+    const company = await db.company.findFirst({
       where: { id: companyId, deletedAt: null },
       select: { id: true, onboardedByCode: true, owners: { select: { userId: true } }, createdBy: true, referralRewardedAt: true },
     });
@@ -150,7 +152,7 @@ export class VendorCodesService {
       }
     }
 
-    await this.prisma.company.update({
+    await db.company.update({
       where: { id: companyId },
       data: { onboardedByCode: referralCode },
     });

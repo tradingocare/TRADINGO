@@ -62,7 +62,7 @@ export class ProductsController {
     companyId?: string; categoryId?: string; industryId?: string;
     productType?: string; status?: string; isFeatured?: string;
   }) {
-    return this.productsService.findAll(query);
+    return this.productsService.findAll({ ...query, status: 'ACTIVE' });
   }
 
   @Get('admin/all')

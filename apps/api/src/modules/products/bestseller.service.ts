@@ -350,7 +350,7 @@ export class BestsellerService {
 
     const productIds = snapshots.map(s => s.productId);
     const products = productIds.length > 0 ? await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
+      where: { id: { in: productIds }, status: 'ACTIVE' },
       select: { id: true, name: true, slug: true, media: { take: 1, select: { url: true } } },
     }) : [];
 
@@ -380,7 +380,7 @@ export class BestsellerService {
 
     const productIds = snapshots.map(s => s.productId);
     const products = productIds.length > 0 ? await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
+      where: { id: { in: productIds }, status: 'ACTIVE' },
       select: { id: true, name: true, slug: true, media: { take: 1, select: { url: true } } },
     }) : [];
 
@@ -452,7 +452,7 @@ export class BestsellerService {
 
     const productIds = snapshots.map(s => s.productId);
     const products = productIds.length > 0 ? await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
+      where: { id: { in: productIds }, status: 'ACTIVE' },
       select: {
         id: true, name: true, slug: true, latitude: true, longitude: true,
         media: { take: 1, select: { url: true } },

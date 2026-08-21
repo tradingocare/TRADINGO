@@ -10,6 +10,7 @@ export interface AccessTokenPayload {
   email: string;
   role: string;
   permissions: string[];
+  companyId?: string;
   iat?: number;
   exp?: number;
 }
@@ -31,8 +32,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: AccessTokenPayload): Promise<AccessTokenPayload> {
     const cacheKey = `user:active:${payload.sub}`;
-    const cached = await this.redis.get(cacheKey);
-    if (cached === 'true') return payload;
+    const companyCacheKey = `user:company:${payload.sub}`;
+    const [cached, cachedCompany] = await Promise.all([
+      this.redis.get(cacheKey),
+      this.redis.get(companyCacheKey),
+    ]);
+    if (cached === 'true' && cachedCompany !== null) {
+      return { ...payload, companyId: cachedCompany || undefined };
+    }
     if (cached === 'false') throw new UnauthorizedException('User not found or inactive');
 
     const user = await this.prisma.user.findUnique({
@@ -45,7 +52,19 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('User not found or inactive');
     }
 
+    const owner =
+      (await this.prisma.companyOwner.findFirst({
+        where: { userId: payload.sub, isPrimary: true },
+        select: { companyId: true },
+      })) ??
+      (await this.prisma.companyOwner.findFirst({
+        where: { userId: payload.sub },
+        select: { companyId: true },
+      }));
+
+    const companyId = owner?.companyId;
     await this.redis.set(cacheKey, 'true', 300);
-    return payload;
+    await this.redis.set(companyCacheKey, companyId ?? '', 300);
+    return { ...payload, companyId: companyId ?? undefined };
   }
 }

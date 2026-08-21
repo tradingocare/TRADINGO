@@ -235,22 +235,70 @@ export class TradeservService {
     };
   }
 
-  async registerProfessional(userId: string, dto: { fullName: string; professionalTitle: string; professionalType: string; companyName: string; mobile?: string; email?: string }) {
-    const company = await this.prisma.company.create({
-      data: {
-        name: dto.companyName,
-        slug: dto.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Math.random().toString(36).slice(2, 6),
-        professionalType: dto.professionalType as any,
-        professionalStatus: ProfessionalCompanyStatus.PENDING_REVIEW,
-        businessType: 'PROFESSIONAL' as any,
-        description: dto.professionalTitle,
-        mobile: dto.mobile,
-        email: dto.email,
-        createdBy: userId,
-        updatedBy: userId,
-        owners: { create: { userId, isPrimary: true } },
-      },
-    });
+  // F6/F7 — ONE legal company: reuse an existing owned company (by companyId, or by
+  // matching PAN/GST) instead of always creating a new one. Never links by email.
+  async registerProfessional(userId: string, dto: { fullName: string; professionalTitle: string; professionalType: string; companyName: string; mobile?: string; email?: string; companyId?: string; panNumber?: string; gstNumber?: string }) {
+    let company: any = null;
+
+    if (dto.companyId) {
+      const owned = await this.prisma.companyOwner.findFirst({ where: { userId, companyId: dto.companyId } });
+      if (owned) {
+        company = await this.prisma.company.findUnique({ where: { id: dto.companyId } });
+      }
+    }
+
+    if (!company && (dto.panNumber || dto.gstNumber)) {
+      const panMatch = dto.panNumber
+        ? await this.prisma.company.findFirst({
+            where: { panNumber: dto.panNumber.toUpperCase(), owners: { some: { userId } } },
+          })
+        : null;
+      const gstMatch = !panMatch && dto.gstNumber
+        ? await this.prisma.company.findFirst({
+            where: { gstNumber: dto.gstNumber.toUpperCase(), owners: { some: { userId } } },
+          })
+        : null;
+      company = panMatch || gstMatch;
+    }
+
+    if (company) {
+      // Reuse: activate the professional capability on the existing legal entity.
+      // Seller businessType is deliberately preserved — professional identity lives
+      // in professionalType/professionalStatus. PAN/GST are persisted so downstream
+      // identity flows (vendor onboarding) can match the same legal entity.
+      company = await this.prisma.company.update({
+        where: { id: company.id },
+        data: {
+          professionalType: dto.professionalType as any,
+          professionalStatus: ProfessionalCompanyStatus.PENDING_REVIEW,
+          description: company.description || dto.professionalTitle,
+          mobile: company.mobile || dto.mobile,
+          email: company.email || dto.email,
+          panNumber: company.panNumber || dto.panNumber?.toUpperCase() || null,
+          gstNumber: company.gstNumber || dto.gstNumber?.toUpperCase() || null,
+          updatedBy: userId,
+        },
+      });
+    } else {
+      company = await this.prisma.company.create({
+        data: {
+          name: dto.companyName,
+          slug: dto.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Math.random().toString(36).slice(2, 6),
+          professionalType: dto.professionalType as any,
+          professionalStatus: ProfessionalCompanyStatus.PENDING_REVIEW,
+          businessType: 'PROFESSIONAL' as any,
+          description: dto.professionalTitle,
+          mobile: dto.mobile,
+          email: dto.email,
+          panNumber: dto.panNumber?.toUpperCase() || null,
+          gstNumber: dto.gstNumber?.toUpperCase() || null,
+          createdBy: userId,
+          updatedBy: userId,
+          owners: { create: { userId, isPrimary: true } },
+        },
+      });
+    }
+
     this.indexSyncService?.indexProfessional(company.id).catch((err) => this.logger.warn(`Index sync failed for professional ${company.id}: ${(err as Error).message}`));
     // Reward professional signup (non-blocking — wallet may not exist yet)
     this.gocashIntegration.awardProfessionalSignup(userId, company.id)

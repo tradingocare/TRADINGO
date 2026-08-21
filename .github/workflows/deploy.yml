@@ -39,7 +39,7 @@ jobs:
   deploy:
     name: Build & Deploy
     needs: [validate]
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -77,6 +77,27 @@ jobs:
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:latest
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.ref_name }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'https://api.tradingo.in/api/v1' }}
+            NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in' }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL || 'https://tradingo.in' }}
+            NEXT_PUBLIC_SOCKET_URL=${{ secrets.NEXT_PUBLIC_SOCKET_URL || 'https://api.tradingo.in' }}
+            NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID || '' }}
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN || '' }}
+
+      - name: Substitute __AWS_ACCOUNT_ID__ in task definitions
+        run: |
+          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.api.json
+          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.web.json
+          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.migration.json
+          # Pin the migration image to this build (was :latest — could race other deployments)
+          sed -i "s|tradingo-production-api:latest|tradingo-production-api:${{ github.sha }}|g" infrastructure/ecs/task-definition.migration.json
+          echo "Task definition placeholders substituted"
+
+      - name: Register migration task definition
+        run: |
+          aws ecs register-task-definition --cli-input-json file://infrastructure/ecs/task-definition.migration.json
+          echo "Migration task definition registered"
 
       - name: Run database migrations (before service deploy)
         run: |
@@ -87,6 +108,10 @@ jobs:
             --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNETS }}],securityGroups=[${{ secrets.SECURITY_GROUPS }}],assignPublicIp=ENABLED}"
           # Wait for migration completion
           TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --family tradingo-production-migration --query 'taskArns[0]' --output text)
+          if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "None" ]; then
+            echo "::error::Migration task did not launch — aborting deployment"
+            exit 1
+          fi
           aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN
           TASK_INFO=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN)
           EXIT_CODE=$(echo $TASK_INFO | jq -r '.tasks[0].containers[0].exitCode')
@@ -95,12 +120,6 @@ jobs:
             exit 1
           fi
           echo "Database migrations completed successfully"
-
-      - name: Substitute __AWS_ACCOUNT_ID__ in task definitions
-        run: |
-          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.api.json
-          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.web.json
-          echo "Task definition placeholders substituted"
 
       - name: Render API task definition
         id: render-api

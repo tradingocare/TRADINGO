@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsOptional, IsBoolean, MinLength, Matches } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsBoolean, MinLength, Matches, IsArray } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateBuyerDto {
@@ -89,6 +89,12 @@ export class CreateBuyerDto {
   @IsBoolean()
   @ApiProperty({ description: 'Primary categories required' })
   primaryCategoriesRequired: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'Primary category names selected during registration' })
+  primaryCategories?: string[];
 
   @IsString()
   @ApiProperty({ description: 'Preferred suppliers' })

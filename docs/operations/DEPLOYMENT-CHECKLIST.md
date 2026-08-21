@@ -25,12 +25,15 @@
 - [x] Docker image versioning via kustomize
 
 ## Post-Deployment Verification
-- [ ] Health check: `GET /api/v1/health`
+- [ ] Health check: `GET /health`
 - [ ] Liveness: `GET /live`
 - [ ] Readiness: `GET /ready`
-- [ ] Metrics: `:9100/metrics`
+- [ ] Diagnostics: `GET /api/v1/health/diagnostics`
+- [ ] Metrics: `GET /api/v1/metrics` (API :3001; `:9100` is node-exporter)
 - [ ] Login flow functional
 - [ ] Registration flow functional
 - [ ] Razorpay payment flow functional
 - [ ] Webhook delivery functional
-- [ ] Email delivery functional (requires SMTP)
+- [ ] Email delivery functional (requires AWS SES keys)
+
+> VPS deployment: see `docs/deployment/VPS_DEPLOYMENT_PREPARATION_REPORT.md` (ports, DNS, TLS, secrets, deploy/rollback sequence, smoke tests).

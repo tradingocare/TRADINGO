@@ -488,6 +488,7 @@ model Company {
   banner                      String?
   description                 String?
   businessType                BusinessType?
+  companyStructure            CompanyStructure?
   establishedYear             Int?
   employeeCount               Int?
   gstNumber                   String?
@@ -6019,6 +6020,17 @@ enum BusinessType {
   CONSULTANCY
   FREELANCER
   SOLE_PROPRIETORSHIP
+}
+
+enum CompanyStructure {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  PRIVATE_LIMITED
+  LLP
+  PUBLIC_LIMITED
+  HUF
+  TRUST
+  OTHER
 }
 
 enum GeographicReach {

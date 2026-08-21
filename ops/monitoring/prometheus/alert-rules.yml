@@ -53,19 +53,6 @@ groups:
           summary: "API traffic spike > 1k req/s"
           description: "Traffic is {{ $value | humanize }} req/s over 1m"
 
-  - name: tradingo-web
-    interval: 30s
-    rules:
-      - alert: WebDown
-        expr: up{job="tradingo-web"} == 0
-        for: 30s
-        labels:
-          severity: critical
-          team: frontend
-        annotations:
-          summary: "Web instance is down"
-          description: "Instance {{ $labels.instance }} has been down for 30s"
-
   - name: tradingo-infrastructure
     interval: 30s
     rules:

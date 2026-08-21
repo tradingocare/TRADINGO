@@ -1,8 +1,24 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { RateLimits } from '../../common/constants/rate-limits.const';
 import { CategoriesService } from './categories.service';
+import { CategoryDemandService } from './category-demand.service';
+import { CategoryDemandResult, TopCategoriesParams } from './dto/category-demand.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -15,7 +31,10 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 @Throttle(RateLimits.MARKETPLACE_READ)
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(
+    private readonly categoriesService: CategoriesService,
+    private readonly categoryDemandService: CategoryDemandService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new category' })
@@ -31,6 +50,52 @@ export class CategoriesController {
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   async findAll(@Query() query: { cursor?: string; limit?: number; search?: string; isActive?: string }) {
     return this.categoriesService.findAll(query);
+  }
+
+  /**
+   * Get top categories ranked by demand score.
+   *
+   * This endpoint uses a single Prisma aggregation fetch and in-memory percentile
+   * normalization to rank categories by composite demand score (sales × 0.40 +
+   * RFQ × 0.10 + search × 0.15 + views × 0.20 + engagement × 0.10 + conversion × 0.05).
+   *
+   * No authentication required — public API for marketplace navigation and discovery.
+   * Results are cached server-side (Redis key: categories:demand:v1, TTL 300s).
+   *
+   * @param limit Number of top categories to return (1-50, default 20)
+   * @returns Ranked category data with scores, breakdown, and confidence
+   */
+  @Get('top')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiOperation({
+    summary: 'Get top categories by demand score',
+    description:
+      'Returns categories ranked by composite demand score using weighted signals: sales (40%), RFQ (10%), search (15%), views (20%), engagement (10%), conversion (5%). ' +
+      'Percentile normalization across all active categories. Cached for 5 minutes.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Number of top categories to return (1-50, default 20)',
+    type: 'number',
+    minimum: 1,
+    maximum: 50,
+    required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved top categories ranked by demand score',
+    type: CategoryDemandResult,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid limit parameter',
+  })
+  async getTopCategories(
+    @Query() params: TopCategoriesParams,
+  ): Promise<CategoryDemandResult> {
+    const limit = params.limit ?? 20;
+    return this.categoryDemandService.getTopCategories(limit);
   }
 
   @Get('tree')

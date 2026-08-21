@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsArray, MinLength, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsArray, MinLength, IsDateString, IsInt, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '../../../common/enums/role.enum';
 
@@ -55,4 +55,11 @@ export class UserFilterDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Pagination cursor' })
   cursor?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @ApiPropertyOptional({ description: 'Number of results per page (max 100)' })
+  limit?: number;
 }
