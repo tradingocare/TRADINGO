@@ -164,8 +164,15 @@ export class MembershipController {
   @Get('invoice/:id')
   @ApiOperation({ summary: 'Get invoice' })
   @UseGuards(JwtAuthGuard)
-  async getInvoice(@Param('id') id: string) {
-    return this.membershipService.getInvoice(id);
+  async getInvoice(@CurrentUser('sub') userId: string, @Param('id') id: string) {
+    // F3 Invoice IDOR remediation: ownership check before disclosure.
+    // 404 (not 403) intentionally avoids invoice-existence disclosure.
+    const company = await this.resolveCompany(userId);
+    const invoice = await this.membershipService.getInvoice(id);
+    if (!invoice || invoice.companyId !== company.id) {
+      throw new NotFoundException('Invoice not found');
+    }
+    return invoice;
   }
 
   @Post('trial')
