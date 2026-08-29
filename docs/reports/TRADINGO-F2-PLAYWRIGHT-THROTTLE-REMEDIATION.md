@@ -96,7 +96,11 @@ Expected after fix:
 - `escrow-settlement-flow` + `listing-card` → stable (no rate-limit-induced retry).
 - **failed = 0**, flaky = 0 (environment-stable).
 
-CI run conclusion recorded post-execution (see Section J).
+### CI run (authoritative)
+- Workflow: `Playwright E2E Tests` (`.github/workflows/playwright.yml`)
+- Run ID: **`33261279729`**, head `e46538e83` (PR #9), event `pull_request`
+- Conclusion: **`success`** (also `CI` run `33261279720` = `success`)
+- The previously-failing run on the same PR-base CPU commit was `33259639472` = `failure`. Now `success` → the `429` exhaustion is resolved by `E2E_THROTTLE_DISABLED`.
 
 ---
 
@@ -122,14 +126,14 @@ This is a CI/test-environment fix. No production API deployed. No `docker compos
 
 ## J. Remaining Steps
 
-1. Confirm CI run on `fix/playwright-e2e-throttle` is **green** (0 failed, 0 flaky).
-2. Merge F2 PR into `main`.
-3. Re-run / let PR #8 CI go green (same throttle gate now applies).
+1. ✅ CI run on `fix/playwright-e2e-throttle` is **green** (Playwright `33261279729` = `success`, 0 failed, 0 flaky).
+2. Merge F2 PR #9 into `main` (pending founder approval — branch protection blocks direct merge).
+3. After F2 merges, PR #8 (`fix/cpu-limit-vps-safe`) CI re-runs under the same throttle gate → expected green.
 4. Merge PR #8 (CPU fix) — pending founder approval.
-5. (Separate) VPS deploy of CPU fix per `TRADINGO-CPU-FIX-PR-MERGE-DEPLOYMENT.md` plan.
+5. (Separate) VPS deploy of CPU fix per `TRADINGO-CPU-FIX-PR-MERGE-DEPLOYMENT.md` plan (do NOT deploy merely to fix CI).
 
 ---
 
 ## FINAL VERDICT
 
-`F2 PLAYWRIGHT THROTTLE FIX — <CI GREEN | BLOCKED>` (set after CI run concludes)
+`F2 PLAYWRIGHT THROTTLE FIX — CI GREEN`
