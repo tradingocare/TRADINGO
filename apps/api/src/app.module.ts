@@ -150,10 +150,14 @@ import { AppService } from './app.service';
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [RedisService],
-      useFactory: (redisService: RedisService): ThrottlerModuleOptions => ({
-        throttlers: [{ limit: 100, ttl: 60000 }],
-        storage: new RedisThrottlerStorage(redisService) as unknown as ThrottlerStorage,
-      }),
+      useFactory: (redisService: RedisService): ThrottlerModuleOptions => {
+        const e2eThrottleDisabled = process.env.E2E_THROTTLE_DISABLED === 'true';
+        return {
+          throttlers: [{ limit: 100, ttl: 60000 }],
+          storage: new RedisThrottlerStorage(redisService) as unknown as ThrottlerStorage,
+          ...(e2eThrottleDisabled ? { skipIf: () => true } : {}),
+        };
+      },
     }),
     BullModule.forRootAsync({
       useFactory: (configService) => ({
