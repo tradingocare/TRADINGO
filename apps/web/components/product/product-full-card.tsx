@@ -12,6 +12,7 @@ import { SpecGrid, DocumentsSection } from '@/components/product-detail-view/spe
 import { useAuthStore } from '@/store/auth-store'
 import { useWishlistStore } from '@/store/wishlist-store'
 import { useCompareStore } from '@/store/compare-store'
+import { toast } from '@/components/ui/use-toast'
 import type { ProductCardModel } from '@/types/product-card'
 import type { ProductDetailViewData } from '@/types/product-detail-view'
 import type { ProductDetailMedia, ProductDetailPriceSlab } from '@/types/product-detail'
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils'
 
 interface ProductFullCardProps {
   product: ProductCardModel
+  preview?: boolean
 }
 
 function toDetailViewData(model: ProductCardModel): ProductDetailViewData {
@@ -38,8 +40,8 @@ function toDetailViewData(model: ProductCardModel): ProductDetailViewData {
       : undefined,
     breadcrumb: [
       { label: 'Home', href: '/' },
-      { label: 'Products', href: '/products' },
-      { label: model.title, href: `/product/${model.slug}` },
+      { label: 'Products', href: '/trading' },
+      { label: model.title, href: `/trading/${model.slug}` },
     ],
     images: model.images?.length ? model.images : ['/placeholder-product.jpg'],
     price: model.price,
@@ -91,7 +93,7 @@ function toDetailViewData(model: ProductCardModel): ProductDetailViewData {
   }
 }
 
-export function ProductFullCard({ product }: ProductFullCardProps) {
+export function ProductFullCard({ product, preview = false }: ProductFullCardProps) {
   const router = useRouter()
   const auth = useAuthStore()
   const wishlist = useWishlistStore()
@@ -131,7 +133,17 @@ export function ProductFullCard({ product }: ProductFullCardProps) {
   const isWishlisted = wishlist.isSaved(data.id)
   const isCompared = compare.items.some((item) => item._id === data.id)
 
+  const previewNotice = () =>
+    toast({
+      title: 'Sample preview card',
+      description: 'This is a demo product. Buy / RFQ / Chat activate when a real seller lists this product.',
+    })
+
   const requireAuth = (action: () => void) => {
+    if (preview) {
+      previewNotice()
+      return
+    }
     if (!auth.isAuthenticated) {
       router.push('/login')
       return
@@ -142,6 +154,10 @@ export function ProductFullCard({ product }: ProductFullCardProps) {
   const handleWishlist = () => requireAuth(() => wishlist.toggle(data.id))
 
   const handleCompare = () => {
+    if (preview) {
+      previewNotice()
+      return
+    }
     compare.toggle({
       _id: data.id,
       slug: data.slug,
@@ -173,7 +189,7 @@ export function ProductFullCard({ product }: ProductFullCardProps) {
   })
 
   const handleRFQ = () => requireAuth(() => {
-    router.push(`/buyer/rfq/create?productId=${data.id}`)
+    router.push(`/buyer/rfq/new?source=PRODUCT&sourceId=${data.id}`)
   })
 
   const handleChat = () => requireAuth(() => {
@@ -182,6 +198,10 @@ export function ProductFullCard({ product }: ProductFullCardProps) {
   })
 
   const handleShare = async () => {
+    if (preview) {
+      previewNotice()
+      return
+    }
     const url = window.location.href
     if (navigator.share) {
       try {
@@ -239,7 +259,9 @@ export function ProductFullCard({ product }: ProductFullCardProps) {
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
         }}>
         <h2 className="min-w-[240px] flex-1 truncate text-sm font-bold text-text-primary" title={data.title}>
-          {data.title}
+          <Link href={`/trading/${data.slug}`} className="transition-colors hover:text-accent">
+            {data.title}
+          </Link>
         </h2>
         {data.category?.name && (
           <span className="inline-flex items-center rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-semibold text-text-secondary">
@@ -255,13 +277,13 @@ export function ProductFullCard({ product }: ProductFullCardProps) {
             <span className="text-text-tertiary">({data.reviewCount})</span>
           )}
         </span>
-        <div className="ml-auto flex-shrink-0">
+        <div className="ml-auto flex-shrink-0 max-w-full">
           <VerifiedBadgeRow data={data} compact hideRating />
         </div>
       </div>
 
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-5">
-        <div className="flex flex-col space-y-5 lg:col-span-3">
+        <div className="flex min-w-0 flex-col space-y-5 lg:col-span-3">
           <ProductGallery
             media={media}
             productName={data.title}
@@ -280,7 +302,7 @@ export function ProductFullCard({ product }: ProductFullCardProps) {
           <SellerSection seller={data.seller} stats={data.stats} />
         </div>
 
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <BuyBox
             data={data}
             priceSlabs={priceSlabs}
@@ -324,7 +346,7 @@ function TrustSupportSection({ data }: { data: ProductDetailViewData }) {
   return (
     <div className="mt-5 rounded-2xl p-[1.5px]" style={{ background: gradientBorder }}>
       <div className="rounded-[14px] bg-surface px-3 py-2">
-        <div className="flex items-center gap-x-1.5">
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
           {items.map((item) => (
             <span key={item.label} className={cn('inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded border px-1 py-0.5 text-[8px] font-semibold', item.chip)}>
               <span className="text-[10px] leading-none">{item.emoji}</span>

@@ -6,8 +6,7 @@ import { AnimatedSection } from '@/components/shared/animated-section';
 import { FeatureCards } from '@/components/shared/feature-cards';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
-import { Testimonials } from '@/components/shared/testimonials';
-import { ABOUT_MILESTONES, ABOUT_VALUES, ABOUT_TEAM, HOMEPAGE_SUCCESS_STORIES } from '@/data/master-data';
+import { ABOUT_MILESTONES, ABOUT_VALUES, ABOUT_TEAM } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'About TRADINGO | India\'s First TEM E-Marketplace',
@@ -20,13 +19,7 @@ const values = ABOUT_VALUES;
 
 const teamMembers = ABOUT_TEAM;
 
-const testimonialsData = HOMEPAGE_SUCCESS_STORIES.map(s => ({
-  quote: s.quote,
-  author: s.name,
-  role: s.role,
-  company: s.company,
-  rating: 5,
-}));
+
 
 export default function AboutTradingoPage() {
   return (
@@ -174,19 +167,6 @@ export default function AboutTradingoPage() {
               </AnimatedSection>
             ))}
           </div>
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Testimonials */}
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
-        <div className="container-main">
-          <SectionHeader
-            title="What Our Traders Say"
-            subtitle="Real stories from the TRADINGO community."
-          />
-          <Testimonials testimonials={testimonialsData} />
         </div>
       </section>
 

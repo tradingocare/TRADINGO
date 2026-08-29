@@ -34,7 +34,6 @@ export default function ClaimYourGrowth() {
             <span className="rounded-full border border-border bg-surface-secondary px-3 py-1">Verified Businesses</span>
             <span className="rounded-full border border-border bg-surface-secondary px-3 py-1">Smart RFQs</span>
             <span className="rounded-full border border-border bg-surface-secondary px-3 py-1">Near-to-Far Trade</span>
-            <span className="rounded-full border border-border bg-surface-secondary px-3 py-1">Powered by TRADHEXA&trade; {'\uD83C\uDF0D'}{'\u2728'}</span>
           </div>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

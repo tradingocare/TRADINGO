@@ -23,6 +23,8 @@ export default function AdminDashboardPage() {
   const { data: kycData, isLoading: kycLoad } = useKycSubmissions({ limit: 1 });
   const { data: fraudData, isLoading: fraudLoad } = useFraudSummary();
   const { data: ecoData, isLoading: ecoLoad } = useEcoAdminDashboard();
+  const execCopilot = useAiExecutiveCopilot();
+  const [showCopilot, setShowCopilot] = useState(false);
 
   if (usersLoad || companiesLoad || rfqsLoad || kycLoad || fraudLoad) {
     return <DashboardSkeleton />;
@@ -32,9 +34,6 @@ export default function AdminDashboardPage() {
   const totalCompanies = companiesData?.total ?? 0;
   const activeRfqs = rfqsData?.total ?? 0;
   const pendingKyc = kycData?.total ?? 0;
-
-  const execCopilot = useAiExecutiveCopilot();
-  const [showCopilot, setShowCopilot] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -51,26 +50,26 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Users} label="Total Users" value={String(totalUsers)} change="Registered" changeType="neutral" />
-        <StatCard icon={Building2} label="Total Companies" value={String(totalCompanies)} change="Registered" changeType="neutral" />
-        <StatCard icon={FileText} label="Active RFQs" value={String(activeRfqs)} change="Total" changeType="neutral" />
-        <StatCard icon={ShieldCheck} label="Pending KYC" value={String(pendingKyc)} change="Awaiting review" changeType="neutral" />
+        <StatCard icon={Users} label="Total Users" value={String(totalUsers)} change="Registered" changeType="neutral" variant="clean" />
+        <StatCard icon={Building2} label="Total Companies" value={String(totalCompanies)} change="Registered" changeType="neutral" variant="clean" />
+        <StatCard icon={FileText} label="Active RFQs" value={String(activeRfqs)} change="Total" changeType="neutral" variant="clean" />
+        <StatCard icon={ShieldCheck} label="Pending KYC" value={String(pendingKyc)} change="Awaiting review" changeType="neutral" variant="clean" />
       </div>
 
       {ecoData && !ecoLoad && (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard icon={Zap} label="Ecosystem Users" value={String(ecoData.totalUsers)} change="Total" changeType="neutral" />
-          <StatCard icon={Award} label="Total XP Issued" value={ecoData.totalXp.toLocaleString()} change="Platform-wide" changeType="neutral" />
-          <StatCard icon={BadgeCheck} label="Check-ins" value={String(ecoData.totalCheckins)} change="Total" changeType="neutral" />
-          <StatCard icon={Award} label="Badges Issued" value={String(ecoData.totalBadges)} change="Total" changeType="neutral" />
+          <StatCard icon={Zap} label="Ecosystem Users" value={String(ecoData.totalUsers)} change="Total" changeType="neutral" variant="clean" />
+          <StatCard icon={Award} label="Total XP Issued" value={ecoData.totalXp.toLocaleString()} change="Platform-wide" changeType="neutral" variant="clean" />
+          <StatCard icon={BadgeCheck} label="Check-ins" value={String(ecoData.totalCheckins)} change="Total" changeType="neutral" variant="clean" />
+          <StatCard icon={Award} label="Badges Issued" value={String(ecoData.totalBadges)} change="Total" changeType="neutral" variant="clean" />
         </div>
       )}
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={BadgeCheck} label="Open Disputes" value={String(fraudData?.summary?.openDisputes ?? 0)} change="Disputes" changeType={fraudData?.summary?.openDisputes ? 'negative' : 'positive'} />
-        <StatCard icon={Ban} label="Blacklisted" value={String(fraudData?.summary?.blacklistedEntries ?? 0)} change="Entries" changeType="neutral" />
-        <StatCard icon={Shield} label="Fraud Alerts (24h)" value={String(fraudData?.summary?.totalAlerts ?? 0)} change="Alerts" changeType={fraudData?.summary?.totalAlerts ? 'negative' : 'positive'} />
-        <StatCard icon={Scale} label="Verification Status" value={`${pendingKyc} Pending`} change="Awaiting review" changeType={pendingKyc ? 'neutral' : 'positive'} />
+        <StatCard icon={BadgeCheck} label="Open Disputes" value={String(fraudData?.summary?.openDisputes ?? 0)} change="Disputes" changeType={fraudData?.summary?.openDisputes ? 'negative' : 'positive'} variant="clean" />
+        <StatCard icon={Ban} label="Blacklisted" value={String(fraudData?.summary?.blacklistedEntries ?? 0)} change="Entries" changeType="neutral" variant="clean" />
+        <StatCard icon={Shield} label="Fraud Alerts (24h)" value={String(fraudData?.summary?.totalAlerts ?? 0)} change="Alerts" changeType={fraudData?.summary?.totalAlerts ? 'negative' : 'positive'} variant="clean" />
+        <StatCard icon={Scale} label="Verification Status" value={`${pendingKyc} Pending`} change="Awaiting review" changeType={pendingKyc ? 'neutral' : 'positive'} variant="clean" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

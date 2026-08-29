@@ -1,16 +1,15 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import { useSearchParams } from 'next/navigation'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
-  Sparkles, ShieldCheck, BadgeCheck, MapPin, Loader2, Building2, Boxes,
-  Package, Gem, Briefcase, Star,
+  Sparkles, BadgeCheck, MapPin, Loader2, Building2, Boxes,
+  Gem, Briefcase, Star,
 } from 'lucide-react'
 import { SectionHeader } from '@/components/shared/section-header'
-import SearchBar from '@/components/discovery/SearchBar'
 import { ProductCard, ProductCardSkeleton } from '@/components/product/product-card'
 import { fromDiscoveryResult } from '@/components/product/card-converters'
 import { useAuthStore } from '@/store/auth-store'
@@ -18,7 +17,6 @@ import { getDiscoveryFeed, discoverItemToDiscoveryResult } from '@/lib/api/disco
 import { getCompanyDirectory } from '@/lib/api/companies'
 import { subscribe as subscribeNewsletter } from '@/lib/api/notifications'
 import { aiBuyerRecommendations } from '@/lib/api/ai-search'
-import { SearchFilters } from '@/types/discovery'
 import { toast } from '@/components/ui/use-toast'
 import { SectionShell, SkeletonCards } from '@/components/directory/primitives'
 import { ServicesPlaceholder, BrandsPlaceholder } from '@/components/directory/services-brands'
@@ -53,11 +51,7 @@ const CollectionsSection = dynamic(() =>
   import('@/components/directory/collections-section').then(m => m.CollectionsSection),
   { loading: () => <SectionShell><SkeletonCards count={8} /></SectionShell> },
 )
-
-const DEFAULT_FILTERS: SearchFilters = {
-  q: '', mode: 'all', geoScope: 'pan_india',
-  sortBy: 'relevance', page: 1, limit: 24,
-}
+import ProductDiscovery from '@/components/discovery/ProductDiscoveryClient'
 
 function StatCard({ icon, label, value, loading }: { icon: React.ReactNode; label: string; value?: number; loading: boolean }) {
   const display = value == null || value === 0 ? '\u2014' : value.toLocaleString()
@@ -75,9 +69,12 @@ function StatCard({ icon, label, value, loading }: { icon: React.ReactNode; labe
 }
 
 export default function TradingDiscoveryClient() {
-  const router = useRouter()
   const { isAuthenticated, user } = useAuthStore()
   const [notifyEmail, setNotifyEmail] = useState('')
+  const searchParams = useSearchParams()
+  // Remount discovery when the URL changes so URL-driven filters (CategoryStrip
+  // clicks, back/forward, refresh) re-initialize the discovery state.
+  const discoveryKey = searchParams.toString()
 
   // ── Real directory stats (auto-scale) ──────────────────────────────
   const stats = useQuery({
@@ -116,13 +113,6 @@ export default function TradingDiscoveryClient() {
     () => feed.filter(i => i.type === 'product' && i.reason === 'Trending Product').slice(0, 12),
     [feed],
   )
-
-  const handleHeroSearch = (filters: Partial<SearchFilters>) => {
-    const params = new URLSearchParams()
-    if (filters.q) params.set('q', filters.q)
-    if (filters.mode && filters.mode !== 'all') params.set('mode', filters.mode)
-    router.push(`/products?${params.toString()}`)
-  }
 
   const handleAiRecommend = () => {
     if (!isAuthenticated) {
@@ -166,49 +156,9 @@ export default function TradingDiscoveryClient() {
       />
 
       <div className="relative z-10">
-        {/* ─── 1. HERO — AI Search ───────────────────────────────────── */}
-        <section className="relative overflow-hidden pb-10 pt-24">
-          <div className="mx-auto max-w-7xl px-4">
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-accent">
-                <Sparkles size={11} /> TRADINGO Master Business Directory
-              </div>
-              <h1 className="mt-5 text-4xl font-black tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
-                Discover. Compare.{' '}
-                <span
-                  className="bg-clip-text text-transparent"
-                  style={{ backgroundImage: 'linear-gradient(135deg, #FF4D00, #FFB37D)' }}
-                >
-                  Trade India.
-                </span>
-              </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-lg text-text-tertiary">
-                One search across products, services, suppliers and cities — powered by AI.
-              </p>
-            </div>
-
-            <div className="mt-10">
-              <SearchBar
-                initialFilters={DEFAULT_FILTERS}
-                onSearch={handleHeroSearch}
-                isLoading={false}
-              />
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-text-tertiary">
-              <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck size={13} className="text-accent" /> Verified sellers
-              </span>
-              <span className="h-1 w-1 rounded-full bg-border" />
-              <span className="inline-flex items-center gap-1.5">
-                <BadgeCheck size={13} className="text-accent" /> Escrow protected
-              </span>
-              <span className="h-1 w-1 rounded-full bg-border" />
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin size={13} className="text-accent" /> Pan-India
-              </span>
-            </div>
-          </div>
+        {/* ─── 6A. FULL PRODUCT DISCOVERY (migrated marketplace experience) ── */}
+        <section className="relative" aria-label="Full product discovery">
+          <ProductDiscovery key={discoveryKey} variant="embedded" basePath="/trading" />
         </section>
 
         {/* ─── 2. LIVE DIRECTORY STATS ───────────────────────────────── */}

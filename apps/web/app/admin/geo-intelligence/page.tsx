@@ -1,16 +1,46 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useLocationSummary, useGeoClusters } from '@/hooks/use-marketplace-intelligence'
+import { geocodeAllUnlocated } from '@/lib/api/marketplace-intelligence'
 import { EmptyState } from '@/components/ui/empty-state'
-import { MapPin, Navigation, Globe, Database, RefreshCw, Map, Layers } from 'lucide-react'
+import { MapPin, Navigation, Globe, Database, RefreshCw, Map, Layers, AlertTriangle } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Select } from '@/components/ui/select'
 
 export default function AdminGeoIntelligencePage() {
   const [period, setPeriod] = useState('daily')
+  const [geocoding, setGeocoding] = useState(false)
+  const [geoResult, setGeoResult] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+  const busyRef = useRef(false)
   const { data: summary, isLoading: summaryLoading } = useLocationSummary()
   const { data: clusters, isLoading: clustersLoading } = useGeoClusters('supplier', period)
+
+  const runGeocodeAll = async () => {
+    if (busyRef.current) return
+    busyRef.current = true
+    setGeocoding(true)
+    setGeoResult(null)
+    try {
+      const res = await geocodeAllUnlocated()
+      setGeoResult({
+        kind: 'success',
+        text: `Geocoding complete — ${res.processed} processed, ${res.failed} failed.`,
+      })
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      setGeoResult({
+        kind: 'error',
+        text:
+          status === 401 || status === 403
+            ? 'Unauthorized — your session expired. Please log in again.'
+            : 'Geocoding failed. Please try again.',
+      })
+    } finally {
+      busyRef.current = false
+      setGeocoding(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -117,12 +147,27 @@ export default function AdminGeoIntelligencePage() {
         </h2>
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => fetch('/api/internal/geocode-all', { method: 'POST' })}
-            className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all hover:opacity-80"
+            onClick={runGeocodeAll}
+            disabled={geocoding}
+            className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all hover:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ background: '#f59e0b' }}
           >
-            Geocode All Unlocated
+            {geocoding ? 'Geocoding…' : 'Geocode All Unlocated'}
           </button>
+          {geoResult && (
+            <p
+              className={`text-xs flex items-center gap-1.5 ${
+                geoResult.kind === 'success' ? 'text-status-success' : 'text-status-error'
+              }`}
+            >
+              {geoResult.kind === 'success' ? (
+                <RefreshCw size={12} className="text-status-success" />
+              ) : (
+                <AlertTriangle size={12} className="text-status-error" />
+              )}
+              {geoResult.text}
+            </p>
+          )}
         </div>
       </div>
     </div>

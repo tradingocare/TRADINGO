@@ -31,7 +31,7 @@ export function ExecutiveTimelineCard({ data, isLoading, error }: Props) {
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-text-tertiary">Revenue</span>
-                  <span className={`font-medium ${isPositive ? 'text-emerald-400' : 'text-text-secondary'}`}>â‚¹{p.revenue.toLocaleString()}</span>
+                  <span className={`font-medium ${isPositive ? 'text-emerald-400' : 'text-text-secondary'}`}>₹{p.revenue.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-text-tertiary">Orders</span>

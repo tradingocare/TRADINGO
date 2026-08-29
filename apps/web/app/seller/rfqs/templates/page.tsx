@@ -59,7 +59,7 @@ export default function RfqTemplatesPage() {
   };
 
   const handleUse = (template: RfqTemplate) => {
-    router.push(`/seller/rfq/new?templateId=${template.id}`);
+    router.push(`/buyer/rfq/new?source=DIRECT&templateId=${template.id}`);
   };
 
   const handleCreate = () => {

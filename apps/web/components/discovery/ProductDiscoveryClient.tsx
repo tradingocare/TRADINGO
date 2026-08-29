@@ -1,6 +1,6 @@
 'use client'
 import {
-  useState, useCallback, useMemo,
+  useState, useCallback, useMemo, useRef, useEffect,
 } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -52,9 +52,46 @@ function BreadcrumbNav() {
   )
 }
 
-export default function ProductDiscoveryClient() {
+export interface ProductDiscoveryClientProps {
+  variant?: 'standalone' | 'embedded'
+  basePath?: string
+}
+
+export default function ProductDiscoveryClient({
+  variant = 'standalone',
+  basePath = '/products',
+}: ProductDiscoveryClientProps = {}) {
   const searchParams  = useSearchParams()
   const router        = useRouter()
+  const embedded      = variant === 'embedded'
+
+  const barRef                    = useRef<HTMLDivElement>(null)
+  const contentRef                = useRef<HTMLDivElement>(null)
+  const [barTop, setBarTop]       = useState<number | null>(null)
+  const [contentPad, setContentPad] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (embedded) return
+    const nav = document.querySelector('.glass-nav')
+    const bar = barRef.current
+    const content = contentRef.current
+    const measure = () => {
+      const navBottom = nav ? nav.getBoundingClientRect().bottom : 0
+      const barHeight = bar ? bar.getBoundingClientRect().height : 0
+      const contentTop = content ? content.getBoundingClientRect().top + window.scrollY : 0
+      if (navBottom > 0) setBarTop(Math.round(navBottom + 20))
+      if (barHeight > 0) setContentPad(Math.max(0, Math.round(navBottom + 20 + barHeight + 24 - contentTop)))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    if (nav) ro.observe(nav)
+    if (bar) ro.observe(bar)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [embedded])
 
   const [filters, setFilters] = useState<SearchFilters>(() => ({
     ...DEFAULT_FILTERS,
@@ -91,8 +128,8 @@ export default function ProductDiscoveryClient() {
     if (f.sortBy && f.sortBy !== 'relevance') params.set('sort', f.sortBy)
     if (f.page && f.page > 1) params.set('page', String(f.page))
     const qs = params.toString()
-    router.replace(`/products${qs ? `?${qs}` : ''}`, { scroll: false })
-  }, [router])
+    router.replace(`${basePath}${qs ? `?${qs}` : ''}`, { scroll: false })
+  }, [router, basePath])
 
   const updateFilters = useCallback((partial: Partial<SearchFilters>) => {
     const next = { ...filters, ...partial, page: partial.page ?? 1 }
@@ -146,16 +183,16 @@ export default function ProductDiscoveryClient() {
 
   return (
     <>
-      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+      <div className={`${embedded ? 'absolute inset-0' : 'fixed inset-0'} pointer-events-none overflow-hidden`} style={{ zIndex: 0 }}>
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full opacity-20"
           style={{ background: 'radial-gradient(circle, #9B5DE518, transparent 70%)', filter: 'blur(80px)' }} />
         <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-15"
           style={{ background: 'radial-gradient(circle, #3D8BFF18, transparent 70%)', filter: 'blur(80px)' }} />
       </div>
 
-      <div className="fixed left-0 right-0 z-40 py-1.5 px-4 bg-surface/95 border-b border-border"
-        style={{
-          top: '84px',
+      <div ref={barRef} className={`${embedded ? 'relative' : 'fixed left-0 right-0 z-40'} py-1.5 px-4 bg-surface/95 border-b border-border`}
+        style={embedded ? { backdropFilter: 'blur(24px)' } : {
+          top: barTop !== null ? `${barTop}px` : 'calc(var(--nav-h) + 20px)',
           backdropFilter: 'blur(24px)',
         }}>
         <div className="max-w-[1600px] mx-auto">
@@ -194,8 +231,12 @@ export default function ProductDiscoveryClient() {
         </div>
       </div>
 
-      <div className="min-h-screen" style={{ paddingTop: '155px' }}>
+      <div ref={contentRef} className="min-h-screen" style={embedded ? undefined : { paddingTop: contentPad !== null ? `${contentPad}px` : 'calc(var(--nav-h) + 91px)' }}>
         <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 py-1">
+
+        <h1 className="sr-only">
+          Find, Compare &amp; Buy Products and Services
+        </h1>
 
         <div className="mb-2 rounded-2xl border border-border px-4 py-2.5"
           style={{
@@ -354,9 +395,13 @@ export default function ProductDiscoveryClient() {
             {!isLoading && data && results.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="text-5xl mb-4">{'\uD83D\uDD0D'}</div>
-                <h3 className="text-text-primary font-bold text-xl mb-2">No results found</h3>
+                <h3 className="text-text-primary font-bold text-xl mb-2">
+                  {data.total === 0 ? 'No products listed yet' : 'No results found'}
+                </h3>
                 <p className="text-text-tertiary text-sm max-w-sm">
-                  Try different keywords, remove filters, or expand the geo scope to Pan India.
+                  {data.total === 0
+                    ? 'Products listed by sellers on TRADINGO will appear here. Explore the directory sections above to discover companies.'
+                    : 'Try different keywords, remove filters, or expand the geo scope to Pan India.'}
                 </p>
                 <button onClick={resetFilters}
                   className="mt-5 px-5 py-2.5 rounded-full text-sm font-semibold bg-accent text-btn-primary-text">
@@ -365,7 +410,7 @@ export default function ProductDiscoveryClient() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {isLoading
                 ? Array.from({ length: 3 }).map((_, i) => <ProductFullCardSkeleton key={i} />)
                 : results.map((item) => (
@@ -380,6 +425,7 @@ export default function ProductDiscoveryClient() {
                       ) : (
                         <UnifiedCard
                           item={item}
+                          detailBasePath={basePath}
                           onCompare={() => handleCompareToggle(item)}
                           inCompare={compareItems.some(c => c._id === item.id)}
                         />
@@ -417,7 +463,7 @@ export default function ProductDiscoveryClient() {
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-50 py-3 px-4 bg-surface border-t border-border"
+            className={`${embedded ? 'sticky bottom-0 left-0 right-0 z-40' : 'fixed bottom-0 left-0 right-0 z-50'} py-3 px-4 bg-surface border-t border-border`}
             style={{ backdropFilter: 'blur(20px)' }}>
             <div className="max-w-[1600px] mx-auto flex items-center gap-4 overflow-x-auto no-scrollbar">
               <span className="text-xs font-bold text-text-tertiary flex-shrink-0">

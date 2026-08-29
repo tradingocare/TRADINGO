@@ -3,9 +3,9 @@ import { Suspense }      from 'react'
 import ProductsPageClient from './ProductsPageClient'
 
 export const metadata: Metadata = {
-  title: 'Products & Services — TRADINGO Discovery',
+  title: { absolute: 'TRADINGO | Global Marketplace to Buy Products & Services' },
   description:
-    'Discover 33,600+ products and services from verified Indian suppliers. AI-powered search with Near-to-Far geo discovery.',
+    'Buy products, raw materials, daily essentials, machinery, business supplies, and professional services from verified manufacturers, traders, distributors, and service providers worldwide. Compare prices, connect directly, and request quotations on TRADINGO.',
 }
 
 export default function ProductsPage() {

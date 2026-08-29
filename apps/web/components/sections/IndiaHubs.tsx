@@ -107,24 +107,20 @@ function StateCard({ state, accent }: { state: StateData; accent: string }) {
             <Link href="/trading" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-surface-secondary border border-border hover:opacity-80 transition-opacity">
               <span className="text-xs leading-none">{'\uD83D\uDCE6'}</span>
               <span className="text-[10px] text-text-secondary leading-none">Products</span>
-              <span className="ml-auto text-xs font-bold text-text-primary tabular-nums leading-none">{formatCompact(state.productsListed)}</span>
               <ArrowUpRight size={11} className="text-text-tertiary" />
             </Link>
             <Link href="/tradeserv" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-surface-secondary border border-border hover:opacity-80 transition-opacity">
               <span className="text-xs leading-none">{'\uD83D\uDD27'}</span>
               <span className="text-[10px] text-text-secondary leading-none">Services</span>
-              <span className="ml-auto text-xs font-bold text-text-primary tabular-nums leading-none">{formatCompact(state.servicesCount)}</span>
               <ArrowUpRight size={11} className="text-text-tertiary" />
             </Link>
             <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-surface-secondary border border-border">
               <span className="text-xs leading-none">{'\uD83C\uDFED'}</span>
               <span className="text-[10px] text-text-secondary leading-none">Sellers</span>
-              <span className="ml-auto text-xs font-bold text-text-primary tabular-nums leading-none">{formatCompact(state.activeSellers)}</span>
             </div>
             <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-surface-secondary border border-border">
               <span className="text-xs leading-none">{'\uD83D\uDC65'}</span>
               <span className="text-[10px] text-text-secondary leading-none">Buyers</span>
-              <span className="ml-auto text-xs font-bold text-text-primary tabular-nums leading-none">{formatCompact(state.activeBuyers)}</span>
             </div>
           </div>
         </div>
@@ -237,8 +233,6 @@ export default function IndiaHubs() {
                 <span className="font-bold text-text-secondary">One Nation.</span>
                 <span className="h-3 w-px bg-border" />
                 <span className="font-bold text-[#D4AF37]">Infinite Opportunities.</span>
-                <span className="h-3 w-px bg-border" />
-                <span className="text-text-tertiary">Powered by TRADHEXA.</span>
               </div>
             </div>
           </div>
@@ -306,7 +300,7 @@ export default function IndiaHubs() {
               <span className="inline-flex h-5 w-5 items-center justify-center rounded text-[10px] font-black tracking-tighter"
                 style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.15)', color: '#D4AF37' }}>TR</span>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]/60">
-                Powered by Real-Time TRADHEXA Intelligence
+                Real-Time Market Intelligence
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">

@@ -50,7 +50,7 @@ export default function AboutTradingo() {
               </h2>
 
               <p className="mx-auto mt-4 max-w-7xl text-center text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
-                TRADINGO is a global trade platform powered by TRADHEXA&trade;.
+                TRADINGO is a global trade platform.
                 It is an AI-powered trade ecosystem that connects manufacturers, suppliers,
                 distributors, exporters, importers, service providers, and buyers through one
                 unified platform. By combining intelligent business discovery, verified business

@@ -22,7 +22,7 @@ export function SectionShell({
   return (
     <section
       className={cn(
-        'py-14 [content-visibility:auto] [contain-intrinsic-size:auto_1200px]',
+        'py-14 [content-visibility:auto] [contain-intrinsic-size:auto_480px]',
         className,
       )}
     >

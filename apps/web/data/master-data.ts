@@ -807,7 +807,7 @@ export const BUSINESS_HOURS = [
 export const PRESS_KIT_FACTS = [
   { label: 'Founded', value: '2023' },
   { label: 'Headquarters', value: 'BKC, Mumbai 400051, Maharashtra, India' },
-  { label: 'Platform', value: 'TRADHEXA B2B Marketplace' },
+  { label: 'Platform', value: 'B2B Marketplace' },
   { label: 'Sellers', value: '1.8L+' },
   { label: 'Buyers', value: '5.2L+' },
   { label: 'Products', value: '33,600+' },

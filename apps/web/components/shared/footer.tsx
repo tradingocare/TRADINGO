@@ -131,7 +131,7 @@ export function Footer() {
               </h3>
               <ul className="space-y-3">
                 {FOOTER_SELLER_LINKS.map((link) => (
-                  <li key={link.href}>
+                  <li key={`${link.href}::${link.label}`}>
                     <Link href={link.href}
                       className="group/link inline-flex items-center gap-1.5 text-sm text-text-secondary transition-colors hover:text-accent">
                       <span className="h-1 w-1 rounded-full bg-border transition-colors" />
@@ -162,7 +162,7 @@ export function Footer() {
               </h3>
               <ul className="space-y-3">
                 {FOOTER_BUYER_LINKS.map((link) => (
-                  <li key={link.href}>
+                  <li key={`${link.href}::${link.label}`}>
                     <Link href={link.href}
                       className="group/link inline-flex items-center gap-1.5 text-sm text-text-secondary transition-colors hover:text-accent">
                       <span className="h-1 w-1 rounded-full bg-border transition-colors" />
@@ -193,7 +193,7 @@ export function Footer() {
               </h3>
               <ul className="space-y-3">
                 {FOOTER_MARKETPLACE_LINKS.map((link) => (
-                  <li key={link.href}>
+                  <li key={`${link.href}::${link.label}`}>
                     <Link href={link.href}
                       className="group/link inline-flex items-center gap-1.5 text-sm text-text-secondary transition-colors hover:text-accent">
                       <span className="h-1 w-1 rounded-full bg-border transition-colors" />
@@ -224,7 +224,7 @@ export function Footer() {
               </h3>
               <ul className="space-y-2.5">
                 {FOOTER_COMPANY_LINKS.map((link) => (
-                  <li key={link.href}>
+                  <li key={`${link.href}::${link.label}`}>
                     <Link href={link.href}
                       className="group/link inline-flex items-center gap-1.5 text-sm text-text-secondary transition-colors hover:text-accent">
                       <span className="h-1 w-1 rounded-full bg-border transition-colors" />

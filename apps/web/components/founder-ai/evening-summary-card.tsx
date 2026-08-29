@@ -73,7 +73,7 @@ export function EveningSummaryCard({ data, isLoading, error }: EveningSummaryCar
         <div className="rounded-lg border border-accent-500/20 bg-accent-500/5 p-3 space-y-2">
           <div className="flex items-center gap-2 text-xs font-medium text-accent-500">
             <AlertTriangle className="h-3 w-3" />
-            Missed Opportunities â€” {missedTotal} total
+            Missed Opportunities — {missedTotal} total
           </div>
           <div className="text-xs text-text-tertiary">
             {data.missedOpportunities.expiredRfqs > 0 && `${data.missedOpportunities.expiredRfqs} RFQs expired. `}

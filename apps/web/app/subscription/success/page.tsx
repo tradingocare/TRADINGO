@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { CheckCircle2, ArrowRight, Sparkles, AlertTriangle } from 'lucide-react'
 import api from '@/lib/api/client'
 import { toast } from '@/components/ui/use-toast'
+import { getDashboardForRole, getRoleFromCookie } from '@/lib/auth/redirects'
 
 function SuccessContent() {
   const router = useRouter()
@@ -41,7 +42,7 @@ function SuccessContent() {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
       return () => clearTimeout(timer)
     } else if (!verifying && verified) {
-      router.push('/dashboard')
+      router.push(getDashboardForRole(getRoleFromCookie()))
     }
   }, [countdown, verifying, verified, router])
 
@@ -76,7 +77,7 @@ function SuccessContent() {
               Redirecting to dashboard in {countdown}s
               <Sparkles size={12} />
             </div>
-            <button onClick={() => router.push('/dashboard')}
+            <button onClick={() => router.push(getDashboardForRole(getRoleFromCookie()))}
               className="px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-1.5 mx-auto"
               style={{
                 background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
@@ -94,7 +95,7 @@ function SuccessContent() {
             <p className="text-white/50 text-sm mb-6">
               Your payment may not have been confirmed yet. If you were charged, please contact support.
             </p>
-            <button onClick={() => router.push('/dashboard')}
+            <button onClick={() => router.push(getDashboardForRole(getRoleFromCookie()))}
               className="px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-1.5 mx-auto"
               style={{
                 background: 'linear-gradient(135deg,#f59e0b,#fbbf24)',

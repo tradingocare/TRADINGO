@@ -96,7 +96,7 @@ async function CategoryContent({ slug }: { slug: string }) {
           <section className="relative overflow-hidden pb-8 pt-24">
             <div className="mx-auto max-w-7xl px-4">
               <nav className="flex items-center gap-2 text-sm text-text-secondary">
-                <Link href="/products" className="transition-colors hover:text-accent">Products</Link>
+                <Link href="/trading" className="transition-colors hover:text-accent">Products</Link>
                 <ChevronRight className="h-4 w-4 text-text-tertiary" />
                 <span className="text-text-primary font-medium">{categoryName}</span>
               </nav>
@@ -124,7 +124,7 @@ async function CategoryContent({ slug }: { slug: string }) {
                     <p className="mt-2 text-text-tertiary">
                       Check back later or browse other categories.
                     </p>
-                    <Link href="/products">
+                    <Link href="/trading">
                       <div
                         className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:brightness-110"
                         style={{

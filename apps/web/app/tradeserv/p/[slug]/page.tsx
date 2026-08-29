@@ -7,7 +7,7 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const profile = await tradeservApi.getProfessionalSummary(slug).catch(() => null);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradingo.com';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in';
 
   if (!profile) return { title: 'Profile Not Found — TradeServ | TRADINGO' };
 
@@ -55,11 +55,11 @@ export default function Page() {
             '@type': 'ProfessionalService',
             name: 'TradeServ by TRADINGO',
             description: 'India\'s AI-Powered Business Services Platform connecting businesses with verified professionals.',
-            url: 'https://www.tradingo.com/tradeserv',
+            url: 'https://tradingo.in/tradeserv',
             provider: {
               '@type': 'Organization',
               name: 'TRADINGO',
-              url: 'https://www.tradingo.com',
+              url: 'https://tradingo.in',
             },
             areaServed: { '@type': 'Country', name: 'IN' },
             hasOfferCatalog: {

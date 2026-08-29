@@ -163,6 +163,34 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
 
   const allChecked = agreedTerms && agreedPrivacy && agreedAccuracy
 
+  // VENDOR-REG-002 — upload a single registration file to the storage endpoint.
+  // Resilient: a failed/blocked upload returns null and must NOT block registration.
+  const uploadOne = async (file: File | null | undefined, folder: string): Promise<string | null> => {
+    if (!file) return null
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('folder', folder)
+      const r = await api.post('/upload', form)
+      return r?.data?.url || null
+    } catch (e: any) {
+      console.warn(`Vendor registration file upload failed (${folder}):`, e?.response?.data?.message || e?.message)
+      return null
+    }
+  }
+
+  // Upload PAN card, GST cert, cancelled cheque, logo and banner in parallel.
+  const collectDocUrls = async () => {
+    const [panCardUrl, gstCertificateUrl, cancelledChequeUrl, logoUrl, bannerUrl] = await Promise.all([
+      uploadOne(allData.pan?.panCardImage, 'vendor/pan'),
+      uploadOne(allData.gst?.gstCertificateImage, 'vendor/gst'),
+      uploadOne(allData.bankDetails?.cancelledChequeImage, 'vendor/cheque'),
+      uploadOne(allData.businessProfile?.logo, 'vendor/logo'),
+      uploadOne(allData.businessProfile?.bannerImage, 'vendor/banner'),
+    ])
+    return { panCardUrl, gstCertificateUrl, cancelledChequeUrl, logoUrl, bannerUrl }
+  }
+
   const bi = allData.businessIdentity || {}
   const cc = allData.contactCredentials || {}
   const gst = allData.gst || {}
@@ -215,7 +243,7 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
       moqRange: bp.moqRange,
       supplyCapacity: bp.supplyCapacity,
       leadTime: bp.leadTime,
-      exportCapability: bp.exportCapability || false,
+      exportCapability: !!bp.exportCapability,
       exportCountries: bp.exportCountries,
       addressLine1: bp.addressLine1,
       addressLine2: bp.addressLine2,
@@ -235,16 +263,48 @@ export default function Step7PlanSelection({ allData, onNext, onBack, onClearDra
       payload.password = cc.password
     }
     try {
-      const res = await api.post(isExisting ? '/auth/vendor/onboarding' : '/auth/register/vendor', payload)
+      // Existing buyers already have a session token — upload docs before onboarding.
+      const docUrls = isExisting ? await collectDocUrls() : {}
+      const res = await api.post(isExisting ? '/auth/vendor/onboarding' : '/auth/register/vendor', { ...payload, ...docUrls })
       const accessToken = res?.data?.accessToken
+      const role = isExisting ? 'SELLER' : (res?.data?.role || 'BUYER')
       if (accessToken) {
         setAccessToken(accessToken)
         document.cookie = `accessToken=${accessToken}; path=/; max-age=86400; SameSite=Lax`
       }
-      document.cookie = `userRole=${isExisting ? 'SELLER' : (res?.data?.role || 'BUYER')}; path=/; max-age=86400; SameSite=Lax`
+      document.cookie = `userRole=${role}; path=/; max-age=86400; SameSite=Lax`
+      localStorage.setItem('userRole', role)
+      if (accessToken) localStorage.setItem('accessToken', accessToken)
       setIsSuccess(true)
       if (isExisting) {
         onClearDraft()
+      }
+      if (!isExisting) {
+        try {
+          // New vendor: token is now available — upload docs, then activate seller capability.
+          const followUpDocUrls = await collectDocUrls()
+          const onboardingPayload: Record<string, any> = { ...payload, ...followUpDocUrls }
+          delete onboardingPayload.password
+          const upgrade = await api.post('/auth/vendor/onboarding', onboardingPayload)
+          const upgradeToken = upgrade?.data?.accessToken
+ if (upgradeToken) {
+         setAccessToken(upgradeToken)
+         document.cookie = `accessToken=${upgradeToken}; path=/; max-age=86400; SameSite=Lax`
+         localStorage.setItem('accessToken', upgradeToken)
+       }
+       const upgradedRole = upgrade?.data?.role || 'SELLER'
+       document.cookie = `userRole=${upgradedRole}; path=/; max-age=86400; SameSite=Lax`
+       localStorage.setItem('userRole', upgradedRole)
+       onClearDraft()
+ } catch (upgradeErr: any) {
+          if (upgradeErr?.response?.status === 409) {
+            console.warn('Vendor capability already active — redirecting to seller onboarding for manual completion')
+            router.push('/seller/onboarding')
+            return
+          } else {
+            console.warn('Auto vendor upgrade failed (user can complete via /seller/onboarding):', upgradeErr?.response?.data?.message || upgradeErr?.message)
+          }
+        }
       }
     } catch (err: any) {
       if (isEmailAlreadyRegisteredError(err)) {

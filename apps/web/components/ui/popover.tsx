@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const popoverVariants = cva(
-  'absolute z-40 min-w-[12rem] rounded-xl border border-border bg-gradient-to-br from-[rgba(10,14,30,0.98)] to-[rgba(6,8,22,0.99)] text-text-primary shadow-xl backdrop-blur-2xl p-2',
+  'absolute z-40 min-w-[12rem] rounded-xl border border-border bg-bg-elevated text-text-primary shadow-xl backdrop-blur-2xl p-2',
   {
     variants: {
       side: {

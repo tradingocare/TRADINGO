@@ -85,7 +85,7 @@ export function Breadcrumbs({ className }: { className?: string }) {
   if (segments.length === 0) return null;
 
   return (
-    <nav className={cn('flex items-center gap-1.5 text-sm', className)} aria-label="Breadcrumb">
+    <nav className={cn('flex flex-wrap items-center gap-1.5 text-sm', className)} aria-label="Breadcrumb">
       <Link
         href="/"
         className="text-text-tertiary transition-colors hover:text-text-primary"

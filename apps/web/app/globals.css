@@ -22,6 +22,9 @@
   --bg-elevated-2: var(--bg-elevated);
   --bg-overlay:    rgba(0, 0, 28, 0.85);
 
+  /* ── Layout: shared nav height for sticky offsets (mobile = min-h-14) ── */
+  --nav-h: 3.5rem;
+
   /* ── Brand Accent (shared across both themes) ──────────── */
   --accent:       #FF4D00;
   --accent-rgb:   255, 77, 0;
@@ -174,17 +177,17 @@
 
 html[data-theme="light"] {
   /* ── Background Layer ──────────────────────────────────── */
-  --bg-base:       #DBF1FD;
-  --bg-elevated:   #FFFFFF;
-  --bg-elevated-2: #F0F7FE;
+  --bg-base:       #A7E6FF;
+  --bg-elevated:   #E6FEFC;
+  --bg-elevated-2: #E6FEFC;
   --bg-overlay:    rgba(0, 0, 0, 0.30);
 
   /* ── Card Surface ──────────────────────────────────────── */
-  --surface-solid:          #FFFFFF;
-  --surface-solid-secondary: #F8FAFC;
-  --surface-solid-tertiary:  #F1F5F9;
+  --surface-solid:          #E6FEFC;
+  --surface-solid-secondary: #E6FEFC;
+  --surface-solid-tertiary:  #E6FEFC;
 
-  --card-bg:           #FFFFFF;
+  --card-bg:           #E6FEFC;
   --card-bg-hover:     rgba(255, 255, 255, 0.90);
   --card-border:       rgba(148, 163, 184, 0.15);
   --card-border-hover: rgba(255, 77, 0, 0.25);
@@ -203,7 +206,7 @@ html[data-theme="light"] {
   --text-on-accent: #FFFFFF;
 
   /* ── Glass (light-appropriate frosted) ──────────────────── */
-  --glass-bg: #f8fafc;
+  --glass-bg: #E6FEFC;
   --glass-bg-hover: #f1f5f9;
   --glass-border:       rgba(148, 163, 184, 0.15);
   --glass-border-hover: rgba(255, 77, 0, 0.25);
@@ -312,6 +315,37 @@ html[data-theme="light"] {
   --gray-800: rgba(0, 0, 0, 0.85);
   --gray-900: rgba(0, 0, 0, 0.95);
   --gray-950: #000000;
+}
+
+/* ── MOON MODE SATELLITES (founder-approved 2026-08-24)
+   Scoped to html[data-theme="light"] — zero dark-mode impact.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Navbar capsule fill (inline style hook — dark fallback unchanged) */
+html[data-theme="light"] {
+  --nav-capsule-fill: #E6FEFC;
+}
+
+/* Selection: brand-accent fill + guaranteed-readable label */
+html[data-theme="light"] ::selection {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+/* Scrollbar: theme-aware gray tokens (black-based steps in Moon) */
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* Orange accent TEXT on light surfaces → existing --accent-dark
+   (#CC3D00): 4.7:1 on surface / 3.6:1 on bg (was ~2.5:1). */
+html[data-theme="light"] .section-eyebrow,
+html[data-theme="light"] .badge-accent,
+html[data-theme="light"] .badge-orange {
+  color: var(--accent-dark);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -457,7 +491,7 @@ html[data-theme="light"] {
 
 @layer base {
   * {
-    border-color: rgba(255, 255, 255, 0.07);
+    border-color: var(--border-color);
   }
 
   html {
@@ -556,36 +590,6 @@ html[data-theme="light"] {
     transition: opacity 0.3s ease;
   }
 
-  /* Neon edge glow — multicolor prismatic ring (hover reveal) */
-  .glass-card::after {
-    content: '';
-    position: absolute;
-    inset: -1.5px;
-    border-radius: calc(1rem + 1.5px);
-    background: linear-gradient(
-      135deg,
-      rgba(0, 180, 255, 0.55),
-      rgba(168, 85, 247, 0.45),
-      rgba(247, 37, 133, 0.40),
-      rgba(255, 170, 0, 0.35),
-      rgba(6, 255, 200, 0.45),
-      rgba(0, 180, 255, 0.55)
-    );
-    background-size: 300% 300%;
-    animation: prismSpin 6s linear infinite;
-    mask: linear-gradient(#fff 0 0) content-box,
-          linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    -webkit-mask: linear-gradient(#fff 0 0) content-box,
-                  linear-gradient(#fff 0 0);
-    -webkit-mask-composite: destination-out;
-    padding: 1.5px;
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0;
-    transition: opacity 0.40s ease;
-  }
-
   .glass-card:hover {
     transform: translateY(-3px) scale(1.002);
     border-color: var(--glow-border-hover, rgba(255, 255, 255, 0.15));
@@ -597,10 +601,6 @@ html[data-theme="light"] {
   }
 
   .glass-card:hover::before {
-    opacity: 1;
-  }
-
-  .glass-card:hover::after {
     opacity: 1;
   }
 
@@ -1137,12 +1137,39 @@ html[data-theme="light"] {
   max-width: 1280px;
 }
 
+/* Wide marketing container — geometry-identical to the legacy
+   `max-w-[1600px] + px-6 sm:px-8 lg:px-12` pattern (footer). */
+@utility container-wide {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  max-width: 1600px;
+}
+
+/* Narrow content column for marketing sections — geometry-identical to
+   legacy `mx-auto max-w-6xl` (no edge padding; parent section owns it). */
+@utility container-narrow {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1152px;
+}
+
 @media (width >= 640px) {
   .container-main { padding-left: 2rem; padding-right: 2rem; }
+  .container-wide { padding-left: 2rem; padding-right: 2rem; }
+}
+
+/* Nav height at Tailwind md breakpoint (navbar md:min-h-16 = 64px) */
+@media (width >= 768px) {
+  :root { --nav-h: 4rem; }
 }
 
 @media (width >= 1024px) {
   .container-main { padding-left: 3rem; padding-right: 3rem; }
+  .container-wide { padding-left: 3rem; padding-right: 3rem; }
 }
 
 /* Text gradients */
@@ -1856,7 +1883,22 @@ html[data-theme="light"] {
 
 /* Glass card with backdrop blur (rounded-xl) */
 .glass-card {
-  @apply rounded-xl border border-border bg-surface backdrop-blur-xl;
+  @apply rounded-xl backdrop-blur-xl;
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--surface-solid, #00072d), var(--surface-solid, #00072d)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07));
+  background-clip: padding-box, border-box;
+  background-origin: border-box;
+  background-repeat: no-repeat;
+}
+
+.glass-card:hover {
+  background-image:
+    linear-gradient(var(--surface-solid, #00072d), var(--surface-solid, #00072d)),
+    linear-gradient(135deg, rgba(0, 180, 255, 0.55), rgba(168, 85, 247, 0.45), rgba(247, 37, 133, 0.40), rgba(255, 170, 0, 0.35), rgba(6, 255, 200, 0.45), rgba(0, 180, 255, 0.55));
+  background-size: 100% 100%, 300% 300%;
+  animation: prismSpin 6s linear infinite;
 }
 
 .glass-card-lg {

@@ -106,7 +106,12 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
   }
 
   const requireAuth = (fn: () => void) => {
-    if (!user) { toast.error('Login karein pehle'); router.push('/login'); return }
+    if (!user) {
+      const next = encodeURIComponent(window.location.pathname + window.location.search)
+      toast.error('Login karein pehle')
+      router.push(`/login?next=${next}`)
+      return
+    }
     fn()
   }
 
@@ -191,7 +196,8 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
 
   const handleRequestCatalog = () => {
     if (catalogueUrl) { window.open(catalogueUrl, '_blank', 'noopener,noreferrer'); return }
-    requireAuth(() => router.push(`/rfq/create?companyId=${company.id}`))
+    requireAuth(() =>
+router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
   }
 
   return (
@@ -356,7 +362,7 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
                 <span className="text-text-primary/70 font-medium text-right max-w-[55%]">{city}{state ? `, ${state}` : ''}{!city && !state ? 'India' : ''}</span>
               </div>
               {flagship && (
-                <Link href={`/products/${flagship.slug || flagship.id}`}
+                <Link href={`/trading/${flagship.slug || flagship.id}`}
                   className="flex items-center justify-between py-1.5 group">
                   <span className="text-text-tertiary flex items-center gap-1.5">
                     <ShoppingCart size={11} className="text-accent" /> Flagship Product
@@ -424,7 +430,7 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
                   const price = p.price ?? p.priceSlabs?.[0]?.price
                   return (
                     <div key={p.id} className="rounded-2xl overflow-hidden bg-surface border border-border group flex flex-col">
-                      <Link href={`/products/${p.slug || p.id}`} className="block relative aspect-square overflow-hidden">
+                      <Link href={`/trading/${p.slug || p.id}`} className="block relative aspect-square overflow-hidden">
                         <img src={img} alt={p.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER }} />
@@ -446,7 +452,7 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
                           )}
                         </div>
                         <div className="mt-auto pt-2.5 flex gap-1.5">
-                          <Link href={`/products/${p.slug || p.id}`}
+                          <Link href={`/trading/${p.slug || p.id}`}
                             className="flex-1 h-7 rounded-lg text-[10px] font-semibold flex items-center justify-center bg-surface border border-border text-text-secondary hover:bg-surface-secondary transition-all">
                             View
                           </Link>
@@ -455,7 +461,7 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
                             style={{ background:'rgba(45,224,224,0.1)', border:'1px solid rgba(45,224,224,0.25)', color:'#2DE0E0' }}>
                             Chat
                           </button>
-                          <Link href={`/products/${p.slug || p.id}`}
+                          <Link href={`/trading/${p.slug || p.id}`}
                             className="flex-1 h-7 rounded-lg text-[10px] font-bold flex items-center justify-center text-white"
                             style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)' }}>
                             Buy

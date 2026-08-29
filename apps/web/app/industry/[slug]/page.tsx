@@ -77,7 +77,7 @@ async function IndustryContent({ slug }: { slug: string }) {
       <section className="border-b border-border bg-surface-secondary/50 pb-8 pt-24">
         <div className="container-main">
           <nav className="flex items-center gap-2 text-sm text-text-secondary">
-            <Link href="/products" className="hover:text-accent transition-colors">Products</Link>
+            <Link href="/trading" className="hover:text-accent transition-colors">Products</Link>
             <ChevronRight className="h-4 w-4" />
             <Link href="/industries" className="hover:text-accent transition-colors">Industries</Link>
             <ChevronRight className="h-4 w-4" />
@@ -97,7 +97,7 @@ async function IndustryContent({ slug }: { slug: string }) {
           <p className="mt-1 text-sm text-text-secondary">
             {products.length} product{products.length !== 1 ? 's' : ''} available
             {subCategories.length > 0 ? ` across ${subCategories.length} sub-categor${subCategories.length !== 1 ? 'ies' : 'y'}` : ''}
-            {' Â· '}{industry._count?.companies ?? 0} supplier{(industry._count?.companies ?? 0) !== 1 ? 's' : ''}
+            {' · '}{industry._count?.companies ?? 0} supplier{(industry._count?.companies ?? 0) !== 1 ? 's' : ''}
           </p>
         </div>
       </section>
@@ -133,7 +133,7 @@ async function IndustryContent({ slug }: { slug: string }) {
               <p className="mt-2 text-text-secondary">
                 Check back later or browse other industries.
               </p>
-              <Link href="/products">
+              <Link href="/trading">
                 <span className="mt-6 inline-block rounded-lg bg-accent px-6 py-2 text-sm font-medium text-btn-primary-text hover:opacity-90 transition-opacity">
                   Browse All Products
                 </span>

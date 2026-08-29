@@ -35,13 +35,13 @@ export function ExecutiveDashboardView({ data, insights, loading }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="rounded-lg bg-surface p-3">
           <div className="flex items-center gap-1 text-[11px] text-text-tertiary"><TrendingUp className="h-3 w-3" /> Revenue</div>
-          <div className="text-lg font-bold text-text-primary">Ã¢â€šÂ¹{topRevenue.toLocaleString()}</div>
+          <div className="text-lg font-bold text-text-primary">₹{topRevenue.toLocaleString()}</div>
           <span className={`text-[11px] ${data.growth.revenue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{data.growth.revenue >= 0 ? '+' : ''}{data.growth.revenue.toFixed(1)}% MoM</span>
         </div>
         <div className="rounded-lg bg-surface p-3">
           <div className="flex items-center gap-1 text-[11px] text-text-tertiary"><DollarSign className="h-3 w-3" /> Cash Flow</div>
-          <div className="text-lg font-bold text-text-primary">Ã¢â€šÂ¹{data.cashFlow.net.toLocaleString()}</div>
-          <span className="text-[11px] text-text-tertiary">Inflow: Ã¢â€šÂ¹{data.cashFlow.inflow.toLocaleString()}</span>
+          <div className="text-lg font-bold text-text-primary">₹{data.cashFlow.net.toLocaleString()}</div>
+          <span className="text-[11px] text-text-tertiary">Inflow: ₹{data.cashFlow.inflow.toLocaleString()}</span>
         </div>
         <div className="rounded-lg bg-surface p-3">
           <div className="flex items-center gap-1 text-[11px] text-text-tertiary"><Users className="h-3 w-3" /> Total Users</div>
@@ -76,7 +76,7 @@ export function ExecutiveDashboardView({ data, insights, loading }: Props) {
             {data.topCategories.map((c, i) => (
               <div key={i} className="flex items-center justify-between text-xs">
                 <span className="text-text-primary">{c.name}</span>
-                <span className="text-text-tertiary">{c.orderCount} orders / Ã¢â€šÂ¹{c.revenue.toLocaleString()}</span>
+                <span className="text-text-tertiary">{c.orderCount} orders / ₹{c.revenue.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -106,7 +106,7 @@ export function ExecutiveDashboardView({ data, insights, loading }: Props) {
           <div className="text-[11px] font-medium text-text-tertiary mb-1">Top Buyers</div>
           {data.topBuyers.map((b, i) => (
             <div key={i} className="text-xs text-text-secondary">
-              {b.companyName} Ã¢â‚¬â€ Ã¢â€šÂ¹{b.totalSpent.toLocaleString()} ({b.orderCount} orders)
+              {b.companyName} — ₹{b.totalSpent.toLocaleString()} ({b.orderCount} orders)
             </div>
           ))}
         </div>

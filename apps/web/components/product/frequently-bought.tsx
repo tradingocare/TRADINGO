@@ -23,7 +23,7 @@ export function FrequentlyBought({ products, onAddAll }: FrequentlyBoughtProps) 
         {products.map((product, idx) => (
           <div key={product.id} className="flex items-center gap-3">
             {idx > 0 && <Plus size={18} className="text-text-tertiary flex-shrink-0" />}
-            <Link href={`/products/${product.slug}`} className="group block">
+            <Link href={`/trading/${product.slug}`} className="group block">
               <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl transition-shadow group-hover:shadow-lg"
                 style={{ background: 'var(--bg-elevated)' }}>
                 {product.image ? (

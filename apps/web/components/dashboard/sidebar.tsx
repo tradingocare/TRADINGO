@@ -165,7 +165,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard, Package, FileText, ShoppingCart, BarChart3, Trophy: Award, Wallet: CreditCard,
   Star: Award, Headphones: LifeBuoy, Settings, Heart: Award, Store: Package, Scale: ClipboardList,
   Users, Grid3X3: ClipboardList, Shield: Award, AlertTriangle, ScrollText: FileText, Activity: Zap, Sparkles,
-  Flask: Rocket, PlusCircle: Rocket, Globe, Bell, Download, MessageSquare, Handshake, FileCheck, Truck, PackageCheck,
+  Flask: Rocket, PlusCircle: Rocket, Rocket, Globe, Bell, Download, MessageSquare, Handshake, FileCheck, Truck, PackageCheck,
   DollarSign: CreditCard, TrendingUp: BarChart3, Map: Globe, MessageCircle, Cpu,
 };
 

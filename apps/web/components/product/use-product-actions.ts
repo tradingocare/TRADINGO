@@ -36,7 +36,7 @@ export function useProductActions(product: ProductCardModel) {
   }, [requireAuth, router, pid])
 
   const handleRFQ = useCallback(() => {
-    requireAuth(() => router.push(`/buyer/rfq/create?productId=${pid}`))
+    requireAuth(() => router.push(`/buyer/rfq/new?source=PRODUCT&sourceId=${pid}`))
   }, [requireAuth, router, pid])
 
   const handleBuyNow = useCallback((qty?: number) => {

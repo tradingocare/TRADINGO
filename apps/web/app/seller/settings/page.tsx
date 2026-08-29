@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardPageHeader, DashboardSkeleton } from '@/components/dashboard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,12 +8,19 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth-store';
 import { apiClient } from '@/lib/api/client';
+import { useTheme } from '@/components/shared/theme-provider';
 import { User, Bell, Shield, Moon, Save } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function SellerSettingsPage() {
   const user = useAuthStore((s: any) => s.user);
+  const { setTheme } = useTheme();
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setIsDark(typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+  }, []);
   const companyId = user?.companyId || '';
   const [loadingCompany, setLoadingCompany] = useState(true);
   const [company, setCompany] = useState<any>(null);
@@ -221,11 +228,10 @@ export default function SellerSettingsPage() {
               <p className="text-xs text-text-secondary dark:text-dark-text-secondary">Switch between light and dark appearance</p>
             </div>
             <label className="relative inline-flex cursor-pointer items-center">
-              <input type="checkbox" className="peer sr-only" checked={typeof document !== 'undefined' && document.documentElement.classList.contains('dark')} onChange={() => {
-                if (typeof document !== 'undefined') {
-                  document.documentElement.classList.toggle('dark');
-                  localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                }
+              <input type="checkbox" className="peer sr-only" checked={isDark} onChange={() => {
+                const next = !isDark;
+                setTheme(next ? 'dark' : 'light');
+                setIsDark(next);
               }} />
               <div className="h-6 w-11 rounded-full bg-surface-tertiary after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full" />
             </label>

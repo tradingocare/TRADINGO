@@ -174,7 +174,7 @@ export default function TradbuyPage() {
         title="Start Shopping"
         subtitle="Browse thousands of products and buy instantly with TRADBUY. Your first purchase is protected by our escrow guarantee."
         primaryLabel="Browse Products"
-        primaryHref="/products"
+        primaryHref="/trading"
         secondaryLabel="Learn About RFQ"
         secondaryHref="/rfq"
         variant="accent"

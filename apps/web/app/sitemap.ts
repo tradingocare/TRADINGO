@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { SITEMAP_STATIC_ROUTES, SITEMAP_CITIES } from '@/data/master-data';
 import { CATALOG_SITEMAP_CATEGORIES } from '@/data/catalog-data';
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const routes: MetadataRoute.Sitemap = SITEMAP_STATIC_ROUTES.map((route) => ({

@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'TRADINGO | The Global Smart Trade System',
     short_name: 'TRADINGO',
     id: '/',
-    description: 'TRADINGO — The Global Smart Trade System, powered by TRADHEXA. Discover, connect, negotiate, and grow through trust, technology, and transparency.',
+    description: 'TRADINGO — The Global Smart Trade System. Discover, connect, negotiate, and grow through trust, technology, and transparency.',
     start_url: '/',
     display: 'standalone',
     background_color: '#00001C',

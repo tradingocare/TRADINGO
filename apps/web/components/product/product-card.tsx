@@ -128,7 +128,7 @@ export const ProductCard = memo(function ProductCard({
               {product.categoryName}{product.subCategory && <> &rsaquo; {product.subCategory}</>}
             </p>
           )}
-          <Link href={`/products/${product.slug}`}>
+          <Link href={`/trading/${product.slug}`}>
             <h3 className={`font-bold leading-tight line-clamp-2 transition-colors hover:text-accent ${isDefault ? 'text-sm' : 'text-xs'}`}
               style={{ color: 'var(--text-primary)' }}>
               {product.title}

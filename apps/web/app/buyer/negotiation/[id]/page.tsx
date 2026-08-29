@@ -129,7 +129,7 @@ export default function BuyerNegotiationDetailPage() {
     <div className="space-y-6">
       <DashboardPageHeader
         title="Negotiation Detail"
-        description={`With ${n.sellerCompany?.name || 'N/A'} â€” ${n.rfq?.title || n.rfq?.rfqNumber || ''}`}
+        description={`With ${n.sellerCompany?.name || 'N/A'} — ${n.rfq?.title || n.rfq?.rfqNumber || ''}`}
         actions={
           <div className="flex items-center gap-2">
             {canAccept && (
@@ -350,7 +350,7 @@ export default function BuyerNegotiationDetailPage() {
                         Changed: {v.changedFields.map((f: string) => f.replace('proposed', '')).join(', ')}
                       </p>
                     )}
-                    {v.proposedPrice && <p className="text-xs text-white/70 mt-1">â‚¹{v.proposedPrice.toLocaleString('en-IN')}</p>}
+                    {v.proposedPrice && <p className="text-xs text-white/70 mt-1">₹{v.proposedPrice.toLocaleString('en-IN')}</p>}
                   </div>
                 ))}
               </div>

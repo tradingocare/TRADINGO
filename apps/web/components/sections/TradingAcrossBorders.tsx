@@ -82,7 +82,7 @@ export default function TradingAcrossBorders() {
                 <p className="mx-auto max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
                   TRADINGO is a{' '}
                   <span className="font-medium text-primary">global trade platform</span>{' '}
-                  powered by TRADHEXA&trade;&mdash;a next-generation AI-powered trade ecosystem transforming
+                  &mdash;a next-generation AI-powered trade ecosystem transforming
                   the way businesses connect, collaborate, and grow. By unifying buyers, manufacturers,
                   suppliers, distributors, exporters, importers, and professional service providers into
                   one trusted digital network, TRADINGO enables intelligent business discovery, verified
@@ -135,7 +135,7 @@ export default function TradingAcrossBorders() {
               Select Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">Region</span>
             </h2>
             <p className="mt-3 text-sm sm:text-base text-text-secondary">
-               Born in India, Built for the World <span className="text-amber-500/50 mx-1.5">&bull;</span> Powered by <span className="text-amber-400 font-semibold">TRADHEXA&trade;</span>
+                Born in India, Built for the World
             </p>
           </div>
 
@@ -267,7 +267,6 @@ export default function TradingAcrossBorders() {
                   Discover high-value RFQs, unlock GOCASH rewards, participate in TRADGO.
                   Driven by Trust, Technology, Intelligence.
                   Starting in India and expanding globally.
-                  Powered by TRADHEXA™.
                 </p>
                 <Link href="/trading">
                   <motion.span
@@ -287,7 +286,7 @@ export default function TradingAcrossBorders() {
                 <div className="mx-auto mt-6 w-full space-y-4 text-base leading-relaxed text-text-secondary sm:text-lg">
                   <p>Thank you for your interest in TRADINGO.</p>
                   <p>
-                    TRADINGO &ndash; The Global Smart TRADHEXA B2B Marketplace is currently launched in India and is progressively expanding into international markets.
+                    TRADINGO &ndash; The Global Smart B2B Marketplace is currently launched in India and is progressively expanding into international markets.
                   </p>
                   <p>
                     We are actively preparing localized experiences for your region and look forward to welcoming you very soon.
@@ -315,8 +314,6 @@ export default function TradingAcrossBorders() {
                   <span>Coming Soon to Your Country.</span>
                   <span className="h-3 w-px bg-surface-tertiary" />
                   <span className="text-amber-400/80">Trade Without Borders.</span>
-                  <span className="h-3 w-px bg-surface-tertiary" />
-                  <span>Powered by TRADHEXA.</span>
                 </div>
               </>
             )}

@@ -31,7 +31,7 @@ export function CardImage({
 
   return (
     <div className={`relative overflow-hidden flex-shrink-0 bg-surface ${imgClasses}`}>
-      <Link href={`/products/${slug}`}>
+      <Link href={`/trading/${slug}`}>
         <img
           src={allImages[imgIdx]}
           alt={title}

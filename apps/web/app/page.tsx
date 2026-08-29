@@ -6,35 +6,29 @@ import TradhexaEngines from '@/components/sections/TradhexaEngines';
 import AboutTradingo from '@/components/sections/AboutTradingo';
 import { Separator } from '@/components/ui/separator';
 import BusinessCities from '@/components/sections/BusinessCities';
-import { HOMEPAGE_SELLER_BENEFITS, HOMEPAGE_BUYER_BENEFITS, HOMEPAGE_SUCCESS_STORIES } from '@/data/master-data';
+import { HOMEPAGE_SELLER_BENEFITS, HOMEPAGE_BUYER_BENEFITS } from '@/data/master-data';
 
 const sellerBenefits = HOMEPAGE_SELLER_BENEFITS;
 const buyerBenefits = HOMEPAGE_BUYER_BENEFITS;
-const successStories = HOMEPAGE_SUCCESS_STORIES.map(s => ({
-  quote: s.quote,
-  author: s.name,
-  role: s.role,
-  company: s.company,
-  rating: 5,
-}));
+
 
 export const metadata: Metadata = {
-  title: { absolute: 'TRADINGO | The Global Next-Generation Marketplace' },
+  title: { absolute: 'Goods & Services for Commercial and Retail | B2B e-Marketplace' },
   description:
-    'Find verified manufacturers, traders, distributors, and service providers and connect with B2B and B2C buyers. Source branded products, daily essentials, workspace and production supplies, machinery, and professional services from trusted companies at competitive prices, with fast and reliable delivery and trusted trade solutions. We help you operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors.',
+    'Find manufacturers, traders, distributors, and buyers in one B2B e-Marketplace. Source branded products, daily essentials, workspace and production supplies, and machinery from trusted companies at competitive prices, with fast and reliable delivery. TRADINGO helps businesses operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors with trusted trade solutions.',
   openGraph: {
-    title: 'TRADINGO | The Global Next-Generation Marketplace',
+    title: 'Goods & Services for Commercial and Retail | B2B e-Marketplace',
     description:
-      'Find verified manufacturers, traders, distributors, and service providers and connect with B2B and B2C buyers. Source branded products, daily essentials, workspace and production supplies, machinery, and professional services from trusted companies at competitive prices, with fast and reliable delivery and trusted trade solutions. We help you operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors.',
+      'Find manufacturers, traders, distributors, and buyers in one B2B e-Marketplace. Source branded products, daily essentials, workspace and production supplies, and machinery from trusted companies at competitive prices, with fast and reliable delivery. TRADINGO helps businesses operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors with trusted trade solutions.',
     images: [
       { url: '/og/tradingo-og-1200x630.png', width: 1200, height: 630, alt: 'TRADINGO — Trading Right. Go Bright.' },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'TRADINGO | The Global Next-Generation Marketplace',
+    title: 'Goods & Services for Commercial and Retail | B2B e-Marketplace',
     description:
-      'Find verified manufacturers, traders, distributors, and service providers and connect with B2B and B2C buyers. Source branded products, daily essentials, workspace and production supplies, machinery, and professional services from trusted companies at competitive prices, with fast and reliable delivery and trusted trade solutions. We help you operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors.',
+      'Find manufacturers, traders, distributors, and buyers in one B2B e-Marketplace. Source branded products, daily essentials, workspace and production supplies, and machinery from trusted companies at competitive prices, with fast and reliable delivery. TRADINGO helps businesses operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors with trusted trade solutions.',
     images: ['/og/tradingo-og-1200x630.png'],
   },
 };
@@ -336,98 +330,6 @@ style={{ background: `radial-gradient(600px circle at 30% 50%, color-mix(in srgb
 
           <div className="mt-6 sm:mt-8 text-center">
             <a href="/tradgo" className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-6 py-3 text-sm font-bold text-accent transition-all hover:bg-accent/10 hover:scale-105">Join TRADGO Races &rarr;</a>
-          </div>
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* 9. Success Stories */}
-      <section className="relative overflow-hidden py-14 sm:py-16 lg:py-20">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-40 top-0 h-[500px] w-[500px] rounded-full bg-accent/5 blur-[120px]" />
-          <div className="absolute -bottom-40 -right-40 h-[400px] w-[400px] rounded-full bg-accent/3 blur-[100px]" />
-        </div>
-        <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
-          <div className="mx-auto max-w-7xl text-center">
-            <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
-<h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl leading-tight">Built by Businesses. Powered by TRADHEXA&trade;. Proven by Results. &#x1F680;</h2>
-               <p className="mx-auto mt-4 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">Explore inspiring stories of buyers, sellers, manufacturers, distributors, and service providers who used TRADINGO&apos;s 6-Engine Business Framework&trade;, Near to Far&trade; discovery, RFQ system, and Zero Commission trading model to unlock new growth opportunities across India and beyond.</p>
-          </div>
-
-          {/* Stats strip */}
-          <div className="mt-8 grid gap-4 sm:grid-cols-4">
-            {[
-              { value: '3x', label: 'Avg. Revenue Growth', token: '--accent-green' },
-              { value: '20K+', label: 'Active Businesses', token: '--accent-blue' },
-              { value: '75K+', label: 'RFQs Closed', token: '--accent' },
-              { value: '500+', label: 'Cities Reached', token: '--accent' },
-            ].map((stat) => (
-              <div key={stat.label}
-                className="group relative overflow-hidden rounded-[20px] border-border bg-surface text-center">
-                <div className="pointer-events-none absolute inset-0 rounded-[20px] opacity-0 transition-all duration-300 group-hover:opacity-100"
-                  style={{ background: `radial-gradient(400px circle, color-mix(in srgb, var(${stat.token}) 8%, transparent), transparent 50%)` }} />
-                <div className="relative z-10 px-5 py-5 md:px-7 md:py-6">
-                  <span className="text-xl font-black md:text-3xl" style={{ color: `var(${stat.token})` }}>{stat.value}</span>
-                  <p className="mt-0.5 text-xs md:text-sm text-text-secondary">{stat.label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Story cards */}
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            {successStories.map((s, i) => {
-              const accentTokens = ['--accent-green', '--accent-blue', '--accent', '--accent'];
-              const metrics = [
-                { value: '3x', label: 'Revenue Growth' },
-                { value: '20+ hrs', label: 'Weekly Saved' },
-                { value: '\u20B91.2L', label: 'GOCASH Earned' },
-                { value: '6', label: 'Export Countries' },
-              ];
-              const t = accentTokens[i % accentTokens.length];
-              return (
-                <div key={s.author}
-                  className="group relative overflow-hidden rounded-[22px] border-border bg-surface transition-all duration-300">
-                  <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
-                    style={{ background: `radial-gradient(600px circle at 30% 50%, color-mix(in srgb, var(${t}) 8%, transparent), transparent 50%)` }} />
-                  <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
-                    style={{ boxShadow: `inset 0 0 0 1px color-mix(in srgb, var(${t}) 19%, transparent)` }} />
-                  <div className="relative z-10 flex flex-col md:flex-row items-start gap-5 p-5 md:p-7">
-                    <div className="flex items-start gap-4 w-full md:w-auto md:min-w-[200px]">
-                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border-2 border-accent/20">
-                        <img src={HOMEPAGE_SUCCESS_STORIES[i].image} alt={s.author} loading="lazy" className="h-full w-full object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-base md:text-lg font-black text-text-primary truncate">{s.author}</h3>
-                          <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">Verified</span>
-                        </div>
-                        <p className="text-xs md:text-sm text-text-secondary truncate">{s.role}, {s.company}</p>
-                        <div className="mt-1 flex gap-0.5">
-                          {Array.from({ length: s.rating }).map((_, ri) => (
-                            <span key={ri} className="text-[10px] md:text-xs">&#x2B50;</span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-1 w-full">
-                      <blockquote className="text-sm leading-relaxed text-text-secondary italic sm:text-base">&ldquo;{s.quote}&rdquo;</blockquote>
-                      <div className="mt-4 flex items-center gap-3">
-                        <span className="text-lg font-black md:text-xl" style={{ color: `var(${t})` }}>{metrics[i].value}</span>
-                        <span className="text-[11px] md:text-sm text-text-tertiary">{metrics[i].label}</span>
-                        <span className="flex items-center gap-1 ml-auto text-xs md:text-sm font-semibold flex-shrink-0"
-                          style={{ color: `var(${t})` }}>Read Story &rarr;</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 sm:mt-8 text-center">
-            <a href="/about-tradingo" className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-6 py-3 text-sm font-bold text-accent transition-all hover:bg-accent/10 hover:scale-105">&#x1F4D6; Explore Success Stories &rarr;</a>
           </div>
         </div>
       </section>

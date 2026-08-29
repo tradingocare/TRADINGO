@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     template: '%s | TRADINGO',
   },
   description:
-    "TRADINGO is a Global Smart Trade System powered by TRADHEXA, enabling buyers, sellers, manufacturers, distributors, and service providers worldwide to discover, connect, negotiate, and grow through trust, technology, and transparency.",
+    "TRADINGO is a Global Smart Trade System, enabling buyers, sellers, manufacturers, distributors, and service providers worldwide to discover, connect, negotiate, and grow through trust, technology, and transparency.",
   keywords: [
     'TRADINGO',
     'TRADHEXA',
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "TRADINGO | The Global Smart Trade System",
     description:
-      "TRADINGO is a Global Smart Trade System powered by TRADHEXA, enabling businesses worldwide to discover, connect, negotiate, and grow.",
+      "TRADINGO is a Global Smart Trade System, enabling businesses worldwide to discover, connect, negotiate, and grow.",
     type: 'website',
     locale: 'en_US',
     url: 'https://tradingo.in',
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "TRADINGO | The Global Smart Trade System",
     description:
-      "TRADINGO is a Global Smart Trade System powered by TRADHEXA, enabling businesses worldwide to discover, connect, negotiate, and grow.",
+      "TRADINGO is a Global Smart Trade System, enabling businesses worldwide to discover, connect, negotiate, and grow.",
     images: ['/og/tradingo-og-1200x630.png'],
   },
   alternates: {

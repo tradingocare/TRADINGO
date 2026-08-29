@@ -31,6 +31,29 @@ const INITIAL_STATE: VendorRegistrationState = {
   bankDetails: {}, planSelection: {},
 }
 
+const SENSITIVE_KEYS: Record<string, string[]> = {
+  businessIdentity: [],
+  contactCredentials: ['password', 'confirmPassword', 'email', 'mobileNumber', 'alternateMobile'],
+  pan: ['panNumber', 'panHolderName', 'dateOfBirth'],
+  gst: ['gstNumber', 'gstExemptReason'],
+  businessProfile: [],
+  bankDetails: ['accountHolderName', 'accountNumber', 'ifscCode', 'accountType'],
+  planSelection: [],
+}
+
+function sanitizeForStorage(state: VendorRegistrationState): VendorRegistrationState {
+  const sanitized: any = { ...state }
+  for (const [key, sensitive] of Object.entries(SENSITIVE_KEYS)) {
+    if (sensitive.length > 0 && sanitized[key]) {
+      const obj = sanitized[key] as Record<string, unknown>
+      sanitized[key] = Object.fromEntries(
+        Object.entries(obj).filter(([k]) => !sensitive.includes(k))
+      )
+    }
+  }
+  return sanitized as VendorRegistrationState
+}
+
 interface ExistingUser {
   email?: string
   mobile?: string
@@ -69,7 +92,9 @@ export default function VendorRegistrationWizard({ mode = 'register' }: Props) {
   }, [mode])
 
   useEffect(() => {
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(state)) } catch {}
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(sanitizeForStorage(state)))
+    } catch {}
   }, [state])
 
   const { step, completedSteps } = state

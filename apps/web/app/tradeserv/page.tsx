@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { TRADESERV_CATEGORIES } from '@/lib/data/tradeserv';
 import { CatalogEnrichmentBadge } from '@/components/tradeserv/catalog-enrichment-badge';
+import { Section } from '@/components/shared/section';
 
 const FAQ_ITEMS = [
   { q: 'What is TradeServ?', a: 'TradeServ is TRADINGO\'s marketplace for professional services — connecting businesses with verified chartered accountants, GST consultants, company secretaries, and other business service professionals.' },
@@ -114,62 +115,92 @@ export default function TradeServPage() {
           <div className="absolute -bottom-40 -right-40 h-[400px] w-[400px] rounded-full bg-accent/2 blur-[120px]" />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-3xl">
-          <h1 className="mb-4 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-            TradeServ<sup className="ml-1 text-lg font-normal text-text-tertiary align-super">&trade;</sup>
-          </h1>
-          <p className="mb-3 text-xl font-medium text-accent sm:text-2xl">
-            India&apos;s AI-Powered Business Services Platform
-          </p>
-          <p className="mx-auto mb-10 max-w-xl text-base leading-relaxed text-text-secondary">
-            Helping businesses discover trusted professionals, consultants, agencies and business experts through AI and TRADTRUST.
-          </p>
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/tradeserv/search"
-              className="group inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 text-sm font-semibold text-btn-primary-text transition-all hover:bg-accent/90 hover:shadow-[0_0_25px_var(--glow)]"
-              style={{ '--glow': 'color-mix(in srgb, var(--accent) 30%, transparent)' } as React.CSSProperties}
-            >
-              <Search className="h-4 w-4" />
-              Explore Professionals
-            </Link>
-            <Link
-              href="/tradeserv/register"
-              className="group inline-flex items-center gap-2 rounded-full border border-border px-7 py-3 text-sm font-semibold text-text-primary transition-all hover:border-border hover:bg-surface"
-            >
-              Register as Professional
-              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/tradeserv/categories"
-              className="inline-flex items-center gap-1.5 text-xs text-text-tertiary transition-colors hover:text-text-secondary"
-            >
-              <Layers className="h-3.5 w-3.5" />
-              Browse Categories
-            </Link>
-            <Link
-              href="/tradeserv/p/rahul-sharma-ca"
-              className="inline-flex items-center gap-1.5 text-xs text-text-tertiary transition-colors hover:text-text-secondary"
-            >
-              <User className="h-3.5 w-3.5" />
-              Sample Profile
-            </Link>
-            <Link
-              href="/tradeserv/workspace/dashboard"
-              className="inline-flex items-center gap-1.5 text-xs text-text-tertiary transition-colors hover:text-text-secondary"
-            >
-              <LogIn className="h-3.5 w-3.5" />
-              Professional Workspace
-            </Link>
+<div className="relative z-10 w-full overflow-hidden rounded-3xl border border-border bg-bg-elevated px-4 py-10 sm:px-8 sm:py-12 lg:px-16 lg:py-14">
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 70% 60% at 50% -30%, rgba(255,77,0,0.07), transparent 60%)',
+            }}
+          />
+          <div className="relative">
+            <h1 className="mb-4 text-4xl font-bold tracking-tight text-text-primary sm:text-5xl lg:text-6xl xl:text-7xl">
+              Connect with Verified Professionals &amp; Service Providers
+            </h1>
+            <p className="mb-3 text-xl font-medium text-accent sm:text-2xl">
+              India&apos;s AI-Powered Business Services Platform
+            </p>
+            <p className="mx-auto mb-10 max-w-3xl text-base leading-relaxed text-text-secondary">
+              Discover verified professionals and service providers across industries and locations worldwide. Explore their expertise, qualifications, certifications, services, and portfolios, compare providers, and connect with the right professionals for your business, commercial, retail, and corporate needs.
+            </p>
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/tradeserv/search"
+                className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-9 py-4 text-base font-semibold text-btn-primary-text transition-all hover:bg-accent/90 hover:shadow-[0_0_25px_var(--glow)] sm:w-auto"
+                style={{ '--glow': 'color-mix(in srgb, var(--accent) 30%, transparent)' } as React.CSSProperties}
+              >
+                <Search className="h-5 w-5" />
+                Explore Professionals
+              </Link>
+              <Link
+                href="/tradeserv/register"
+                className="group inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-9 py-4 text-base font-semibold text-text-primary transition-all hover:border-border hover:bg-surface sm:w-auto"
+              >
+                Register as Professional
+                <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
+            <div className="mx-auto mt-10 grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3">
+              <Link
+                href="/tradeserv/categories"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-surface p-5 text-left transition-all hover:border-border hover:bg-surface-secondary"
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-accent/10">
+                  <Layers className="h-5 w-5 text-accent" />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-bold text-text-primary">Browse Categories</span>
+                  <span className="block text-xs text-text-tertiary">10 business services</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/tradeserv/p/rahul-sharma-ca"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-surface p-5 text-left transition-all hover:border-border hover:bg-surface-secondary"
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
+                  <User className="h-5 w-5 text-amber-400" />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-bold text-text-primary">Sample Profile</span>
+                  <span className="block text-xs text-text-tertiary">See a live example</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/tradeserv/workspace/dashboard"
+                className="group flex items-center gap-3 rounded-2xl p-5 text-left transition-all hover:shadow-[0_0_25px_var(--glow)]"
+                style={{
+                  background: 'linear-gradient(135deg, var(--accent), var(--accent-amber))',
+                  '--glow': 'color-mix(in srgb, var(--accent) 30%, transparent)',
+                } as React.CSSProperties}
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/15">
+                  <LogIn className="h-5 w-5 text-btn-primary-text" />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-bold text-btn-primary-text">Professional Workspace</span>
+                  <span className="block text-xs text-btn-primary-text/80">Dashboard, bookings &amp; more</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-btn-primary-text transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* --- TRUST BADGES --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+{/* --- TRUST BADGES --- */}
+      <Section>
           <div className="grid gap-6 md:grid-cols-3">
             {TRUST_BADGES.map(({ icon: Icon, title, description }) => (
               <div
@@ -183,13 +214,11 @@ export default function TradeServPage() {
                 <p className="text-sm leading-relaxed text-text-tertiary">{description}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
+</div>
+      </Section>
 
-      {/* --- WHY TRADESERV --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+{/* --- WHY TRADESERV --- */}
+      <Section>
           <div className="mb-16 text-center">
             <h2 className="mb-3 text-3xl font-bold text-text-primary sm:text-4xl">Why TradeServ</h2>
             <p className="mx-auto max-w-2xl text-base text-text-tertiary">
@@ -247,12 +276,10 @@ export default function TradeServPage() {
               Every engagement builds trust through TRADTRUST scoring and verified reviews.
             </p>
           </div>
-        </div>
-      </section>
+</Section>
 
       {/* --- HOW TRADESERV WORKS --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+      <Section>
           <div className="mb-16 text-center">
             <h2 className="mb-3 text-3xl font-bold text-text-primary sm:text-4xl">How TradeServ Works</h2>
             <p className="mx-auto max-w-2xl text-base text-text-tertiary">
@@ -260,31 +287,29 @@ export default function TradeServPage() {
             </p>
           </div>
 
-          <div className="relative">
-            <div className="absolute left-8 top-0 hidden h-full w-px bg-gradient-to-b from-accent/40 via-accent/10 to-transparent md:block" />
-            <div className="space-y-12">
+          <div className="space-y-4">
               {HOW_IT_WORKS.map(({ step, title, desc, icon: Icon }) => (
-                <div key={step} className="relative flex flex-col gap-4 md:flex-row md:items-start md:gap-8">
-                  <div className="relative z-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent/10 md:ml-0">
+                <div
+                  key={step}
+                  className="flex items-center gap-4 rounded-2xl border border-border bg-bg-elevated p-5 transition-all hover:bg-surface-secondary sm:gap-6 sm:p-6 lg:p-8"
+                >
+                  <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent/10">
                     <Icon className="h-7 w-7 text-accent" />
                     <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-btn-primary-text">
                       {step}
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="mb-2 text-lg font-semibold text-text-primary">{title}</h3>
-                    <p className="max-w-xl text-sm leading-relaxed text-text-tertiary">{desc}</p>
+                    <h3 className="mb-1 text-lg font-semibold text-text-primary lg:text-xl">{title}</h3>
+                    <p className="max-w-3xl text-sm leading-relaxed text-text-tertiary lg:text-base">{desc}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
+</Section>
 
       {/* --- ALL CATEGORIES --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+      <Section>
           <div className="mb-12 text-center">
             <h2 className="mb-3 text-3xl font-bold text-text-primary sm:text-4xl">Professional Categories</h2>
             <p className="mx-auto max-w-2xl text-base text-text-tertiary">
@@ -329,13 +354,11 @@ export default function TradeServPage() {
               Register as Professional
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-          </div>
-        </div>
-      </section>
+</div>
+      </Section>
 
-      {/* --- WHY BUSINESSES TRUST TRADESERV --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+{/* --- WHY BUSINESSES TRUST TRADESERV --- */}
+      <Section innerClassName="mx-auto w-full max-w-[1600px]">
           <div className="mb-12 text-center">
             <h2 className="mb-3 text-3xl font-bold text-text-primary sm:text-4xl">Why Businesses Trust TradeServ</h2>
             <p className="mx-auto max-w-2xl text-base text-text-tertiary">
@@ -345,21 +368,19 @@ export default function TradeServPage() {
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {WHY_TRUST.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="surface-card p-6 transition-all hover:border-border">
+              <div key={title} className="surface-card p-8 transition-all hover:border-border">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
                   <Icon className="h-5 w-5 text-accent" />
                 </div>
-                <h3 className="mb-2 text-base font-semibold text-text-primary">{title}</h3>
+                <h3 className="mb-2 text-lg font-semibold text-text-primary">{title}</h3>
                 <p className="text-sm leading-relaxed text-text-tertiary">{desc}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+      </Section>
 
-      {/* --- EVERYTHING COMING TO TRADESERV --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+{/* --- EVERYTHING COMING TO TRADESERV --- */}
+      <Section>
           <div className="mb-12 text-center">
             <h2 className="mb-3 text-3xl font-bold text-text-primary sm:text-4xl">Everything Coming to TradeServ</h2>
             <p className="mx-auto max-w-2xl text-base text-text-tertiary">
@@ -378,12 +399,10 @@ export default function TradeServPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
+      </Section>
 
-      {/* --- MEMBERSHIP PLANS --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl">
+{/* --- MEMBERSHIP PLANS --- */}
+      <Section>
           <div className="mb-12 text-center">
             <h2 className="mb-3 text-3xl font-bold text-text-primary sm:text-4xl">Membership Plans</h2>
             <p className="mx-auto max-w-2xl text-base text-text-tertiary">
@@ -478,12 +497,10 @@ export default function TradeServPage() {
               All plans include a 14-day free trial. No credit card required.
             </p>
           </div>
-        </div>
-      </section>
+      </Section>
 
-      {/* --- FAQ --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-4xl">
+{/* --- FAQ --- */}
+      <Section innerClassName="mx-auto max-w-4xl">
           <div className="mb-12 text-center">
             <h2 className="mb-3 text-3xl font-bold text-text-primary sm:text-4xl">Frequently Asked Questions</h2>
             <p className="mx-auto max-w-2xl text-base text-text-tertiary">
@@ -504,12 +521,10 @@ export default function TradeServPage() {
               </details>
             ))}
           </div>
-        </div>
-      </section>
+</Section>
 
-      {/* --- FINAL CTA --- */}
-      <section className="border-t border-border px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-3xl text-center">
+{/* --- FINAL CTA --- */}
+      <Section innerClassName="mx-auto max-w-3xl text-center">
           <h2 className="mb-4 text-3xl font-bold text-text-primary sm:text-4xl">Join the Future of Business Services</h2>
           <p className="mx-auto mb-10 max-w-xl text-base leading-relaxed text-text-tertiary">
             Whether you&apos;re a business looking for trusted professionals or a professional
@@ -543,8 +558,7 @@ export default function TradeServPage() {
               Professional Workspace
             </Link>
           </div>
-        </div>
-      </section>
+</Section>
 
       {/* --- FOOTER --- */}
       <footer className="border-t border-border px-4 py-8">
@@ -552,9 +566,6 @@ export default function TradeServPage() {
           <p className="text-xs text-text-tertiary">
             Powered by{' '}
             <span className="font-semibold text-text-tertiary">TRADINGO</span>
-            <span className="mx-1.5 text-text-tertiary">|</span>
-            <span className="font-semibold text-text-tertiary">TRADHEXA</span>
-            <sup className="ml-0.5 text-[9px] text-text-tertiary/50">&trade;</sup>
           </p>
           <p className="text-[10px] text-text-tertiary">
             Part of Niksa Global Ventures Pvt. Ltd.

@@ -195,7 +195,7 @@ export default function TradhexaPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
           className="mt-16 text-center">
-          <Link href="/products">
+          <Link href="/trading">
             <motion.span whileHover={{ y: -2, scale: 1.03 }}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-accent to-accent/80 px-6 py-3 text-sm font-bold text-text-primary shadow-lg">
               Explore Marketplace <ArrowRight size={16} />

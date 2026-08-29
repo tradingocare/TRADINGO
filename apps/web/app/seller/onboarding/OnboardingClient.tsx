@@ -11,7 +11,7 @@ import { CheckCircle2, Sparkles } from 'lucide-react'
 import Section1BasicInfo from './sections/Section1BasicInfo'
 import Section2Categories from './sections/Section2Categories'
 import Section3Visuals from './sections/Section3Visuals'
-import Section4AIImages from './sections/Section4AIImages'
+import Section4Images from './sections/Section4Images'
 import Section5Catalog from './sections/Section5Catalog'
 import Section6Documents from './sections/Section6Documents'
 import Section7WebsiteSocial from './sections/Section7WebsiteSocial'
@@ -248,7 +248,7 @@ export default function OnboardingClient() {
           {activeSection === 0 && <Section1BasicInfo vendor={vendor} onSave={d => onSectionSave('basicInfo', d.score)} onNext={() => setActiveSection(1)} />}
           {activeSection === 1 && <Section2Categories vendor={vendor} onSave={d => onSectionSave('categories', d.score)} onNext={() => setActiveSection(2)} onBack={() => setActiveSection(0)} />}
           {activeSection === 2 && <Section3Visuals vendor={vendor} onSave={d => onSectionSave('visuals', d.score)} onNext={() => setActiveSection(3)} onBack={() => setActiveSection(1)} />}
-          {activeSection === 3 && <Section4AIImages vendor={vendor} onSave={d => onSectionSave('aiImages', d.score)} onNext={() => setActiveSection(4)} onBack={() => setActiveSection(2)} />}
+          {activeSection === 3 && <Section4Images vendor={vendor} onSave={d => onSectionSave('aiImages', d.score)} onNext={() => setActiveSection(4)} onBack={() => setActiveSection(2)} />}
           {activeSection === 4 && <Section5Catalog vendor={vendor} onSave={d => onSectionSave('catalog', d.score)} onNext={() => setActiveSection(5)} onBack={() => setActiveSection(3)} />}
           {activeSection === 5 && <Section6Documents vendor={vendor} onSave={d => onSectionSave('documents', d.score)} onNext={() => setActiveSection(6)} onBack={() => setActiveSection(4)} />}
           {activeSection === 6 && <Section7WebsiteSocial vendor={vendor} onSave={d => onSectionSave('websiteAndSocial', d.score)} onNext={() => setActiveSection(7)} onBack={() => setActiveSection(5)} />}

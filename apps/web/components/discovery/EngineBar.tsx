@@ -112,7 +112,7 @@ export default function EngineBar() {
                   background: `${e.color}0D`,
                   border: `1px solid ${e.color}25`,
                 }}>
-                <p className="text-text-primary text-xs leading-relaxed">{e.desc}</p>
+                <p className="text-text-primary text-sm leading-relaxed">{e.desc}</p>
               </div>
             </motion.div>
           )

@@ -125,7 +125,7 @@ export default function EngineDetailPage({ engineId: _engineId }: { engineId: st
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
           className="mt-12 text-center">
-          <Link href="/products">
+          <Link href="/trading">
             <motion.span whileHover={{ y: -2, scale: 1.03 }}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-accent-500 to-accent-500 px-6 py-3 text-sm font-bold text-primary shadow-lg">
               Explore Marketplace <ArrowRight size={16} />

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import {
   TrendingUp,
   Users,
@@ -27,6 +28,7 @@ import { Accordion } from '@/components/ui/accordion';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
+import { getSellerEntryTarget } from '@/lib/auth/redirects';
 
 const SELLER_BENEFITS = [
   {
@@ -147,43 +149,9 @@ const VERIFICATION_LEVELS = [
   { level: 'Level 5 — Premium', check: 'Financial Audit, Credit Check, Performance Bond', icon: '💎' },
 ];
 
-const MARKETPLACE_STATS = [
-  { value: 850, suffix: 'Cr+', prefix: '₹', label: 'Monthly GMV', decimals: 0 },
-  { value: 350000, label: 'Active Buyers', decimals: 0 },
-  { value: 38000, prefix: '₹', label: 'Average Order Value', decimals: 0 },
-  { value: 92, suffix: '%', label: 'Repeat Buyer Rate', decimals: 0 },
-];
+;
 
-const SELLER_TESTIMONIALS = [
-  {
-    quote: 'TRADINGO transformed our business. We went from ₹2L to ₹45L monthly revenue in just 6 months. The AI matching alone brought us 200+ qualified leads.',
-    author: 'Rajesh Mehta',
-    role: 'Founder',
-    company: 'Mehta Industries, Delhi',
-    rating: 5,
-  },
-  {
-    quote: 'The zero-commission onboarding was a game-changer. We built our catalog, got our first 50 orders, and by then we were already profitable enough to upgrade.',
-    author: 'Priya Sharma',
-    role: 'CEO',
-    company: 'Sharma Exports, Mumbai',
-    rating: 5,
-  },
-  {
-    quote: 'TradTrust score gave us credibility that small businesses rarely get. Our win rate on RFQs jumped from 12% to 67% after reaching Level 3 verification.',
-    author: 'Amit Verma',
-    role: 'Director',
-    company: 'Verma Tradelink, Jaipur',
-    rating: 5,
-  },
-  {
-    quote: 'The analytics dashboard is incredible. We spotted a pricing gap in the southern market within 24 hours, adjusted our strategy, and captured 30% market share in 3 months.',
-    author: 'Suresh Patel',
-    role: 'Managing Partner',
-    company: 'Patel Brothers, Ahmedabad',
-    rating: 4,
-  },
-];
+
 
 const FAQ_ITEMS = [
   {
@@ -224,7 +192,10 @@ const FAQ_ITEMS = [
   },
 ];
 
-export default function SellOnTradingoPage() {
+export default async function SellOnTradingoPage() {
+  const role = (await cookies()).get('userRole')?.value ?? '';
+  const sellerEntry = getSellerEntryTarget(role);
+  const plans = PLANS.map((p) => (p.href === '/register/vendor' ? { ...p, href: sellerEntry } : p));
   return (
     <>
       {/* Hero Section */}
@@ -243,8 +214,8 @@ export default function SellOnTradingoPage() {
               India&apos;s Fastest Growing B2B Marketplace
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
-              Sell to 3,50,000+{' '}
-              <span className="text-gradient">Buyers Across India</span>
+              Reach verified buyers{' '}
+              <span className="text-gradient">Across India</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-text-secondary">
               Join India&apos;s most trusted B2B marketplace. List your products for free, get
@@ -252,7 +223,7 @@ export default function SellOnTradingoPage() {
               commission on your first 50 orders.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/register/vendor">
+              <Link href={sellerEntry}>
                 <Button size="xl" className="w-full sm:w-auto">
                   Start Selling Free
                   <TrendingUp className="ml-2 h-5 w-5" />
@@ -268,22 +239,6 @@ export default function SellOnTradingoPage() {
           </div>
         </div>
       </section>
-
-      {/* Trust Signals */}
-      <section className="pb-20">
-        <div className="container-main">
-          <StatisticsCards
-            stats={[
-              { value: 7500, suffix: '+', label: 'Active Sellers', decimals: 0 },
-              { value: 350000, suffix: '+', label: 'Products Listed', decimals: 0 },
-              { value: 50000, suffix: '+', label: 'Monthly RFQs', decimals: 0 },
-              { value: 98, suffix: '%', label: 'Satisfaction Rate', decimals: 0 },
-            ]}
-          />
-        </div>
-      </section>
-
-      <Separator />
 
       {/* Benefits Section */}
       <section id="benefits" className="py-20">
@@ -323,7 +278,7 @@ export default function SellOnTradingoPage() {
             subtitle="Start free and upgrade as your business grows. No hidden fees, no long-term contracts."
           />
           <div className="mx-auto max-w-5xl">
-            <PricingCards plans={PLANS} />
+            <PricingCards plans={plans} />
           </div>
         </div>
       </section>
@@ -367,32 +322,6 @@ export default function SellOnTradingoPage() {
 
       <Separator />
 
-      {/* Marketplace Stats */}
-      <section className="py-20">
-        <div className="container-main">
-          <SectionHeader
-            title="Marketplace in Motion"
-            subtitle="Real numbers from the TRADINGO ecosystem that matter to sellers."
-          />
-          <StatisticsCards stats={MARKETPLACE_STATS} />
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Testimonials */}
-      <section className="py-20">
-        <div className="container-main">
-          <SectionHeader
-            title="Trusted by Thousands of Sellers"
-            subtitle="Hear from businesses that have scaled with TRADINGO."
-          />
-          <Testimonials testimonials={SELLER_TESTIMONIALS} />
-        </div>
-      </section>
-
-      <Separator />
-
       {/* FAQ */}
       <section className="py-20">
         <div className="container-main">
@@ -408,9 +337,9 @@ export default function SellOnTradingoPage() {
 
       <CTABlock
         title="Ready to Grow Your Business?"
-        subtitle="Join 7,500+ sellers already using TRADINGO to reach buyers across India. Start selling today — free."
+        subtitle="List your products on TRADINGO and reach verified buyers across India. Start selling today — free."
         primaryLabel="Start Selling Free"
-        primaryHref="/register/vendor"
+        primaryHref={sellerEntry}
         secondaryLabel="Talk to Sales"
         secondaryHref="/contact"
         variant="accent"

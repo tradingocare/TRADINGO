@@ -142,7 +142,7 @@ export default function BusinessCities() {
               Explore India&apos;s Business Cities
             </h2>
             <p className="mx-auto mt-2 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
-              Discover India&apos;s major manufacturing, trading and industrial hubs powered by TRADHEXA&trade; Intelligence. Explore live marketplace data across 15+ cities &mdash; track active sellers, product listings, service providers, and buyer demand in real-time.
+              Discover India&apos;s major manufacturing, trading and industrial hubs. Explore live marketplace data across 15+ cities &mdash; track active sellers, product listings, service providers, and buyer demand in real-time.
             </p>
             <Link href="/trading" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-surface-secondary px-5 py-2.5 text-xs font-semibold text-accent-500 transition-all hover:bg-surface-tertiary hover:shadow-[0_0_15px_rgba(255,77,0,0.15)]">
               Browse All Cities <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
@@ -205,24 +205,6 @@ export default function BusinessCities() {
                       <span className="text-xs sm:text-sm font-semibold text-text-tertiary">{city.industry}</span>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      {[
-                        { icon: '\uD83C\uDFED', label: 'Sellers', value: formatNum(city.sellers) },
-                        { icon: '\uD83D\uDCE6', label: 'Products', value: formatNum(city.products) },
-                        { icon: '\uD83D\uDD27', label: 'Services', value: formatNum(city.services) },
-                        { icon: '\uD83D\uDC65', label: 'Buyers', value: formatNum(city.buyers) },
-                      ].map((stat) => (
-                        <div key={stat.label}
-                          className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-secondary px-2 py-1.5 transition-all hover:bg-surface-tertiary"
-                        >
-                          <span className="text-xs sm:text-sm leading-none">{stat.icon}</span>
-                          <div className="min-w-0">
-                            <span className="block text-xs sm:text-sm font-bold leading-none text-primary tabular-nums">{stat.value}</span>
-                            <span className="mt-0.5 block text-[10px] leading-none text-text-secondary sm:text-[11px]">{stat.label}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </motion.div>
               </Link>

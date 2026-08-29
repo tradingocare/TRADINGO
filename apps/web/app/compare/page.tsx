@@ -44,7 +44,7 @@ export default function ComparePage() {
   return (
     <div className="min-h-screen pt-24 pb-20" style={{ background: 'var(--bg-base)' }}>
       <div className="mx-auto max-w-5xl px-4">
-        <Link href="/products" className="mb-6 inline-flex items-center gap-1.5 text-sm text-text-tertiary hover:text-accent-500 transition-colors">
+        <Link href="/trading" className="mb-6 inline-flex items-center gap-1.5 text-sm text-text-tertiary hover:text-accent-500 transition-colors">
           <ArrowLeft size={14} /> Back to Browse
         </Link>
 
@@ -57,7 +57,7 @@ export default function ComparePage() {
             <p className="mb-4 text-text-tertiary">
               Compare list is empty. Select products and click &quot;Compare&quot; to add them here.
             </p>
-            <Link href="/products"
+            <Link href="/trading"
               className="inline-flex rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90"
               style={{ background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }}>
               Browse Products

@@ -38,7 +38,7 @@ export function ExecutiveDashboard({ data, isLoading, error }: ExecutiveDashboar
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-lg border border-border bg-surface p-3">
           <div className="text-[11px] text-text-tertiary mb-1">Revenue (30d)</div>
-          <div className="text-lg font-bold text-text-primary">â‚¹{(data.revenueTrend.reduce((s, r) => s + r.amount, 0)).toLocaleString()}</div>
+          <div className="text-lg font-bold text-text-primary">₹{(data.revenueTrend.reduce((s, r) => s + r.amount, 0)).toLocaleString()}</div>
           <div className={`flex items-center gap-0.5 text-[11px] mt-0.5 ${data.growth.revenue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {data.growth.revenue >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {data.growth.revenue.toFixed(1)}% MoM
@@ -46,8 +46,8 @@ export function ExecutiveDashboard({ data, isLoading, error }: ExecutiveDashboar
         </div>
         <div className="rounded-lg border border-border bg-surface p-3">
           <div className="text-[11px] text-text-tertiary mb-1">Cash Flow (Net)</div>
-          <div className="text-lg font-bold text-text-primary">â‚¹{data.cashFlow.net.toLocaleString()}</div>
-          <div className="text-[11px] text-text-tertiary mt-0.5">Inflow: â‚¹{data.cashFlow.inflow.toLocaleString()}</div>
+          <div className="text-lg font-bold text-text-primary">₹{data.cashFlow.net.toLocaleString()}</div>
+          <div className="text-[11px] text-text-tertiary mt-0.5">Inflow: ₹{data.cashFlow.inflow.toLocaleString()}</div>
         </div>
         <div className="rounded-lg border border-border bg-surface p-3">
           <div className="text-[11px] text-text-tertiary mb-1">Orders (30d)</div>
@@ -105,7 +105,7 @@ export function ExecutiveDashboard({ data, isLoading, error }: ExecutiveDashboar
             {data.topBuyers.map((b, i) => (
               <div key={i} className="flex items-center justify-between text-xs">
                 <span className="text-text-secondary">{b.companyName}</span>
-                <span className="text-text-tertiary">{b.orderCount} orders Â· â‚¹{b.totalSpent.toLocaleString()}</span>
+                <span className="text-text-tertiary">{b.orderCount} orders · ₹{b.totalSpent.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -119,7 +119,7 @@ export function ExecutiveDashboard({ data, isLoading, error }: ExecutiveDashboar
             {data.topSellers.map((s, i) => (
               <div key={i} className="flex items-center justify-between text-xs">
                 <span className="text-text-secondary">{s.companyName}</span>
-                <span className="text-text-tertiary">{s.orderCount} orders Â· Trust: {s.trustScore}</span>
+                <span className="text-text-tertiary">{s.orderCount} orders · Trust: {s.trustScore}</span>
               </div>
             ))}
           </div>

@@ -171,6 +171,11 @@ export async function getLocationSummary() {
   }
 }
 
+export async function geocodeAllUnlocated(): Promise<{ processed: number; failed: number }> {
+  const res = await api.post('/location-intelligence/geocode-all')
+  return res.data as { processed: number; failed: number }
+}
+
 export async function getUnifiedScore(companyId: string): Promise<UnifiedScoreResult> {
   const res = await api.get(`/marketplace-intelligence/score/${companyId}`)
   return res.data
