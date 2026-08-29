@@ -676,51 +676,53 @@ export class AuthService {
   }
 
   async registerVendor(dto: CreateVendorDto) {
-    const existingEmail = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (existingEmail) {
-      throw new ConflictException('Email already registered');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const existingEmail = await tx.user.findUnique({ where: { email: dto.email } });
+      if (existingEmail) {
+        throw new ConflictException('Email already registered');
+      }
 
-    const existingPan = await this.prisma.company.findFirst({ where: { panNumber: dto.panNumber } });
-    if (existingPan) {
-      throw new ConflictException('PAN number already registered');
-    }
+      const existingPan = await tx.company.findFirst({ where: { panNumber: dto.panNumber } });
+      if (existingPan) {
+        throw new ConflictException('PAN number already registered');
+      }
 
-    if (!dto.password) {
-      throw new BadRequestException('Password is required to create a new vendor account');
-    }
+      if (!dto.password) {
+        throw new BadRequestException('Password is required to create a new vendor account');
+      }
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        passwordHash,
-        name: dto.ownerName,
-        mobile: dto.mobileNumber || null,
+      const passwordHash = await bcrypt.hash(dto.password, 12);
+      const user = await tx.user.create({
+        data: {
+          email: dto.email,
+          passwordHash,
+          name: dto.ownerName,
+          mobile: dto.mobileNumber || null,
+          role: 'BUYER',
+        },
+      });
+
+      const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
+      await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
+
+      await this.emailQueue.add(QueueNames.EMAIL, {
+        type: EmailJobTypes.SEND_WELCOME_EMAIL,
+        to: user.email,
+        subject: 'Welcome to TRADINGO',
+        template: 'welcome',
+        context: { name: dto.ownerName, businessName: dto.businessName },
+      });
+
+      this.logger.log(`Vendor account created (Buyer role): ${dto.email}`);
+
+      return {
+        success: true,
+        message: 'Account created. Your seller capability activates on completing vendor onboarding.',
+        userId: user.id,
         role: 'BUYER',
-      },
+        ...tokens,
+      };
     });
-
-    const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
-    await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
-
-    await this.emailQueue.add(QueueNames.EMAIL, {
-      type: EmailJobTypes.SEND_WELCOME_EMAIL,
-      to: user.email,
-      subject: 'Welcome to TRADINGO',
-      template: 'welcome',
-      context: { name: dto.ownerName, businessName: dto.businessName },
-    });
-
-    this.logger.log(`Vendor account created (Buyer role): ${dto.email}`);
-
-    return {
-      success: true,
-      message: 'Account created. Your seller capability activates on completing vendor onboarding.',
-      userId: user.id,
-      role: 'BUYER',
-      ...tokens,
-    };
   }
 
   // ── Company identity normalization (F2) ─────────────────────────────────
@@ -777,6 +779,9 @@ export class AuthService {
         updatedBy: userId,
         onboardingStatus: 'ACCOUNT_CREATED',
         onboardingStartedAt: new Date(),
+        logo: dto.logoUrl || null,
+        banner: dto.bannerUrl || null,
+        registrationDocuments: this.buildRegistrationDocuments(dto),
       },
     });
 
@@ -804,6 +809,31 @@ export class AuthService {
   // F6/F7 — ONE legal company: upgrade an existing owned business (e.g. a TradeServ
   // professional company) to a full seller capability instead of creating a second
   // company for the same legal entity (identified by matching PAN/GST).
+  // VENDOR-REG-002 — collect the optional uploaded document URLs into a single
+  // JSON column. Optional: any missing URL is simply omitted.
+  private buildRegistrationDocuments(dto: CreateVendorDto): Prisma.InputJsonValue | undefined {
+    const docs: Record<string, string> = {};
+    if (dto.panCardUrl) docs.panCardUrl = dto.panCardUrl;
+    if (dto.gstCertificateUrl) docs.gstCertificateUrl = dto.gstCertificateUrl;
+    if (dto.cancelledChequeUrl) docs.cancelledChequeUrl = dto.cancelledChequeUrl;
+    if (dto.logoUrl) docs.logoUrl = dto.logoUrl;
+    if (dto.bannerUrl) docs.bannerUrl = dto.bannerUrl;
+    return Object.keys(docs).length ? (docs as Prisma.InputJsonValue) : undefined;
+  }
+
+  private mergeRegistrationDocuments(
+    existing: Prisma.InputJsonValue | null,
+    dto: CreateVendorDto,
+  ): Prisma.InputJsonValue | undefined {
+    const base = existing && typeof existing === 'object' ? { ...(existing as Record<string, unknown>) } : {};
+    if (dto.panCardUrl) base.panCardUrl = dto.panCardUrl;
+    if (dto.gstCertificateUrl) base.gstCertificateUrl = dto.gstCertificateUrl;
+    if (dto.cancelledChequeUrl) base.cancelledChequeUrl = dto.cancelledChequeUrl;
+    if (dto.logoUrl) base.logoUrl = dto.logoUrl;
+    if (dto.bannerUrl) base.bannerUrl = dto.bannerUrl;
+    return Object.keys(base).length ? (base as Prisma.InputJsonValue) : undefined;
+  }
+
   private async upgradeCompanyToVendor(
     company: Company,
     userId: string,
@@ -825,6 +855,9 @@ export class AuthService {
         email: company.email || dto.email,
         mobile: company.mobile || dto.mobileNumber,
         description: company.description || dto.description,
+        logo: company.logo || dto.logoUrl || null,
+        banner: company.banner || dto.bannerUrl || null,
+        registrationDocuments: this.mergeRegistrationDocuments(company.registrationDocuments as Prisma.InputJsonValue | null, dto),
         updatedBy: userId,
         onboardingStatus: 'ACCOUNT_CREATED',
         onboardingStartedAt: company.onboardingStartedAt || new Date(),

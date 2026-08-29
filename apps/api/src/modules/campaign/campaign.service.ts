@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { PrismaService } from '../../prisma/prisma.service';
 import { GocashService } from '../gocash/gocash.service';
 import { CampaignClaim, CampaignStatus, CampaignTargetType, CampaignType, Prisma } from '@prisma/client';
-import { CreateCampaignDto, UpdateCampaignDto, QueryCampaignDto, ClaimCampaignDto } from './dto';
+import { CreateCampaignDto, UpdateCampaignDto, QueryCampaignDto } from './dto';
 
 @Injectable()
 export class CampaignService {
@@ -348,32 +348,38 @@ export class CampaignService {
     return { eligible: true, campaign };
   }
 
-  async claimReward(dto: ClaimCampaignDto) {
-    const userId = dto.userId ?? 'SYSTEM';
-    const eligibility = await this.checkEligibility(dto.campaignId, userId, dto.companyId);
+  async claimReward(
+    dto: { campaignId: string; companyId?: string; claimType?: string; metadata?: Record<string, unknown> },
+    actor: { userId: string; companyId?: string | null; ip: string | null; userAgent: string | null },
+  ) {
+    // P0-SEC-01: identity, company context, amount, and audit metadata are
+    // derived from the authenticated session/server only — never client input.
+    const userId = actor.userId;
+    const companyId = actor.companyId ?? null;
+    const eligibility = await this.checkEligibility(dto.campaignId, userId, companyId ?? undefined);
     if (!eligibility.eligible) throw new BadRequestException(eligibility.reason);
     const campaign = eligibility.campaign!;
 
-    const claimAmount = dto.amount ?? Number(campaign.rewardAmount);
+    const claimAmount = Number(campaign.rewardAmount);
 
     const claim = await this.prisma.campaignClaim.create({
       data: {
         campaignId: dto.campaignId,
         userId,
-        companyId: dto.companyId ?? null,
+        companyId,
         claimType: dto.claimType ?? 'REWARD',
         amount: claimAmount,
         status: 'APPROVED',
-        ipAddress: dto.ipAddress ?? null,
-        userAgent: dto.userAgent ?? null,
+        ipAddress: actor.ip,
+        userAgent: actor.userAgent,
         metadata: (dto.metadata ?? null) as Prisma.InputJsonValue,
       },
     });
 
-    const idempotencyKey = `CAMPAIGN_${campaign.id}_${dto.userId}_${claim.id}`;
+    const idempotencyKey = `CAMPAIGN_${campaign.id}_${userId}`;
 
     try {
-      const wallet = await this.prisma.gOCASH_Wallet.findUnique({ where: { userId: dto.userId } });
+      const wallet = await this.prisma.gOCASH_Wallet.findUnique({ where: { userId } });
       if (!wallet) throw new BadRequestException('User has no GOCASH wallet');
 
       const ledgerEntry = await this.gocashService.credit({

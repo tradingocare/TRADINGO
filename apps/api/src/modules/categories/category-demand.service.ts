@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../common/services/redis.service';
 import { CategoryDemandResult } from './dto/category-demand.dto';
@@ -125,13 +125,12 @@ export class CategoryDemandService {
     const monthlyOrdersArray = rawSignals.map((s) => s.totalMonthlyOrders);
     const viewsArray = rawSignals.map((s) => s.totalViews);
     const savedArray = rawSignals.map((s) => s.totalSaved);
-    const conversionArray = rawSignals.map((s) => s.conversionRatio);
+    // const conversionArray = rawSignals.map((s) => s.conversionRatio); // REMOVED
     const recencyArray = rawSignals.map((s) => s.recencyRatio);
 
     // Compute percentile ranks (0-100 scale) for each signal
     const getPercentile = (value: number, array: number[]) => {
       if (array.length === 0) return 0;
-      const sorted = [...array].sort((a, b) => a - b);
       const greaterOrEqual = array.filter((v) => v <= value).length;
       return Math.round((greaterOrEqual / array.length) * 100);
     };
@@ -142,7 +141,7 @@ export class CategoryDemandService {
     // Conversion is already 0-100 scale (ratio * 500, capped at 100)
     const conversionPercentile = rawSignals.map((s) => Math.round(Math.min(s.conversionRatio * 500, 100)));
     // Recency is already 0-100 (ratio * 100)
-    const recencyPercentile = rawSignals.map((s) => getPercentile(s.recencyRatio * 100, recencyArray.map(r => r * 100)));
+    // const recencyPercentile = rawSignals.map((s) => getPercentile(s.recencyRatio * 100, recencyArray.map(r => r * 100))); // REMOVED
     // RFQ percentile: proxy using total products count
     const rfqPercentile = rawSignals.map((s) => getPercentile(s.totalProducts, productArrays.map(pa => pa.length)));
     // Search percentile: using totalViews as proxy
@@ -169,14 +168,14 @@ export class CategoryDemandService {
         s.totalSaved,
       ),
       calculatedAt: new Date(),
-signalBreakdown: {
-          sales: salesPercentile[idx],
-          rfq: rfqPercentile ? rfqPercentile[idx] : 0,
-          search: searchPercentile ? searchPercentile[idx] : 0,
-          views: viewPercentile[idx],
-          engagement: engagementPercentile[idx],
-          conversion: conversionPercentile[idx],
-        },
+      signalBreakdown: {
+        sales: salesPercentile[idx],
+        rfq: rfqPercentile ? rfqPercentile[idx] : 0,
+        search: searchPercentile ? searchPercentile[idx] : 0,
+        views: viewPercentile[idx],
+        engagement: engagementPercentile[idx],
+        conversion: conversionPercentile[idx],
+      },
     }));
 
     // 6. Sort by totalDemandScore DESC

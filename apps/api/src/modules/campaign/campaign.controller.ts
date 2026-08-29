@@ -67,14 +67,23 @@ export class CampaignController {
   @ApiOperation({ summary: 'Check campaign eligibility' })
   @Roles('BUYER', 'SELLER')
   checkEligibility(@Body() body: { campaignId: string; companyId?: string }, @Req() req: any) {
-    return this.campaignService.checkEligibility(body.campaignId, req.user?.userId, body.companyId);
+    // P0-SEC-01: identity/company derive from the authenticated session only.
+    return this.campaignService.checkEligibility(body.campaignId, req.user?.userId, req.user?.companyId);
   }
 
   @Post('claim')
   @ApiOperation({ summary: 'Claim campaign reward' })
   @Roles('BUYER', 'SELLER')
   claimReward(@Body() dto: ClaimCampaignDto, @Req() req: any) {
-    return this.campaignService.claimReward({ ...dto, userId: dto.userId ?? req.user?.userId });
+    return this.campaignService.claimReward(
+      { campaignId: dto.campaignId, companyId: dto.companyId, claimType: dto.claimType, metadata: dto.metadata },
+      {
+        userId: req.user?.userId,
+        companyId: req.user?.companyId,
+        ip: req.ip ?? req.socket?.remoteAddress ?? null,
+        userAgent: (req.headers?.['user-agent'] as string | undefined) ?? null,
+      },
+    );
   }
 
   @Post('process-expired')

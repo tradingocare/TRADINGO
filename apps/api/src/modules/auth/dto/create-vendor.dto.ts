@@ -121,12 +121,32 @@ export class CreateVendorDto {
   @IsString()
   @ApiProperty({ description: 'Account number' })
   accountNumber: string;
-  @IsString()
+  @IsString() @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/)
   @ApiProperty({ description: 'IFSC code' })
   ifscCode: string;
   @IsEnum(['current', 'savings'])
   @ApiProperty({ description: 'Account type (current or savings)' })
   accountType: string;
+
+  // VENDOR-REG-002 — optional uploaded document/logo URLs. The wizard uploads
+  // PAN card, GST certificate, cancelled cheque, logo and banner to the storage
+  // endpoint and supplies the resulting URLs here. All optional: registration
+  // must still succeed if a file was skipped or upload failed.
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded PAN card document URL' })
+  panCardUrl?: string;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded GST certificate document URL' })
+  gstCertificateUrl?: string;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded cancelled cheque document URL' })
+  cancelledChequeUrl?: string;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded company logo URL' })
+  logoUrl?: string;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded company banner URL' })
+  bannerUrl?: string;
 
   @IsString()
   @ApiProperty({ description: 'Plan ID' })
