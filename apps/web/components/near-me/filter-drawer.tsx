@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
@@ -46,7 +46,7 @@ export function FilterDrawer({ filters, onChange, onReset }: FilterDrawerProps) 
         <SlidersHorizontal className="mr-1.5 h-4 w-4" />
         Filters
         {hasActiveFilters && (
-          <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[10px] text-gray-900">
+          <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] text-btn-primary-text">
             !
           </span>
         )}

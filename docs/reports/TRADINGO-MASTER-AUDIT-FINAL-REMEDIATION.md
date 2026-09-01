@@ -3406,7 +3406,8 @@ Implemented canonical billing entity configuration for TRADINGO invoices. Replac
 | Invoice Signatory | Niksa Global Ventures Limited |
 
 ### Files Created (1 file)
-1. **apps/api/src/config/seller.config.ts** — New NestJS config module using egisterAs('seller', ...) pattern. Exports 9 canonical seller config values (legalName, gstin, address, state, stateCode, brandName, signatoryEntity, email, website). All read from environment variables with hardcoded defaults matching founder-approved canonical values.
+1. **apps/api/src/config/seller.config.ts** — New NestJS config module using
+egisterAs('seller', ...) pattern. Exports 9 canonical seller config values (legalName, gstin, address, state, stateCode, brandName, signatoryEntity, email, website). All read from environment variables with hardcoded defaults matching founder-approved canonical values.
 
 ### Files Modified (5 files)
 1. **apps/api/src/app.module.ts** — Added import { sellerConfig } from './config/seller.config'} and registered sellerConfig in ConfigModule.forRoot({ load: [..., sellerConfig] }).
@@ -3442,7 +3443,8 @@ Implemented canonical billing entity configuration for TRADINGO invoices. Replac
 ### Architecture Decisions
 | Decision | Rationale |
 |----------|------------|
-| Used egisterAs pattern | Matches existing pp.config.ts pattern; no new architectural patterns introduced |
+| Used
+egisterAs pattern | Matches existing pp.config.ts pattern; no new architectural patterns introduced |
 | Environment variables for config | No schema migration required; operations team controls production values |
 | Fallback defaults = founder-approved values | Ensures invoices always render even without env vars configured |
 | Delhi = state code '07' | Matches GSTIN prefix; founder-approved |
@@ -3517,7 +3519,8 @@ Implemented canonical billing entity configuration for TRADINGO invoices. Replac
 ### Verification Results
 - **Manual TypeScript review**: All 5 modified/new files pass — no syntax errors, correct imports, correct type usage
 - **Prisma schema**: InvoiceSequence model confirmed at schema.prisma:2385 with correct composite unique constraint
-- **Config namespace**: 'seller.X' paths confirmed matching egisterAs('seller', ...) namespace
+- **Config namespace**: 'seller.X' paths confirmed matching
+egisterAs('seller', ...) namespace
 - **Git status**: 7 P1 Wave 4 files (1 new, 5 modified, 1 deleted) + 10 pre-existing Wave 2/3 modified files
 - **Pre-existing Wave 2/3 changes**: Preserved and untouched
 
@@ -3534,3 +3537,79 @@ Implemented canonical billing entity configuration for TRADINGO invoices. Replac
 
 ### Status
 ✅ **PART 31 WRITTEN. NO COMMIT. NO PUSH.** P1 Wave 4 implementation complete locally. Awaiting founder review before commit/deployment.
+## PART 32 --- P1 Wave 5 Implementation: Hardcoded Token Violations + Sitemap Fixes (2026-09-01)
+
+**Date**: 2026-09-01
+**Wave**: P1 Wave 5 --- Design Token Violations + SEO Sitemap
+**Status**: LOCAL VERIFICATION COMPLETE --- NO COMMIT, NO PUSH
+
+### Summary
+Fixed 5 hardcoded design token violations (P1-002) across 4 web component files and resolved 3 sitemap issues (P1-033/034/036) in a single wave.
+
+### P1-002: Hardcoded bg-primary-600 text-gray-900 Token Violations
+
+**Finding**: 5 occurrences of bg-primary-600 text-gray-900 on functional surfaces across 4 web components. Pattern violates DESIGN_D token architecture where primary is for branding and accent is for functional/action surfaces.
+
+**Files changed (4)**:
+| File | Change |
+|------|--------|
+| apps/web/components/chat/chat-message.tsx | Line 99: avatar badge bg-primary-600 text-gray-900 --> bg-accent text-btn-primary-text |
+| apps/web/components/chat/chat-message.tsx | Line 117: message bubble bg-primary-600 text-gray-900 rounded-tr-sm --> bg-accent text-btn-primary-text rounded-tr-sm |
+| apps/web/components/near-me/radius-selector.tsx | Line 35: active chip bg-primary-600 text-gray-900 shadow-sm --> bg-accent text-btn-primary-text shadow-sm |
+| apps/web/components/auth/session-timeout-provider.tsx | Line 92: primary button bg-primary-600 ... text-gray-900 hover:bg-primary-700 --> bg-accent ... text-btn-primary-text hover:bg-accent-600 |
+| apps/web/components/near-me/filter-drawer.tsx | Line 49: active filter badge bg-primary-600 ... text-gray-900 --> bg-accent ... text-btn-primary-text |
+
+### P1-033/034/036: Sitemap Issues
+
+**Finding**: /products appeared twice in SITEMAP_STATIC_ROUTES (priority 0.9 and 0.7); /tradeserv/categories and /tradeserv/search were missing.
+
+**File changed (1)**:
+| File | Change |
+|------|--------|
+| apps/web/data/master-data.ts | Removed duplicate /products entry (priority 0.7). Added /tradeserv/categories (priority 0.7, weekly). Added /tradeserv/search (priority 0.7, weekly). |
+
+### Verification Results
+
+| Check | Result |
+|-------|--------|
+| bg-primary-600 text-gray-900 search | 0 occurrences (was 5) --- CLEAN |
+| Remaining bg-primary-600 | 6 matches --- all legitimate decorative/branding uses (CTA buttons, timeline dots, carousel indicators, toggle states) |
+| /products in sitemap | Exactly 1 occurrence (priority 0.9) --- CLEAN |
+| /tradeserv/categories | Exactly 1 occurrence --- CLEAN |
+| /tradeserv/search | Exactly 1 occurrence --- CLEAN |
+| tsc --noEmit | PASS (0 errors) |
+| next build | PASS (294 routes, 0 errors) |
+
+### Files Modified (5 Wave 5 files)
+- apps/web/components/auth/session-timeout-provider.tsx
+- apps/web/components/chat/chat-message.tsx
+- apps/web/components/near-me/filter-drawer.tsx
+- apps/web/components/near-me/radius-selector.tsx
+- apps/web/data/master-data.ts
+
+### Working Tree State (post-Wave-5)
+- Wave 5 (5 files): modified --- P1-002 + P1-033/034/036 fixed
+- Wave 4 carry-over (7 files): still modified (billing entity/GST/invoice changes)
+- Wave 3 carry-over (7 files): still modified (fabricated stats removal)
+- Wave 2 carry-over (10 files): still modified (API cleanup, CI, docs)
+- Pre-existing drift: docker-compose.prod.yml, CI_CD_DEPLOYMENT_GUIDE.md, PLAYWRIGHT_FINAL_REPORT.md
+
+### Protected Areas: UNCHANGED
+- WORCARE: no files touched
+- GOCASH: no files touched
+- Finance: no files touched
+- Membership: no files touched
+- Invoice/Payment business logic: no files touched
+
+### P1-001 (i18n): DEFERRED
+- i18n NOT implemented --- requires full architectural decision
+- NOT addressed in this wave
+- Requires separate dedicated implementation wave
+
+### Production: NOT DEPLOYED
+- All changes are local-only.
+- No commits made per STOP CONDITION.
+- No pushes made per STOP CONDITION.
+
+### Status
+**PART 32 WRITTEN. NO COMMIT. NO PUSH.** P1 Wave 5 implementation complete locally. Awaiting founder review before commit/deployment.

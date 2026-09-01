@@ -1104,9 +1104,10 @@ export const SITEMAP_STATIC_ROUTES = [
   { path: '/disclaimer', priority: 0.3, changefreq: 'yearly' as const },
   { path: '/companies', priority: 0.7, changefreq: 'daily' as const },
   { path: '/seller-plans', priority: 0.6, changefreq: 'weekly' as const },
-  { path: '/products', priority: 0.7, changefreq: 'daily' as const },
   { path: '/search', priority: 0.8, changefreq: 'daily' as const },
   { path: '/rfq', priority: 0.7, changefreq: 'weekly' as const },
   { path: '/status', priority: 0.3, changefreq: 'hourly' as const },
   { path: '/tradeserv', priority: 0.7, changefreq: 'weekly' as const },
+  { path: '/tradeserv/categories', priority: 0.7, changefreq: 'weekly' as const },
+  { path: '/tradeserv/search', priority: 0.7, changefreq: 'weekly' as const },
 ]
