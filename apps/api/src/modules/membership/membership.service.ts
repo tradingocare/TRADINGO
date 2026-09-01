@@ -1142,6 +1142,16 @@ export class MembershipService {
       trade_pro: 'Trade Pro', trade_premium: 'Trade Premium', trade_elite: 'Trade Elite',
     };
 
+    // Determine intra-state vs inter-state for GST
+    // Seller state is configured in seller.stateCode (default: '07' = Delhi)
+    // Buyer state is from their primary HEAD_OFFICE location
+    const sellerStateCode = this.configService.get<string>('seller.stateCode') || '07';
+    const buyerLocation = await this.prisma.companyLocation.findFirst({
+      where: { companyId: data.companyId, type: 'HEAD_OFFICE', deletedAt: null },
+      orderBy: { isPrimary: 'desc' },
+    });
+    const isIntraState = buyerLocation?.state === sellerStateCode;
+
     const invoice = await this.invoiceService.createSubscriptionInvoice({
       companyId: data.companyId,
       paymentId: data.paymentId,
@@ -1149,7 +1159,7 @@ export class MembershipService {
       planName: planNames[data.planId] || data.planId,
       planTier: data.planTier,
       amount: data.amount,
-      isIntraState: true,
+      isIntraState,
     });
 
     return { success: true, companyId: data.companyId, planId: data.planId, invoiceNumber: invoice.invoiceNumber };

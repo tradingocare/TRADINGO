@@ -17,6 +17,7 @@ import {
     razorpayConfig,
     validationSchema,
 } from './config/app.config';
+import { sellerConfig } from './config/seller.config';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './common/services/redis.module';
 import { RedisService } from './common/services/redis.service';
@@ -145,6 +146,7 @@ import { AppService } from './app.service';
         sentryConfig,
         clickhouseConfig,
         razorpayConfig,
+        sellerConfig,
       ],
     }),
     ThrottlerModule.forRootAsync({
