@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
@@ -107,7 +107,7 @@ export default function CategoriesPage() {
       <div className="relative z-10">
         <PageHeader
           title="Browse All Categories"
-          description="Navigate TRADINGO's complete business directory — 160 categories, 1,600 subcategories, 33,600 products & services."
+          description="Navigate TRADINGO's complete business directory — 160 categories, 1,600 subcategories, a comprehensive product catalog."
         />
 
         {/* Stats Bar */}

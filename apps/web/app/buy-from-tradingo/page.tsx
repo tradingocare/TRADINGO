@@ -124,7 +124,7 @@ const TRUST_SIGNALS = [
   { icon: ShieldCheck, label: '100% Escrow Protection' },
   { icon: BadgeCheck, label: 'ISO 27001 Certified' },
   { icon: CheckCircle2, label: 'PCI DSS Compliant' },
-  { icon: Star, label: '4.8/5 Buyer Satisfaction' },
+  { icon: Headphones, label: 'Dedicated Support' },
 ];
 
 
@@ -447,24 +447,9 @@ export default function BuyFromTradingoPage() {
               />
             </div>
           </AnimatedSection>
-          <div className="mx-auto mt-8 grid max-w-4xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { value: '3.5L+', label: 'Active Buyers' },
-              { value: '₹850Cr+', label: 'Monthly GMV' },
-              { value: '98%', label: 'Delivery Success Rate' },
-              { value: '4.8/5', label: 'Average Rating' },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="flex flex-col items-center rounded-2xl border border-border bg-surface p-8 text-center shadow-sm transition-all duration-300 hover:border-accent/20 hover:shadow-lg"
-              >
-                <span className="text-4xl font-bold tracking-tight text-text-primary">
-                  {stat.value}
-                </span>
-                <p className="mt-2 text-sm font-medium text-text-secondary">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+          <p className="mx-auto mt-8 max-w-2xl text-center text-base text-text-secondary">
+            Thousands of businesses across India use TRADINGO for procurement. Live platform activity is available on the homepage and in the seller dashboard.
+          </p>
         </div>
       </section>
 

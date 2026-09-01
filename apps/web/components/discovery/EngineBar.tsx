@@ -11,7 +11,7 @@ const ENGINES = [
   {
     id: 'TRADFIND',    icon: Search,         color: '#3D8BFF',
     title: 'TRADFIND',  subtitle: 'Smart Discovery',
-    desc: 'AI-powered search across 33,600+ products and services. Hindi, English, Hinglish supported.',
+    desc: 'AI-powered search across our product catalog. Hindi, English, Hinglish supported.',
   },
   {
     id: 'TRADMATCH',   icon: Zap,            color: '#9B5DE5',

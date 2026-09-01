@@ -53,4 +53,35 @@ describe('P1-01 fabricated stats contract', () => {
       expect(read(f)).not.toMatch(/href="\/product"/);
     }
   });
+
+  it('IndiaHubs has no fabricated fallback stat values', () => {
+    const src = read('components/sections/IndiaHubs.tsx');
+    expect(src).not.toMatch(/1\.8L\+/);
+    expect(src).not.toMatch(/1\.0Cr\+/);
+    expect(src).not.toMatch(/38\.2L\+/);
+    expect(src).not.toMatch(/5\.2L\+/);
+    expect(src).not.toMatch(/2840Cr\+/);
+    expect(src).not.toMatch(/98\.5K\+/);
+    expect(src).not.toMatch(/2\.9K\+/);
+    expect(src).not.toContain('FALLBACK_STAT_CARDS');
+    expect(src).toContain('PLATFORM_STAT_CARDS');
+  });
+
+  it('buy-from-tradingo removes fabricated trust stats', () => {
+    const src = read('app/buy-from-tradingo/page.tsx');
+    expect(src).not.toMatch(/3\.5L\+/);
+    expect(src).not.toMatch(/850Cr\+/);
+    expect(src).not.toMatch(/4\.8\/5/);
+  });
+
+  it('master-data removes fabricated platform stats', () => {
+    const src = read('data/master-data.ts');
+    expect(src).not.toMatch(/1\.8L\+/);
+    expect(src).not.toMatch(/5\.2L\+/);
+    expect(src).not.toMatch(/1\.0Cr\+/);
+    expect(src).not.toMatch(/38\.2L\+/);
+    expect(src).not.toMatch(/2840Cr\+/);
+    expect(src).not.toMatch(/98\.5K\+/);
+    expect(src).not.toMatch(/2\.9K\+/);
+  });
 });

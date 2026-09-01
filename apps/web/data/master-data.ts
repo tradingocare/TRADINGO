@@ -1,4 +1,4 @@
-// ================================================================
+﻿// ================================================================
 // TRADINGO MASTER DATA — Single Source of Truth
 // All pages, search, filters, sitemaps consume from here.
 // ================================================================
@@ -466,16 +466,7 @@ export const MASTER_PLATFORM_STATS = {
     { value: '\u20B92.4Cr', label: 'Trading Volume (24h)', change: '+15%', positive: true },
     { value: '156', label: 'Live RFQs', change: '+23%', positive: true },
   ],
-  indiaStats: [
-    { icon: 'Globe', label: 'States & UTs', display: '36', color: '#D4AF37' },
-    { icon: 'Building2', label: 'Cities Covered', display: '2.9K+', color: '#60A5FA' },
-    { icon: 'Store', label: 'Sellers', display: '1.8L+', color: '#F472B6' },
-    { icon: 'Package', label: 'Products', display: '1.0Cr+', color: '#A78BFA' },
-    { icon: 'Wrench', label: 'Services', display: '38.2L+', color: '#FBBF24' },
-    { icon: 'Users', label: 'Buyers', display: '5.2L+', color: '#34D399' },
-    { icon: 'DollarSign', label: 'Trade Volume', display: '\u20B92840Cr+', color: '#34D399' },
-    { icon: 'Shield', label: 'Verified', display: '98.5K+', color: '#60A5FA' },
-  ],
+  indiaStats: [],
   indiaPills: [
     '36 States & UTs', 'Manufacturing Clusters', 'Product Ecosystems',
     'Verified Businesses', 'Live RFQ Intelligence', 'Export Opportunities',
@@ -488,7 +479,7 @@ export interface MasterEngine {
   subtitle?: string; color: string; href?: string
 }
 export const MASTER_ENGINES: MasterEngine[] = [
-  { id: 'TRADFIND', name: 'TRADFIND', tagline: 'Smart Discovery', subtitle: 'Smart Discovery', description: 'AI-powered search across 33,600+ products and services. Hindi, English, Hinglish supported.', color: '#3D8BFF', href: '/tradhexa/tradfind' },
+  { id: 'TRADFIND', name: 'TRADFIND', tagline: 'Smart Discovery', subtitle: 'Smart Discovery', description: 'AI-powered search across our product catalog. Hindi, English, Hinglish supported.', color: '#3D8BFF', href: '/tradhexa/tradfind' },
   { id: 'TRADMATCH', name: 'TRADMATCH', tagline: 'AI Matchmaking', subtitle: 'AI Matchmaking', description: 'Your RFQ is auto-routed to the top 20 verified vendors using scoring: category, location, trust, response rate.', color: '#9B5DE5', href: '/tradhexa/tradmatch' },
   { id: 'TRADRFQ', name: 'TRADRFQ', tagline: 'RFQ & Negotiation', subtitle: 'RFQ & Negotiation', description: 'Post bulk requirements, receive multi-vendor quotes, compare, negotiate, and convert to order.', color: '#F15BB5', href: '/tradhexa/tradrfq' },
   { id: 'TRADCONNECT', name: 'TRADCONNECT', tagline: 'Secure Chat', subtitle: 'Secure Chat', description: 'WhatsApp-style B2B chat. Phone numbers are never shared. Direct connect between buyers and sellers.', color: '#2DE0E0', href: '/tradhexa/tradconnect' },
@@ -637,10 +628,10 @@ export const TRADING_RFQ_STEPS = [
   { step: 4, title: 'Trade with Confidence', description: 'Negotiate, finalize, and pay via TRADZERO escrow. GOCASH rewards credited on completion.' },
 ]
 export const TRADING_STATS = [
-  { icon: 'Package', value: '33,600+', label: 'Products & Services' },
-  { icon: 'Store', value: '1.8L+', label: 'Verified Sellers' },
-  { icon: 'Users', value: '5.2L+', label: 'Active Buyers' },
-  { icon: 'DollarSign', value: '\u20B92840Cr+', label: 'Trade Volume' },
+  { icon: 'Package', label: 'Products & Services' },
+  { icon: 'Shield', label: 'Verified Sellers' },
+  { icon: 'Users', label: 'Active Buyers' },
+  { icon: 'DollarSign', label: 'Trade Volume' },
 ]
 
 // ─── WHY TRADINGO ─────────────────────────────────────────────────
@@ -808,11 +799,7 @@ export const PRESS_KIT_FACTS = [
   { label: 'Founded', value: '2023' },
   { label: 'Headquarters', value: 'BKC, Mumbai 400051, Maharashtra, India' },
   { label: 'Platform', value: 'B2B Marketplace' },
-  { label: 'Sellers', value: '1.8L+' },
-  { label: 'Buyers', value: '5.2L+' },
-  { label: 'Products', value: '33,600+' },
-  { label: 'Trade Volume', value: '\u20B92840Cr+' },
-  { label: 'Coverage', value: '36 States & UTs, 15+ Cities' },
+  { label: 'Coverage', value: 'Pan-India' },
 ]
 export const PRESS_BRAND_ASSETS = [
   { name: 'TRADINGO Logo (PNG)', type: 'PNG', size: '500KB', url: '/brand/logo.png', description: 'Primary TRADINGO logo on transparent background', variant: 'Primary' },
@@ -1028,7 +1015,7 @@ export const BUYER_QUICK_ACTIONS = [
   { label: 'Compare Quotes', href: '/buyer/compare-quotes', icon: 'GitCompare', color: '#9B5DE5' },
 ]
 export const ADMIN_QUICK_LINKS = [
-  { label: 'User Management', href: '/admin/users', icon: 'Users', count: '1.8L+' },
+  { label: 'User Management', href: '/admin/users', icon: 'Users' },
   { label: 'Verification Queue', href: '/admin/verification', icon: 'Shield', count: '234' },
   { label: 'Fraud Alerts', href: '/admin/fraud-dashboard', icon: 'AlertTriangle', count: '12' },
   { label: 'System Health', href: '/admin/system-health', icon: 'Activity', count: '98.5%' },

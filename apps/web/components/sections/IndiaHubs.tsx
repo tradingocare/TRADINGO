@@ -138,15 +138,11 @@ const intelligencePills = [
   { icon: Globe, label: 'Export Opportunities' },
 ];
 
-const FALLBACK_STAT_CARDS: { icon: string; label: string; display: string; color: string }[] = [
-  { icon: 'Globe', label: 'States & UTs', display: '36', color: '#D4AF37' },
-  { icon: 'Building2', label: 'Cities Covered', display: '2.9K+', color: '#60A5FA' },
-  { icon: 'Store', label: 'Sellers', display: '1.8L+', color: '#F472B6' },
-  { icon: 'Package', label: 'Products', display: '1.0Cr+', color: '#A78BFA' },
-  { icon: 'Wrench', label: 'Services', display: '38.2L+', color: '#FBBF24' },
-  { icon: 'Users', label: 'Buyers', display: '5.2L+', color: '#34D399' },
-  { icon: 'DollarSign', label: 'Trade Volume', display: '\u20B92840Cr+', color: '#34D399' },
-  { icon: 'Shield', label: 'Verified', display: '98.5K+', color: '#60A5FA' },
+const PLATFORM_STAT_CARDS: { icon: string; label: string; color: string; source: 'api' | 'qualitative' }[] = [
+  { icon: 'Package',   label: 'Products Listed', color: '#A78BFA', source: 'api' },
+  { icon: 'Building2', label: 'Cities Covered',  color: '#60A5FA', source: 'api' },
+  { icon: 'Store',     label: 'Active Companies', color: '#F472B6', source: 'api' },
+  { icon: 'Shield',    label: 'Verified Network', color: '#34D399', source: 'qualitative' },
 ];
 
 export default function IndiaHubs() {
@@ -166,12 +162,18 @@ export default function IndiaHubs() {
     return () => clearInterval(interval);
   }, []);
 
-  const topStatCards = FALLBACK_STAT_CARDS.map((s) => {
-    if (s.label === 'Products Listed' && platformStats?.productsListed != null) return { ...s, display: formatCompact(platformStats.productsListed) };
-    if (s.label === 'Cities Covered' && platformStats?.citiesCovered != null) return { ...s, display: `${platformStats.citiesCovered.toLocaleString('en-IN')}+` };
-    if (s.label === 'Sellers' && platformStats?.activeTraders != null) return { ...s, display: formatCompact(platformStats.activeTraders) + '+' };
-    if (s.label === 'Buyers' && platformStats?.activeTraders != null) return { ...s, display: formatCompact(Math.round(platformStats.activeTraders * 0.7)) + '+' };
-    return s;
+  const topStatCards = PLATFORM_STAT_CARDS.map((s) => {
+    let display = '—';
+    if (s.source === 'api' && platformStats) {
+      if (s.label === 'Products Listed' && platformStats.productsListed != null) {
+        display = formatCompact(platformStats.productsListed);
+      } else if (s.label === 'Cities Covered' && platformStats.citiesCovered != null) {
+        display = `${platformStats.citiesCovered.toLocaleString('en-IN')}+`;
+      } else if (s.label === 'Active Companies' && platformStats.activeTraders != null) {
+        display = formatCompact(platformStats.activeTraders) + '+';
+      }
+    }
+    return { ...s, display };
   }).map(s => ({ ...s, icon: ICON_MAP[s.icon] }));
 
   return (
@@ -533,3 +535,4 @@ export default function IndiaHubs() {
     </section>
   );
 }
+

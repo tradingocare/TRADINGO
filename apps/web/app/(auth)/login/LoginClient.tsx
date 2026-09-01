@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef }  from 'react'
 import { useRouter, useSearchParams }   from 'next/navigation'
 import Link                             from 'next/link'
@@ -1036,7 +1036,7 @@ className="w-full pl-10 pr-11 py-3.5 rounded-xl
               {[
                 '🔒 256-bit SSL',
                 '🇮🇳 Made in India',
-                '⭐ 4.8/5 Rating',
+                '⭐ Verified Marketplace',
                 '📞 24/7 Support',
               ].map(t => (
                 <span key={t} className="text-white/20 text-[9px]">{t}</span>
