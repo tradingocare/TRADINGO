@@ -126,6 +126,7 @@ jobs:
           PORT: 3001
           DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
           REDIS_URL: redis://localhost:6379/0
+          E2E_THROTTLE_DISABLED: 'true'
           JWT_SECRET: e2e-jwt-secret-0123456789abcdef0123456789abcdef
           JWT_REFRESH_SECRET: e2e-jwt-refresh-secret-0123456789abcdef0123456789abcdef
           JWT_EXPIRES_IN: 12h
