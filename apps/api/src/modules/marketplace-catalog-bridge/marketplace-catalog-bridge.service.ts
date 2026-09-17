@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogAdapterService } from '../catalog-adapter/catalog-adapter.service';
 import { EnrichedCategoryNode, EnrichedCategoryTreeResponse, BatchResolveResponse } from './dto/bridge-response.dto';
@@ -59,6 +59,34 @@ export class MarketplaceCatalogBridgeService {
 
     const roots = oldCategories.filter((c) => !c.parentId).map((c) => buildNode(c));
     return { roots, catalogTree };
+  }
+
+  /**
+   * F-07 cascade picker (read-only): list active catalog items of one
+   * subcategory. Parent is validated first — items of another/inactive
+   * parent are never returned, and an unknown parent 404s instead of
+   * returning an arbitrary list. Paginated like the other list reads.
+   */
+  async listSubcategoryItems(subcategoryId: string, page = 1, limit = 50) {
+    const sub = await this.prisma.catalogSubcategory.findUnique({
+      where: { id: subcategoryId },
+      select: { id: true, categoryId: true },
+    });
+    if (!sub) throw new NotFoundException('Catalog subcategory not found');
+    const take = Math.min(Math.max(limit || 50, 1), 100);
+    const pageNum = Math.max(page || 1, 1);
+    const where = { subcategoryId: sub.id, isActive: true };
+    const [data, total] = await Promise.all([
+      this.prisma.catalogItem.findMany({
+        where,
+        select: { id: true, name: true, slug: true, type: true },
+        orderBy: { name: 'asc' },
+        skip: (pageNum - 1) * take,
+        take,
+      }),
+      this.prisma.catalogItem.count({ where }),
+    ]);
+    return { data, meta: { total, page: pageNum, limit: take, subcategoryId: sub.id, categoryId: sub.categoryId } };
   }
 
   async getEnrichedCategory(id: string) {
