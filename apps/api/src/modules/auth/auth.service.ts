@@ -15,6 +15,8 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { MembershipService } from '../membership/membership.service';
 import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
+import { CatalogClassifyService } from '../marketplace-catalog-bridge/catalog-classify.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -41,6 +43,8 @@ export class AuthService {
     private readonly notification: NotificationService,
     private readonly membership: MembershipService,
     private readonly vendorCodes: VendorCodesService,
+    private readonly catalogClassify: CatalogClassifyService,
+    private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
     private readonly eventEmitter: EventEmitter2,
     @InjectQueue(QueueNames.EMAIL) private readonly emailQueue: Queue,
   ) {}
@@ -234,25 +238,51 @@ export class AuthService {
     const uniqueNames = [...new Set((categoryNames || []).map((n) => n?.trim()).filter(Boolean))];
     if (uniqueNames.length === 0) return;
 
-    const matches = await tx.category.findMany({
-      where: { name: { in: uniqueNames, mode: 'insensitive' }, isActive: true },
-      select: { id: true },
-    });
-
-    if (matches.length === 0) {
-      this.logger.warn(`No Category matches for company ${companyId} from names: ${uniqueNames.join(', ')}`);
-      return;
+    // F-06 (fail-closed, founder-approved): every name resolves through the
+    // canonical resolver BEFORE any write. Exactly one valid resolution links
+    // via the existing CompanyCategory join; unresolvable or ambiguous names
+    // reject the whole registration with 400 — never warn-and-continue, never
+    // multi-link, never silent drop. All names resolve first so a late reject
+    // leaves no partial linkage (the callers run inside $transaction anyway).
+    const legacyIds: string[] = [];
+    for (const name of uniqueNames) {
+      const resolved = await this.catalogClassify.resolveCategoryText(name);
+      if (!resolved) {
+        throw new BadRequestException(
+          `Unknown business category: "${name}". Please select a category from the list.`,
+        );
+      }
+      const exactMatches = await tx.catalogCategory.count({
+        where: { isActive: true, name: { equals: name, mode: 'insensitive' } },
+      });
+      if (exactMatches > 1) {
+        throw new BadRequestException(
+          `Ambiguous business category: "${name}" matches multiple categories. Please select a more specific category.`,
+        );
+      }
+      if (resolved.matchType === 'synonym') {
+        const fuzzyMatches = await tx.catalogCategory.count({
+          where: { isActive: true, name: { contains: name, mode: 'insensitive' } },
+        });
+        if (fuzzyMatches > 1) {
+          throw new BadRequestException(
+            `Ambiguous business category: "${name}" matches multiple categories. Please select a more specific category.`,
+          );
+        }
+      }
+      const legacyId = await this.taxonomyPersistence.bridgeLegacyCategoryId(resolved.categoryId);
+      if (!legacyId) {
+        throw new BadRequestException(
+          `Business category "${name}" cannot be linked yet. Please select a different category.`,
+        );
+      }
+      legacyIds.push(legacyId);
     }
 
     await tx.companyCategory.createMany({
-      data: matches.map((m) => ({ companyId, categoryId: m.id })),
+      data: legacyIds.map((categoryId) => ({ companyId, categoryId })),
       skipDuplicates: true,
     });
-
-    const unmatched = uniqueNames.length - matches.length;
-    if (unmatched > 0) {
-      this.logger.warn(`${unmatched} category name(s) not linked (no DB match) for company ${companyId}`);
-    }
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
