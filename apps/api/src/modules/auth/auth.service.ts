@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger, BadRequestException, NotFoundException, ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -7,16 +7,20 @@ import { Queue } from 'bullmq';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
 import { createHash, randomBytes } from 'crypto';
+import { BusinessType, Company, CompanyStructure, NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../common/services/redis.service';
 import { SmsService } from '../sms/sms.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { NotificationService } from '../notification/notification.service';
+import { MembershipService } from '../membership/membership.service';
+import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { CreateBuyerDto } from './dto/create-buyer.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { QueueNames, EmailJobTypes } from '../../jobs/queues';
 
 const MAX_LOGIN_ATTEMPTS = 3;
@@ -35,6 +39,8 @@ export class AuthService {
     private readonly smsService: SmsService,
     private readonly auditLog: AuditLogService,
     private readonly notification: NotificationService,
+    private readonly membership: MembershipService,
+    private readonly vendorCodes: VendorCodesService,
     private readonly eventEmitter: EventEmitter2,
     @InjectQueue(QueueNames.EMAIL) private readonly emailQueue: Queue,
   ) {}
@@ -47,7 +53,13 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = await this.prisma.user.create({
-      data: { email: dto.email, passwordHash, name: dto.name },
+      data: {
+        email: dto.email,
+        passwordHash,
+        name: dto.name,
+        mobile: dto.mobile || null,
+        role: 'BUYER',
+      },
     });
 
     const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
@@ -74,7 +86,8 @@ export class AuthService {
   private async findUserByIdentifier(identifier: string) {
     const cleanMobile = identifier.replace(/^\+91|\s/g, '');
     const panUpper = identifier.toUpperCase();
-    return this.prisma.user.findFirst({
+
+    const direct = await this.prisma.user.findFirst({
       where: {
         OR: [
           { email: identifier.toLowerCase() },
@@ -83,6 +96,23 @@ export class AuthService {
         ],
       },
     });
+    if (direct) return direct;
+
+    // PAN login fallback (F9): legacy vendor accounts hold their legal PAN on
+    // Company.panNumber (User.panNumber was never persisted). Resolve ONLY
+    // through CompanyOwner ownership linkage — never by scanning arbitrary
+    // companies by PAN — so one user's PAN can never authenticate as another
+    // company's user. Company.panNumber remains the legal source of truth.
+    const panKey = panUpper.replace(/\s/g, '');
+    if (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(panKey)) {
+      const owner = await this.prisma.companyOwner.findFirst({
+        where: { company: { panNumber: panKey } },
+        include: { user: true },
+      });
+      if (owner?.user) return owner.user;
+    }
+
+    return null;
   }
 
   async login(dto: LoginDto, userAgent?: string, ipAddress?: string) {
@@ -100,8 +130,8 @@ export class AuthService {
     // Role check
     if (dto.role && dto.role !== 'any') {
       const roleMap: Record<string,string[]> = {
-        buyer:  ['buyer', 'VIEWER'],
-        vendor: ['vendor','seller','MANAGER'],
+        buyer:  ['buyer', 'VIEWER', 'SELLER', 'BUYER'],
+        vendor: ['vendor','seller','MANAGER','SELLER'],
         admin:  ['admin','super_admin','rm','SUPER_ADMIN','ADMIN'],
       };
       if (!roleMap[dto.role]?.includes(user.role as string))
@@ -159,6 +189,70 @@ export class AuthService {
     });
     if (!user) throw new NotFoundException('User not found');
     return { user };
+  }
+
+  async updateMe(userId: string, dto: UpdateMeDto) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const profileData: { name?: string; mobile?: string } = {};
+    if (dto.name !== undefined) profileData.name = dto.name;
+    if (dto.mobile !== undefined) profileData.mobile = dto.mobile;
+
+    if (Object.keys(profileData).length > 0) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: profileData,
+      });
+    }
+
+    const toggles = dto.preferences?.notifications ?? dto.notifications;
+    if (toggles && Object.keys(toggles).length > 0) {
+      const owner = await this.prisma.companyOwner.findFirst({
+        where: { userId, company: { deletedAt: null } },
+        select: { companyId: true },
+      });
+      if (owner) {
+        for (const [label, enabled] of Object.entries(toggles)) {
+          const normalized = label.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+          const type = NotificationType[normalized as keyof typeof NotificationType]
+            ? (normalized as NotificationType)
+            : NotificationType.GENERIC;
+          await this.notification.upsertPreference(owner.companyId, userId, {
+            channel: 'EMAIL',
+            type,
+            enabled: Boolean(enabled),
+          });
+        }
+      }
+    }
+
+    return this.getProfile(userId);
+  }
+
+  private async linkCompanyCategories(companyId: string, categoryNames: string[], tx: Prisma.TransactionClient) {
+    const uniqueNames = [...new Set((categoryNames || []).map((n) => n?.trim()).filter(Boolean))];
+    if (uniqueNames.length === 0) return;
+
+    const matches = await tx.category.findMany({
+      where: { name: { in: uniqueNames, mode: 'insensitive' }, isActive: true },
+      select: { id: true },
+    });
+
+    if (matches.length === 0) {
+      this.logger.warn(`No Category matches for company ${companyId} from names: ${uniqueNames.join(', ')}`);
+      return;
+    }
+
+    await tx.companyCategory.createMany({
+      data: matches.map((m) => ({ companyId, categoryId: m.id })),
+      skipDuplicates: true,
+    });
+
+    const unmatched = uniqueNames.length - matches.length;
+    if (unmatched > 0) {
+      this.logger.warn(`${unmatched} category name(s) not linked (no DB match) for company ${companyId}`);
+    }
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
@@ -582,54 +676,120 @@ export class AuthService {
   }
 
   async registerVendor(dto: CreateVendorDto) {
-    const existingEmail = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (existingEmail) {
-      throw new ConflictException('Email already registered');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const existingEmail = await tx.user.findUnique({ where: { email: dto.email } });
+      if (existingEmail) {
+        throw new ConflictException('Email already registered');
+      }
 
-    const existingPan = await this.prisma.company.findFirst({ where: { panNumber: dto.panNumber } });
-    if (existingPan) {
-      throw new ConflictException('PAN number already registered');
-    }
+      const existingPan = await tx.company.findFirst({ where: { panNumber: dto.panNumber } });
+      if (existingPan) {
+        throw new ConflictException('PAN number already registered');
+      }
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        passwordHash,
-        name: dto.ownerName,
-        role: 'VIEWER',
-      },
+      if (!dto.password) {
+        throw new BadRequestException('Password is required to create a new vendor account');
+      }
+
+      const passwordHash = await bcrypt.hash(dto.password, 12);
+      const user = await tx.user.create({
+        data: {
+          email: dto.email,
+          passwordHash,
+          name: dto.ownerName,
+          mobile: dto.mobileNumber || null,
+          role: 'BUYER',
+        },
+      });
+
+      const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
+      await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
+
+      await this.emailQueue.add(QueueNames.EMAIL, {
+        type: EmailJobTypes.SEND_WELCOME_EMAIL,
+        to: user.email,
+        subject: 'Welcome to TRADINGO',
+        template: 'welcome',
+        context: { name: dto.ownerName, businessName: dto.businessName },
+      });
+
+      this.logger.log(`Vendor account created (Buyer role): ${dto.email}`);
+
+      return {
+        success: true,
+        message: 'Account created. Your seller capability activates on completing vendor onboarding.',
+        userId: user.id,
+        role: 'BUYER',
+        ...tokens,
+      };
     });
+  }
 
+  // ── Company identity normalization (F2) ─────────────────────────────────
+  // The vendor wizard collects a legal structure (sole_proprietorship, private_limited, ...)
+  // as `businessType` and a marketplace activity (manufacturer, wholesaler, ...) as `sellerType`.
+  // The Company model separates these concepts: businessType holds the activity taxonomy,
+  // companyStructure holds the legal structure. Normalize once, server-side.
+  private normalizeCompanyIdentity(dto: CreateVendorDto) {
+    const structureMap: Record<string, CompanyStructure> = {
+      sole_proprietorship: CompanyStructure.SOLE_PROPRIETORSHIP,
+      partnership: CompanyStructure.PARTNERSHIP,
+      private_limited: CompanyStructure.PRIVATE_LIMITED,
+      llp: CompanyStructure.LLP,
+      public_limited: CompanyStructure.PUBLIC_LIMITED,
+      huf: CompanyStructure.HUF,
+      trust: CompanyStructure.TRUST,
+      other: CompanyStructure.OTHER,
+    };
+    const sellerToBusiness: Record<string, BusinessType> = {
+      manufacturer: BusinessType.MANUFACTURER,
+      wholesaler: BusinessType.WHOLESALER,
+      distributor: BusinessType.DISTRIBUTOR,
+      retailer: BusinessType.RETAILER,
+      service_provider: BusinessType.SERVICE_PROVIDER,
+    };
+
+    const structureKey = (dto.businessType || '').trim().toLowerCase();
+    const structure = structureMap[structureKey] || null;
+    const businessType = sellerToBusiness[(dto.sellerType || '').trim().toLowerCase()] || null;
+    return { businessType, companyStructure: structure };
+  }
+
+  private async createVendorCompany(userId: string, dto: CreateVendorDto, tx: Prisma.TransactionClient) {
     const slug = dto.businessName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
 
-    const company = await this.prisma.company.create({
+    const { businessType, companyStructure } = this.normalizeCompanyIdentity(dto);
+
+    const company = await tx.company.create({
       data: {
         name: dto.businessName,
         slug,
-        businessType: dto.businessType as any,
+        businessType,
+        companyStructure,
         panNumber: dto.panNumber,
         gstNumber: dto.gstNumber || null,
         website: dto.website || null,
         email: dto.email,
         mobile: dto.mobileNumber,
         description: dto.description,
-        createdBy: user.id,
-        updatedBy: user.id,
+        createdBy: userId,
+        updatedBy: userId,
         onboardingStatus: 'ACCOUNT_CREATED',
         onboardingStartedAt: new Date(),
+        logo: dto.logoUrl || null,
+        banner: dto.bannerUrl || null,
+        registrationDocuments: this.buildRegistrationDocuments(dto),
       },
     });
 
-    await this.prisma.companyOwner.create({
-      data: { companyId: company.id, userId: user.id, isPrimary: true },
+    await tx.companyOwner.create({
+      data: { companyId: company.id, userId, isPrimary: true },
     });
 
-    await this.prisma.companyLocation.create({
+    await tx.companyLocation.create({
       data: {
         companyId: company.id,
         type: 'HEAD_OFFICE',
@@ -643,22 +803,239 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
+    return company;
+  }
+
+  // F6/F7 — ONE legal company: upgrade an existing owned business (e.g. a TradeServ
+  // professional company) to a full seller capability instead of creating a second
+  // company for the same legal entity (identified by matching PAN/GST).
+  // VENDOR-REG-002 — collect the optional uploaded document URLs into a single
+  // JSON column. Optional: any missing URL is simply omitted.
+  private buildRegistrationDocuments(dto: CreateVendorDto): Prisma.InputJsonValue | undefined {
+    const docs: Record<string, string> = {};
+    if (dto.panCardUrl) docs.panCardUrl = dto.panCardUrl;
+    if (dto.gstCertificateUrl) docs.gstCertificateUrl = dto.gstCertificateUrl;
+    if (dto.cancelledChequeUrl) docs.cancelledChequeUrl = dto.cancelledChequeUrl;
+    if (dto.logoUrl) docs.logoUrl = dto.logoUrl;
+    if (dto.bannerUrl) docs.bannerUrl = dto.bannerUrl;
+    return Object.keys(docs).length ? (docs as Prisma.InputJsonValue) : undefined;
+  }
+
+  private mergeRegistrationDocuments(
+    existing: Prisma.InputJsonValue | null,
+    dto: CreateVendorDto,
+  ): Prisma.InputJsonValue | undefined {
+    const base = existing && typeof existing === 'object' ? { ...(existing as Record<string, unknown>) } : {};
+    if (dto.panCardUrl) base.panCardUrl = dto.panCardUrl;
+    if (dto.gstCertificateUrl) base.gstCertificateUrl = dto.gstCertificateUrl;
+    if (dto.cancelledChequeUrl) base.cancelledChequeUrl = dto.cancelledChequeUrl;
+    if (dto.logoUrl) base.logoUrl = dto.logoUrl;
+    if (dto.bannerUrl) base.bannerUrl = dto.bannerUrl;
+    return Object.keys(base).length ? (base as Prisma.InputJsonValue) : undefined;
+  }
+
+  private async upgradeCompanyToVendor(
+    company: Company,
+    userId: string,
+    dto: CreateVendorDto,
+    tx: Prisma.TransactionClient,
+  ) {
+    const { businessType, companyStructure } = this.normalizeCompanyIdentity(dto);
+
+    const updated = await tx.company.update({
+      where: { id: company.id },
+      data: {
+        // A professional firm keeps its professional classification; buyer-type
+        // or missing businessType is replaced by the vendor form's normalized value.
+        businessType: company.businessType === 'PROFESSIONAL' ? company.businessType : businessType,
+        companyStructure,
+        panNumber: company.panNumber || dto.panNumber,
+        gstNumber: company.gstNumber || dto.gstNumber || null,
+        website: company.website || dto.website || null,
+        email: company.email || dto.email,
+        mobile: company.mobile || dto.mobileNumber,
+        description: company.description || dto.description,
+        logo: company.logo || dto.logoUrl || null,
+        banner: company.banner || dto.bannerUrl || null,
+        registrationDocuments: this.mergeRegistrationDocuments(company.registrationDocuments as Prisma.InputJsonValue | null, dto),
+        updatedBy: userId,
+        onboardingStatus: 'ACCOUNT_CREATED',
+        onboardingStartedAt: company.onboardingStartedAt || new Date(),
+        status: 'ACTIVE',
+      },
+    });
+
+    const existingLocation = await tx.companyLocation.findFirst({
+      where: { companyId: company.id, isPrimary: true },
+    });
+    if (!existingLocation) {
+      await tx.companyLocation.create({
+        data: {
+          companyId: company.id,
+          type: 'HEAD_OFFICE',
+          addressLine1: dto.addressLine1,
+          addressLine2: dto.addressLine2 || null,
+          city: dto.city,
+          district: dto.district || null,
+          state: dto.state,
+          pincode: dto.pincode,
+          isPrimary: true,
+        },
+      });
+    }
+
+    return updated;
+  }
+
+  async vendorOnboarding(userId: string, dto: CreateVendorDto) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const ownedCompanies = await this.prisma.companyOwner.findMany({
+      where: { userId: user.id },
+      include: { company: true },
+    });
+    ownedCompanies.sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+
+    if (user.role === 'SELLER') {
+      throw new ConflictException('Vendor capability is already active on this account');
+    }
+
+    // F6/F7 — ONE legal company: if the account already owns a business (e.g. a
+    // TradeServ professional company) and its PAN/GST matches the onboarding form,
+    // REUSE it instead of creating a second company for the same legal entity.
+    // A company that has never declared identity data (e.g. a buyer-registered
+    // company) is not in conflict: the onboarding form is its first identity
+    // declaration and upgrades the existing company in place.
+    const match = ownedCompanies.find(
+      (o) =>
+        (o.company.panNumber &&
+          dto.panNumber &&
+          o.company.panNumber.toUpperCase() === dto.panNumber.toUpperCase()) ||
+        (o.company.gstNumber &&
+          dto.gstNumber &&
+          o.company.gstNumber.toUpperCase() === dto.gstNumber.toUpperCase()),
+    );
+    const identityDeclarers = ownedCompanies.filter((o) => o.company.panNumber || o.company.gstNumber);
+    const identityConflict = ownedCompanies.length > 0 && !match && identityDeclarers.length > 0;
+
+    if (identityConflict) {
+      throw new ConflictException('A business is already linked to this account');
+    }
+
+    if (!ownedCompanies.length) {
+      const existingPan = await this.prisma.company.findFirst({ where: { panNumber: dto.panNumber } });
+      if (existingPan) {
+        throw new ConflictException('PAN number already registered');
+      }
+    }
+
+    const { company, updated } = await this.prisma.$transaction(async (tx) => {
+      let company: Company;
+      if (match) {
+        company = await this.upgradeCompanyToVendor(match.company, user.id, dto, tx);
+      } else if (ownedCompanies.length > 0) {
+        company = await this.upgradeCompanyToVendor(ownedCompanies[0].company, user.id, dto, tx);
+      } else {
+        company = await this.createVendorCompany(user.id, dto, tx);
+      }
+
+      if (dto.planId) {
+        await this.membership.enrollTrial(company.id, dto.planId, tx);
+      }
+
+      if (dto.referralCode) {
+        await this.vendorCodes.assignReferral(company.id, dto.referralCode, tx);
+      }
+
+      if (dto.rmCode) {
+        const owner = await this.vendorCodes.getCodeOwner(dto.rmCode);
+        if (!owner || (owner.type !== 'RM' && owner.type !== 'ME')) {
+          throw new ConflictException('Invalid RM code');
+        }
+        if (!company.assignedRmId) {
+          await tx.company.update({
+            where: { id: company.id },
+            data: { assignedRmId: owner.userId, assignedAt: new Date() },
+          });
+          await tx.auditLog.create({
+            data: {
+              userId: user.id,
+              action: 'ASSIGN_RM',
+              resource: `company:${company.id}`,
+              metadata: { rmUserId: owner.userId, source: 'registration' } as any,
+              ipAddress: null,
+            },
+          });
+        } else {
+          this.logger.warn(`RM assignment skipped for company ${company.id}: RM already assigned`);
+        }
+      }
+
+      if (dto.accountNumber && dto.ifscCode) {
+        await tx.sellerPayoutAccount.upsert({
+          where: { companyId: company.id },
+          create: { companyId: company.id, bankAccount: dto.accountNumber, ifscCode: dto.ifscCode },
+          update: {},
+        });
+      }
+
+      await this.linkCompanyCategories(company.id, [dto.primaryCategory, ...(dto.secondaryCategories || [])], tx);
+
+      const updated = await tx.user.update({
+        where: { id: user.id },
+        data: { role: 'SELLER', mobile: user.mobile || dto.mobileNumber || null },
+        select: { id: true, email: true, name: true, role: true, permissions: true },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'VENDOR_ONBOARDING_COMPLETED',
+          resource: `user:${user.id}`,
+          metadata: { newRole: 'SELLER', oldRole: user.role, companyId: company.id } as any,
+          ipAddress: null,
+        },
+      });
+
+      return { company, updated };
+    });
+
+    this.eventEmitter.emit('vendor.capability.activated', {
+      userId: user.id,
+      companyId: company.id,
+      newRole: 'SELLER',
+      oldRole: user.role,
+    });
+
+    this.notification.create(user.id, {
+      userId: user.id,
+      type: 'SYSTEM_ANNOUNCEMENT' as any,
+      channel: 'IN_APP',
+      title: 'Vendor Mode Activated',
+      body: 'Your seller workspace is now active. Your buyer features remain available.',
+      metadata: { companyId: company.id } as any,
+      sourceModule: 'auth',
+    }).catch((err) => this.logger.error('Failed to send vendor activation notification', err));
+
+    const tokens = await this.generateTokens(user.id, user.email, updated.role, updated.permissions);
     await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
 
     await this.emailQueue.add(QueueNames.EMAIL, {
       type: EmailJobTypes.SEND_WELCOME_EMAIL,
       to: user.email,
-      subject: 'Welcome to TRADINGO',
+      subject: 'Welcome to TRADINGO Seller',
       template: 'welcome',
-      context: { name: dto.ownerName, businessName: dto.businessName },
+      context: { name: user.name, businessName: dto.businessName },
     });
 
-    this.logger.log(`Vendor registered: ${dto.email} → Company: ${company.id}`);
+    this.logger.log(`Vendor capability activated: ${user.email} → Company: ${company.id}`);
 
     return {
       success: true,
-      message: 'Registration successful. Your account is under review.',
+      message: 'Vendor mode activated. Your buyer features remain available.',
       userId: user.id,
       companyId: company.id,
       ...tokens,
@@ -672,53 +1049,99 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        passwordHash,
-        name: dto.fullName,
-        role: 'VIEWER',
-      },
-    });
 
-    const slug = dto.companyName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
+    const { user, company } = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: dto.email,
+          passwordHash,
+          name: dto.fullName,
+          mobile: dto.mobileNumber || null,
+          role: 'BUYER',
+        },
+      });
 
-    const company = await this.prisma.company.create({
-      data: {
-        name: dto.companyName,
-        slug,
-        businessType: dto.businessType as any,
-        gstNumber: dto.gstNumber || null,
-        website: dto.website || null,
-        email: dto.email,
-        mobile: dto.mobileNumber,
-        description: `${dto.industry} buyer. ${dto.companySize} employees. Annual procurement: ${dto.annualProcurement}.`,
-        createdBy: user.id,
-        updatedBy: user.id,
-        onboardingStatus: 'ACCOUNT_CREATED',
-        onboardingStartedAt: new Date(),
-      },
-    });
+      const slug = dto.companyName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
 
-    await this.prisma.companyOwner.create({
-      data: { companyId: company.id, userId: user.id, isPrimary: true },
-    });
+      const buyerStructureMap: Record<string, CompanyStructure> = {
+        individual: CompanyStructure.SOLE_PROPRIETORSHIP,
+        sole_proprietorship: CompanyStructure.SOLE_PROPRIETORSHIP,
+        partnership: CompanyStructure.PARTNERSHIP,
+        private_limited: CompanyStructure.PRIVATE_LIMITED,
+        llp: CompanyStructure.LLP,
+        public_limited: CompanyStructure.PUBLIC_LIMITED,
+        huf: CompanyStructure.HUF,
+        trust: CompanyStructure.TRUST,
+        other: CompanyStructure.OTHER,
+      };
+      const buyerStructureKey = (dto.businessType || '').trim().toLowerCase();
+      const buyerCompanyStructure = buyerStructureMap[buyerStructureKey] || null;
+      const buyerBusinessType = Object.values(BusinessType).includes(dto.businessType.toUpperCase() as BusinessType)
+        ? (dto.businessType.toUpperCase() as BusinessType)
+        : null;
 
-    await this.prisma.companyLocation.create({
-      data: {
-        companyId: company.id,
-        type: 'HEAD_OFFICE',
-        addressLine1: dto.addressLine1,
-        addressLine2: dto.addressLine2 || null,
-        city: dto.city,
-        district: dto.district || null,
-        state: dto.state,
-        pincode: dto.pincode,
-        isPrimary: true,
-      },
+      const company = await tx.company.create({
+        data: {
+          name: dto.companyName,
+          slug,
+          businessType: buyerBusinessType,
+          companyStructure: buyerCompanyStructure,
+          gstNumber: dto.gstNumber || null,
+          website: dto.website || null,
+          email: dto.email,
+          mobile: dto.mobileNumber,
+          description: `${dto.industry} buyer. ${dto.companySize} employees. Annual procurement: ${dto.annualProcurement}.`,
+          createdBy: user.id,
+          updatedBy: user.id,
+          onboardingStatus: 'ACCOUNT_CREATED',
+          onboardingStartedAt: new Date(),
+        },
+      });
+
+      await tx.companyOwner.create({
+        data: { companyId: company.id, userId: user.id, isPrimary: true },
+      });
+
+      await tx.companyLocation.create({
+        data: {
+          companyId: company.id,
+          type: 'HEAD_OFFICE',
+          addressLine1: dto.addressLine1,
+          addressLine2: dto.addressLine2 || null,
+          city: dto.city,
+          district: dto.district || null,
+          state: dto.state,
+          pincode: dto.pincode,
+          isPrimary: true,
+        },
+      });
+
+      await this.linkCompanyCategories(company.id, dto.primaryCategories || [], tx);
+
+      await this.notification.initializeDefaultPreferences(company.id, user.id, tx);
+      await this.notification.upsertPreference(company.id, user.id, {
+        channel: 'EMAIL',
+        type: NotificationType.GENERIC,
+        enabled: dto.notificationEmail,
+      }, tx);
+      await this.notification.upsertPreference(company.id, user.id, {
+        channel: 'SMS',
+        type: NotificationType.GENERIC,
+        enabled: dto.notificationSms,
+      }, tx);
+
+      if (dto.newsletter) {
+        await tx.newsletterSubscriber.upsert({
+          where: { email: user.email },
+          create: { email: user.email, name: dto.fullName, companyId: company.id, status: 'ACTIVE' },
+          update: { status: 'ACTIVE', companyId: company.id },
+        });
+      }
+
+      return { user, company };
     });
 
     const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
@@ -749,16 +1172,61 @@ export class AuthService {
       throw new BadRequestException('Invalid PAN format');
     }
 
-    // In production, integrate with NSDL/UTIITSL PAN verification API
-    // Dev/stub: return mock success
-    this.logger.log(`PAN verification requested: ${panNumber}`);
+    // Config-gated provider integration. No fabricated results: without configured
+    // credentials the service answers honestly that verification is unavailable.
+    const providerUrl = this.configService.get<string>('PAN_VERIFY_API_URL');
+    const providerKey = this.configService.get<string>('PAN_VERIFY_API_KEY');
+    if (!providerUrl || !providerKey) {
+      return {
+        verified: false,
+        panNumber,
+        message: 'PAN verification service is not configured. Contact support to verify your PAN.',
+      };
+    }
 
-    return {
-      verified: true,
-      panNumber,
-      holderName: 'RAJESH KUMAR',
-      message: 'PAN verified successfully',
-    };
+    this.logger.log('PAN verification requested via provider');
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(providerUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': providerKey,
+        },
+        body: JSON.stringify({ pan: panNumber }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (res.status === 404) {
+        return { verified: false, panNumber, message: 'PAN not found in records' };
+      }
+      if (res.status === 429) {
+        throw new HttpException('PAN verification provider rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+      }
+      if (!res.ok) {
+        throw new HttpException('PAN verification provider error', HttpStatus.BAD_GATEWAY);
+      }
+
+      const data = (await res.json()) as Record<string, unknown>;
+      const isVerified = data && data.verified === true;
+      const holderName = isVerified ? (data.holderName ?? data.name ?? null) : null;
+      return {
+        verified: isVerified,
+        panNumber,
+        holderName,
+        message: isVerified ? 'PAN verified successfully' : (data.message as string) || 'PAN verification failed',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      const aborted = err instanceof Error && err.name === 'AbortError';
+      throw new HttpException(
+        aborted ? 'PAN verification provider timed out' : 'PAN verification provider unreachable',
+        aborted ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY,
+      );
+    }
   }
 
   async verifyGst(gstNumber: string) {
@@ -766,19 +1234,63 @@ export class AuthService {
       throw new BadRequestException('GSTIN must be 15 characters');
     }
 
-    // In production, integrate with GST portal API
-    // Dev/stub: return mock success
-    this.logger.log(`GST verification requested: ${gstNumber}`);
+    // Config-gated provider integration. No fabricated results: without configured
+    // credentials the service answers honestly that verification is unavailable.
+    const providerUrl = this.configService.get<string>('GST_VERIFY_API_URL');
+    const providerKey = this.configService.get<string>('GST_VERIFY_API_KEY');
+    if (!providerUrl || !providerKey) {
+      return {
+        verified: false,
+        gstNumber,
+        message: 'GST verification service is not configured. Contact support to verify your GST.',
+      };
+    }
 
-    return {
-      verified: true,
-      gstNumber,
-      businessName: 'KUMAR TRADING CO',
-      address: '123 Main Road, Patna, Bihar 800001',
-      state: 'Bihar',
-      registrationDate: '2020-04-01',
-      message: 'GST verified successfully',
-    };
+    this.logger.log('GST verification requested via provider');
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(providerUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': providerKey,
+        },
+        body: JSON.stringify({ gstin: gstNumber }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (res.status === 404) {
+        return { verified: false, gstNumber, message: 'GSTIN not found in records' };
+      }
+      if (res.status === 429) {
+        throw new HttpException('GST verification provider rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+      }
+      if (!res.ok) {
+        throw new HttpException('GST verification provider error', HttpStatus.BAD_GATEWAY);
+      }
+
+      const data = (await res.json()) as Record<string, unknown>;
+      const isVerified = data && data.verified === true;
+      return {
+        verified: isVerified,
+        gstNumber,
+        businessName: isVerified ? (data.businessName ?? data.tradeName ?? null) : null,
+        address: isVerified ? (data.address ?? null) : null,
+        state: isVerified ? (data.state ?? null) : null,
+        registrationDate: isVerified ? (data.registrationDate ?? null) : null,
+        message: isVerified ? 'GST verified successfully' : (data.message as string) || 'GST verification failed',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      const aborted = err instanceof Error && err.name === 'AbortError';
+      throw new HttpException(
+        aborted ? 'GST verification provider timed out' : 'GST verification provider unreachable',
+        aborted ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY,
+      );
+    }
   }
 
   async verifyIfsc(ifscCode: string) {
@@ -787,18 +1299,57 @@ export class AuthService {
       throw new BadRequestException('Invalid IFSC format');
     }
 
-    // In production, integrate with Razorpay IFSC API
-    // Dev/stub: return mock success
-    this.logger.log(`IFSC verification requested: ${ifscCode}`);
+    const { fetchWithTimeout, DEFAULT_TIMEOUTS } = await import('../../common/utils/timeout');
 
-    return {
-      verified: true,
-      ifscCode,
-      bankName: 'State Bank of India',
-      branch: 'Boring Road, Patna',
-      address: 'Near Gandhi Maidan, Patna 800001',
-      message: 'IFSC verified successfully',
-    };
+    try {
+      const response = await fetchWithTimeout(
+        `https://ifsc.razorpay.com/${ifscCode}`,
+        { timeout: DEFAULT_TIMEOUTS.razorpay },
+        'ifsc-verification',
+      );
+
+      if (response.status === 404) {
+        return {
+          verified: false,
+          ifscCode,
+          message: 'IFSC not found',
+        };
+      }
+
+      if (response.status === 429) {
+        throw new HttpException('IFSC verification rate limit exceeded. Please try again later.', HttpStatus.TOO_MANY_REQUESTS);
+      }
+
+      if (!response.ok) {
+        this.logger.warn(`IFSC API returned status ${response.status} for ${ifscCode}`);
+        throw new HttpException('IFSC verification service is temporarily unavailable. Please try again.', HttpStatus.BAD_GATEWAY);
+      }
+
+      const data = await response.json();
+
+      if (!data || typeof data.BANK !== 'string') {
+        this.logger.warn(`IFSC API returned unexpected shape for ${ifscCode}`);
+        throw new HttpException('IFSC verification service returned an unexpected response. Please try again.', HttpStatus.BAD_GATEWAY);
+      }
+
+      return {
+        verified: true,
+        ifscCode: data.IFSC || ifscCode,
+        bankName: data.BANK,
+        branch: data.BRANCH ?? '',
+        address: data.ADDRESS ?? '',
+        state: data.STATE ?? '',
+        city: data.CITY ?? '',
+        message: 'IFSC verified successfully',
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      if ((error as Error).name === 'TimeoutError') {
+        throw new HttpException('IFSC verification timed out. Please try again.', HttpStatus.GATEWAY_TIMEOUT);
+      }
+      this.logger.error(`IFSC verification failed for ${ifscCode}: ${(error as Error).message}`);
+      throw new HttpException('IFSC verification service is temporarily unavailable. Please try again.', HttpStatus.BAD_GATEWAY);
+    }
   }
 
   async sendOtp(type: 'mobile' | 'email', value: string, ipAddress?: string) {

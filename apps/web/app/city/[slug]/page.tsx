@@ -117,7 +117,7 @@ async function CityContent({ slug }: { slug: string }) {
               <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">
                 Be the first to list a product or check back later.
               </p>
-              <Link href="/products">
+              <Link href="/trading">
                 <button className="mt-6 rounded-lg bg-primary-600 px-6 py-2 text-sm font-medium text-white hover:bg-primary-700">
                   Browse All Products
                 </button>
@@ -180,7 +180,7 @@ async function CityContent({ slug }: { slug: string }) {
         primaryLabel="Start Selling"
         primaryHref="/seller"
         secondaryLabel="Browse All Products"
-        secondaryHref="/products"
+        secondaryHref="/trading"
         variant="default"
       />
     </>

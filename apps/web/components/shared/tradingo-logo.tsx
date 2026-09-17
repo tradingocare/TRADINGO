@@ -9,7 +9,7 @@ interface TradingoLogoProps {
   light?: boolean;
 }
 
-const LOGO_SRC = '/logo/trdn6.png';
+const LOGO_SRC = '/logo/trdn5.png';
 const ASPECT_RATIO = 792 / 547;
 
 function LogoImage({ height, priority, className }: { height: number; priority?: boolean; className?: string }) {

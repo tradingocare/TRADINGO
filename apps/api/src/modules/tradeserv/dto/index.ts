@@ -11,6 +11,11 @@ export class RegisterProfessionalDto {
   @ApiPropertyOptional() @IsOptional() @IsString() email?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() experience?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() location?: string;
+  // F6/F7 — ONE legal company: pass an owned companyId (or PAN/GST) to reuse an
+  // existing legal entity instead of creating a second company.
+  @ApiPropertyOptional() @IsOptional() @IsUUID() companyId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() panNumber?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() gstNumber?: string;
 }
 
 export class UpdateCompanyProfileDto {

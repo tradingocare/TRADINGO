@@ -10,6 +10,7 @@ import { SettlementProcessor } from './settlement.processor';
 import { DisputeProcessor } from './dispute.processor';
 import { AiProcessor } from './ai.processor';
 import { BestsellerProcessor } from './bestseller.processor';
+import { CategoryDemandProcessor } from './category-demand.processor';
 import { JobSchedulerService } from './job-scheduler.service';
 import { QueueNames } from './queues';
 import { AnalyticsModule } from '../modules/analytics/analytics.module';
@@ -25,6 +26,7 @@ import { PayoutService } from '../modules/payout/payout.service';
 import { PayoutProcessor } from './payout.processor';
 import { CommissionModule } from '../modules/commission/commission.module';
 import { PayoutModule } from '../modules/payout/payout.module';
+import { CategoriesModule } from '../modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -36,6 +38,7 @@ import { PayoutModule } from '../modules/payout/payout.module';
     AiRuntimeModule,
     CommissionModule,
     PayoutModule,
+    CategoriesModule,
     BullModule.registerQueue(
       { name: QueueNames.EMAIL },
       { name: QueueNames.EXPORT },
@@ -52,6 +55,7 @@ import { PayoutModule } from '../modules/payout/payout.module';
       { name: QueueNames.AI },
       { name: QueueNames.TRACKING },
       { name: QueueNames.PAYOUT },
+      { name: QueueNames.CATEGORY_DEMAND },
     ),
   ],
   providers: [
@@ -64,6 +68,7 @@ import { PayoutModule } from '../modules/payout/payout.module';
     SettlementProcessor,
     DisputeProcessor,
     BestsellerProcessor,
+    CategoryDemandProcessor,
     AiProcessor,
     PayoutProcessor,
     EscrowService,

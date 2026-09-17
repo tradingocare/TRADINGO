@@ -4,6 +4,7 @@ export interface User {
   name: string;
   role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN';
   phone?: string;
+  mobile?: string;
   isVerified: boolean;
   emailVerifiedAt?: string;
   verificationLevel?: string;

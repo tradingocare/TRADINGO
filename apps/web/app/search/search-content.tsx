@@ -202,7 +202,7 @@ export function SearchContent({ q }: { q: string }) {
               </div>
               <h2 className="mt-4 text-xl font-bold text-text-primary">No results found for &ldquo;{q}&rdquo;</h2>
               <p className="mt-2 text-sm text-text-tertiary">Try adjusting your search terms or browse all products.</p>
-              <Link href="/products">
+              <Link href="/trading">
                   <span className="inline-block mt-6 px-5 py-2.5 rounded-xl text-xs font-bold text-text-secondary transition-all bg-surface border-border">
                   Browse All Products
                 </span>

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
@@ -107,7 +107,7 @@ export default function CategoriesPage() {
       <div className="relative z-10">
         <PageHeader
           title="Browse All Categories"
-          description="Navigate TRADINGO's complete business directory — 160 categories, 1,600 subcategories, 33,600 products & services."
+          description="Navigate TRADINGO's complete business directory — 160 categories, 1,600 subcategories, a comprehensive product catalog."
         />
 
         {/* Stats Bar */}
@@ -264,7 +264,7 @@ function CategoryCard({ cat }: { cat: FlatCategory }) {
             {displaySubs.map((sub) => (
               <Link
                 key={sub.slug}
-                href={`/products?category=${cat.slug}&subcategory=${sub.slug}`}
+                href={`/trading?category=${cat.slug}&subcategory=${sub.slug}`}
                 className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-text-secondary transition-all hover:border-accent/20 hover:bg-accent/[0.06] hover:text-accent"
               >
                 {sub.name}
@@ -288,7 +288,7 @@ function CategoryCard({ cat }: { cat: FlatCategory }) {
 
         {/* CTA */}
         <Link
-          href={`/products?category=${cat.slug}`}
+          href={`/trading?category=${cat.slug}`}
           className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-accent/12 bg-gradient-to-r from-[rgba(255,77,0,0.06)] to-[rgba(255,77,0,0.02)] px-4 py-2 text-[11px] font-semibold text-accent/70 transition-all group-hover:from-[rgba(255,77,0,0.1)] group-hover:to-[rgba(255,77,0,0.04)] group-hover:text-accent"
         >
           Browse All {cat.name} <ExternalLink size={11} />

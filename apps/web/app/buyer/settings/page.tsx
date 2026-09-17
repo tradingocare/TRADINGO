@@ -12,11 +12,13 @@ import { User, Bell, Shield, Sun, Save, BadgeCheck, Mail, Phone, ShieldCheck, Ar
 import api from '@/lib/api/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/components/auth/auth-provider';
+import { useTheme } from '@/components/shared/theme-provider';
 import Link from 'next/link';
 
 export default function BuyerSettingsPage() {
   const { toast } = useToast();
   const { user, refreshUser } = useAuth();
+  const { setTheme } = useTheme();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,14 +35,14 @@ export default function BuyerSettingsPage() {
     if (user) {
       setName(user.name || '');
       setEmail(user.email || '');
-      setPhone(user?.phone || '');
+      setPhone(user?.mobile || '');
     }
   }, [user]);
 
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      await api.patch('/auth/me', { name, phone });
+      await api.patch('/auth/me', { name, mobile: phone });
       toast({ title: 'Profile updated' });
       refreshUser();
     } catch {
@@ -256,10 +258,15 @@ export default function BuyerSettingsPage() {
               <button
                 key={theme}
                 onClick={() => {
-                  if (typeof document !== 'undefined') {
-                    if (theme === 'Light') { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
-                    else if (theme === 'Dark') { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
-                    else { localStorage.removeItem('theme'); document.documentElement.classList.remove('dark'); }
+                  if (theme === 'Light') {
+                    setTheme('light');
+                  } else if (theme === 'Dark') {
+                    setTheme('dark');
+                  } else {
+                    localStorage.removeItem('tradingo-theme');
+                    const sysDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    document.documentElement.classList.toggle('dark', sysDark);
+                    document.documentElement.setAttribute('data-theme', sysDark ? 'dark' : 'light');
                   }
                   toast({ title: `Theme set to ${theme}` });
                 }}

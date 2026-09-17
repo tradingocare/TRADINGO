@@ -39,7 +39,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
       />
       <div className="relative z-10 flex">
         <Sidebar items={WORKSPACE_NAV} title="Workspace" className="hidden lg:flex" />
-        <div className="min-h-screen flex-1 lg:pl-64 transition-all duration-300">
+        <div className="min-h-screen min-w-0 flex-1 lg:pl-64 transition-all duration-300">
           <div className="mx-auto max-w-7xl px-6 py-8">
             {children}
           </div>

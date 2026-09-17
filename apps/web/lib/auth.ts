@@ -17,6 +17,7 @@ export function setAccessToken(token: string): void {
 
 export function clearTokens(): void {
   localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
 }
 
 export function isAuthenticated(): boolean {

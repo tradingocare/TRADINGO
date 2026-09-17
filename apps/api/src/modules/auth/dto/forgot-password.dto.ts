@@ -5,6 +5,11 @@ export class ForgotPasswordDto {
   @IsString()
   @ApiProperty({ description: 'Email or mobile number' })
   identifier: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Turnstile token for bot protection' })
+  turnstileToken?: string;
 }
 
 export class VerifyResetOtpDto {

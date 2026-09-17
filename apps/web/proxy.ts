@@ -24,6 +24,7 @@ export const config = {
     '/seller/:path*',
     '/buyer/:path*',
     '/admin/:path*',
+    '/vendor/:path*',
     '/login',
     '/register/:path*',
     '/forgot-password',

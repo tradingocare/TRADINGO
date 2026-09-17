@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, ChevronRight } from 'lucide-react'
+import api from '@/lib/api/client'
 import type { VendorRegistrationState } from '@/types/vendor-registration'
 import Step1BusinessIdentity from './steps/Step1BusinessIdentity'
 import Step2ContactCredentials from './steps/Step2ContactCredentials'
@@ -30,7 +31,40 @@ const INITIAL_STATE: VendorRegistrationState = {
   bankDetails: {}, planSelection: {},
 }
 
-export default function VendorRegistrationWizard() {
+const SENSITIVE_KEYS: Record<string, string[]> = {
+  businessIdentity: [],
+  contactCredentials: ['password', 'confirmPassword', 'email', 'mobileNumber', 'alternateMobile'],
+  pan: ['panNumber', 'panHolderName', 'dateOfBirth'],
+  gst: ['gstNumber', 'gstExemptReason'],
+  businessProfile: [],
+  bankDetails: ['accountHolderName', 'accountNumber', 'ifscCode', 'accountType'],
+  planSelection: [],
+}
+
+function sanitizeForStorage(state: VendorRegistrationState): VendorRegistrationState {
+  const sanitized: any = { ...state }
+  for (const [key, sensitive] of Object.entries(SENSITIVE_KEYS)) {
+    if (sensitive.length > 0 && sanitized[key]) {
+      const obj = sanitized[key] as Record<string, unknown>
+      sanitized[key] = Object.fromEntries(
+        Object.entries(obj).filter(([k]) => !sensitive.includes(k))
+      )
+    }
+  }
+  return sanitized as VendorRegistrationState
+}
+
+interface ExistingUser {
+  email?: string
+  mobile?: string
+  name?: string
+}
+
+interface Props {
+  mode?: 'register' | 'existing'
+}
+
+export default function VendorRegistrationWizard({ mode = 'register' }: Props) {
   const [state, setState] = useState<VendorRegistrationState>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -40,9 +74,27 @@ export default function VendorRegistrationWizard() {
     }
     return INITIAL_STATE
   })
+  const [existingUser, setExistingUser] = useState<ExistingUser | null>(null)
 
   useEffect(() => {
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(state)) } catch {}
+    let cancelled = false
+    if (mode === 'existing') {
+      api.get('/auth/me').then(({ data }: any) => {
+        if (cancelled) return
+        setExistingUser({
+          email: data?.user?.email ?? data?.email,
+          mobile: data?.user?.mobile ?? data?.mobile,
+          name: data?.user?.name ?? data?.name,
+        })
+      }).catch(() => {})
+    }
+    return () => { cancelled = true }
+  }, [mode])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(sanitizeForStorage(state)))
+    } catch {}
   }, [state])
 
   const { step, completedSteps } = state
@@ -67,7 +119,6 @@ export default function VendorRegistrationWizard() {
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY)
-    setState(INITIAL_STATE)
   }
 
   const progressPct = ((step - 1) / (STEPS.length - 1)) * 100
@@ -111,12 +162,12 @@ export default function VendorRegistrationWizard() {
         <motion.div key={step} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.3 }}>
           {step === 1 && <Step1BusinessIdentity data={state.businessIdentity} onNext={d => goNext(d, 'businessIdentity')} />}
-          {step === 2 && <Step2ContactCredentials data={state.contactCredentials} onNext={d => goNext(d, 'contactCredentials')} onBack={goBack} />}
+          {step === 2 && <Step2ContactCredentials data={state.contactCredentials} mode={mode} existingUser={existingUser} onNext={d => goNext(d, 'contactCredentials')} onBack={goBack} />}
           {step === 3 && <Step3PANVerification data={state.pan} businessType={state.businessIdentity.businessType} onNext={d => goNext(d, 'pan')} onBack={goBack} />}
           {step === 4 && <Step4GSTVerification data={state.gst} onNext={d => goNext(d, 'gst')} onBack={goBack} />}
           {step === 5 && <Step5BusinessProfile data={state.businessProfile} onNext={d => goNext(d, 'businessProfile')} onBack={goBack} />}
           {step === 6 && <Step6BankDetails data={state.bankDetails} onNext={d => goNext(d, 'bankDetails')} onBack={goBack} />}
-          {step === 7 && <Step7PlanSelection allData={state} onNext={d => goNext(d, 'planSelection')} onBack={goBack} onClearDraft={clearDraft} />}
+          {step === 7 && <Step7PlanSelection allData={state} mode={mode} onNext={d => goNext(d, 'planSelection')} onBack={goBack} onClearDraft={clearDraft} />}
         </motion.div>
       </AnimatePresence>
     </div>

@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { QueueNames, CertificationJobTypes, SubscriptionJobTypes, RfqJobTypes, EscrowJobTypes, SettlementJobTypes, DisputeJobTypes, BestsellerJobTypes } from './queues';
+import { QueueNames, CertificationJobTypes, SubscriptionJobTypes, RfqJobTypes, EscrowJobTypes, SettlementJobTypes, DisputeJobTypes, BestsellerJobTypes, CategoryDemandJobTypes } from './queues';
 
 @Injectable()
 export class JobSchedulerService implements OnModuleInit {
@@ -15,6 +15,7 @@ export class JobSchedulerService implements OnModuleInit {
     @InjectQueue(QueueNames.SETTLEMENT) private readonly settlementQueue: Queue,
     @InjectQueue(QueueNames.DISPUTE) private readonly disputeQueue: Queue,
     @InjectQueue(QueueNames.BESTSELLER) private readonly bestsellerQueue: Queue,
+    @InjectQueue(QueueNames.CATEGORY_DEMAND) private readonly categoryDemandQueue: Queue,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -132,6 +133,13 @@ export class JobSchedulerService implements OnModuleInit {
       'bestseller-weekly-sunday',
       { pattern: '25 18 * * 0' },
       { name: 'bestseller-weekly', data: { type: BestsellerJobTypes.CALCULATE_WEEKLY } },
+    );
+
+    // Category demand: recalculate every 5 minutes
+    await this.categoryDemandQueue.upsertJobScheduler(
+      'recalculate-category-demand-every-5min',
+      { pattern: '*/5 * * * *' },
+      { name: 'recalculate-category-demand', data: { type: CategoryDemandJobTypes.RECALCULATE_DEMAND } },
     );
 
     this.logger.log('Scheduled cron jobs registered');

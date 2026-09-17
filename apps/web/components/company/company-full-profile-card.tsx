@@ -143,7 +143,7 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
               <MessageCircle size={13} /> Contact Seller
             </button>
             <button
-              onClick={() => requireAuth(() => router.push(`/rfq/create?companyId=${company.id}`))}
+              onClick={() => requireAuth(() => router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))}
               className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs bg-surface border border-border text-text-secondary">
               <FileText size={13} /> Request Catalog
             </button>
@@ -214,7 +214,7 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
             <div className="flex justify-between items-center gap-2">
               <span className="text-text-tertiary">Flagship Product</span>
               {flagship ? (
-                <Link href={`/products/${flagship.slug || flagship.id}`}
+                <Link href={`/trading/${flagship.slug || flagship.id}`}
                   className="text-accent font-semibold inline-flex items-center gap-1 hover:underline text-right max-w-[60%] truncate">
                   {flagship.name} <ArrowRight size={10} />
                 </Link>
@@ -255,7 +255,7 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {products.map(p => (
               <div key={p.id} className="rounded-xl overflow-hidden border border-border bg-bg-elevated group">
-                <Link href={`/products/${p.slug || p.id}`} className="block">
+                <Link href={`/trading/${p.slug || p.id}`} className="block">
                   <div className="aspect-square bg-bg-elevated flex items-center justify-center overflow-hidden">
                     {p.media?.find(m => m.type === 'IMAGE')?.url ? (
                       <img src={p.media.find(m => m.type === 'IMAGE')!.url} alt={p.name}
@@ -266,12 +266,12 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
                   </div>
                 </Link>
                 <div className="p-2.5">
-                  <Link href={`/products/${p.slug || p.id}`} className="text-[11px] font-semibold text-text-primary line-clamp-1 group-hover:text-accent transition-colors">
+                  <Link href={`/trading/${p.slug || p.id}`} className="text-[11px] font-semibold text-text-primary line-clamp-1 group-hover:text-accent transition-colors">
                     {p.name}
                   </Link>
                   <p className="text-[10px] text-text-tertiary mt-0.5">₹{(p.price ?? 0).toLocaleString('en-IN')}{p.unit ? `/${p.unit}` : ''}</p>
                   <div className="flex gap-1 mt-2">
-                    <Link href={`/products/${p.slug || p.id}`}
+                    <Link href={`/trading/${p.slug || p.id}`}
                       className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold bg-surface border border-border text-text-secondary">
                       <Eye size={10} /> View
                     </Link>

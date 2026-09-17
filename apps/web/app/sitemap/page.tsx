@@ -6,7 +6,7 @@ const sitemapSections = [
   {
     title: 'Marketplace',
     links: [
-      { label: 'Browse Products', href: '/products' },
+      { label: 'Browse Products', href: '/trading' },
       { label: 'Categories', href: '/categories' },
       { label: 'Trading', href: '/trading' },
       { label: 'RFQ Marketplace', href: '/rfq' },

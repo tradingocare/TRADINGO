@@ -9,7 +9,7 @@ import { BuyerAgentService } from './buyer-agent.service';
 @ApiTags('Buyer Agent')
 @Controller('buyer/agent')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('BUYER', 'ADMIN', 'SUPER_ADMIN')
+@Roles('BUYER', 'SELLER', 'ADMIN', 'SUPER_ADMIN')
 @Throttle({ default: { limit: 60, ttl: 60000 } })
 export class BuyerAgentController {
   constructor(private readonly agent: BuyerAgentService) {}

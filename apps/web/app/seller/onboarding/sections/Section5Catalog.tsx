@@ -3,34 +3,15 @@ import { useState, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import UploadZone from '../../../../components/shared/UploadZone'
 import type { SectionProps } from '../../../../types/vendor-onboarding'
-import { Download, Upload, FileText, Sparkles, Table as TableIcon } from 'lucide-react'
+import { Download, Upload, FileText, Table as TableIcon } from 'lucide-react'
 
 export default function Section5Catalog({ vendor, onSave, onNext, onBack }: SectionProps) {
-  const [catalogUrl, setCatalogUrl] = useState('')
+  const [catalogUrl, setCatalogUrl] = useState(vendor?.catalogPdfUrl || '')
   const [pricelistUrl, setPricelistUrl] = useState('')
-  const [extracting, setExtracting] = useState(false)
-  const [extracted, setExtracted] = useState<any[]>([])
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvPreview, setCsvPreview] = useState<any[]>([])
   const csvInputRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
-
-  const extractProducts = useCallback(async () => {
-    if (!catalogUrl) return
-    setExtracting(true)
-    try {
-      const { default: api } = await import('../../../../lib/api/client')
-      const res = await api.post('/seller/profile/extract-catalog', { url: catalogUrl })
-      const items = res.data?.products || res.data?.data || []
-      if (items.length > 0) {
-        setExtracted(items)
-      }
-    } catch {
-      // extraction failed silently — user can manually enter products later
-    } finally {
-      setExtracting(false)
-    }
-  }, [catalogUrl])
 
   const handleCSV = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -80,58 +61,13 @@ export default function Section5Catalog({ vendor, onSave, onNext, onBack }: Sect
 
         {catalogUrl && (
           <div className="p-4 rounded-xl bg-surface border border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileText size={20} className="text-[#f59e0b]" />
-                <div>
-                  <p className="text-text-primary text-sm font-medium">Catalog uploaded</p>
-                  <p className="text-text-tertiary text-xs">PDF file</p>
-                </div>
+            <div className="flex items-center gap-3">
+              <FileText size={20} className="text-[#f59e0b]" />
+              <div>
+                <p className="text-text-primary text-sm font-medium">Catalog uploaded</p>
+                <p className="text-text-tertiary text-xs">PDF file attached</p>
               </div>
-              {extracted.length === 0 && (
-                <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
-                  onClick={extractProducts} disabled={extracting}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold"
-                  style={{ background:'linear-gradient(135deg,#9B5DE5,#3D8BFF)', color:'#fff' }}>
-                  <Sparkles size={12} />
-                  {extracting ? 'Extracting...' : 'Extract Products'}
-                </motion.button>
-              )}
             </div>
-
-            {extracting && (
-              <div className="mt-3 flex items-center gap-2 text-white/40 text-xs">
-                <div className="w-4 h-4 rounded-full border-2 border-t-[#f59e0b] border-border animate-spin" />
-                AI is extracting products from your catalog...
-              </div>
-            )}
-
-            {extracted.length > 0 && (
-              <div className="mt-4">
-                <p className="text-green-400 text-xs font-semibold mb-2">✓ {extracted.length} products extracted</p>
-                <div className="rounded-xl overflow-hidden border border-border">
-                  <table className="w-full text-xs">
-                    <thead><tr className="bg-surface">
-                      <th className="text-left px-3 py-2 text-text-tertiary">Name</th>
-                      <th className="text-left px-3 py-2 text-text-tertiary">Price</th>
-                      <th className="text-left px-3 py-2 text-text-tertiary">Unit</th>
-                      <th className="text-left px-3 py-2 text-text-tertiary">MOQ</th>
-                    </tr></thead>
-                    <tbody>
-                      {extracted.map((p, i) => (
-                        <tr key={i} className="border-t border-border">
-                          <td className="px-3 py-2 text-text-secondary">{p.name}</td>
-                          <td className="px-3 py-2 text-text-secondary">₹{p.price}</td>
-                          <td className="px-3 py-2 text-white/60">{p.unit}</td>
-                          <td className="px-3 py-2 text-white/60">{p.moq}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="text-white/30 text-[10px] mt-2">Imported products will appear in Section 8 for review</p>
-              </div>
-            )}
           </div>
         )}
 

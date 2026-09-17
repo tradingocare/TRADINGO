@@ -22,12 +22,14 @@ export const ROUTE_PREFIXES = {
   SELLER: '/seller',
   BUYER: '/buyer',
   ADMIN: '/admin',
+  VENDOR: '/vendor',
 } as const;
 
 export const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/verify-mobile', '/onboarding'] as const;
 
 const ADMIN_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN'];
 const MANAGER_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+const CUSTOMER_ROLES: Role[] = ['BUYER', 'SELLER', 'VIEWER'];
 
 export function isAdminRole(role: string): boolean {
   return ADMIN_ROLES.includes(role as Role);
@@ -35,6 +37,10 @@ export function isAdminRole(role: string): boolean {
 
 export function isManagerRole(role: string): boolean {
   return MANAGER_ROLES.includes(role as Role);
+}
+
+export function isCustomerRole(role: string): boolean {
+  return CUSTOMER_ROLES.includes(role as Role);
 }
 
 export function hasMinimumRole(userRole: string, minimumRole: Role): boolean {
@@ -47,10 +53,11 @@ export function isAuthPage(pathname: string): boolean {
   return AUTH_PAGES.some((page) => pathname === page || pathname.startsWith(`${page}/`));
 }
 
-export function getRouteRole(pathname: string): 'seller' | 'buyer' | 'admin' | null {
+export function getRouteRole(pathname: string): 'seller' | 'buyer' | 'admin' | 'vendor' | null {
   if (pathname.startsWith(ROUTE_PREFIXES.SELLER)) return 'seller';
   if (pathname.startsWith(ROUTE_PREFIXES.BUYER)) return 'buyer';
   if (pathname.startsWith(ROUTE_PREFIXES.ADMIN)) return 'admin';
+  if (pathname.startsWith(ROUTE_PREFIXES.VENDOR)) return 'vendor';
   return null;
 }
 

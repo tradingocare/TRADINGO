@@ -21,7 +21,6 @@ import { Button } from '@/components/ui/button';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
 import { FeatureCards } from '@/components/shared/feature-cards';
-import { Testimonials } from '@/components/shared/testimonials';
 import { Accordion } from '@/components/ui/accordion';
 import { CTABlock } from '@/components/shared/cta-block';
 import { Separator } from '@/components/ui/separator';
@@ -125,39 +124,10 @@ const TRUST_SIGNALS = [
   { icon: ShieldCheck, label: '100% Escrow Protection' },
   { icon: BadgeCheck, label: 'ISO 27001 Certified' },
   { icon: CheckCircle2, label: 'PCI DSS Compliant' },
-  { icon: Star, label: '4.8/5 Buyer Satisfaction' },
+  { icon: Headphones, label: 'Dedicated Support' },
 ];
 
-const BUYER_TESTIMONIALS = [
-  {
-    quote: 'We were sourcing industrial packaging from 3 different states with inconsistent quality. TRADINGO helped us find a verified supplier in Gujarat who delivers 30% cheaper with consistent quality.',
-    author: 'Vikram Singh',
-    role: 'Procurement Head',
-    company: 'Singh Packaging, Pune',
-    rating: 5,
-  },
-  {
-    quote: 'The RFQ system saved us weeks of vendor discovery. We posted our requirement for hydraulic pumps at 10 AM, had 8 quotes by 5 PM, and placed the order by Friday.',
-    author: 'Ananya Gupta',
-    role: 'Supply Chain Manager',
-    company: 'Gupta Engineering, Chennai',
-    rating: 5,
-  },
-  {
-    quote: 'Escrow payments gave us the confidence to work with new suppliers. We have placed orders worth ₹2Cr+ through TRADINGO without a single dispute.',
-    author: 'Rahul Joshi',
-    role: 'Director of Operations',
-    company: 'Joshi Auto Parts, Bengaluru',
-    rating: 5,
-  },
-  {
-    quote: 'The TradeServ quality inspection service is a lifesaver. We get third-party inspection reports before shipment, eliminating the guesswork entirely.',
-    author: 'Neha Kapoor',
-    role: 'Quality Assurance Lead',
-    company: 'Kapoor Chemicals, Hyderabad',
-    rating: 4,
-  },
-];
+
 
 const FAQ_ITEMS = [
   {
@@ -214,7 +184,7 @@ export default function BuyFromTradingoPage() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-sm font-medium text-accent">
               <ShieldCheck className="h-4 w-4" />
-              Trusted by 3,50,000+ Buyers
+              Verified Sellers Â· Secure Payments
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
               Source Verified Products from{' '}
@@ -477,37 +447,9 @@ export default function BuyFromTradingoPage() {
               />
             </div>
           </AnimatedSection>
-          <div className="mx-auto mt-8 grid max-w-4xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { value: '3.5L+', label: 'Active Buyers' },
-              { value: '₹850Cr+', label: 'Monthly GMV' },
-              { value: '98%', label: 'Delivery Success Rate' },
-              { value: '4.8/5', label: 'Average Rating' },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="flex flex-col items-center rounded-2xl border border-border bg-surface p-8 text-center shadow-sm transition-all duration-300 hover:border-accent/20 hover:shadow-lg"
-              >
-                <span className="text-4xl font-bold tracking-tight text-text-primary">
-                  {stat.value}
-                </span>
-                <p className="mt-2 text-sm font-medium text-text-secondary">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Testimonials */}
-      <section className="py-20">
-        <div className="container-main">
-          <SectionHeader
-            title="What Buyers Say About TRADINGO"
-            subtitle="Join thousands of satisfied buyers who trust TRADINGO for their sourcing needs."
-          />
-          <Testimonials testimonials={BUYER_TESTIMONIALS} />
+          <p className="mx-auto mt-8 max-w-2xl text-center text-base text-text-secondary">
+            Thousands of businesses across India use TRADINGO for procurement. Live platform activity is available on the homepage and in the seller dashboard.
+          </p>
         </div>
       </section>
 
@@ -528,7 +470,7 @@ export default function BuyFromTradingoPage() {
 
       <CTABlock
         title="Start Sourcing Smarter"
-        subtitle="Join 3,50,000+ buyers already sourcing on TRADINGO. Get better prices, verified suppliers, and complete payment protection."
+        subtitle="Discover verified sellers, compare quotes, and buy with complete payment protection on TRADINGO."
         primaryLabel="Start Buying Free"
         primaryHref="/register/buyer"
         secondaryLabel="Browse Products"

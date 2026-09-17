@@ -58,7 +58,7 @@ export default function CategoryDetailClient() {
     provider: {
       '@type': 'Organization',
       name: 'TRADINGO',
-      url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradingo.com',
+      url: process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in',
     },
     areaServed: { '@type': 'Country', name: 'India' },
     hasOfferCatalog: {

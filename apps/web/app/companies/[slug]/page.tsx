@@ -23,6 +23,8 @@ export function generateStaticParams() {
   return []
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function CompanyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   return <CompanyProfileClient slug={slug} />

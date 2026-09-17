@@ -335,7 +335,7 @@ export class ProductsService {
     if (categoryId) where.categoryId = categoryId;
     if (industryId) where.industryId = industryId;
     if (productType) where.productType = productType as Prisma.EnumProductTypeFilter['equals'];
-    if (status) where.status = status.toUpperCase() as Prisma.EnumProductStatusFilter['equals'];
+    where.status = (status ?? 'ACTIVE').toUpperCase() as Prisma.EnumProductStatusFilter['equals'];
     if (isFeatured !== undefined) where.isFeatured = isFeatured === 'true';
 
     const findArgs: Prisma.ProductFindManyArgs = {
@@ -384,7 +384,7 @@ export class ProductsService {
 
   async findById(id: string) {
     const product = await this.prisma.product.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, status: 'ACTIVE' },
       include: {
         company: { select: { id: true, name: true, slug: true, trustScore: true, verificationLevel: true, certificationDocs: { where: { status: 'APPROVED' }, select: { id: true, type: true, documentNumber: true } } } },
         category: { select: { id: true, name: true, slug: true } },
@@ -402,7 +402,7 @@ export class ProductsService {
 
   async findBySlug(slug: string) {
     const product = await this.prisma.product.findFirst({
-      where: { slug, deletedAt: null },
+      where: { slug, deletedAt: null, status: 'ACTIVE' },
       include: {
         company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true, responseRate: true, gstNumber: true, totalProducts: true, certificationDocs: { where: { status: 'APPROVED' }, select: { id: true, type: true, documentNumber: true } }, locations: { where: { isPrimary: true }, select: { city: true, state: true }, take: 1 } } },
         category: { select: { id: true, name: true, slug: true } },
@@ -719,7 +719,7 @@ export class ProductsService {
 
   async findRelated(slug: string, limit = 8) {
     const product = await this.prisma.product.findFirst({
-      where: { slug, deletedAt: null },
+      where: { slug, deletedAt: null, status: 'ACTIVE' },
       select: { id: true, categoryId: true, companyId: true },
     });
     if (!product) throw new NotFoundException('Product not found');

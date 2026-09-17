@@ -12,6 +12,6 @@ import { ChatModule } from '../chat/chat.module';
   imports: [ChatModule, AnalyticsModule],
   controllers: [OrderController],
   providers: [OrderService, OrderNumberService, OrderTimelineService, OrderDocumentService, OrderAnalyticsService],
-  exports: [OrderService, OrderAnalyticsService],
+  exports: [OrderService, OrderAnalyticsService, OrderNumberService],
 })
 export class OrderModule {}

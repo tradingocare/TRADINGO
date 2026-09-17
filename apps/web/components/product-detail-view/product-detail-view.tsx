@@ -118,7 +118,7 @@ export function ProductDetailView({
   });
 
   const handleRFQ = () => requireAuth(() => {
-    router.push(`/buyer/rfq/create?productId=${data.id}`);
+    router.push(`/buyer/rfq/new?source=PRODUCT&sourceId=${data.id}`);
   });
 
   const handleChat = () => requireAuth(() => {
@@ -303,7 +303,7 @@ export function ProductDetailView({
         {related && related.length > 0 && (
           <section className="mt-10" id="similar">
             <SectionHeading kicker="Explore" title="Similar Products" />
-            <RelatedProducts products={related} title="Similar Products" viewAllHref={`/products?category=${data.category?.slug || ''}`} />
+            <RelatedProducts products={related} title="Similar Products" viewAllHref={`/trading?category=${data.category?.slug || ''}`} />
           </section>
         )}
       </div>

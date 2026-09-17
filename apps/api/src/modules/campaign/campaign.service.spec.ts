@@ -161,11 +161,10 @@ describe('CampaignService', () => {
       prisma.campaignAnalytics.upsert.mockResolvedValue({ id: 'analytics-1', campaignId: 'camp-1', totalClaims: 1, totalSpent: 100 });
       prisma.campaign.update.mockResolvedValue(mockCampaign);
 
-      const result = await service.claimReward({
-        campaignId: 'camp-1',
-        userId: 'user-2',
-        companyId: 'company-2',
-      });
+      const result = await service.claimReward(
+        { campaignId: 'camp-1' },
+        { userId: 'user-2', companyId: 'company-2', ip: '127.0.0.1', userAgent: 'jest' },
+      );
 
       expect(result).toBeDefined();
       expect(result?.status).toBe('APPROVED');
@@ -173,26 +172,38 @@ describe('CampaignService', () => {
 
     it('should reject claim for inactive campaign', async () => {
       prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, status: 'PAUSED' });
-      await expect(service.claimReward({ campaignId: 'camp-1', userId: 'user-2', companyId: 'company-2' }))
+      await expect(service.claimReward(
+        { campaignId: 'camp-1' },
+        { userId: 'user-2', companyId: 'company-2', ip: null, userAgent: null },
+      ))
         .rejects.toThrow(BadRequestException);
     });
 
     it('should reject claim for expired campaign', async () => {
       prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, endDate: new Date('2020-01-01') });
-      await expect(service.claimReward({ campaignId: 'camp-1', userId: 'user-2', companyId: 'company-2' }))
+      await expect(service.claimReward(
+        { campaignId: 'camp-1' },
+        { userId: 'user-2', companyId: 'company-2', ip: null, userAgent: null },
+      ))
         .rejects.toThrow(BadRequestException);
     });
 
     it('should reject duplicate claim', async () => {
       prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, perUserLimit: 1 });
       prisma.campaignClaim.count.mockResolvedValue(1);
-      await expect(service.claimReward({ campaignId: 'camp-1', userId: 'user-2', companyId: 'company-2' }))
+      await expect(service.claimReward(
+        { campaignId: 'camp-1' },
+        { userId: 'user-2', companyId: 'company-2', ip: null, userAgent: null },
+      ))
         .rejects.toThrow(BadRequestException);
     });
 
     it('should reject claim when budget exhausted', async () => {
       prisma.campaign.findUnique.mockResolvedValue({ ...mockCampaign, budget: 1000, remainingBudget: 0 });
-      await expect(service.claimReward({ campaignId: 'camp-1', userId: 'user-2', companyId: 'company-2' }))
+      await expect(service.claimReward(
+        { campaignId: 'camp-1' },
+        { userId: 'user-2', companyId: 'company-2', ip: null, userAgent: null },
+      ))
         .rejects.toThrow(BadRequestException);
     });
   });

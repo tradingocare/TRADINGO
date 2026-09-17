@@ -225,7 +225,7 @@ function CheckoutContent() {
           <AlertCircle size={40} className="mx-auto mb-4 text-text-tertiary" />
           <h2 className="text-text-primary font-semibold text-lg mb-2">No product selected</h2>
           <p className="text-text-secondary text-sm mb-6">{productErr || 'Browse products to add to cart'}</p>
-          <Link href="/products"
+          <Link href="/trading"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-accent text-btn-primary-text shadow-lg">
             Browse Products
           </Link>
@@ -244,7 +244,7 @@ function CheckoutContent() {
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4">
-        <Link href={product?.slug ? `/products/${product.slug}` : '/products'}
+        <Link href={product?.slug ? `/trading/${product.slug}` : '/trading'}
           className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-accent transition-colors mb-6">
           <ArrowLeft size={14} /> Back
         </Link>
@@ -405,7 +405,7 @@ function CheckoutContent() {
                     className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold bg-gradient-to-br from-accent-500 to-accent-400 text-btn-primary-text shadow-lg">
                     <Truck size={15} /> Place Order
                   </motion.button>
-                  <Link href="/products"
+                  <Link href="/trading"
                     className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm font-semibold bg-btn-glass text-btn-glass-text border border-border hover:bg-btn-glass-hover-bg hover:text-btn-glass-hover-text">
                     Browse More
                   </Link>

@@ -4,13 +4,12 @@ import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
 import { FeatureCards } from '@/components/shared/feature-cards';
 import { PricingCards } from '@/components/shared/pricing-cards';
-import { Testimonials } from '@/components/shared/testimonials';
 import { CTABlock } from '@/components/shared/cta-block';
 import { StatisticsCards } from '@/components/shared/statistics-cards';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LAUNCH_FEATURES, LAUNCH_PRICING_PLANS, LAUNCH_TESTIMONIALS, LAUNCH_STATS } from '@/data/master-data';
+import { LAUNCH_FEATURES, LAUNCH_PRICING_PLANS, LAUNCH_STATS } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'Launch Campaign | TRADINGO',
@@ -22,7 +21,7 @@ const launchFeatures = LAUNCH_FEATURES;
 
 const launchPlans = LAUNCH_PRICING_PLANS;
 
-const launchTestimonials = LAUNCH_TESTIMONIALS;
+
 
 const launchStats = LAUNCH_STATS;
 
@@ -96,19 +95,7 @@ export default function LaunchPage() {
         </div>
       </section>
 
-      <Separator />
-
-      <section className="py-20">
-        <div className="container-main">
-          <AnimatedSection>
-            <SectionHeader
-              title="What Beta Users Say"
-              subtitle="Hear from the businesses already trading on TRADINGO."
-            />
-            <Testimonials testimonials={launchTestimonials} />
-          </AnimatedSection>
-        </div>
-      </section>
+      
 
       <Separator />
 

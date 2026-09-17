@@ -16,6 +16,7 @@ import { TradingoLogo } from '@/components/shared/tradingo-logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { getDashboardForRole, getRoleFromCookie } from '@/lib/auth/redirects';
 
 const step1Schema = z.object({
  companyName: z.string().min(1, 'Company name is required'),
@@ -86,7 +87,7 @@ export default function OnboardingPage() {
  if (companyId) {
  await apiClient.post(`/onboarding/${companyId}/advance`, { onboardingStatus: 'BUSINESS_ADDED', data });
  }
- router.push('/dashboard');
+ router.push(getDashboardForRole(getRoleFromCookie()));
  } catch (err: any) {
  setServerError(err?.response?.data?.message || err.message || 'Submission failed');
  }

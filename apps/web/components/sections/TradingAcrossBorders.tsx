@@ -32,7 +32,7 @@ export default function TradingAcrossBorders() {
   const selectedCountryCode = selectedCountry.code;
 
   return (
-    <section className="relative overflow-hidden py-20" style={{ background: 'var(--bg-base)' }}>
+    <section className="relative overflow-hidden py-14 sm:py-16 lg:py-20" style={{ background: 'var(--bg-base)' }}>
       {/* Background Gradients & Glows */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-40 top-1/4 h-[500px] w-[500px] rounded-full bg-[rgba(0,180,255,0.03)] blur-[120px]" />
@@ -49,20 +49,20 @@ export default function TradingAcrossBorders() {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-[1600px] text-center"
         >
-          <div className="glass-panel-prism px-24 py-2 sm:px-32 sm:py-3 mb-16">
+          <div className="glass-panel-prism px-5 py-6 sm:px-8 sm:py-8 lg:px-12 mb-8">
             <img
-              src="/logo/trdn.png"
-              alt="TRDN"
-              className="mx-auto h-12 w-auto opacity-80 sm:h-14 drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]"
+              src="/logo/trdn5.png"
+              alt="TRADINGO"
+              className="mx-auto h-20 w-auto opacity-90 sm:h-24 drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]"
             />
 
-            <div className="relative z-10 mt-6">
+            <div className="relative z-10 mt-5">
               <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
                 Trading Across Borders
               </span>
 
-              <h2 className="mt-5 text-3xl font-extrabold leading-[1.1] tracking-tight text-primary sm:text-4xl lg:text-5xl">
+              <h2 className="mt-4 text-2xl font-extrabold leading-[1.15] tracking-tight text-primary sm:text-3xl lg:text-5xl">
                 The Future of{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-[#ff4d00]">
                   Global Trade
@@ -73,42 +73,44 @@ export default function TradingAcrossBorders() {
               <div className="mt-3 flex items-center justify-center gap-4">
                 <span className="h-px w-6 bg-surface-tertiary" />
                 <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber-400/60 sm:text-sm">
-                  Connecting Businesses Beyond Boundaries
+                  One Intelligent Platform. Unlimited Global Opportunities.
                 </p>
                 <span className="h-px w-8 bg-surface-tertiary" />
               </div>
 
-              <div className="mx-auto mt-8 max-w-5xl space-y-4">
-                <p className="text-lg leading-relaxed text-text-secondary sm:text-xl">
-                  TRADINGO is evolving from a leading Indian B2B marketplace into a{' '}
-                  <span className="font-medium text-primary">Global Smart Trade System</span>{' '}
-                  powered by TRADHEXA&trade;. Our mission is to connect buyers, sellers, manufacturers,
-                  suppliers, distributors, exporters, importers, and service providers through a
-                  trusted, AI-powered ecosystem built on Trust, Technology, Intelligence, and Transparency.
-                  Starting in India, we are expanding across South Asia, Southeast Asia, the Middle East,
-                  and global markets to make international trade simpler, smarter, and more connected.
+              <div className="mx-auto mt-6 w-full space-y-5">
+                <p className="mx-auto max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
+                  TRADINGO is a{' '}
+                  <span className="font-medium text-primary">global trade platform</span>{' '}
+                  &mdash;a next-generation AI-powered trade ecosystem transforming
+                  the way businesses connect, collaborate, and grow. By unifying buyers, manufacturers,
+                  suppliers, distributors, exporters, importers, and professional service providers into
+                  one trusted digital network, TRADINGO enables intelligent business discovery, verified
+                  partnerships, enterprise collaboration, and seamless cross-border commerce.
+                </p>
+                <p className="mx-auto max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
+                  Driven by Trust, Technology, Intelligence, and Transparency, TRADINGO combines
+                  artificial intelligence, real-time market intelligence, verified business networks,
+                  and enterprise-grade digital infrastructure to make global trade more connected,
+                  efficient, and secure.
+                </p>
+                <p className="mx-auto max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
+                  Starting in India and expanding across South Asia, Southeast Asia, the Middle East,
+                  and global markets, TRADINGO is building the digital foundation for the next generation
+                  of international commerce&mdash;where businesses of every size can connect, collaborate,
+                  and succeed without borders.
                 </p>
               </div>
 
-              <div className="relative mt-10">
+              <div className="relative mt-8">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="h-px w-48 bg-gradient-to-r from-transparent via-border to-transparent" />
                 </div>
-                <div className="relative flex flex-wrap items-center justify-center gap-4 sm:gap-6 rounded-2xl border border-border bg-surface-secondary px-6 py-3.5 max-w-2xl mx-auto">
-                  <div className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Born in</span>
-                    <span className="text-base font-extrabold text-primary sm:text-lg">India</span>
-                  </div>
-                  <div className="h-4 w-px bg-surface-tertiary hidden sm:block" />
-                  <div className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Built for</span>
-                    <span className="text-base font-extrabold text-amber-400 sm:text-lg">the World</span>
-                  </div>
-                  <div className="h-4 w-px bg-surface-tertiary hidden sm:block" />
-                  <div className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-sm">Powered by</span>
-                    <span className="text-base font-extrabold text-text-primary sm:text-lg">TRADHEXA</span>
-                  </div>
+                <div className="relative flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface-secondary px-6 py-3.5 max-w-2xl mx-auto">
+                  <span className="text-sm font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-base">Born in</span>
+                  <span className="text-base font-extrabold text-primary sm:text-lg">India,</span>
+                  <span className="text-sm font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-base">Built for</span>
+                  <span className="text-base font-extrabold text-amber-400 sm:text-lg">the World</span>
                 </div>
               </div>
             </div>
@@ -121,19 +123,19 @@ export default function TradingAcrossBorders() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-8"
+          className="mt-6"
         >
           {/* Header Block matching mockup */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/5 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
               <Globe className="h-3 w-3 text-amber-400" />
-              TRADING ACROSS BORDERS™
+              TRADING ACROSS BORDERS&trade;
             </div>
             <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-primary sm:text-5xl">
               Select Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">Region</span>
             </h2>
-            <p className="mt-3 text-xs sm:text-sm text-text-secondary">
-               Born in India <span className="text-amber-500/50 mx-1.5">•</span> Built for Global Trade <span className="text-amber-500/50 mx-1.5">•</span> Powered by <span className="text-amber-400 font-semibold">TRADHEXA™</span>
+            <p className="mt-3 text-sm sm:text-base text-text-secondary">
+                Born in India, Built for the World
             </p>
           </div>
 
@@ -214,7 +216,7 @@ export default function TradingAcrossBorders() {
           </div>
 
           {/* Mockup footer attributes */}
-          <div className="mt-8 flex items-center justify-center gap-8 text-sm text-text-tertiary max-w-2xl mx-auto rounded-full border border-border bg-surface-secondary py-3 px-8">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-text-tertiary max-w-2xl mx-auto rounded-full border border-border bg-surface-secondary py-3 px-8">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-amber-500/80" />
               <span className="font-medium text-primary/80">Secure</span>
@@ -245,7 +247,7 @@ export default function TradingAcrossBorders() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.3 }}
-            className="mt-12 overflow-hidden rounded-2xl border border-border bg-surface-secondary px-8 py-4 text-center max-w-[1600px] mx-auto backdrop-blur-md"
+            className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface-secondary px-8 py-4 text-center max-w-[1600px] mx-auto backdrop-blur-md"
           >
             {/* Dynamic Flag Icon at the top */}
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-amber-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
@@ -258,15 +260,15 @@ export default function TradingAcrossBorders() {
 
             {selected === 'India' ? (
               <>
-                <h3 className="mt-4 text-3xl font-black text-primary">Welcome to TRADINGO India</h3>
-                <p className="mt-2 text-base text-text-secondary sm:text-lg">India is our home and our launch market.</p>
-                <p className="mx-auto mt-4 max-w-4xl text-lg leading-relaxed text-text-secondary sm:text-xl">
-                  Connect with verified buyers, sellers, manufacturers, distributors, exporters,
-                  importers, and professional service providers. Discover high-value RFQs, unlock
-                  GOCASH rewards, participate in TRADGO, and experience the future of secure,
-                  transparent, and AI-powered global trade&mdash;all within one intelligent ecosystem.
+                <h3 className="mt-4 text-2xl font-black text-primary sm:text-3xl">Welcome to TRADINGO India</h3>
+                <p className="mx-auto mt-3 w-full max-w-7xl text-base leading-relaxed text-text-secondary sm:mt-4 sm:text-lg sm:text-justify">
+                  India is our home and our launch market.
+                  Connect with verified buyers, sellers, manufacturers, and distributors.
+                  Discover high-value RFQs, unlock GOCASH rewards, participate in TRADGO.
+                  Driven by Trust, Technology, Intelligence.
+                  Starting in India and expanding globally.
                 </p>
-                  <Link href="/products">
+                <Link href="/trading">
                   <motion.span
                     whileHover={{ y: -2, scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
@@ -281,10 +283,10 @@ export default function TradingAcrossBorders() {
                 <h3 className="mt-4 text-3xl font-black text-primary">Welcome to the TRADINGO Family</h3>
                 <p className="mt-1 text-sm font-semibold text-amber-400/80 sm:text-base">Global Expansion in Progress ({selected})</p>
 
-                <div className="mx-auto mt-6 max-w-4xl space-y-4 text-base leading-relaxed text-text-secondary sm:text-lg">
+                <div className="mx-auto mt-6 w-full space-y-4 text-base leading-relaxed text-text-secondary sm:text-lg">
                   <p>Thank you for your interest in TRADINGO.</p>
                   <p>
-                    TRADINGO – The Global Smart TRADHEXA B2B Marketplace is currently launched in India and is progressively expanding into international markets.
+                    TRADINGO &ndash; The Global Smart B2B Marketplace is currently launched in India and is progressively expanding into international markets.
                   </p>
                   <p>
                     We are actively preparing localized experiences for your region and look forward to welcoming you very soon.
@@ -301,19 +303,17 @@ export default function TradingAcrossBorders() {
                   <button className="group flex items-center justify-center gap-2 rounded-full border border-border bg-surface-secondary px-6 py-2.5 text-sm font-semibold text-text-secondary transition-all hover:bg-surface-tertiary hover:text-primary cursor-pointer">
                     Join the Waiting List
                   </button>
-                <Link href="/products">
+                <Link href="/trading">
                     <button className="group flex items-center justify-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-6 py-2.5 text-sm font-semibold text-amber-400 transition-all hover:bg-amber-500/10 cursor-pointer">
                       Explore TRADINGO India
                     </button>
                   </Link>
                 </div>
 
-                <div className="mt-8 flex items-center justify-center gap-4 text-[10px] text-text-secondary max-w-md mx-auto border-t border-border pt-4">
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-text-secondary max-w-md mx-auto border-t border-border pt-4">
                   <span>Coming Soon to Your Country.</span>
                   <span className="h-3 w-px bg-surface-tertiary" />
                   <span className="text-amber-400/80">Trade Without Borders.</span>
-                  <span className="h-3 w-px bg-surface-tertiary" />
-                  <span>Powered by TRADHEXA.</span>
                 </div>
               </>
             )}

@@ -92,9 +92,9 @@ export function toProductDetailView(product: ProductDetail, options: ProductDeta
     category: product.category ? { name: product.category.name, slug: product.category.slug } : undefined,
     breadcrumb: [
       { label: 'Home', href: '/' },
-      { label: 'Products', href: '/products' },
+      { label: 'Products', href: '/trading' },
       ...(product.category ? [{ label: product.category.name, href: `/categories/${product.category.slug}` }] : []),
-      { label: product.name, href: `/products/${product.slug}` },
+      { label: product.name, href: `/trading/${product.slug}` },
     ],
     images,
     price,

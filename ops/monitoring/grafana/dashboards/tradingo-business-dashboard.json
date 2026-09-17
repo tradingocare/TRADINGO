@@ -1,18 +1,18 @@
 {
   "uid": "tradingo-business",
   "title": "TRADINGO Business",
-  "version": 2,
+  "version": 3,
   "panels": [
     {
-      "title": "Active Users",
+      "title": "Active Endpoints",
       "type": "graph",
-      "targets": [{ "expr": "business:active_users", "legendFormat": "active users" }],
+      "targets": [{ "expr": "count(count by (path) (rate(api_http_requests_total[5m])))", "legendFormat": "endpoints" }],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
     },
     {
-      "title": "Requests per User",
+      "title": "Error Rate",
       "type": "graph",
-      "targets": [{ "expr": "business:api_requests_per_user:rate5m", "legendFormat": "req/user" }],
+      "targets": [{ "expr": "sum(rate(api_http_requests_total{status=~\"5..\"}[5m])) / sum(rate(api_http_requests_total[5m])) * 100", "legendFormat": "%" }],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
     },
     {
@@ -25,7 +25,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 8 }
     },
     {
-      "title": "Queue Backlog",
+      "title": "Request Rate",
       "type": "graph",
       "targets": [{ "expr": "job:http_requests_total:rate5m", "legendFormat": "req/s" }],
       "gridPos": { "h": 8, "w": 12, "x": 4, "y": 8 }

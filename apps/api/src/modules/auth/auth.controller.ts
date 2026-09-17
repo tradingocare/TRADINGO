@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Param, Body, HttpCode, HttpStatus, UseGuards, Headers, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Patch, Param, Body, HttpCode, HttpStatus, UseGuards, Headers, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { FastifyRequest, FastifyReply } from 'fastify';
@@ -6,9 +6,10 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { CreateVendorDto } from './dto/create-vendor.dto';
+import { CreateVendorDto, VendorOnboardingDto } from './dto/create-vendor.dto';
 import { CreateBuyerDto } from './dto/create-buyer.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { VerifyPanDto } from './dto/verify-pan.dto';
 import { VerifyGstDto } from './dto/verify-gst.dto';
 import { VerifyIfscDto } from './dto/verify-ifsc.dto';
@@ -75,6 +76,20 @@ export class AuthController {
     return result;
   }
 
+  @Post('vendor/onboarding')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Activate vendor capability on an existing account' })
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  async vendorOnboarding(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: VendorOnboardingDto,
+    @Res({ passthrough: true }) res?: FastifyReply,
+  ) {
+    const result = await this.authService.vendorOnboarding(userId, dto);
+    if (res && 'refreshToken' in result) this.setRefreshTokenCookie(res, (result as any).refreshToken);
+    return result;
+  }
+
   @Post('register/buyer')
   @UseGuards(TurnstileGuard)
   @ApiOperation({ summary: 'Register a new buyer' })
@@ -128,6 +143,14 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getProfile(@CurrentUser('sub') userId: string) {
     return this.authService.getProfile(userId);
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile (name, mobile, notification preferences)' })
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async updateMe(@CurrentUser('sub') userId: string, @Body() dto: UpdateMeDto) {
+    return this.authService.updateMe(userId, dto);
   }
 
   @Post('change-password')

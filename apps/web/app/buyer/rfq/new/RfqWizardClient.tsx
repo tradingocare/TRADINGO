@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { DashboardPageHeader } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { useRfqWizardStore } from '@/store/rfq-wizard-store';
@@ -20,9 +20,45 @@ const stepIcons = ['📋', '📦', '🏪', '📍', '📎', '👁'];
 
 export function RfqWizardClient() {
   const router = useRouter();
-  const { step, setStep, title, products, suppliers, reset } = useRfqWizardStore();
+  const searchParams = useSearchParams();
+  const { step, setStep, title, products, suppliers, reset, setSource, addProduct } = useRfqWizardStore();
   const createMutation = useCreateSmartRfq();
   const [saving, setSaving] = useState(false);
+
+  // Prefill from canonical query params: ?source=X&sourceId=Y (also accepts
+  // legacy productId/companyId/entityId aliases from retargeted CTAs).
+  useEffect(() => {
+    const productId = searchParams.get('productId');
+    const companyId = searchParams.get('companyId');
+    const entityId = searchParams.get('entityId');
+    const sourceParam = searchParams.get('source');
+    const sourceIdParam = searchParams.get('sourceId');
+
+    let source = sourceParam ?? null;
+    if (!source) {
+      if (productId) source = 'PRODUCT';
+      else if (companyId) source = 'COMPANY';
+    }
+
+    if (!source) return;
+
+    let sourceId = sourceIdParam ?? '';
+    if (!sourceId) {
+      if (source === 'PRODUCT') sourceId = productId ?? entityId ?? '';
+      else if (source === 'COMPANY') sourceId = companyId ?? '';
+      else sourceId = entityId ?? '';
+    }
+
+    setSource(source, sourceId);
+
+    if (source === 'PRODUCT' && sourceId) {
+      const existing = useRfqWizardStore.getState().products;
+      if (!existing.some((p) => p.productId === sourceId)) {
+        addProduct({ productId: sourceId, productName: '', quantity: 1, unit: '' });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const validateStep = (s: number): boolean => {
     if (s === 0) return !!title.trim();
@@ -36,12 +72,11 @@ export function RfqWizardClient() {
   const handleNext = () => { if (canNext && step < steps.length - 1) setStep(step + 1); };
   const handleBack = () => { if (step > 0) setStep(step - 1); };
 
-  const buildPayload = (status: string) => {
+  const buildPayload = () => {
     const s = useRfqWizardStore.getState();
     return {
       title: s.title,
       description: s.description,
-      status,
       rfqType: s.rfqType,
       visibility: s.visibility,
       urgency: s.priority,
@@ -49,6 +84,7 @@ export function RfqWizardClient() {
       sourceId: s.sourceId || undefined,
       expiresAt: s.expiryDays ? new Date(Date.now() + s.expiryDays * 86400000).toISOString() : undefined,
       productItems: s.products.map((p) => ({
+        productId: p.productId,
         productName: p.productName,
         quantity: p.quantity,
         unit: p.unit,
@@ -66,16 +102,13 @@ export function RfqWizardClient() {
       }] : undefined,
       deliveryAddress: s.location.city ? { city: s.location.city, state: s.location.state, country: s.location.country, pincode: s.location.pincode } : undefined,
       paymentPreference: s.paymentPreference || undefined,
-      vendorMatches: s.suppliers.filter((sp) => sp.selected).map((sp) => ({
-        companyId: sp.companyId,
-      })),
     };
   };
 
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      const payload = buildPayload('ACTIVE');
+      const payload = buildPayload();
       await createMutation.mutateAsync(payload);
       toast({ title: 'Success', description: 'RFQ submitted successfully' });
       reset();
@@ -90,7 +123,7 @@ export function RfqWizardClient() {
   const handleSaveDraft = async () => {
     setSaving(true);
     try {
-      const payload = buildPayload('DRAFT');
+      const payload = buildPayload();
       await createMutation.mutateAsync(payload);
       toast({ title: 'Draft Saved', description: 'RFQ draft saved successfully' });
       reset();

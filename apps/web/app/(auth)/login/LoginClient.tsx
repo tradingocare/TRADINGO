@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef }  from 'react'
 import { useRouter, useSearchParams }   from 'next/navigation'
 import Link                             from 'next/link'
@@ -15,6 +15,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 import apiClient from '@/lib/api/client'
 import { setAccessToken } from '@/lib/auth'
+import { getDashboardForRole, getSellerEntryTarget } from '@/lib/auth/redirects'
 import { useAuthStore } from '@/store/auth-store'
 import { toast } from '@/components/ui/use-toast'
 
@@ -82,6 +83,15 @@ const ROLES = [
     ],
   },
 ]
+
+function resolvePostLoginTarget(userRole: string, requested: string | null) {
+  const dashboard = getDashboardForRole(userRole)
+  if (!requested || !requested.startsWith('/')) return dashboard
+  if (userRole === 'SELLER' && requested.startsWith('/seller/')) return requested
+  if (userRole === 'BUYER' && (requested.startsWith('/buyer/') || requested.startsWith('/register/'))) return requested
+  if ((userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && requested.startsWith('/admin/')) return requested
+  return dashboard
+}
 
 export default function LoginClient() {
   const router       = useRouter()
@@ -152,7 +162,7 @@ export default function LoginClient() {
       document.cookie = `userRole=${data.user.role}; path=/; max-age=86400; SameSite=Lax`
       document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`
       toast.success(`Welcome back, ${data.user.name?.split(' ')[0]}!`)
-      router.push(redirectTo)
+      router.push(resolvePostLoginTarget(data.user.role, searchParams.get('next') || searchParams.get('redirect')))
     } catch (err: any) {
       const msg = err?.response?.data?.message
       if (msg?.includes('not found'))
@@ -224,7 +234,7 @@ export default function LoginClient() {
       document.cookie = `userRole=${data.user.role}; path=/; max-age=86400; SameSite=Lax`
       document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`
       toast.success('Welcome back!')
-      router.push(redirectTo)
+      router.push(resolvePostLoginTarget(data.user.role, searchParams.get('next') || searchParams.get('redirect')))
     } catch {
       setError('Invalid or expired OTP. Try again.')
       setOtp(['','','','','',''])
@@ -297,7 +307,7 @@ export default function LoginClient() {
         <div className="relative z-10 flex flex-col h-full p-10 xl:p-12">
 
           <Link href="/" className="flex items-center gap-3 mb-auto w-fit">
-            <Image src="/logo/trdn6.png" alt="TRADINGO"
+            <Image src="/logo/trdn5.png" alt="TRADINGO"
               width={44} height={44} className="object-contain" />
           </Link>
 
@@ -396,7 +406,7 @@ export default function LoginClient() {
         <div className="lg:hidden flex items-center justify-between px-5 py-4"
           style={{ borderBottom:'1px solid var(--border-color)' }}>
           <Link href="/">
-            <Image src="/logo/trdn6.png" alt="TRADINGO"
+            <Image src="/logo/trdn5.png" alt="TRADINGO"
               width={36} height={36} className="object-contain" />
           </Link>
           <Link href="/register"
@@ -970,7 +980,18 @@ className="w-full pl-10 pr-11 py-3.5 rounded-xl
                       color: '#FF4D00',
                     },
                   ].map(c => (
-                    <Link key={c.href} href={c.href}>
+                    <Link
+                      key={c.href}
+                      href={c.href}
+                      onClick={
+                        c.href === '/register/vendor'
+                          ? (e) => {
+                              e.preventDefault();
+                              router.push(getSellerEntryTarget());
+                            }
+                          : undefined
+                      }
+                    >
                       <motion.div
                         whileHover={{ y:-2, scale:1.01 }}
                         whileTap={{ scale:0.97 }}
@@ -1015,7 +1036,7 @@ className="w-full pl-10 pr-11 py-3.5 rounded-xl
               {[
                 '🔒 256-bit SSL',
                 '🇮🇳 Made in India',
-                '⭐ 4.8/5 Rating',
+                '⭐ Verified Marketplace',
                 '📞 24/7 Support',
               ].map(t => (
                 <span key={t} className="text-white/20 text-[9px]">{t}</span>

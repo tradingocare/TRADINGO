@@ -78,7 +78,7 @@ export function MarkerPopup({ product }: MarkerPopupProps) {
             {product.distanceLabel}
           </span>
           <Link
-            href={`/products/${product.slug}`}
+            href={`/trading/${product.slug}`}
             className="rounded-md bg-primary dark:bg-primary-dark px-2.5 py-1 text-[11px] font-medium text-gray-900 hover:opacity-90 transition-opacity"
             aria-label={`View ${product.name}`}
           >

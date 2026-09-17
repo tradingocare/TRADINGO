@@ -24,8 +24,8 @@ export class TradeservIndexSyncService {
         password: this.configService.get<string>('opensearch.password')!,
       },
       ssl: { rejectUnauthorized: this.configService.get<boolean>('opensearch.rejectUnauthorized', true) },
-      maxRetries: 3,
-      requestTimeout: 10000,
+      maxRetries: 0,
+      requestTimeout: 3000,
     });
   }
 

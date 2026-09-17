@@ -50,8 +50,8 @@ export default function WorkspaceDashboard() {
             <div className="flex items-center gap-4">
               <div className="h-14 w-14 animate-pulse rounded-xl bg-surface-secondary" />
               <div className="flex-1 space-y-2">
-                <div className="h-5 w-48 animate-pulse rounded bg-surface-secondary" />
-                <div className="h-4 w-64 animate-pulse rounded bg-surface-secondary" />
+                <div className="h-5 w-full max-w-48 animate-pulse rounded bg-surface-secondary" />
+                <div className="h-4 w-full max-w-64 animate-pulse rounded bg-surface-secondary" />
               </div>
             </div>
           ) : (
@@ -78,7 +78,7 @@ export default function WorkspaceDashboard() {
           <div className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-sm font-mono text-text-secondary">
             <span className="truncate">tradeserv.com/p/{slug || '{slug}'}</span>
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <Link
               href={`/tradeserv/p/${slug}`}
               className="flex items-center gap-1.5 rounded-full bg-surface-secondary px-4 py-1.5 text-xs font-medium text-text-secondary transition-all hover:bg-surface hover:text-text-primary"

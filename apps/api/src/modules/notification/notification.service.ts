@@ -240,8 +240,8 @@ export class NotificationService {
     });
   }
 
-  async upsertPreference(companyId: string, userId: string, dto: UpsertPreferenceDto): Promise<unknown> {
-    return this.prisma.notificationPreference.upsert({
+  async upsertPreference(companyId: string, userId: string, dto: UpsertPreferenceDto, client?: Prisma.TransactionClient | PrismaService): Promise<unknown> {
+    return (client ?? this.prisma).notificationPreference.upsert({
       where: {
         companyId_userId_channel_type: {
           companyId,
@@ -261,8 +261,9 @@ export class NotificationService {
     });
   }
 
-  async initializeDefaultPreferences(companyId: string, userId: string): Promise<void> {
-    const existing = await this.prisma.notificationPreference.count({
+  async initializeDefaultPreferences(companyId: string, userId: string, client?: Prisma.TransactionClient | PrismaService): Promise<void> {
+    const db = client ?? this.prisma;
+    const existing = await db.notificationPreference.count({
       where: { companyId, userId },
     });
     if (existing > 0) return;
@@ -274,7 +275,7 @@ export class NotificationService {
       { channel: NotificationChannel.SMS, enabled: false },
     ];
 
-    await this.prisma.notificationPreference.createMany({
+    await db.notificationPreference.createMany({
       data: defaults.map((d) => ({
         companyId,
         userId,

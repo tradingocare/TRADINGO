@@ -42,9 +42,9 @@ export class CreateVendorDto {
   @IsOptional() @IsString()
   @ApiPropertyOptional({ description: 'Alternate mobile number' })
   alternateMobile?: string;
-  @IsString() @MinLength(8) @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/, { message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character' })
+  @IsOptional() @IsString() @MinLength(8) @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/, { message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character' })
   @ApiProperty({ description: 'Password (min 8 chars, must contain uppercase, lowercase, number, and special character)' })
-  password: string;
+  password?: string;
 
   @IsString() @Matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/)
   @ApiProperty({ description: 'PAN number' })
@@ -121,12 +121,32 @@ export class CreateVendorDto {
   @IsString()
   @ApiProperty({ description: 'Account number' })
   accountNumber: string;
-  @IsString()
+  @IsString() @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/)
   @ApiProperty({ description: 'IFSC code' })
   ifscCode: string;
   @IsEnum(['current', 'savings'])
   @ApiProperty({ description: 'Account type (current or savings)' })
   accountType: string;
+
+  // VENDOR-REG-002 — optional uploaded document/logo URLs. The wizard uploads
+  // PAN card, GST certificate, cancelled cheque, logo and banner to the storage
+  // endpoint and supplies the resulting URLs here. All optional: registration
+  // must still succeed if a file was skipped or upload failed.
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded PAN card document URL' })
+  panCardUrl?: string;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded GST certificate document URL' })
+  gstCertificateUrl?: string;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded cancelled cheque document URL' })
+  cancelledChequeUrl?: string;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded company logo URL' })
+  logoUrl?: string;
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Uploaded company banner URL' })
+  bannerUrl?: string;
 
   @IsString()
   @ApiProperty({ description: 'Plan ID' })
@@ -138,3 +158,10 @@ export class CreateVendorDto {
   @ApiPropertyOptional({ description: 'RM code' })
   rmCode?: string;
 }
+
+// F3 — vendor onboarding is invoked for ALREADY-REGISTERED users (JWT-guarded).
+// Password is optional on CreateVendorDto itself: registerVendor (new account)
+// enforces its presence service-side, vendorOnboarding (existing account) skips
+// it. @IsOptional short-circuits the strength validators when absent; a present
+// password still gets the full validation.
+export class VendorOnboardingDto extends CreateVendorDto {}

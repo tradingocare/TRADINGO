@@ -12,18 +12,34 @@ import { TurnstileGuard } from '../../common/guards/turnstile.guard';
 import { SmsService } from '../sms/sms.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { NotificationService } from '../notification/notification.service';
+import { MembershipService } from '../membership/membership.service';
+import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
 import { CanActivate } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 const mockPrisma = {
-  user: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+  user: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn().mockResolvedValue({ id: 'user-1', email: 'vendor@example.com', name: 'Test', role: 'SELLER', permissions: [] }) },
   session: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn().mockResolvedValue(undefined), delete: jest.fn(), deleteMany: jest.fn(), updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+  company: { create: jest.fn().mockResolvedValue({ id: 'company-1', assignedRmId: null, assignedAt: null, name: 'Test Biz' }), findFirst: jest.fn().mockResolvedValue(null), update: jest.fn().mockResolvedValue({}) },
+  companyOwner: { create: jest.fn().mockResolvedValue({}), findMany: jest.fn().mockResolvedValue([]) },
+  companyLocation: { create: jest.fn().mockResolvedValue({}) },
+  category: { findMany: jest.fn().mockResolvedValue([]) },
+  companyCategory: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
+  sellerPayoutAccount: { upsert: jest.fn().mockResolvedValue({}) },
+  newsletterSubscriber: { upsert: jest.fn().mockResolvedValue({}) },
+  auditLog: { create: jest.fn().mockResolvedValue({}) },
+  $transaction: undefined as unknown as jest.Mock,
 };
+(mockPrisma.$transaction as jest.Mock) = jest.fn(async (fn: (tx: unknown) => unknown) => fn(mockPrisma));
 const mockRedis = { get: jest.fn(), set: jest.fn(), del: jest.fn(), exists: jest.fn(), incr: jest.fn(), expire: jest.fn() };
 const mockJwt = { sign: jest.fn(), verify: jest.fn() };
 const mockConfig = { get: jest.fn() };
 const mockEmailQueue = { add: jest.fn() };
+const mockNotificationService = { create: jest.fn().mockResolvedValue({ id: 'notif-1' }), createWithTemplate: jest.fn().mockResolvedValue({ id: 'notif-1' }), upsertPreference: jest.fn().mockResolvedValue({ id: 'pref-1' }), initializeDefaultPreferences: jest.fn().mockResolvedValue(undefined) };
+const mockMembershipService = { enrollTrial: jest.fn().mockResolvedValue({ success: true, status: 'TRIAL' }) };
+const mockVendorCodesService = { assignReferral: jest.fn().mockResolvedValue(undefined), getCodeOwner: jest.fn().mockResolvedValue({ type: 'RM', userId: 'rm-1', name: 'RM' }) };
+const mockEventEmitter = { emit: jest.fn() };
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -67,8 +83,10 @@ describe('Auth Flow Integration', () => {
         { provide: getQueueToken('email'), useValue: mockEmailQueue },
         { provide: SmsService, useValue: { send: jest.fn(), sendOtp: jest.fn(), sendTransactional: jest.fn() } },
         { provide: AuditLogService, useValue: { log: jest.fn().mockResolvedValue(undefined), create: jest.fn().mockResolvedValue(undefined) } },
-        { provide: NotificationService, useValue: { create: jest.fn().mockResolvedValue({ id: 'notif-1' }), createWithTemplate: jest.fn().mockResolvedValue({ id: 'notif-1' }) } },
-        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+        { provide: NotificationService, useValue: mockNotificationService },
+        { provide: MembershipService, useValue: mockMembershipService },
+        { provide: VendorCodesService, useValue: mockVendorCodesService },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -233,6 +251,129 @@ describe('Auth Flow Integration', () => {
 
       await expect(controller.verifyEmail({ token: 'bad-token' }))
         .rejects.toThrow('Invalid or expired verification token');
+    });
+  });
+
+  describe('Vendor Onboarding Flow', () => {
+    const vendorDto = {
+      businessName: 'Test Biz',
+      businessType: 'Private Limited',
+      sellerType: 'Manufacturer',
+      yearEstablished: '2020',
+      totalEmployees: '10',
+      annualTurnover: '1 Cr',
+      ownerName: 'Owner',
+      designation: 'Director',
+      email: 'vendor@example.com',
+      mobileNumber: '9876543210',
+      password: 'Pass@1234',
+      panNumber: 'ABCDE1234F',
+      panHolderName: 'Owner',
+      hasGst: false,
+      primaryCategory: 'Steel',
+      planId: 'trade_smart',
+      referralCode: 'REF1',
+      rmCode: 'RM1',
+      accountHolderName: 'Owner',
+      accountNumber: '1234567890',
+      ifscCode: 'SBIN0001234',
+      accountType: 'current',
+    } as any;
+
+    it('activates vendor with plan, referral, RM and payout details', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'vendor@example.com', name: 'Test', role: 'BUYER', mobile: null, panNumber: null, status: 'active', permissions: [], isActive: true });
+
+      const result = await controller.vendorOnboarding('user-1', vendorDto);
+
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockMembershipService.enrollTrial).toHaveBeenCalledWith('company-1', 'trade_smart', mockPrisma);
+      expect(mockVendorCodesService.assignReferral).toHaveBeenCalledWith('company-1', 'REF1', mockPrisma);
+      expect(mockPrisma.company.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'company-1' },
+        data: expect.objectContaining({ assignedRmId: 'rm-1' }),
+      }));
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ action: 'ASSIGN_RM' }),
+      }));
+      expect(mockPrisma.sellerPayoutAccount.upsert).toHaveBeenCalled();
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('preserves an existing RM assignment', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'vendor@example.com', name: 'Test', role: 'BUYER', mobile: null, panNumber: null, status: 'active', permissions: [], isActive: true });
+      mockPrisma.company.create.mockResolvedValueOnce({ id: 'company-1', assignedRmId: 'rm-99', assignedAt: new Date(), name: 'Test Biz' });
+
+      const result = await controller.vendorOnboarding('user-1', vendorDto);
+
+      expect(mockPrisma.company.update).not.toHaveBeenCalled();
+      expect(mockPrisma.auditLog.create).not.toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ action: 'ASSIGN_RM' }),
+      }));
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('rolls back without side effects when enrollment fails', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'vendor@example.com', name: 'Test', role: 'BUYER', mobile: null, panNumber: null, status: 'active', permissions: [], isActive: true });
+      mockMembershipService.enrollTrial.mockRejectedValueOnce(new Error('plan failure'));
+
+      await expect(controller.vendorOnboarding('user-1', vendorDto)).rejects.toThrow('plan failure');
+
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+      expect(mockPrisma.auditLog.create).not.toHaveBeenCalled();
+      expect(mockPrisma.sellerPayoutAccount.upsert).not.toHaveBeenCalled();
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+      expect(mockEmailQueue.add).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Buyer Registration Flow', () => {
+    const buyerDto = {
+      email: 'buyer@example.com',
+      password: 'Pass@1234',
+      fullName: 'Buyer',
+      companyName: 'Buy Co',
+      businessType: 'Private Limited',
+      mobileNumber: '9876543210',
+      industry: 'Steel',
+      companySize: '10',
+      annualProcurement: '10 Cr',
+      addressLine1: 'Addr',
+      city: 'Patna',
+      district: 'Patna',
+      state: 'Bihar',
+      pincode: '800001',
+      notificationEmail: true,
+      notificationSms: false,
+      newsletter: true,
+    } as any;
+
+    it('registers buyer transactionally with preferences and newsletter', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.create.mockResolvedValue({ id: 'user-1', email: 'buyer@example.com', name: 'Buyer', role: 'BUYER', permissions: [] });
+      mockPrisma.session.create.mockResolvedValue({ id: 'session-1' });
+
+      const result = await controller.registerBuyer(buyerDto);
+
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockNotificationService.initializeDefaultPreferences).toHaveBeenCalledWith('company-1', 'user-1', mockPrisma);
+      expect(mockNotificationService.upsertPreference).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.newsletterSubscriber.upsert).toHaveBeenCalled();
+      expect(result.companyId).toBe('company-1');
+      expect(mockEmailQueue.add).toHaveBeenCalled();
+    });
+
+    it('rolls back without side effects when preference initialization fails', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.create.mockResolvedValue({ id: 'user-1', email: 'buyer@example.com', name: 'Buyer', role: 'BUYER', permissions: [] });
+      mockNotificationService.initializeDefaultPreferences.mockRejectedValueOnce(new Error('pref failure'));
+
+      await expect(controller.registerBuyer(buyerDto)).rejects.toThrow('pref failure');
+
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockPrisma.newsletterSubscriber.upsert).not.toHaveBeenCalled();
+      expect(mockPrisma.session.create).not.toHaveBeenCalled();
+      expect(mockEmailQueue.add).not.toHaveBeenCalled();
     });
   });
 });

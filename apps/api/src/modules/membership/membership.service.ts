@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, UnauthorizedException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PaymentGateway, PlanVisibility } from '@prisma/client';
+import { Prisma, PaymentGateway, PlanVisibility, PlanType } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { InvoiceService } from '../billing/invoice.service';
 import { TaxService } from '../billing/tax.service';
@@ -733,9 +733,6 @@ export class MembershipService {
   }
 
   async seedPlans() {
-    const count = await this.prisma.membershipPlan.count();
-    if (count > 0) return { message: 'Plans already seeded' };
-
     const plans = [
       { planId:'trade_start',   name:'Trade Start',  pricePlanA:6000,  pricePlanB:12000, pricePlanC:18000, sortOrder:1 },
       { planId:'trade_smart',   name:'Trade Smart',  pricePlanA:12000, pricePlanB:18000, pricePlanC:30000, sortOrder:2 },
@@ -745,16 +742,75 @@ export class MembershipService {
       { planId:'trade_elite',   name:'Trade Elite',  pricePlanA:40000, pricePlanB:110000,pricePlanC:150000, sortOrder:6 },
     ];
 
+    const results: any[] = [];
+
     for (const p of plans) {
-      await this.prisma.membershipPlan.create({
-        data: {
-          ...p,
-          description: `${p.name} membership plan`,
-          features: PLAN_FEATURES[p.planId] || [],
-        },
-      });
+      const existing = await this.prisma.membershipPlan.findUnique({ where: { planId: p.planId } });
+
+      if (existing) {
+        // Idempotent: never duplicate. Only normalize visibility so the plan becomes
+        // visible through the production plan-selection flow (getPlans exposes LAUNCH/PUBLIC).
+        await this.prisma.membershipPlan.update({
+          where: { planId: p.planId },
+          data: { visibility: PlanVisibility.PUBLIC },
+        });
+      } else {
+        await this.prisma.membershipPlan.create({
+          data: {
+            ...p,
+            description: `${p.name} membership plan`,
+            visibility: PlanVisibility.PUBLIC,
+            duration: 12,
+            features: PLAN_FEATURES[p.planId] || [],
+          },
+        });
+      }
+
+      // Ensure plan feature rows exist (PlanFeature is the table consumed by
+      // plan comparison / feature preview / purchase pages).
+      const featureNames = PLAN_FEATURES[p.planId] || [];
+      if (featureNames.length > 0) {
+        const existingFeatures = await this.prisma.planFeature.findMany({
+          where: { planId: p.planId },
+          select: { feature: true },
+        });
+        const present = new Set(existingFeatures.map((f) => f.feature));
+        const missing = featureNames.filter((f) => !present.has(f));
+        if (missing.length > 0) {
+          await this.prisma.planFeature.createMany({
+            data: missing.map((f, i) => ({
+              planId: p.planId,
+              feature: f,
+              included: true,
+              sortOrder: i,
+            })),
+          });
+        }
+      }
+
+      results.push({ planId: p.planId, action: existing ? 'exists' : 'created' });
     }
-    return { message: `${plans.length} plans seeded` };
+
+    return { message: `Plans seeded (${plans.length} core plans)`, results };
+  }
+
+  // Map a planId (lowercase, frontend representation) to its canonical PlanType enum.
+  // One consistent representation across plan selection → enrollment → membership.
+  private toPlanType(planId: string): PlanType {
+    const normalized = planId.trim().toLowerCase();
+    const planTypeMap: Record<string, PlanType> = {
+      trade_start: PlanType.TRADE_START,
+      trade_smart: PlanType.TRADE_SMART,
+      trade_plus: PlanType.TRADE_PLUS,
+      trade_pro: PlanType.TRADE_PRO,
+      trade_premium: PlanType.TRADE_PREMIUM,
+      trade_elite: PlanType.TRADE_ELITE,
+    };
+    const planType = planTypeMap[normalized];
+    if (!planType) {
+      throw new BadRequestException(`Plan '${planId}' is not supported for subscription enrollment`);
+    }
+    return planType;
   }
 
   async getCurrentSubscription(companyId: string) {
@@ -1049,7 +1105,7 @@ export class MembershipService {
       where: { id: data.companyId },
       data: {
         subscriptionStatus: 'ACTIVE',
-        subscriptionPlan: data.planId as any,
+        subscriptionPlan: this.toPlanType(data.planId),
         currentPlanId: data.planId,
         subscriptionActivatedAt: now,
         subscriptionExpiresAt: expiresAt,
@@ -1061,7 +1117,7 @@ export class MembershipService {
       data: {
         companyId: data.companyId,
         status: 'ACTIVE',
-        planType: data.planId as any,
+        planType: this.toPlanType(data.planId),
         metadata: {
           paymentId: data.paymentId,
           planTier: data.planTier,
@@ -1086,6 +1142,16 @@ export class MembershipService {
       trade_pro: 'Trade Pro', trade_premium: 'Trade Premium', trade_elite: 'Trade Elite',
     };
 
+    // Determine intra-state vs inter-state for GST
+    // Seller state is configured in seller.stateCode (default: '07' = Delhi)
+    // Buyer state is from their primary HEAD_OFFICE location
+    const sellerStateCode = this.configService.get<string>('seller.stateCode') || '07';
+    const buyerLocation = await this.prisma.companyLocation.findFirst({
+      where: { companyId: data.companyId, type: 'HEAD_OFFICE', deletedAt: null },
+      orderBy: { isPrimary: 'desc' },
+    });
+    const isIntraState = buyerLocation?.state === sellerStateCode;
+
     const invoice = await this.invoiceService.createSubscriptionInvoice({
       companyId: data.companyId,
       paymentId: data.paymentId,
@@ -1093,7 +1159,7 @@ export class MembershipService {
       planName: planNames[data.planId] || data.planId,
       planTier: data.planTier,
       amount: data.amount,
-      isIntraState: true,
+      isIntraState,
     });
 
     return { success: true, companyId: data.companyId, planId: data.planId, invoiceNumber: invoice.invoiceNumber };
@@ -1104,41 +1170,42 @@ export class MembershipService {
   }
 
   // ── Trial Enrollment ──────────────────────────────────
-  async enrollTrial(companyId: string, planId: string) {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+  async enrollTrial(companyId: string, planId: string, client?: Prisma.TransactionClient | PrismaService) {
+    const db = client ?? this.prisma;
+    const company = await db.company.findUnique({ where: { id: companyId } });
     if (!company) throw new NotFoundException('Company not found');
     if (company.subscriptionStatus !== 'TRIAL' && company.subscriptionStatus !== 'EXPIRED') {
       throw new BadRequestException('Company is not eligible for trial');
     }
 
-    const plan = await this.prisma.membershipPlan.findUnique({ where: { planId } });
+    const plan = await db.membershipPlan.findUnique({ where: { planId } });
     if (!plan) throw new NotFoundException('Plan not found');
 
     const now = new Date();
     const trialEnd = new Date(now);
     trialEnd.setDate(trialEnd.getDate() + (plan.trialPeriodDays || 14));
 
-    await this.prisma.company.update({
+    await db.company.update({
       where: { id: companyId },
       data: {
         subscriptionStatus: 'TRIAL',
-        subscriptionPlan: planId as any,
+        subscriptionPlan: this.toPlanType(planId),
         currentPlanId: planId,
         subscriptionActivatedAt: now,
         subscriptionExpiresAt: trialEnd,
       },
     });
 
-    await this.prisma.subscriptionEvent.create({
+    await db.subscriptionEvent.create({
       data: {
         companyId,
         status: 'TRIAL',
-        planType: planId as any,
+        planType: this.toPlanType(planId),
         metadata: { trialDays: plan.trialPeriodDays || 14, expiresAt: trialEnd.toISOString() },
       },
     });
 
-    await this.prisma.planHistory.create({
+    await db.planHistory.create({
       data: {
         companyId,
         planId,
@@ -1168,7 +1235,7 @@ export class MembershipService {
     await this.prisma.company.update({
       where: { id: companyId },
       data: {
-        subscriptionPlan: newPlanId as any,
+        subscriptionPlan: this.toPlanType(newPlanId),
         currentPlanId: newPlanId,
         subscriptionActivatedAt: new Date(),
       },
@@ -1178,7 +1245,7 @@ export class MembershipService {
       data: {
         companyId,
         status: 'ACTIVE',
-        planType: newPlanId as any,
+        planType: this.toPlanType(newPlanId),
         metadata: { upgradeFrom: oldPlanId, planTier, amount, paymentId, proratedRefund },
       },
     });
@@ -1223,7 +1290,7 @@ export class MembershipService {
       data: {
         companyId,
         status: 'ACTIVE',
-        planType: newPlanId as any,
+        planType: this.toPlanType(newPlanId),
         metadata: { downgradeFrom: company.subscriptionPlan, effectiveAt: effective.toISOString(), scheduled: true },
       },
     });
@@ -1259,7 +1326,7 @@ export class MembershipService {
       data: {
         companyId,
         status: 'ACTIVE',
-        planType: planId as any,
+        planType: this.toPlanType(planId),
         metadata: { action: 'renewal', amount, paymentId, expiresAt: expiresAt.toISOString() },
       },
     });

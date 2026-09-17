@@ -77,6 +77,10 @@ export default function BuyerRegistrationWizard() {
   }
 
   const handleSubmit = async (finalPreferences?: any) => {
+    if (!finalPreferences?.agreedToTerms || !finalPreferences?.agreedToPrivacyPolicy) {
+      setSubmitError('Please accept the Terms & Conditions and Privacy Policy before submitting')
+      return
+    }
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -104,6 +108,7 @@ export default function BuyerRegistrationWizard() {
         state: ba.state || '',
         pincode: ba.pincode || '',
         primaryCategoriesRequired: (pr.primaryCategories?.length || 0) > 0,
+        primaryCategories: pr.primaryCategories || [],
         preferredSuppliers: pr.preferredSuppliers || 'local',
         notificationEmail: pr.notificationEmail ?? true,
         notificationSms: pr.notificationSms ?? true,

@@ -61,7 +61,7 @@ export function CardActions({
           }}>
           <ArrowLeftRight size={13} /> <span className="hidden sm:inline">{inCompare ? 'Added' : 'Cmp'}</span>
         </button>
-        <Link href={`/products/${product.slug}`}
+        <Link href={`/trading/${product.slug}`}
           className="flex items-center justify-center gap-1 px-1 py-1.5 sm:py-2 rounded-lg text-[11px] font-semibold transition-all cursor-pointer"
           style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
           <Info size={13} /> <span className="hidden sm:inline">Info</span>

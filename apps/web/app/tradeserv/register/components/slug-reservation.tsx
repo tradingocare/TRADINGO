@@ -12,7 +12,7 @@ interface Props {
 export function SlugReservation({ slug, category }: Props) {
   const [copied, setCopied] = useState<'profile' | 'category' | null>(null);
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradingo.com';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in';
   const profileUrl = `${baseUrl}/tradeserv/p/${slug}`;
   const categorySlug = category.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
   const categoryUrl = `${baseUrl}/tradeserv/c/${categorySlug}`;

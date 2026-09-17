@@ -34,6 +34,46 @@ describe('RolesGuard', () => {
       expect(() => guard.canActivate(mockContext as any)).toThrow(ForbiddenException);
     });
 
+    it('should pass SUPER_ADMIN through ADMIN-only role requirement', () => {
+      reflector.getAllAndOverride.mockReturnValue(['ADMIN']);
+      mockContext.switchToHttp = jest.fn(() => ({
+        getRequest: jest.fn(() => ({ user: { role: 'SUPER_ADMIN' } })),
+      }));
+      expect(guard.canActivate(mockContext as any)).toBe(true);
+    });
+
+    it('should pass SUPER_ADMIN through SUPER_ADMIN role requirement', () => {
+      reflector.getAllAndOverride.mockReturnValue(['ADMIN', 'SUPER_ADMIN']);
+      mockContext.switchToHttp = jest.fn(() => ({
+        getRequest: jest.fn(() => ({ user: { role: 'SUPER_ADMIN' } })),
+      }));
+      expect(guard.canActivate(mockContext as any)).toBe(true);
+    });
+
+    it('should pass SUPER_ADMIN through any non-matching role requirement', () => {
+      reflector.getAllAndOverride.mockReturnValue(['SELLER']);
+      mockContext.switchToHttp = jest.fn(() => ({
+        getRequest: jest.fn(() => ({ user: { role: 'SUPER_ADMIN' } })),
+      }));
+      expect(guard.canActivate(mockContext as any)).toBe(true);
+    });
+
+    it('should still deny SELLER when role requirement is ADMIN', () => {
+      reflector.getAllAndOverride.mockReturnValue(['ADMIN']);
+      mockContext.switchToHttp = jest.fn(() => ({
+        getRequest: jest.fn(() => ({ user: { role: 'SELLER' } })),
+      }));
+      expect(() => guard.canActivate(mockContext as any)).toThrow(ForbiddenException);
+    });
+
+    it('should still deny SUPER_ADMIN when no user context', () => {
+      reflector.getAllAndOverride.mockReturnValue(['ADMIN']);
+      mockContext.switchToHttp = jest.fn(() => ({
+        getRequest: jest.fn(() => ({})),
+      }));
+      expect(() => guard.canActivate(mockContext as any)).toThrow(ForbiddenException);
+    });
+
     it('should throw ForbiddenException when no user context', () => {
       reflector.getAllAndOverride.mockReturnValue(['ADMIN']);
       mockContext.switchToHttp = jest.fn(() => ({

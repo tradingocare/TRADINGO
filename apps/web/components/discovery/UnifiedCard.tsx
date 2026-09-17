@@ -26,14 +26,15 @@ const GEO_LABELS: Record<number, string> = {
 }
 
 interface Props {
-  item:         DiscoveryResult
-  colorIndex?:  number
-  onCompare?:   (item: DiscoveryResult) => void
-  inCompare?:   boolean
+  item:             DiscoveryResult
+  colorIndex?:      number
+  onCompare?:       (item: DiscoveryResult) => void
+  inCompare?:       boolean
+  detailBasePath?:  string
 }
 
 const UnifiedCard = memo(function UnifiedCard({
-  item, onCompare, inCompare,
+  item, onCompare, inCompare, detailBasePath,
 }: Props) {
   const [imgIdx] = useState(0)
   const [saved, setSaved]   = useState(false)
@@ -66,7 +67,9 @@ const UnifiedCard = memo(function UnifiedCard({
   })
 
   const isService = item.type === 'service'
-  const href      = `/${isService ? 'services' : 'products'}/${item.slug}`
+  const href      = isService
+    ? `/services/${item.slug}`
+    : `/${detailBasePath || 'products'}/${item.slug}`
 
   return (
     <div className="stacked-card-wrapper">
@@ -254,7 +257,7 @@ const UnifiedCard = memo(function UnifiedCard({
 
           <button
             onClick={() => requireAuth(() =>
-              router.push(`/rfq/create?entityId=${item.id}`))}
+              router.push(`/buyer/rfq/new?source=PRODUCT&sourceId=${item.id}`))}
             className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
             style={{
               background: 'color-mix(in srgb, var(--accent) 12%, transparent)',

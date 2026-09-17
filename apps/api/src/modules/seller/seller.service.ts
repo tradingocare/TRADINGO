@@ -2,6 +2,17 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateSellerDocumentsDto } from './dto';
 
+const SOCIAL_KEYS = [
+  'instagramUrl', 'linkedinUrl', 'youtubeUrl', 'facebookUrl',
+  'twitterUrl', 'whatsappUrl', 'indiamartUrl', 'tradeindiaUrl',
+] as const;
+
+const DOC_KEYS = [
+  'gstCertUrl', 'panCardUrl', 'bankDocUrl', 'tradeLicenseUrl',
+  'msmeUrl', 'incorporationUrl', 'iso9001Url', 'iso14001Url',
+  'bisUrl', 'fssaiUrl', 'drugLicenseUrl', 'iecUrl',
+] as const;
+
 @Injectable()
 export class SellerService {
   private readonly logger = new Logger(SellerService.name);
@@ -70,10 +81,12 @@ export class SellerService {
     if (dto.logo !== undefined) updateData.logo = dto.logo;
     if (dto.banner !== undefined) updateData.banner = dto.banner;
 
-    await this.prisma.company.update({
-      where: { id: company.id },
-      data: { ...updateData, updatedBy: userId },
-    });
+    if (dto.productImages !== undefined) {
+      updateData.gallery = dto.productImages;
+    }
+    if (dto.catalogPdfUrl !== undefined) {
+      updateData.videoIntroductionUrl = dto.catalogPdfUrl;
+    }
 
     if (dto.categories) {
       await this.prisma.companyCategory.deleteMany({ where: { companyId: company.id } });
@@ -82,6 +95,26 @@ export class SellerService {
           data: { companyId: company.id, categoryId: catId },
         });
       }
+    }
+
+    const hasSocialUpdate = SOCIAL_KEYS.some(k => dto[k] !== undefined);
+    if (hasSocialUpdate) {
+      const existing: Record<string, string> = typeof company.socialLinks === 'object' && company.socialLinks !== null
+        ? (company.socialLinks as Record<string, string>)
+        : {};
+      const merged = { ...existing };
+      for (const k of SOCIAL_KEYS) {
+        if (dto[k] !== undefined) merged[k] = dto[k];
+      }
+      updateData.socialLinks = merged;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      updateData.updatedBy = userId;
+      await this.prisma.company.update({
+        where: { id: company.id },
+        data: updateData,
+      });
     }
 
     return this.getProfile(userId);
@@ -93,16 +126,31 @@ export class SellerService {
     });
     if (!company) throw new NotFoundException('Company not found');
 
+    const updateData: any = {
+      ...(docs.aadhar !== undefined && { aadhar: docs.aadhar }),
+      ...(docs.pan !== undefined && { pan: docs.pan }),
+      ...(docs.gst !== undefined && { gst: docs.gst }),
+      ...(docs.businessRegistration !== undefined && { businessRegistration: docs.businessRegistration }),
+      ...(docs.addressProof !== undefined && { addressProof: docs.addressProof }),
+      updatedBy: userId,
+    };
+
+    const hasDocUpdate = DOC_KEYS.some(k => docs[k] !== undefined);
+    if (hasDocUpdate) {
+      const existing: Record<string, string> =
+        typeof company.registrationDocuments === 'object' && company.registrationDocuments !== null
+          ? (company.registrationDocuments as Record<string, string>)
+          : {};
+      const merged = { ...existing };
+      for (const k of DOC_KEYS) {
+        if (docs[k] !== undefined) merged[k] = docs[k];
+      }
+      updateData.registrationDocuments = merged;
+    }
+
     await this.prisma.company.update({
       where: { id: company.id },
-      data: {
-        ...(docs.aadhar !== undefined && { aadhar: docs.aadhar }),
-        ...(docs.pan !== undefined && { pan: docs.pan }),
-        ...(docs.gst !== undefined && { gst: docs.gst }),
-        ...(docs.businessRegistration !== undefined && { businessRegistration: docs.businessRegistration }),
-        ...(docs.addressProof !== undefined && { addressProof: docs.addressProof }),
-        updatedBy: userId,
-      },
+      data: updateData,
     });
 
     return { success: true };
@@ -130,6 +178,14 @@ export class SellerService {
   private mapCompanyProfile(company: any) {
     const loc = company.locations?.[0] || {};
     const owner = company.owners?.[0]?.user || {};
+    const socialLinks: Record<string, string> =
+      typeof company.socialLinks === 'object' && company.socialLinks !== null
+        ? (company.socialLinks as Record<string, string>)
+        : {};
+    const regDocs: Record<string, string> =
+      typeof company.registrationDocuments === 'object' && company.registrationDocuments !== null
+        ? (company.registrationDocuments as Record<string, string>)
+        : {};
     return {
       id: company.id,
       name: company.name,
@@ -157,6 +213,10 @@ export class SellerService {
       categories: (company.categories || []).map((cc: any) => cc.category?.slug || cc.categoryId),
       productCount: company._count?.products || 0,
       createdAt: company.createdAt,
+      productImages: Array.isArray(company.gallery) ? company.gallery : [],
+      catalogPdfUrl: company.videoIntroductionUrl || null,
+      ...socialLinks,
+      ...regDocs,
     };
   }
 
@@ -167,7 +227,15 @@ export class SellerService {
     if ((profile.categories?.length ?? 0) > 0) score += 15;
     if (profile.logo) score += 5;
     if (profile.bannerUrl) score += 5;
+    if (profile.gstNumber) score += 4;
+    if (profile.panNumber) score += 4;
+    if (profile.website) score += 2;
+    const socialCount = [profile.instagramUrl, profile.linkedinUrl, profile.youtubeUrl, profile.facebookUrl, profile.twitterUrl].filter(Boolean).length;
+    if (socialCount > 0) score += 3;
     score += Math.min((profile.productCount ?? 0) * 4, 20);
+    if ((profile.productCount ?? 0) > 0) score += 5;
+    const docCount = [profile.gstCertUrl, profile.panCardUrl, profile.bankDocUrl, profile.tradeLicenseUrl].filter(Boolean).length;
+    score += Math.min(docCount * 3, 12);
     return Math.min(Math.round(score), 100);
   }
 }

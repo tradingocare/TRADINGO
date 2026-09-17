@@ -2,28 +2,21 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TRADINGO — India\'s First TEM™ E-Marketplace',
+    name: 'TRADINGO | The Global Smart Trade System',
     short_name: 'TRADINGO',
-    description: 'India\'s first TEM™ E-Marketplace connecting buyers and sellers through trust, technology, and transparent trading.',
+    id: '/',
+    description: 'TRADINGO — The Global Smart Trade System. Discover, connect, negotiate, and grow through trust, technology, and transparency.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#2563eb',
+    background_color: '#00001C',
+    theme_color: '#00072D',
     orientation: 'portrait-primary',
     categories: ['business', 'shopping', 'ecommerce'],
     lang: 'en-IN',
     icons: [
-      { src: '/logo/trdn6.png', sizes: '792x547', type: 'image/png' },
-      { src: '/logo/trdn6.png', sizes: '792x547', type: 'image/png', purpose: 'maskable' },
-    ],
-    screenshots: [
-      {
-        src: '/logo/trdn6.png',
-        sizes: '792x547',
-        type: 'image/png',
-        form_factor: 'wide',
-        label: 'TRADINGO Marketplace',
-      },
+      { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
 }

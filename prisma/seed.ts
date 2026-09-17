@@ -1,7 +1,7 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, ImportRowStatus, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { INDUSTRY_CATEGORIES } from './seed-data/categories';
-import { generateSlug, generateUniqueSlug } from './seed-scripts/slug-generator';
+import { generateSlug } from './seed-scripts/slug-generator';
 
 const prisma = new PrismaClient();
 const BATCH_SIZE = 100;
@@ -20,9 +20,34 @@ function generateSeoDescription(name: string, subcategoryCount: number): string 
   return `Find top ${name} suppliers, manufacturers, and exporters in India. ${subcategoryCount > 0 ? `${subcategoryCount}+ subcategories available. ` : ''}Get best prices, quality products, and trusted sellers on TRADINGO B2B marketplace.`;
 }
 
+const MIN_PASSWORD_LENGTH = 8;
+
+function assertPassword(varName: string, required: boolean): string | undefined {
+  const value = process.env[varName];
+  if (value === undefined || value === '') {
+    if (required) {
+      throw new Error(
+        `Seed aborted: required environment variable "${varName}" is missing. No data was written.`,
+      );
+    }
+    return undefined;
+  }
+  if (value.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(
+      `Seed aborted: environment variable "${varName}" must be at least ${MIN_PASSWORD_LENGTH} characters. No data was written.`,
+    );
+  }
+  return value;
+}
+
 async function seedAdminUsers() {
+  // Fail fast BEFORE any database write: every required credential must be
+  // supplied explicitly. No fallback/default passwords exist in production path.
+  const adminPassword = assertPassword('SEED_ADMIN_PASSWORD', true)!;
+  const testAdminPassword = assertPassword('SEED_TEST_ADMIN_PASSWORD', true)!;
+  const viewerPassword = assertPassword('SEED_VIEWER_PASSWORD', false);
+
   const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@tradingo.io';
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin@1234';
 
   const adminHash = await bcrypt.hash(adminPassword, 12);
   await prisma.user.upsert({
@@ -39,7 +64,7 @@ async function seedAdminUsers() {
   });
   console.log(`SUPER_ADMIN created: ${adminEmail}`);
 
-  const testHash = await bcrypt.hash('Test@1234', 12);
+  const testHash = await bcrypt.hash(testAdminPassword, 12);
   await prisma.user.upsert({
     where: { email: 'test@example.com' },
     update: {},
@@ -54,30 +79,30 @@ async function seedAdminUsers() {
   });
   console.log('ADMIN created: test@example.com');
 
-  for (let i = 1; i <= 10; i++) {
-    const email = `user${i}@example.com`;
-    const viewerHash = await bcrypt.hash('Viewer@1234', 12);
-    await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        email,
-        passwordHash: viewerHash,
-        name: `Viewer User ${i}`,
-        role: Role.VIEWER,
-        permissions: [],
-        emailVerifiedAt: new Date(),
-      },
-    });
+  if (viewerPassword) {
+    const viewerHash = await bcrypt.hash(viewerPassword, 12);
+    for (let i = 1; i <= 10; i++) {
+      const email = `user${i}@example.com`;
+      await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: {
+          email,
+          passwordHash: viewerHash,
+          name: `Viewer User ${i}`,
+          role: Role.VIEWER,
+          permissions: [],
+          emailVerifiedAt: new Date(),
+        },
+      });
+    }
+    console.log('10 VIEWER users created (opt-in via SEED_VIEWER_PASSWORD)');
+  } else {
+    console.log('SEED_VIEWER_PASSWORD not set — skipping 10 VIEWER demo accounts');
   }
-  console.log('10 VIEWER users created');
 }
 
 async function seedCategories() {
-  const existingSlugs = new Set<string>();
-  const existingSlugsFromDb = await prisma.category.findMany({ select: { slug: true } });
-  for (const c of existingSlugsFromDb) existingSlugs.add(c.slug);
-
   const catJob = await prisma.importJob.create({
     data: {
       type: 'CATEGORY',
@@ -90,10 +115,10 @@ async function seedCategories() {
   const rows: Array<{
     importJobId: string;
     rowNumber: number;
-    status: string;
+    status: ImportRowStatus;
     entityType: string;
     entityId?: string;
-    rawData?: Record<string, unknown>;
+    rawData?: Prisma.InputJsonValue;
     errors: string[];
     warnings: string[];
   }> = [];
@@ -105,7 +130,7 @@ async function seedCategories() {
   for (let i = 0; i < INDUSTRY_CATEGORIES.length; i++) {
     const cat = INDUSTRY_CATEGORIES[i];
     const rowNumber = i + 1;
-    const slug = generateUniqueSlug(cat.name, existingSlugs);
+    const slug = cat.slug;
 
     try {
       const existing = await prisma.category.findUnique({ where: { slug }, select: { id: true } });
@@ -117,7 +142,7 @@ async function seedCategories() {
           status: 'DUPLICATE',
           entityType: 'CATEGORY',
           entityId: existing.id,
-          rawData: cat as unknown as Record<string, unknown>,
+          rawData: cat as unknown as Prisma.InputJsonValue,
           errors: [],
           warnings: [`Category with slug "${slug}" already exists`],
         });
@@ -148,7 +173,6 @@ async function seedCategories() {
       });
 
       imported++;
-      existingSlugs.add(slug);
 
       rows.push({
         importJobId: catJob.id,
@@ -156,7 +180,7 @@ async function seedCategories() {
         status: 'IMPORTED',
         entityType: 'CATEGORY',
         entityId: category.id,
-        rawData: cat as unknown as Record<string, unknown>,
+        rawData: cat as unknown as Prisma.InputJsonValue,
         errors: [],
         warnings: [],
       });
@@ -167,7 +191,7 @@ async function seedCategories() {
         rowNumber,
         status: 'ERROR',
         entityType: 'CATEGORY',
-        rawData: cat as unknown as Record<string, unknown>,
+        rawData: cat as unknown as Prisma.InputJsonValue,
         errors: [err instanceof Error ? err.message : String(err)],
         warnings: [],
       });
@@ -197,10 +221,6 @@ async function seedCategories() {
 }
 
 async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
-  const existingSlugs = new Set<string>();
-  const existingSlugsFromDb = await prisma.category.findMany({ select: { slug: true } });
-  for (const c of existingSlugsFromDb) existingSlugs.add(c.slug);
-
   const subJob = await prisma.importJob.create({
     data: {
       type: 'SUBCATEGORY',
@@ -212,6 +232,11 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
   const allSubs = categoryMap.flatMap((cat) =>
     cat.subcategories.map((sub) => ({ categorySlug: cat.slug, subName: sub }))
   );
+
+  // Deterministic slugs (idempotent re-runs): subcategory names repeat across
+  // parents, so disambiguate collisions with the parent's static slug.
+  const topSlugs = new Set<string>(INDUSTRY_CATEGORIES.map((c) => c.slug));
+  const usedSubSlugs = new Set<string>();
   await prisma.importJob.update({
     where: { id: subJob.id },
     data: { totalRows: allSubs.length },
@@ -220,10 +245,10 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
   const rows: Array<{
     importJobId: string;
     rowNumber: number;
-    status: string;
+    status: ImportRowStatus;
     entityType: string;
     entityId?: string;
-    rawData?: Record<string, unknown>;
+    rawData?: Prisma.InputJsonValue;
     errors: string[];
     warnings: string[];
   }> = [];
@@ -235,7 +260,12 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
   for (let i = 0; i < allSubs.length; i++) {
     const { categorySlug, subName } = allSubs[i];
     const rowNumber = i + 1;
-    const slug = generateUniqueSlug(subName, existingSlugs);
+    const baseSlug = generateSlug(subName);
+    const slug =
+      topSlugs.has(baseSlug) || usedSubSlugs.has(baseSlug)
+        ? `${baseSlug}-${categorySlug}`
+        : baseSlug;
+    usedSubSlugs.add(slug);
 
     try {
       const parent = await prisma.category.findUnique({ where: { slug: categorySlug }, select: { id: true } });
@@ -246,7 +276,7 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
           rowNumber,
           status: 'ERROR',
           entityType: 'SUBCATEGORY',
-          rawData: { categorySlug, subName } as Record<string, unknown>,
+          rawData: { categorySlug, subName } as unknown as Prisma.InputJsonValue,
           errors: [`Parent category "${categorySlug}" not found`],
           warnings: [],
         });
@@ -262,7 +292,7 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
           status: 'DUPLICATE',
           entityType: 'SUBCATEGORY',
           entityId: existing.id,
-          rawData: { categorySlug, subName } as Record<string, unknown>,
+          rawData: { categorySlug, subName } as unknown as Prisma.InputJsonValue,
           errors: [],
           warnings: [`Subcategory with slug "${slug}" already exists`],
         });
@@ -291,7 +321,6 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
       });
 
       imported++;
-      existingSlugs.add(slug);
 
       rows.push({
         importJobId: subJob.id,
@@ -299,7 +328,7 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
         status: 'IMPORTED',
         entityType: 'SUBCATEGORY',
         entityId: subcategory.id,
-        rawData: { categorySlug, subName } as Record<string, unknown>,
+        rawData: { categorySlug, subName } as unknown as Prisma.InputJsonValue,
         errors: [],
         warnings: [],
       });
@@ -310,7 +339,7 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
         rowNumber,
         status: 'ERROR',
         entityType: 'SUBCATEGORY',
-        rawData: { categorySlug, subName } as Record<string, unknown>,
+        rawData: { categorySlug, subName } as unknown as Prisma.InputJsonValue,
         errors: [err instanceof Error ? err.message : String(err)],
         warnings: [],
       });
@@ -340,10 +369,6 @@ async function seedSubcategories(categoryMap: typeof INDUSTRY_CATEGORIES) {
 }
 
 async function seedProductMasters() {
-  const existingSlugs = new Set<string>();
-  const existingFromDb = await prisma.productMaster.findMany({ select: { slug: true } });
-  for (const p of existingFromDb) existingSlugs.add(p.slug);
-
   const categories = await prisma.category.findMany({
     where: { parentId: { not: null }, isActive: true },
     select: { id: true, name: true, parentId: true },
@@ -381,10 +406,10 @@ async function seedProductMasters() {
   const rows: Array<{
     importJobId: string;
     rowNumber: number;
-    status: string;
+    status: ImportRowStatus;
     entityType: string;
     entityId?: string;
-    rawData?: Record<string, unknown>;
+    rawData?: Prisma.InputJsonValue;
     errors: string[];
     warnings: string[];
   }> = [];
@@ -396,7 +421,7 @@ async function seedProductMasters() {
   for (let i = 0; i < productTemplates.length; i++) {
     const tmpl = productTemplates[i];
     const rowNumber = i + 1;
-    const slug = generateUniqueSlug(tmpl.name, existingSlugs);
+    const slug = generateSlug(tmpl.name);
 
     try {
       const subcatEntry = categories[i % categories.length];
@@ -409,7 +434,7 @@ async function seedProductMasters() {
           status: 'DUPLICATE',
           entityType: 'PRODUCT_MASTER',
           entityId: existing.id,
-          rawData: tmpl as unknown as Record<string, unknown>,
+          rawData: tmpl as unknown as Prisma.InputJsonValue,
           errors: [],
           warnings: [`Product master with slug "${slug}" already exists`],
         });
@@ -458,7 +483,6 @@ async function seedProductMasters() {
       });
 
       imported++;
-      existingSlugs.add(slug);
 
       rows.push({
         importJobId: prodJob.id,
@@ -466,7 +490,7 @@ async function seedProductMasters() {
         status: 'IMPORTED',
         entityType: 'PRODUCT_MASTER',
         entityId: product.id,
-        rawData: tmpl as unknown as Record<string, unknown>,
+        rawData: tmpl as unknown as Prisma.InputJsonValue,
         errors: [],
         warnings: [],
       });
@@ -477,7 +501,7 @@ async function seedProductMasters() {
         rowNumber,
         status: 'ERROR',
         entityType: 'PRODUCT_MASTER',
-        rawData: tmpl as unknown as Record<string, unknown>,
+        rawData: tmpl as unknown as Prisma.InputJsonValue,
         errors: [err instanceof Error ? err.message : String(err)],
         warnings: [],
       });
@@ -506,10 +530,6 @@ async function seedProductMasters() {
 }
 
 async function seedServiceMasters() {
-  const existingSlugs = new Set<string>();
-  const existingFromDb = await prisma.serviceMaster.findMany({ select: { slug: true } });
-  for (const s of existingFromDb) existingSlugs.add(s.slug);
-
   const categories = await prisma.category.findMany({
     where: { parentId: null, isActive: true },
     select: { id: true, name: true },
@@ -542,10 +562,10 @@ async function seedServiceMasters() {
   const rows: Array<{
     importJobId: string;
     rowNumber: number;
-    status: string;
+    status: ImportRowStatus;
     entityType: string;
     entityId?: string;
-    rawData?: Record<string, unknown>;
+    rawData?: Prisma.InputJsonValue;
     errors: string[];
     warnings: string[];
   }> = [];
@@ -557,7 +577,7 @@ async function seedServiceMasters() {
   for (let i = 0; i < serviceTemplates.length; i++) {
     const tmpl = serviceTemplates[i];
     const rowNumber = i + 1;
-    const slug = generateUniqueSlug(tmpl.name, existingSlugs);
+    const slug = generateSlug(tmpl.name);
 
     try {
       const cat = categories[i % categories.length];
@@ -570,7 +590,7 @@ async function seedServiceMasters() {
           status: 'DUPLICATE',
           entityType: 'SERVICE_MASTER',
           entityId: existing.id,
-          rawData: tmpl as unknown as Record<string, unknown>,
+          rawData: tmpl as unknown as Prisma.InputJsonValue,
           errors: [],
           warnings: [`Service master with slug "${slug}" already exists`],
         });
@@ -611,7 +631,6 @@ async function seedServiceMasters() {
       });
 
       imported++;
-      existingSlugs.add(slug);
 
       rows.push({
         importJobId: servJob.id,
@@ -619,7 +638,7 @@ async function seedServiceMasters() {
         status: 'IMPORTED',
         entityType: 'SERVICE_MASTER',
         entityId: service.id,
-        rawData: tmpl as unknown as Record<string, unknown>,
+        rawData: tmpl as unknown as Prisma.InputJsonValue,
         errors: [],
         warnings: [],
       });
@@ -630,7 +649,7 @@ async function seedServiceMasters() {
         rowNumber,
         status: 'ERROR',
         entityType: 'SERVICE_MASTER',
-        rawData: tmpl as unknown as Record<string, unknown>,
+        rawData: tmpl as unknown as Prisma.InputJsonValue,
         errors: [err instanceof Error ? err.message : String(err)],
         warnings: [],
       });

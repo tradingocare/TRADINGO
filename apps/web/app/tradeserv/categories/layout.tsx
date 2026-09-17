@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     title: 'Professional Services Categories | TradeServ by TRADINGO',
     description:
       'Browse 10 verified professional service categories on TradeServ — from CAs to packaging designers.',
-    url: 'https://www.tradingo.com/tradeserv/categories',
+    url: 'https://tradingo.in/tradeserv/categories',
     siteName: 'TRADINGO',
     type: 'website',
   },

@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogAdapterService } from '../catalog-adapter/catalog-adapter.service';
 import { NotificationService } from '../notification/notification.service';
@@ -235,22 +235,70 @@ export class TradeservService {
     };
   }
 
-  async registerProfessional(userId: string, dto: { fullName: string; professionalTitle: string; professionalType: string; companyName: string; mobile?: string; email?: string }) {
-    const company = await this.prisma.company.create({
-      data: {
-        name: dto.companyName,
-        slug: dto.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Math.random().toString(36).slice(2, 6),
-        professionalType: dto.professionalType as any,
-        professionalStatus: ProfessionalCompanyStatus.PENDING_REVIEW,
-        businessType: 'PROFESSIONAL' as any,
-        description: dto.professionalTitle,
-        mobile: dto.mobile,
-        email: dto.email,
-        createdBy: userId,
-        updatedBy: userId,
-        owners: { create: { userId, isPrimary: true } },
-      },
-    });
+  // F6/F7 — ONE legal company: reuse an existing owned company (by companyId, or by
+  // matching PAN/GST) instead of always creating a new one. Never links by email.
+  async registerProfessional(userId: string, dto: { fullName: string; professionalTitle: string; professionalType: string; companyName: string; mobile?: string; email?: string; companyId?: string; panNumber?: string; gstNumber?: string }) {
+    let company: any = null;
+
+    if (dto.companyId) {
+      const owned = await this.prisma.companyOwner.findFirst({ where: { userId, companyId: dto.companyId } });
+      if (owned) {
+        company = await this.prisma.company.findUnique({ where: { id: dto.companyId } });
+      }
+    }
+
+    if (!company && (dto.panNumber || dto.gstNumber)) {
+      const panMatch = dto.panNumber
+        ? await this.prisma.company.findFirst({
+            where: { panNumber: dto.panNumber.toUpperCase(), owners: { some: { userId } } },
+          })
+        : null;
+      const gstMatch = !panMatch && dto.gstNumber
+        ? await this.prisma.company.findFirst({
+            where: { gstNumber: dto.gstNumber.toUpperCase(), owners: { some: { userId } } },
+          })
+        : null;
+      company = panMatch || gstMatch;
+    }
+
+    if (company) {
+      // Reuse: activate the professional capability on the existing legal entity.
+      // Seller businessType is deliberately preserved — professional identity lives
+      // in professionalType/professionalStatus. PAN/GST are persisted so downstream
+      // identity flows (vendor onboarding) can match the same legal entity.
+      company = await this.prisma.company.update({
+        where: { id: company.id },
+        data: {
+          professionalType: dto.professionalType as any,
+          professionalStatus: ProfessionalCompanyStatus.PENDING_REVIEW,
+          description: company.description || dto.professionalTitle,
+          mobile: company.mobile || dto.mobile,
+          email: company.email || dto.email,
+          panNumber: company.panNumber || dto.panNumber?.toUpperCase() || null,
+          gstNumber: company.gstNumber || dto.gstNumber?.toUpperCase() || null,
+          updatedBy: userId,
+        },
+      });
+    } else {
+      company = await this.prisma.company.create({
+        data: {
+          name: dto.companyName,
+          slug: dto.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Math.random().toString(36).slice(2, 6),
+          professionalType: dto.professionalType as any,
+          professionalStatus: ProfessionalCompanyStatus.PENDING_REVIEW,
+          businessType: 'PROFESSIONAL' as any,
+          description: dto.professionalTitle,
+          mobile: dto.mobile,
+          email: dto.email,
+          panNumber: dto.panNumber?.toUpperCase() || null,
+          gstNumber: dto.gstNumber?.toUpperCase() || null,
+          createdBy: userId,
+          updatedBy: userId,
+          owners: { create: { userId, isPrimary: true } },
+        },
+      });
+    }
+
     this.indexSyncService?.indexProfessional(company.id).catch((err) => this.logger.warn(`Index sync failed for professional ${company.id}: ${(err as Error).message}`));
     // Reward professional signup (non-blocking — wallet may not exist yet)
     this.gocashIntegration.awardProfessionalSignup(userId, company.id)
@@ -494,6 +542,29 @@ export class TradeservService {
     const booking = await this.prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) throw new NotFoundException('Booking not found');
 
+    // P0-SEC-02: authorize the actor before ANY write or financial side effect.
+    // booking.clientId and booking.companyId are both Company ids; ownership is
+    // resolved user -> owned companies via CompanyOwner.
+    const [profOwnership, clientOwnership, requester] = await Promise.all([
+      this.prisma.companyOwner.findFirst({
+        where: {
+          userId,
+          companyId: booking.companyId,
+          company: { deletedAt: null, status: 'ACTIVE' },
+        },
+        select: { id: true },
+      }),
+      this.prisma.companyOwner.findFirst({
+        where: { userId, companyId: booking.clientId },
+        select: { id: true },
+      }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    ]);
+    const isAdmin = requester?.role === 'ADMIN' || requester?.role === 'SUPER_ADMIN';
+    if (!profOwnership && !clientOwnership && !isAdmin) {
+      throw new ForbiddenException('You do not have permission to update this booking');
+    }
+
     const validTransitions: Record<string, string[]> = {
       PENDING: ['CONFIRMED', 'CANCELLED'],
       CONFIRMED: ['IN_PROGRESS', 'CANCELLED'],
@@ -505,6 +576,13 @@ export class TradeservService {
       throw new BadRequestException(
         `Cannot transition booking from ${booking.status} to ${dto.status}`,
       );
+    }
+
+    // Actor-scoped permissions on top of the state machine:
+    // professional owner / admin -> all legal transitions;
+    // client -> CANCELLED only.
+    if (!isAdmin && !profOwnership && dto.status !== 'CANCELLED') {
+      throw new ForbiddenException('Clients can only cancel bookings');
     }
 
     if (dto.status === 'CONFIRMED' && booking.amount && booking.amount.toNumber() > 0) {

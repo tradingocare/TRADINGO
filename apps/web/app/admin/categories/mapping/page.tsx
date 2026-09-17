@@ -260,7 +260,7 @@ export default function CategoryMappingPage() {
                       </TD>
                       <TD className="font-mono text-xs text-white/50">{row.oldSlug}</TD>
                       <TD className="text-right">
-                        <Link href={`/products?category=${row.oldSlug}`} className="inline-flex items-center gap-1 text-xs text-accent-500 hover:underline">
+                        <Link href={`/trading?category=${row.oldSlug}`} className="inline-flex items-center gap-1 text-xs text-accent-500 hover:underline">
                           Browse Products <ExternalLink size={12} />
                         </Link>
                       </TD>

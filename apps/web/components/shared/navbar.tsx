@@ -2,9 +2,10 @@
 
 import { useState, useEffect, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Mail, Menu, Phone, X } from 'lucide-react';
+import { getDashboardForRole } from '@/lib/auth/redirects';
 import { ThemeToggle } from './theme-toggle';
 import { TradingoLogoIcon } from './tradingo-logo';
 import { cn } from '@/lib/utils';
@@ -14,16 +15,17 @@ interface NavItem {
   label: string;
   subtitle: string;
   href: string;
+  onClick?: () => void;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Trading', subtitle: 'PRODUCTS', href: '/products' },
+  { label: 'Trading', subtitle: 'PRODUCTS', href: '/trading' },
   { label: 'TradeServ', subtitle: 'SERVICES', href: '/tradeserv' },
   { label: 'Tradors', subtitle: 'BUSINESS DIRECTORY', href: '/companies' },
   { label: 'TradeTalk', subtitle: 'BUSINESS NETWORK', href: '/tradetalk' },
-  { label: 'GoStart', subtitle: 'CREATE ACCOUNT', href: '/register/vendor' },
-  { label: 'GoLive', subtitle: 'VENDORS SIGNUP', href: '/login' },
-  { label: 'GoJoin', subtitle: 'LOGIN', href: '/register' },
+  { label: 'GoStart', subtitle: 'CREATE ACCOUNT', href: '/register' },
+  { label: 'GoLive', subtitle: 'VENDOR MODE', href: '/login?next=/register/vendor-onboarding' },
+  { label: 'GoJoin', subtitle: 'LOGIN', href: '/login' },
 ];
 
 const segmentBase =
@@ -40,7 +42,7 @@ const themeToggleClass =
 
 const capsuleStyle = {
   background:
-    'linear-gradient(180deg, rgba(255,255,255,0.05), transparent 44%), radial-gradient(circle at 16% 0%, rgba(255,77,0,0.10), transparent 34%), radial-gradient(circle at 84% 100%, rgba(245,158,11,0.08), transparent 30%), rgba(8, 10, 18, 0.94)',
+    'linear-gradient(180deg, rgba(255,255,255,0.05), transparent 44%), radial-gradient(circle at 16% 0%, rgba(255,77,0,0.10), transparent 34%), radial-gradient(circle at 84% 100%, rgba(245,158,11,0.08), transparent 30%), var(--nav-capsule-fill, rgba(8, 10, 18, 0.94))',
   boxShadow:
     '0 24px 80px rgba(0,0,0,0.55), 0 8px 28px rgba(0,0,0,0.40), 0 0 80px -16px rgba(255,77,0,0.15), 0 0 60px -20px rgba(245,158,11,0.12), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(255,255,255,0.04)',
   backdropFilter: 'blur(32px) saturate(1.15)',
@@ -48,7 +50,7 @@ const capsuleStyle = {
 } satisfies CSSProperties;
 
 function SegmentSeparator() {
-  return <span aria-hidden className="hidden h-8 w-px bg-gradient-to-b from-transparent via-white/[0.12] to-transparent md:block" />;
+  return <span aria-hidden className="hidden h-8 w-px bg-gradient-to-b from-transparent via-white/[0.12] to-transparent xl:block" />;
 }
 
 function ActiveTreatment() {
@@ -187,6 +189,7 @@ function DesktopNavItem({ item, active }: { item: NavItem; active: boolean }) {
     >
       <Link
         href={item.href}
+        onClick={item.onClick ? (e) => { e.preventDefault(); item.onClick?.() } : undefined}
         aria-label={`${item.label} ${item.subtitle}`}
         aria-current={active ? 'page' : undefined}
         className={cn(
@@ -211,7 +214,13 @@ function MobileNavItem({ item, active, onClick }: { item: NavItem; active: boole
   return (
     <Link
       href={item.href}
-      onClick={onClick}
+      onClick={(e) => {
+        if (item.onClick) {
+          e.preventDefault();
+          item.onClick();
+        }
+        onClick();
+      }}
       aria-label={`${item.label} ${item.subtitle}`}
       aria-current={active ? 'page' : undefined}
       className={cn(
@@ -233,8 +242,30 @@ function MobileNavItem({ item, active, onClick }: { item: NavItem; active: boole
 
 function NavbarInner() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+
+  const handleGoLive = () => {
+    const roleCookie = typeof document !== 'undefined'
+      ? (document.cookie.match(/(?:^|;\s*)userRole=([^;]*)/)?.[1] ?? '')
+      : '';
+    let target: string;
+    if (roleCookie === 'SELLER' || roleCookie === 'ADMIN' || roleCookie === 'SUPER_ADMIN' || roleCookie === 'MANAGER') {
+      target = getDashboardForRole(roleCookie);
+    } else if (roleCookie === 'BUYER') {
+      target = '/register/vendor-onboarding';
+    } else if (roleCookie === 'VIEWER') {
+      target = '/buyer/dashboard';
+    } else {
+      target = '/login?next=/register/vendor-onboarding';
+    }
+    router.push(target);
+  };
+
+  const navItems = NAV_ITEMS.map(item =>
+    item.label === 'GoLive' ? { ...item, onClick: item.onClick ?? handleGoLive } : item
+  );
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -268,8 +299,8 @@ function NavbarInner() {
               </motion.div>
             </div>
 
-            <ul className="relative z-10 hidden flex-1 items-center justify-center gap-2 md:flex">
-              {NAV_ITEMS.map((item, index) => (
+            <ul className="relative z-10 hidden flex-1 items-center justify-center gap-2 xl:flex">
+              {navItems.map((item, index) => (
                 <li key={item.label} className="flex items-center gap-2">
                   {index > 0 && <SegmentSeparator />}
                   <DesktopNavItem item={item} active={isActive(item.href)} />
@@ -290,7 +321,7 @@ function NavbarInner() {
                 className={cn(
                   'flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-text-primary transition-all duration-300',
                   'hover:-translate-y-0.5 hover:border-accent-500/35 hover:bg-accent-500/15 hover:text-[#FF7A33]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#080b12] md:hidden'
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#080b12] xl:hidden'
                 )}
               >
                 {mobileOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
@@ -306,7 +337,7 @@ function NavbarInner() {
             <motion.button
               type="button"
               aria-label="Close navigation menu"
-              className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm xl:hidden"
               onClick={() => setMobileOpen(false)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -322,12 +353,12 @@ function NavbarInner() {
               animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
               exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
               transition={{ duration: shouldReduceMotion ? 0 : 0.26, ease: 'easeOut' }}
-              className="fixed inset-x-3 bottom-3 z-50 overflow-hidden rounded-[2rem] border border-border bg-bg-elevated/95 p-3 shadow-[0_28px_90px_rgba(0,0,0,0.62)] backdrop-blur-[30px] md:hidden"
+              className="fixed inset-x-3 bottom-3 z-50 max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-[2rem] border border-border bg-bg-elevated/95 p-3 shadow-[0_28px_90px_rgba(0,0,0,0.62)] backdrop-blur-[30px] xl:hidden"
             >
               <div aria-hidden className="mx-auto mb-3 h-1 w-12 rounded-full bg-surface" />
               <div className="grid gap-2">
                 <MobileHomeItem active={isActive('/')} onClick={() => setMobileOpen(false)} />
-                {NAV_ITEMS.map((item) => (
+                {navItems.map((item) => (
                   <MobileNavItem
                     key={item.label}
                     item={item}

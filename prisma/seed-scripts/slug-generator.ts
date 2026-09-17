@@ -47,7 +47,8 @@ export function generateSlug(name: string): string {
   let slug = name.trim().toLowerCase();
 
   for (const [char, replacement] of Object.entries(TRANSLITERATION_MAP)) {
-    slug = slug.replace(new RegExp(char, 'g'), replacement);
+    const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    slug = slug.replace(new RegExp(escaped, 'g'), replacement);
   }
 
   slug = slug

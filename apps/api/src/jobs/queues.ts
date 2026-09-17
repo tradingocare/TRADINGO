@@ -14,6 +14,17 @@ export enum QueueNames {
   AI = 'ai',
   TRACKING = 'tracking',
   PAYOUT = 'payout',
+  CATEGORY_DEMAND = 'category-demand',
+}
+
+export enum CategoryDemandJobTypes {
+  RECALCULATE_DEMAND = 'RECALCULATE_DEMAND',
+}
+
+export interface CategoryDemandJobData {
+  type: CategoryDemandJobTypes;
+  force?: boolean;
+  limit?: number;
 }
 
 export enum AnalyticsJobTypes {

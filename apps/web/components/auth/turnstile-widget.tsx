@@ -37,5 +37,5 @@ export function TurnstileWidget({ onToken, theme = 'dark' }: TurnstileWidgetProp
     })
   }
 
-  return <div ref={containerRef} />
+  return <div ref={containerRef} className="flex w-full justify-center overflow-x-clip" />
 }

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Search, Building2, X, MapPin, ChevronRight,
-  Star, Package, BadgeCheck, Crown,
+  Star, Package, BadgeCheck, Crown, Sparkles, ShieldCheck,
 } from 'lucide-react'
 import Link from 'next/link'
 import { Select } from '@/components/ui/select'
@@ -138,18 +138,48 @@ export default function CompanyDirectoryClient() {
               <span className="font-semibold text-text-primary">Tradors</span>
             </nav>
             <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="mb-6">
-              <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4 bg-accent/10 border-accent/20 text-accent">
-                <Building2 size={11} /> Tradors Directory
-              </span>
-              <h1 className="font-black text-text-primary mb-3" style={{ fontSize:'clamp(28px,5vw,52px)' }}>
-                Find Verified{' '}
-                <span style={{ background:'linear-gradient(135deg,#f59e0b,#fbbf24)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
-                  Tradors
-                </span>
-              </h1>
-              <p className="text-text-tertiary text-sm sm:text-base max-w-xl mx-auto">
-                Browse verified tradors — manufacturers, wholesalers, distributors and service providers from across India.
-              </p>
+              <div className="relative overflow-hidden rounded-3xl border border-border bg-bg-elevated px-4 py-10 sm:px-8 sm:py-12">
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      'radial-gradient(ellipse 70% 60% at 50% -30%, rgba(255,77,0,0.07), transparent 60%)',
+                  }}
+                />
+                <div className="relative">
+                  <div className="text-center">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-accent">
+                      <Sparkles size={11} /> TRADINGO Master Business Directory
+                    </span>
+                    <h1 className="mt-5 text-3xl font-black tracking-tight text-text-primary sm:text-4xl lg:text-[42px]">
+                      Find Verified Manufacturers, Suppliers{' '}
+                      <span
+                        className="bg-clip-text text-transparent"
+                        style={{ backgroundImage: 'linear-gradient(135deg, #FF4D00, #FFB37D)' }}
+                      >
+                        &amp; Distributors
+                      </span>
+                    </h1>
+                    <p className="mx-auto mt-4 max-w-3xl text-base text-text-tertiary sm:text-lg">
+                      Discover verified manufacturers, suppliers, traders, and distributors across industries and locations worldwide. Explore company profiles, products, capabilities, and business information, compare potential partners, and connect directly for sourcing and trade opportunities.
+                    </p>
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-text-tertiary">
+                    <span className="inline-flex items-center gap-1.5">
+                      <ShieldCheck size={13} className="text-accent" /> Verified sellers
+                    </span>
+                    <span className="h-1 w-1 rounded-full bg-border" />
+                    <span className="inline-flex items-center gap-1.5">
+                      <BadgeCheck size={13} className="text-accent" /> Escrow protected
+                    </span>
+                    <span className="h-1 w-1 rounded-full bg-border" />
+                    <span className="inline-flex items-center gap-1.5">
+                      <MapPin size={13} className="text-accent" /> Pan-India
+                    </span>
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
             <form onSubmit={handleSearch} className="flex gap-2 max-w-2xl mx-auto mb-8">

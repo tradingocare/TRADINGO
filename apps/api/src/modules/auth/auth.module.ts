@@ -11,6 +11,8 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { LinkedInStrategy } from './strategies/linkedin.strategy';
 import { QueueNames } from '../../jobs/queues';
+import { MembershipModule } from '../membership/membership.module';
+import { VendorCodesModule } from '../vendor-codes/vendor-codes.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { QueueNames } from '../../jobs/queues';
       inject: [ConfigService],
     }),
     BullModule.registerQueue({ name: QueueNames.EMAIL }),
+    MembershipModule,
+    VendorCodesModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, TurnstileService, JwtStrategy, RefreshTokenStrategy, GoogleStrategy, LinkedInStrategy],

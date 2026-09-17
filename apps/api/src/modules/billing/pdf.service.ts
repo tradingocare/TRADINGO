@@ -1,8 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PdfService {
   private readonly logger = new Logger(PdfService.name);
+
+  constructor(private readonly configService: ConfigService) {}
 
   generateInvoiceHtml(invoice: any): string {
     const company = invoice.company || {};
@@ -14,6 +17,15 @@ export class PdfService {
     const subtotal = Number(invoice.subtotal);
     const discountAmount = Number(invoice.discountAmount || 0);
     const now = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    // Canonical seller configuration — injected from environment
+    const sellerLegalName = this.configService.get<string>('seller.legalName') || 'Niksa Global Ventures Limited';
+    const sellerGstin = this.configService.get<string>('seller.gstin') || '07AAKCN7471R1ZH';
+    const sellerAddress = this.configService.get<string>('seller.address') || 'House No. 194, Block-G, Pocket 6, Sector 16, Rohini, New Delhi - 110089';
+    const sellerBrandName = this.configService.get<string>('seller.brandName') || 'TRADINGO';
+    const sellerSignatoryEntity = this.configService.get<string>('seller.signatoryEntity') || 'Niksa Global Ventures Limited';
+    const sellerEmail = this.configService.get<string>('seller.email') || 'support@tradingo.com';
+    const sellerWebsite = this.configService.get<string>('seller.website') || 'www.tradingo.com';
 
     const taxRows = taxBreakdown.map((t: any) =>
       `<tr><td style="padding:6px 12px;border:1px solid #ddd;text-align:left">${t.taxType}</td><td style="padding:6px 12px;border:1px solid #ddd;text-align:center">${Number(t.rate).toFixed(2)}%</td><td style="padding:6px 12px;border:1px solid #ddd;text-align:right">₹ ${Number(t.amount).toFixed(2)}</td></tr>`
@@ -55,10 +67,10 @@ export class PdfService {
 <body>
   <div class="header">
     <div class="brand">
-      <h1>TRADINGO</h1>
-      <p>A Brand of Niksa Global Ventures Limited</p>
-      <p>GSTIN: 07AAKCN7471R1ZH</p>
-      <p style="font-size:9px;color:#999;max-width:280px">House No. 194, Block-G, Pocket 6, Sector 16, Rohini, New Delhi &minus; 110089</p>
+      <h1>${sellerBrandName}</h1>
+      <p>A Brand of ${sellerLegalName}</p>
+      <p>GSTIN: ${sellerGstin}</p>
+      <p style="font-size:9px;color:#999;max-width:280px">${sellerAddress}</p>
     </div>
     <div class="invoice-meta">
       <h2>TAX INVOICE</h2>
@@ -113,11 +125,11 @@ export class PdfService {
     <p>We declare that this invoice shows the actual price of the services rendered and that all particulars are true and correct.</p>
     <p>This is a computer-generated invoice. No signature required.</p>
     <p><strong>Terms:</strong> Payment received. Subscription activated.</p>
-    <p style="margin-top:8px;color:#333;"><strong>Authorized Signatory:</strong> For TRADINGO India Pvt. Ltd.</p>
+    <p style="margin-top:8px;color:#333;"><strong>Authorized Signatory:</strong> For ${sellerSignatoryEntity}</p>
   </div>
 
   <div class="footer">
-    <p>TRADINGO India Pvt. Ltd. | www.tradingo.com | support@tradingo.com</p>
+    <p>${sellerLegalName} | ${sellerWebsite} | ${sellerEmail}</p>
     <p>${company.gstNumber ? 'GSTIN: ' + company.gstNumber : ''}</p>
     <p>Invoice #${invoice.invoiceNumber} | Generated on ${now}</p>
   </div>

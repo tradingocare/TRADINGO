@@ -1,4 +1,4 @@
-// ================================================================
+﻿// ================================================================
 // TRADINGO MASTER DATA — Single Source of Truth
 // All pages, search, filters, sitemaps consume from here.
 // ================================================================
@@ -306,45 +306,45 @@ export interface SearchSuggestion {
 
 export const SEARCH_SUGGESTIONS: SearchSuggestion[] = [
   // Trending
-  { text: 'Solar Panel 550W', type: 'trending', url: '/products?q=solar+panel' },
-  { text: 'CNC Machine VMC', type: 'trending', url: '/products?q=cnc+machine' },
-  { text: 'Hydraulic Press', type: 'trending', url: '/products?q=hydraulic+press' },
-  { text: 'LED Street Light', type: 'trending', url: '/products?q=led+street+light' },
-  { text: 'Basmati Rice 1121', type: 'trending', url: '/products?q=basmati+rice' },
+  { text: 'Solar Panel 550W', type: 'trending', url: '/trading?q=solar+panel' },
+  { text: 'CNC Machine VMC', type: 'trending', url: '/trading?q=cnc+machine' },
+  { text: 'Hydraulic Press', type: 'trending', url: '/trading?q=hydraulic+press' },
+  { text: 'LED Street Light', type: 'trending', url: '/trading?q=led+street+light' },
+  { text: 'Basmati Rice 1121', type: 'trending', url: '/trading?q=basmati+rice' },
   // Categories
-  { text: 'Industrial Machinery', type: 'category', url: '/products?category=industrial-machinery' },
-  { text: 'Electronics & Electrical', type: 'category', url: '/products?category=electronics' },
-  { text: 'Chemicals & Pharma', type: 'category', url: '/products?category=chemicals' },
-  { text: 'Packaging & Printing', type: 'category', url: '/products?category=packaging' },
-  { text: 'Construction Materials', type: 'category', url: '/products?category=construction' },
-  { text: 'Automotive Parts', type: 'category', url: '/products?category=automotive' },
-  { text: 'Food & Agriculture', type: 'category', url: '/products?category=food-agro' },
-  { text: 'Textiles & Apparel', type: 'category', url: '/products?category=textiles' },
-  { text: 'Healthcare & Medical', type: 'category', url: '/products?category=healthcare' },
-  { text: 'Renewable Energy', type: 'category', url: '/products?category=renewable-energy' },
-  { text: 'IT & Software', type: 'category', url: '/products?category=it-software' },
-  { text: 'Industrial Supplies', type: 'category', url: '/products?category=industrial-supplies' },
-  { text: 'Business Services', type: 'category', url: '/products?category=business-services' },
-  { text: 'Office Supplies', type: 'category', url: '/products?category=office-supplies' },
-  { text: 'Consumer Goods', type: 'category', url: '/products?category=consumer-goods' },
-  { text: 'Logistics & Transport', type: 'category', url: '/products?category=logistics' },
-  { text: 'Manufacturing Services', type: 'category', url: '/products?category=manufacturing-services' },
+  { text: 'Industrial Machinery', type: 'category', url: '/trading?category=industrial-machinery' },
+  { text: 'Electronics & Electrical', type: 'category', url: '/trading?category=electronics' },
+  { text: 'Chemicals & Pharma', type: 'category', url: '/trading?category=chemicals' },
+  { text: 'Packaging & Printing', type: 'category', url: '/trading?category=packaging' },
+  { text: 'Construction Materials', type: 'category', url: '/trading?category=construction' },
+  { text: 'Automotive Parts', type: 'category', url: '/trading?category=automotive' },
+  { text: 'Food & Agriculture', type: 'category', url: '/trading?category=food-agro' },
+  { text: 'Textiles & Apparel', type: 'category', url: '/trading?category=textiles' },
+  { text: 'Healthcare & Medical', type: 'category', url: '/trading?category=healthcare' },
+  { text: 'Renewable Energy', type: 'category', url: '/trading?category=renewable-energy' },
+  { text: 'IT & Software', type: 'category', url: '/trading?category=it-software' },
+  { text: 'Industrial Supplies', type: 'category', url: '/trading?category=industrial-supplies' },
+  { text: 'Business Services', type: 'category', url: '/trading?category=business-services' },
+  { text: 'Office Supplies', type: 'category', url: '/trading?category=office-supplies' },
+  { text: 'Consumer Goods', type: 'category', url: '/trading?category=consumer-goods' },
+  { text: 'Logistics & Transport', type: 'category', url: '/trading?category=logistics' },
+  { text: 'Manufacturing Services', type: 'category', url: '/trading?category=manufacturing-services' },
   // Products
-  { text: 'CNC Milling Machine VMC-850', type: 'product', url: '/products/cnc-milling-machine-vmc-850' },
-  { text: 'Hydraulic Press 150-Ton', type: 'product', url: '/products/industrial-hydraulic-press-150-ton' },
-  { text: 'Automated Bottle Filling Machine', type: 'product', url: '/products/automated-bottle-filling-machine' },
-  { text: 'SS 316L Ball Valves', type: 'product', url: '/products/ss-316l-industrial-ball-valves' },
-  { text: 'Industrial Gearbox Helical', type: 'product', url: '/products/industrial-gearbox-helical-20-1' },
-  { text: 'PVC Cable 4 sqmm', type: 'product', url: '/products/pvc-cable-4-sqmm-90m' },
-  { text: 'API 5L Seamless Pipe', type: 'product', url: '/products/api-5l-grade-b-seamless-pipe' },
-  { text: 'Ceramic Wall Tiles 60x60', type: 'product', url: '/products/ceramic-wall-tiles-60x60cm' },
-  { text: 'Tractor 50 HP', type: 'product', url: '/products/tractor-50-hp-4wd' },
-  { text: 'Cotton Fabric 40s', type: 'product', url: '/products/cotton-fabric-40s-combed' },
-  { text: 'Paracetamol 500mg', type: 'product', url: '/products/paracetamol-ip-500mg-tablets' },
-  { text: 'Corrugated Box 3-ply', type: 'product', url: '/products/corrugated-box-3-ply' },
-  { text: 'Auto Brake Pad Set', type: 'product', url: '/products/auto-brake-pad-set-ceramic' },
-  { text: 'Office Workstation 6-Seater', type: 'product', url: '/products/office-workstation-desk-6-seater' },
-  { text: 'HVAC Air Handling Unit', type: 'product', url: '/products/hvac-air-handling-unit-10-tr' },
+  { text: 'CNC Milling Machine VMC-850', type: 'product', url: '/trading/cnc-milling-machine-vmc-850' },
+  { text: 'Hydraulic Press 150-Ton', type: 'product', url: '/trading/industrial-hydraulic-press-150-ton' },
+  { text: 'Automated Bottle Filling Machine', type: 'product', url: '/trading/automated-bottle-filling-machine' },
+  { text: 'SS 316L Ball Valves', type: 'product', url: '/trading/ss-316l-industrial-ball-valves' },
+  { text: 'Industrial Gearbox Helical', type: 'product', url: '/trading/industrial-gearbox-helical-20-1' },
+  { text: 'PVC Cable 4 sqmm', type: 'product', url: '/trading/pvc-cable-4-sqmm-90m' },
+  { text: 'API 5L Seamless Pipe', type: 'product', url: '/trading/api-5l-grade-b-seamless-pipe' },
+  { text: 'Ceramic Wall Tiles 60x60', type: 'product', url: '/trading/ceramic-wall-tiles-60x60cm' },
+  { text: 'Tractor 50 HP', type: 'product', url: '/trading/tractor-50-hp-4wd' },
+  { text: 'Cotton Fabric 40s', type: 'product', url: '/trading/cotton-fabric-40s-combed' },
+  { text: 'Paracetamol 500mg', type: 'product', url: '/trading/paracetamol-ip-500mg-tablets' },
+  { text: 'Corrugated Box 3-ply', type: 'product', url: '/trading/corrugated-box-3-ply' },
+  { text: 'Auto Brake Pad Set', type: 'product', url: '/trading/auto-brake-pad-set-ceramic' },
+  { text: 'Office Workstation 6-Seater', type: 'product', url: '/trading/office-workstation-desk-6-seater' },
+  { text: 'HVAC Air Handling Unit', type: 'product', url: '/trading/hvac-air-handling-unit-10-tr' },
   // Services
   { text: 'ISO 9001 Certification', type: 'service', url: '/services/iso-9001-2025-certification' },
   { text: 'CNC Machining Service', type: 'service', url: '/services/custom-cnc-machining-service' },
@@ -422,7 +422,7 @@ export const MASTER_COUNTRIES = [
 // ─── FOOTER LINKS ────────────────────────────────────────────────
 export const FOOTER_MARKETPLACE_LINKS = [
   { label: 'eMarketplace', href: '/trading' },
-  { label: 'Browse Products', href: '/products' },
+  { label: 'Browse Products', href: '/trading' },
   { label: 'Categories', href: '/categories' },
   { label: 'RFQ Marketplace', href: '/rfq' },
 ]
@@ -452,7 +452,7 @@ export const FOOTER_SELLER_LINKS = [
   { label: 'Seller Resources', href: '/for-sellers' },
 ]
 export const FOOTER_BUYER_LINKS = [
-  { label: 'Browse Products', href: '/products' },
+  { label: 'Browse Products', href: '/trading' },
   { label: 'Post RFQ', href: '/rfq' },
   { label: 'Buyer Dashboard', href: '/buyer/dashboard' },
   { label: 'Buyer Resources', href: '/for-buyers' },
@@ -466,16 +466,7 @@ export const MASTER_PLATFORM_STATS = {
     { value: '\u20B92.4Cr', label: 'Trading Volume (24h)', change: '+15%', positive: true },
     { value: '156', label: 'Live RFQs', change: '+23%', positive: true },
   ],
-  indiaStats: [
-    { icon: 'Globe', label: 'States & UTs', display: '36', color: '#D4AF37' },
-    { icon: 'Building2', label: 'Cities Covered', display: '2.9K+', color: '#60A5FA' },
-    { icon: 'Store', label: 'Sellers', display: '1.8L+', color: '#F472B6' },
-    { icon: 'Package', label: 'Products', display: '1.0Cr+', color: '#A78BFA' },
-    { icon: 'Wrench', label: 'Services', display: '38.2L+', color: '#FBBF24' },
-    { icon: 'Users', label: 'Buyers', display: '5.2L+', color: '#34D399' },
-    { icon: 'DollarSign', label: 'Trade Volume', display: '\u20B92840Cr+', color: '#34D399' },
-    { icon: 'Shield', label: 'Verified', display: '98.5K+', color: '#60A5FA' },
-  ],
+  indiaStats: [],
   indiaPills: [
     '36 States & UTs', 'Manufacturing Clusters', 'Product Ecosystems',
     'Verified Businesses', 'Live RFQ Intelligence', 'Export Opportunities',
@@ -488,7 +479,7 @@ export interface MasterEngine {
   subtitle?: string; color: string; href?: string
 }
 export const MASTER_ENGINES: MasterEngine[] = [
-  { id: 'TRADFIND', name: 'TRADFIND', tagline: 'Smart Discovery', subtitle: 'Smart Discovery', description: 'AI-powered search across 33,600+ products and services. Hindi, English, Hinglish supported.', color: '#3D8BFF', href: '/tradhexa/tradfind' },
+  { id: 'TRADFIND', name: 'TRADFIND', tagline: 'Smart Discovery', subtitle: 'Smart Discovery', description: 'AI-powered search across our product catalog. Hindi, English, Hinglish supported.', color: '#3D8BFF', href: '/tradhexa/tradfind' },
   { id: 'TRADMATCH', name: 'TRADMATCH', tagline: 'AI Matchmaking', subtitle: 'AI Matchmaking', description: 'Your RFQ is auto-routed to the top 20 verified vendors using scoring: category, location, trust, response rate.', color: '#9B5DE5', href: '/tradhexa/tradmatch' },
   { id: 'TRADRFQ', name: 'TRADRFQ', tagline: 'RFQ & Negotiation', subtitle: 'RFQ & Negotiation', description: 'Post bulk requirements, receive multi-vendor quotes, compare, negotiate, and convert to order.', color: '#F15BB5', href: '/tradhexa/tradrfq' },
   { id: 'TRADCONNECT', name: 'TRADCONNECT', tagline: 'Secure Chat', subtitle: 'Secure Chat', description: 'WhatsApp-style B2B chat. Phone numbers are never shared. Direct connect between buyers and sellers.', color: '#2DE0E0', href: '/tradhexa/tradconnect' },
@@ -541,11 +532,11 @@ export interface HeroVendorSlide {
   accentColor: string
 }
 export const HERO_VENDOR_SLIDES: HeroVendorSlide[] = [
-  { id: 1, vendorName: 'Anand Steels & Metals', tagline: 'Premium Steel & Metal Products Since 1998', category: 'Industrial Machinery', banner: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹45Cr+' }, { label: 'Orders', value: '12.5K+' }, { label: 'Happy Clients', value: '2,800+' }], offer: 'Free delivery on orders above ₹1L', cta: 'View Products', ctaHref: '/products', accentColor: '#f59e0b' },
-  { id: 2, vendorName: 'Green Earth Pharma', tagline: 'Trusted Pharmaceutical Manufacturer', category: 'Pharmaceuticals', banner: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹120Cr+' }, { label: 'Orders', value: '45K+' }, { label: 'Happy Clients', value: '5,200+' }], offer: 'Bulk order discount up to 15%', cta: 'Explore Range', ctaHref: '/products', accentColor: '#10B981' },
-  { id: 3, vendorName: 'TexFab India', tagline: 'India\'s Leading Textile Exporter', category: 'Textiles & Apparel', banner: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹280Cr+' }, { label: 'Orders', value: '89K+' }, { label: 'Happy Clients', value: '12,000+' }], offer: 'Sample free on first order', cta: 'Shop Now', ctaHref: '/products', accentColor: '#8B5CF6' },
-  { id: 4, vendorName: 'Precision Auto Parts', tagline: 'OEM & Aftermarket Auto Components', category: 'Automotive', banner: 'https://images.unsplash.com/photo-1563903530908-af12d1551ac4?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹520Cr+' }, { label: 'Orders', value: '2.5L+' }, { label: 'Happy Clients', value: '18,000+' }], offer: 'Bulk pricing available', cta: 'View Catalog', ctaHref: '/products', accentColor: '#3D8BFF' },
-  { id: 5, vendorName: 'VoltTech Solar Solutions', tagline: 'Powering India\'s Solar Future', category: 'Renewable Energy', banner: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&q=80', logo: undefined, badge: 'VERIFIED', stats: [{ label: 'Revenue', value: '₹85Cr+' }, { label: 'Orders', value: '18K+' }, { label: 'Happy Clients', value: '3,400+' }], offer: 'Free site survey', cta: 'Get Quote', ctaHref: '/products', accentColor: '#F59E0B' },
+  { id: 1, vendorName: 'Anand Steels & Metals', tagline: 'Premium Steel & Metal Products Since 1998', category: 'Industrial Machinery', banner: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹45Cr+' }, { label: 'Orders', value: '12.5K+' }, { label: 'Happy Clients', value: '2,800+' }], offer: 'Free delivery on orders above ₹1L', cta: 'View Products', ctaHref: '/trading', accentColor: '#f59e0b' },
+  { id: 2, vendorName: 'Green Earth Pharma', tagline: 'Trusted Pharmaceutical Manufacturer', category: 'Pharmaceuticals', banner: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹120Cr+' }, { label: 'Orders', value: '45K+' }, { label: 'Happy Clients', value: '5,200+' }], offer: 'Bulk order discount up to 15%', cta: 'Explore Range', ctaHref: '/trading', accentColor: '#10B981' },
+  { id: 3, vendorName: 'TexFab India', tagline: 'India\'s Leading Textile Exporter', category: 'Textiles & Apparel', banner: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹280Cr+' }, { label: 'Orders', value: '89K+' }, { label: 'Happy Clients', value: '12,000+' }], offer: 'Sample free on first order', cta: 'Shop Now', ctaHref: '/trading', accentColor: '#8B5CF6' },
+  { id: 4, vendorName: 'Precision Auto Parts', tagline: 'OEM & Aftermarket Auto Components', category: 'Automotive', banner: 'https://images.unsplash.com/photo-1563903530908-af12d1551ac4?w=1200&q=80', logo: undefined, badge: 'ELITE', stats: [{ label: 'Revenue', value: '₹520Cr+' }, { label: 'Orders', value: '2.5L+' }, { label: 'Happy Clients', value: '18,000+' }], offer: 'Bulk pricing available', cta: 'View Catalog', ctaHref: '/trading', accentColor: '#3D8BFF' },
+  { id: 5, vendorName: 'VoltTech Solar Solutions', tagline: 'Powering India\'s Solar Future', category: 'Renewable Energy', banner: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&q=80', logo: undefined, badge: 'VERIFIED', stats: [{ label: 'Revenue', value: '₹85Cr+' }, { label: 'Orders', value: '18K+' }, { label: 'Happy Clients', value: '3,400+' }], offer: 'Free site survey', cta: 'Get Quote', ctaHref: '/trading', accentColor: '#F59E0B' },
 ]
 
 // ─── SELLER BENEFITS ──────────────────────────────────────────────
@@ -637,10 +628,10 @@ export const TRADING_RFQ_STEPS = [
   { step: 4, title: 'Trade with Confidence', description: 'Negotiate, finalize, and pay via TRADZERO escrow. GOCASH rewards credited on completion.' },
 ]
 export const TRADING_STATS = [
-  { icon: 'Package', value: '33,600+', label: 'Products & Services' },
-  { icon: 'Store', value: '1.8L+', label: 'Verified Sellers' },
-  { icon: 'Users', value: '5.2L+', label: 'Active Buyers' },
-  { icon: 'DollarSign', value: '\u20B92840Cr+', label: 'Trade Volume' },
+  { icon: 'Package', label: 'Products & Services' },
+  { icon: 'Shield', label: 'Verified Sellers' },
+  { icon: 'Users', label: 'Active Buyers' },
+  { icon: 'DollarSign', label: 'Trade Volume' },
 ]
 
 // ─── WHY TRADINGO ─────────────────────────────────────────────────
@@ -807,12 +798,8 @@ export const BUSINESS_HOURS = [
 export const PRESS_KIT_FACTS = [
   { label: 'Founded', value: '2023' },
   { label: 'Headquarters', value: 'BKC, Mumbai 400051, Maharashtra, India' },
-  { label: 'Platform', value: 'TRADHEXA B2B Marketplace' },
-  { label: 'Sellers', value: '1.8L+' },
-  { label: 'Buyers', value: '5.2L+' },
-  { label: 'Products', value: '33,600+' },
-  { label: 'Trade Volume', value: '\u20B92840Cr+' },
-  { label: 'Coverage', value: '36 States & UTs, 15+ Cities' },
+  { label: 'Platform', value: 'B2B Marketplace' },
+  { label: 'Coverage', value: 'Pan-India' },
 ]
 export const PRESS_BRAND_ASSETS = [
   { name: 'TRADINGO Logo (PNG)', type: 'PNG', size: '500KB', url: '/brand/logo.png', description: 'Primary TRADINGO logo on transparent background', variant: 'Primary' },
@@ -876,6 +863,7 @@ export const DASHBOARD_SELLER_NAV: NavItem[] = [
 export const DASHBOARD_BUYER_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/buyer/dashboard', icon: 'LayoutDashboard' },
   { label: 'Inbox', href: '/buyer/inbox', icon: 'MessageSquare' },
+  { label: 'GoLive — Become a Seller', href: '/register/vendor-onboarding', icon: 'Rocket', badge: 'New' },
   { label: 'My RFQs', href: '/buyer/rfq', icon: 'FileText' },
   { label: 'Quotes', href: '/buyer/quote', icon: 'DollarSign' },
   { label: 'Negotiations', href: '/buyer/negotiation', icon: 'Handshake' },
@@ -1021,13 +1009,13 @@ export const SELLER_QUICK_ACTIONS = [
 ]
 export const BUYER_QUICK_ACTIONS = [
   { label: 'Create RFQ', href: '/rfq', icon: 'FileText', color: '#3D8BFF' },
-  { label: 'Browse Products', href: '/products', icon: 'Search', color: '#f59e0b' },
+  { label: 'Browse Products', href: '/trading', icon: 'Search', color: '#f59e0b' },
   { label: 'Saved Products', href: '/buyer/saved-products', icon: 'Heart', color: '#F43F5E' },
   { label: 'Refer & Earn', href: '/buyer/referrals', icon: 'Gift', color: '#10B981' },
   { label: 'Compare Quotes', href: '/buyer/compare-quotes', icon: 'GitCompare', color: '#9B5DE5' },
 ]
 export const ADMIN_QUICK_LINKS = [
-  { label: 'User Management', href: '/admin/users', icon: 'Users', count: '1.8L+' },
+  { label: 'User Management', href: '/admin/users', icon: 'Users' },
   { label: 'Verification Queue', href: '/admin/verification', icon: 'Shield', count: '234' },
   { label: 'Fraud Alerts', href: '/admin/fraud-dashboard', icon: 'AlertTriangle', count: '12' },
   { label: 'System Health', href: '/admin/system-health', icon: 'Activity', count: '98.5%' },
@@ -1067,7 +1055,7 @@ export const BUYER_ONBOARDING_STEPS = [
 
 // ─── MEGA MENU DATA ───────────────────────────────────────────────
 export const MEGA_MENU_TRADING_COLUMNS = [
-  { title: 'Discover', items: [{ label: 'All Products', href: '/products' }, { label: 'Categories', href: '/categories' }, { label: 'Services', href: '/services' }, { label: 'Industries', href: '/industries' }] },
+  { title: 'Discover', items: [{ label: 'All Products', href: '/trading' }, { label: 'Categories', href: '/categories' }, { label: 'Services', href: '/services' }, { label: 'Industries', href: '/industries' }] },
   { title: 'Trade', items: [{ label: 'RFQ Marketplace', href: '/rfq' }, { label: 'TRADBUY Instant', href: '/tradbuy' }, { label: 'Compare Products', href: '/compare' }, { label: 'Near Me', href: '/near-me' }] },
   { title: 'Tools', items: [{ label: 'Seller Dashboard', href: '/seller/dashboard' }, { label: 'Buyer Dashboard', href: '/buyer/dashboard' }, { label: 'Analytics', href: '/seller/analytics' }, { label: 'Saved Products', href: '/buyer/saved-products' }] },
 ]
@@ -1116,9 +1104,10 @@ export const SITEMAP_STATIC_ROUTES = [
   { path: '/disclaimer', priority: 0.3, changefreq: 'yearly' as const },
   { path: '/companies', priority: 0.7, changefreq: 'daily' as const },
   { path: '/seller-plans', priority: 0.6, changefreq: 'weekly' as const },
-  { path: '/products', priority: 0.7, changefreq: 'daily' as const },
   { path: '/search', priority: 0.8, changefreq: 'daily' as const },
   { path: '/rfq', priority: 0.7, changefreq: 'weekly' as const },
   { path: '/status', priority: 0.3, changefreq: 'hourly' as const },
   { path: '/tradeserv', priority: 0.7, changefreq: 'weekly' as const },
+  { path: '/tradeserv/categories', priority: 0.7, changefreq: 'weekly' as const },
+  { path: '/tradeserv/search', priority: 0.7, changefreq: 'weekly' as const },
 ]

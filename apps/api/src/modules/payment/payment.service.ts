@@ -111,7 +111,7 @@ export class PaymentService {
       gatewayPaymentId: dto.razorpayPaymentId,
       gatewaySignature: dto.razorpaySignature,
     });
-    if (!isValid) throw new BadRequestException('Payment verification failed — signature mismatch');
+    if (!isValid) throw new BadRequestException('Payment verification failed â€” signature mismatch');
 
     const updated = await this.prisma.payment.update({
       where: { id: payment.id },
@@ -204,9 +204,18 @@ export class PaymentService {
   }
 
   private async generateInvoice(payment: any) {
-    const count = await this.prisma.invoice.count();
-    const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(count + 1).padStart(4, '0')}`;
+    // Use the canonical atomic TRD-INV series (same as InvoiceService)
+    // to prevent duplicate invoice numbers under concurrent requests.
+    const prefix = 'TRD-INV';
+    const year = new Date().getFullYear();
 
+    const seq = await this.prisma.invoiceSequence.upsert({
+      where: { prefix_year: { prefix, year } },
+      update: { lastSeq: { increment: 1 } },
+      create: { prefix, year, lastSeq: 1 },
+    });
+
+    const invoiceNumber = `${prefix}-${year}-${String(seq.lastSeq).padStart(6, '0')}`;
     const amountInRupees = (payment.amount / 100).toFixed(2);
 
     await this.prisma.invoice.create({
@@ -455,7 +464,7 @@ export class PaymentService {
       gatewayPaymentId: dto.gatewayPaymentId,
       gatewaySignature: dto.gatewaySignature,
     });
-    if (!isValid) throw new BadRequestException('Payment verification failed — signature mismatch');
+    if (!isValid) throw new BadRequestException('Payment verification failed â€” signature mismatch');
 
     await this.prisma.payment.update({
       where: { id: payment.id },
@@ -597,7 +606,7 @@ export class PaymentService {
           });
         });
 
-        // Emit event for booking payment webhook capture — orchestrator listens to create escrow
+        // Emit event for booking payment webhook capture â€” orchestrator listens to create escrow
         if (pendingPayment?.type === 'BOOKING_PAYMENT') {
           const notes = pendingPayment.notes as Record<string, unknown> | null;
           const bookingId = notes?.bookingId;

@@ -21,6 +21,11 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('No user context');
     }
 
+    // SUPER_ADMIN bypasses all role checks (mirrors PermissionsGuard)
+    if (user.role === 'SUPER_ADMIN') {
+      return true;
+    }
+
     const hasRole = requiredRoles.some((role) => user.role === role);
     if (!hasRole) {
       throw new ForbiddenException('Insufficient role');

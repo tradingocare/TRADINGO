@@ -174,8 +174,8 @@ export default function ProfileManagementPage() {
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 animate-pulse rounded-2xl bg-surface-secondary" />
               <div className="flex-1 space-y-2">
-                <div className="h-5 w-48 animate-pulse rounded bg-surface-secondary" />
-                <div className="h-4 w-64 animate-pulse rounded bg-surface-secondary" />
+                <div className="h-5 w-full max-w-48 animate-pulse rounded bg-surface-secondary" />
+                <div className="h-4 w-full max-w-64 animate-pulse rounded bg-surface-secondary" />
               </div>
             </div>
           </div>

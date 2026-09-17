@@ -18,9 +18,9 @@ E:\tradingo/
 │   ├── ui/         # Shared UI components
 │   └── utils/      # Shared utilities
 ├── prisma/         # Centralized Prisma schema (231 models, 160 enums)
-├── deployment/     # Production deployment scripts
 ├── infrastructure/ # Docker & ECS configs
-└── monitoring/     # Observability stack (Prometheus, Grafana, Sentry)
+├── ops/            # Observability (Prometheus, Grafana, Alertmanager) + k8s + load testing
+└── docs/           # Architecture, deployment, security, operations, reports
 ```
 
 ## Tech Stack
@@ -89,6 +89,14 @@ cd apps/api && npx tsc --noEmit  # TypeScript check API
 cd apps/web && npx tsc --noEmit  # TypeScript check Web
 cd apps/web && npx next build    # Production build (247 routes)
 ```
+
+## Monitoring & Production Operations
+
+- **Prometheus** — scrape config + alert/recording rules: `ops/monitoring/prometheus/` (metrics exposed at `GET /api/v1/metrics`, localhost:9090)
+- **Grafana** — provisioned datasource + auto-loaded dashboards: `ops/monitoring/grafana/` (localhost:3002, 3 dashboards)
+- **Alertmanager** — Slack alerts to `#tradingo-alerts`: `ops/monitoring/alertmanager.yml`
+- **Deployment** — ECS task definitions (`infrastructure/ecs/`), CI/CD workflows (`.github/workflows/`), runbook: `docs/deployment/PRODUCTION-RUNBOOK.md`
+- **Operations** — daily ops, incident response, on-call: `docs/operations/OPERATIONS-RUNBOOK.md`
 
 ## Documentation
 

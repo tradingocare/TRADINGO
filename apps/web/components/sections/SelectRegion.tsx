@@ -55,9 +55,7 @@ export default function SelectRegion() {
             </span>
           </h2>
           <p className="mt-2 text-sm text-text-tertiary">
-            Born in India <span className="mx-2 text-text-secondary">|</span> Built for Global Trade{' '}
-            <span className="mx-2 text-text-secondary">|</span> Powered by{' '}
-            <span className="font-semibold text-accent-500">TRADHEXA</span>
+            Born in India <span className="mx-2 text-text-secondary">|</span> Built for Global Trade
           </p>
         </motion.div>
 
@@ -192,7 +190,7 @@ export default function SelectRegion() {
                   </p>
 
                   <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-primary/40">
-                    TRADINGO &mdash; The Global Smart TRADHEXA B2B Marketplace is currently launched in
+                    TRADINGO &mdash; The Global Smart B2B Marketplace is currently launched in
                     India and is progressively expanding into international markets.
                   </p>
 
@@ -213,7 +211,7 @@ export default function SelectRegion() {
                   <button className="btn-glass group flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-all hover:scale-102">
                     <Mail size={14} /> Join Waitlist
                   </button>
-                  <Link href="/products">
+                  <Link href="/trading">
                     <button className="group flex w-full items-center justify-center gap-2 rounded-full border border-[rgba(0,255,255,0.15)] bg-[rgba(0,255,255,0.06)] px-6 py-2.5 text-sm font-semibold text-accent-500 transition-all hover:bg-[rgba(0,255,255,0.1)]">
                       <Store size={14} /> Explore India Marketplace
                     </button>

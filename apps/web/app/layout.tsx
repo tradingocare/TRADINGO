@@ -1,8 +1,8 @@
-/* ═══════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    RECOVERY: app/layout.tsx
    Source: Session reconstruction (21 June 2026)
    Confidence: HIGH
-   ═══════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 import type { Metadata, Viewport } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
@@ -22,14 +22,12 @@ import { WebVitalsTracker } from '@/components/web-vitals-tracker';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800', '900'], variable: '--font-display' });
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_SITE_URL}`
-  : 'http://localhost:3000';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in';
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#080b12',
+  themeColor: '#00001C',
 };
 
 export const metadata: Metadata = {
@@ -39,7 +37,7 @@ export const metadata: Metadata = {
     template: '%s | TRADINGO',
   },
   description:
-    "TRADINGO is a Global Smart Trade System powered by TRADHEXA, enabling buyers, sellers, manufacturers, distributors, and service providers worldwide to discover, connect, negotiate, and grow through trust, technology, and transparency.",
+    "TRADINGO is a Global Smart Trade System, enabling buyers, sellers, manufacturers, distributors, and service providers worldwide to discover, connect, negotiate, and grow through trust, technology, and transparency.",
   keywords: [
     'TRADINGO',
     'TRADHEXA',
@@ -61,33 +59,43 @@ export const metadata: Metadata = {
     'Worldwide Business Network',
   ],
   applicationName: 'TRADINGO',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'TRADINGO',
+  },
   icons: {
     icon: [
-      { url: '/logo/trdn6.png', type: 'image/png', sizes: '792x547' },
+      { url: '/icons/icon-192x192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icons/icon-512x512.png', type: 'image/png', sizes: '512x512' },
+      { url: '/logo/trdn5.png', type: 'image/png', sizes: '1536x1024' },
       { url: '/favicon.ico', sizes: 'any' },
     ],
     apple: [
-      { url: '/logo/trdn6.png', sizes: '792x547', type: 'image/png' },
+      { url: '/icons/apple-touch-icon-180x180.png', sizes: '180x180', type: 'image/png' },
     ],
   },
   openGraph: {
     title: "TRADINGO | The Global Smart Trade System",
     description:
-      "TRADINGO is a Global Smart Trade System powered by TRADHEXA, enabling businesses worldwide to discover, connect, negotiate, and grow.",
+      "TRADINGO is a Global Smart Trade System, enabling businesses worldwide to discover, connect, negotiate, and grow.",
     type: 'website',
     locale: 'en_US',
+    url: 'https://tradingo.in',
     siteName: 'TRADINGO',
-    images: [{ url: '/logo/trdn6.png', width: 792, height: 547, alt: 'TRADINGO' }],
+    images: [
+      { url: '/og/tradingo-og-1200x630.png', width: 1200, height: 630, alt: 'TRADINGO — Trading Right. Go Bright.' },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: "TRADINGO | The Global Smart Trade System",
     description:
-      "TRADINGO is a Global Smart Trade System powered by TRADHEXA, enabling businesses worldwide to discover, connect, negotiate, and grow.",
-    images: ['/logo/trdn6.png'],
+      "TRADINGO is a Global Smart Trade System, enabling businesses worldwide to discover, connect, negotiate, and grow.",
+    images: ['/og/tradingo-og-1200x630.png'],
   },
   alternates: {
-    canonical: 'https://www.tradingo.com',
+    canonical: 'https://tradingo.in',
   },
   robots: { index: true, follow: true },
 };

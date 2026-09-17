@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -89,7 +89,7 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
           <div className="mt-6 flex gap-3">
             <button
               onClick={stayLoggedIn}
-              className="flex-1 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-gray-900 transition-colors hover:bg-primary-700"
+              className="flex-1 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-btn-primary-text transition-colors hover:bg-accent-600"
             >
               Stay Logged In
             </button>

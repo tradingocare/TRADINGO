@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { PrismaService } from '../../prisma/prisma.service';
 import { RfqService } from '../rfq/rfq.service';
 import { CatalogAdapterService } from '../catalog-adapter/catalog-adapter.service';
+import { OrderNumberService } from '../order/order-number.service';
 import { PaginationDto, buildPaginationQuery, buildPaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class SmartRfqService {
     private readonly prisma: PrismaService,
     private readonly rfqService: RfqService,
     private readonly catalogAdapter: CatalogAdapterService,
+    private readonly orderNumberService: OrderNumberService,
   ) {}
 
   async getUserCompany(userId: string) {
@@ -271,15 +273,51 @@ export class SmartRfqService {
     });
     if (!quote) throw new BadRequestException('Quote not found or already processed');
 
-    const [updated] = await this.prisma.$transaction([
+    // P0-6: a quote without a total cannot be converted to an Order.
+    if (quote.totalAmount == null) {
+      throw new BadRequestException('Quote has no total amount and cannot be accepted');
+    }
+
+    // P0-6: derive order fields before the transaction (writes stay inside it).
+    const seller = await this.prisma.company.findFirst({ where: { id: quote.companyId, deletedAt: null } });
+    if (!seller) throw new NotFoundException('Seller company not found');
+    const buyerLocation = await this.prisma.companyLocation.findFirst({
+      where: { companyId: company.id, isPrimary: true },
+      select: { state: true },
+    });
+    const stateCode = buyerLocation?.state ?? 'XX';
+    const orderNumber = await this.orderNumberService.generate(stateCode);
+
+    const [updated, , , order] = await this.prisma.$transaction([
       this.prisma.quote.update({ where: { id: quoteId }, data: { status: 'ACCEPTED' } }),
       this.prisma.rfq.update({ where: { id: rfqId }, data: { status: 'CLOSED' } }),
       this.prisma.quote.updateMany({
         where: { rfqId, id: { not: quoteId }, status: { in: ['SUBMITTED', 'VIEWED'] } },
         data: { status: 'REJECTED' },
       }),
+      // P0-6: create the linked Order atomically with acceptance.
+      this.prisma.order.create({
+        data: {
+          orderNumber,
+          stateCode,
+          idempotencyKey: `QUOTE_ACCEPT_${quote.id}`,
+          source: 'QUOTE',
+          type: ((rfq as any).type ?? 'PRODUCT') as any,
+          statusChangedBy: userId,
+          buyerCompanyId: company.id,
+          sellerCompanyId: quote.companyId,
+          rfqId,
+          quoteId,
+          currency: quote.currency ?? 'INR',
+          subtotal: quote.totalAmount,
+          totalAmount: quote.totalAmount,
+          quantity: 1,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      }),
     ]);
-    return updated;
+    return { quote: updated, order };
   }
 
   async rejectQuote(userId: string, rfqId: string, quoteId: string) {

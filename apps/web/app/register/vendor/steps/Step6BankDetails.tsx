@@ -6,7 +6,7 @@ import { CreditCard, Eye, EyeOff, Upload, Shield, CheckCircle } from 'lucide-rea
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
-import { lookupIfsc } from '@/lib/utils/india-lookup'
+import apiClient from '@/lib/api/client'
 import type { BankDetailsForm } from '@/types/vendor-registration'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
@@ -61,18 +61,31 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
     setIfscLoading(true)
     setIfscError('')
     try {
-      const result = await lookupIfsc(ifsc)
-      if (result) {
+      const res = await apiClient.post('/auth/verify-ifsc', { ifscCode: ifsc })
+      const data = res.data?.data ?? res.data
+      if (data?.verified) {
         setIfscVerified(true)
-        set('bankName', result.bankName)
-        set('branchName', result.branch)
+        set('bankName', data.bankName ?? '')
+        set('branchName', data.branch ?? '')
       } else {
-        setIfscError('IFSC not found')
+        setIfscError(data?.message ?? 'IFSC not found')
       }
-    } catch {
-      setIfscError('Verification failed')
+    } catch (err: unknown) {
+      const e = err as { response?: { status?: number; data?: { message?: string } }; message?: string }
+      const status = e?.response?.status
+      const msg = e?.response?.data?.message
+      if (status === 404) {
+        setIfscError('IFSC not found')
+      } else if (status === 429) {
+        setIfscError('Too many requests. Please try again later.')
+      } else if (status && status >= 500) {
+        setIfscError('IFSC verification service is temporarily unavailable. Please try again.')
+      } else {
+        setIfscError(msg ?? 'IFSC verification failed. Please try again.')
+      }
+    } finally {
+      setIfscLoading(false)
     }
-    setIfscLoading(false)
   }
 
   const handleChequeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

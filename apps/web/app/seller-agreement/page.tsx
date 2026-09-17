@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { PageHeader } from '@/components/shared/page-header';
 import { CTABlock } from '@/components/shared/cta-block';
+import { getSellerEntryTarget } from '@/lib/auth/redirects';
 
 export const metadata: Metadata = {
   title: 'Seller Agreement | TRADINGO',
@@ -270,7 +272,9 @@ const sections = [
   },
 ];
 
-export default function SellerAgreementPage() {
+export default async function SellerAgreementPage() {
+  const role = (await cookies()).get('userRole')?.value ?? '';
+  const sellerEntry = getSellerEntryTarget(role);
   return (
     <>
       <PageHeader
@@ -323,7 +327,7 @@ export default function SellerAgreementPage() {
         title="Ready to Start Selling?"
         subtitle="Join thousands of sellers on India's most trusted B2B marketplace. Create your seller account today."
         primaryLabel="Create Seller Account"
-        primaryHref="/register/vendor"
+        primaryHref={sellerEntry}
         variant="simple"
       />
     </>

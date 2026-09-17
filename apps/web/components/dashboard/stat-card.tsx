@@ -9,6 +9,7 @@ interface StatCardProps {
   change?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
   className?: string;
+  variant?: 'default' | 'clean';
 }
 
 export function StatCard({ icon: Icon, label, value, change, changeType = 'neutral', className }: StatCardProps) {
@@ -16,7 +17,7 @@ export function StatCard({ icon: Icon, label, value, change, changeType = 'neutr
     <div className="stacked-card-wrapper">
     <div
       className={cn(
-        'group rounded-2xl border border-border compact-stack-card neon-rainbow-border ambient-backlight p-5 transition-all duration-300',
+        'group rounded-2xl border border-border bg-surface p-5 transition-all duration-300 hover:border-accent-500/40 hover:bg-surface-secondary hover:shadow-lg hover:shadow-black/10',
         className,
       )}
     >

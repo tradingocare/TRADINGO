@@ -16,7 +16,7 @@ const engineEmojis: Record<string, string> = {
 
 export default function TradhexaEngines() {
   return (
-    <section className="relative overflow-hidden py-20">
+    <section className="relative overflow-hidden py-14 sm:py-16 lg:py-20">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-40 top-1/3 h-[400px] w-[400px] rounded-full bg-[rgba(212,175,55,0.03)] blur-[120px]" />
         <div className="absolute -right-40 bottom-1/3 h-[300px] w-[300px] rounded-full bg-[rgba(212,175,55,0.02)] blur-[100px]" />
@@ -30,7 +30,7 @@ export default function TradhexaEngines() {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-[1600px] text-center"
         >
-          <div className="relative overflow-hidden rounded-[32px] border border-[rgba(212,175,55,0.1)] bg-surface backdrop-blur-xl p-8 sm:p-10"
+          <div className="relative overflow-hidden rounded-[32px] border border-[rgba(212,175,55,0.1)] bg-surface backdrop-blur-xl p-6 sm:p-8"
             style={{
               boxShadow: '0 0 60px rgba(212,175,55,0.04), 0 8px 32px rgba(0,0,0,0.2)',
             }}
@@ -41,8 +41,8 @@ export default function TradhexaEngines() {
             </div>
 
             <img
-              src="/logo/trdn6.png"
-              alt="TRDN"
+              src="/logo/trdn5.png"
+              alt="TRADINGO"
               className="mx-auto h-10 w-auto opacity-50 sm:h-12"
             />
 
@@ -50,10 +50,10 @@ export default function TradhexaEngines() {
               <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.06)] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
                 {'\u26A1'} TRADHEXA &mdash; 6 Powerful Trading Engines
               </span>
-              <h2 className="mt-4 whitespace-nowrap text-2xl font-black tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-text-primary sm:text-4xl lg:text-5xl">
                 TRADHEXA &mdash; 6 Powerful Trading Engines
               </h2>
-              <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-text-secondary">
+              <p className="mx-auto mt-3 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
                 Six integrated engines powering the TRADINGO ecosystem. From instant discovery to
                 zero-risk transactions, everything you need in one platform.
               </p>
@@ -61,7 +61,7 @@ export default function TradhexaEngines() {
           </div>
         </motion.div>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {engines.map((engine, i) => {
             return (
               <motion.div
@@ -75,7 +75,7 @@ export default function TradhexaEngines() {
                 <Link href={engine.href} className="flex flex-1 flex-col">
                   <motion.div
                     whileHover={{ y: -6, scale: 1.02 }}
-                    className="group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface-secondary p-7 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
+                    className="group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface-secondary p-5 sm:p-6 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
                     style={{
                       backdropFilter: 'blur(20px)',
                       boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
@@ -101,18 +101,18 @@ export default function TradhexaEngines() {
                         </div>
                       </div>
 
-                      <p className="mt-4 flex-1 text-sm leading-relaxed text-text-secondary">
+                      <p className="mt-4 flex-1 text-sm leading-relaxed text-text-secondary sm:text-base">
                         {engine.description}
                       </p>
 
                       <div className="mt-5 flex flex-wrap gap-1.5">
                         {engine.features.slice(0, 3).map((f) => (
-                          <span key={f} className="rounded-full bg-surface-secondary px-2.5 py-0.5 text-[9px] text-text-tertiary">{f}</span>
+                          <span key={f} className="rounded-full bg-surface-secondary px-2.5 py-0.5 text-[10px] text-text-tertiary">{f}</span>
                         ))}
                         <span className="rounded-full bg-[rgba(212,175,55,0.06)] px-2.5 py-0.5 text-[9px] text-[#D4AF37]/60">{engine.features.length - 3}+</span>
                       </div>
 
-                      <div className="mt-5 flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(212,175,55,0.12)] bg-gradient-to-r from-[rgba(212,175,55,0.06)] to-[rgba(212,175,55,0.02)] px-4 py-2 text-[11px] font-semibold text-[#D4AF37]/80 transition-all group-hover:from-[rgba(212,175,55,0.1)] group-hover:to-[rgba(212,175,55,0.04)] group-hover:text-[#D4AF37]">
+                      <div className="mt-5 flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(212,175,55,0.12)] bg-gradient-to-r from-[rgba(212,175,55,0.06)] to-[rgba(212,175,55,0.02)] px-4 py-2 text-xs font-semibold text-[#D4AF37]/80 transition-all group-hover:from-[rgba(212,175,55,0.1)] group-hover:to-[rgba(212,175,55,0.04)] group-hover:text-[#D4AF37] sm:text-sm">
                         GoMore <ExternalLink size={11} />
                       </div>
                     </div>

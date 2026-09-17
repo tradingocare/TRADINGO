@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
@@ -96,7 +96,7 @@ const ChatMessage = memo(function ChatMessage({ message, isOwn, onReact }: ChatM
         className={cn(
           'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium',
           isOwn
-            ? 'bg-primary-600 text-gray-900'
+            ? 'bg-accent text-btn-primary-text'
             : 'bg-surface-secondary text-text-primary dark:bg-dark-surface-secondary dark:text-dark-text-primary',
         )}
       >
@@ -114,7 +114,7 @@ const ChatMessage = memo(function ChatMessage({ message, isOwn, onReact }: ChatM
           className={cn(
             'rounded-xl px-4 py-2',
             isOwn
-              ? 'bg-primary-600 text-gray-900 rounded-tr-sm'
+              ? 'bg-accent text-btn-primary-text rounded-tr-sm'
               : 'bg-surface-secondary dark:bg-dark-surface-secondary text-text-primary dark:text-dark-text-primary rounded-tl-sm',
           )}
         >
