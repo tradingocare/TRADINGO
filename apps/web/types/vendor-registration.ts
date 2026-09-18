@@ -43,7 +43,9 @@ export interface BusinessProfileForm {
   description: string
   tagline?: string
   primaryCategory: string
+  primaryCatalogCategoryId?: string
   secondaryCategories: string[]
+  secondaryCatalogCategoryIds?: string[]
   productTypes: string
   moqRange: string
   supplyCapacity: string
