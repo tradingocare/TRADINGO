@@ -13,6 +13,8 @@ export interface ProductCardSeller {
   city?: string
   avgResponseTime?: string
   logo?: string
+  // Vendor business type (Manufacturer / Wholesaler / Trader / ...)
+  businessType?: string
 }
 
 export interface ProductCardModel {
@@ -20,6 +22,9 @@ export interface ProductCardModel {
   id: string
   slug: string
   title: string
+  // Short positioning line shown under the title (vendor-provided shortDescription).
+  // Optional — UI must hide the subtitle slot when absent. Never synthesize.
+  description?: string
   images: string[]
   videoUrl?: string
 
@@ -130,7 +135,7 @@ export const VARIANT_FEATURES: Record<CardVariant, ProductCardFeatures> = {
     showQuantitySelector: true,
     showDelivery: true,
     showCategory: true,
-    showBrand: false,
+    showBrand: true,
     showDiscountPct: true,
     showSavings: true,
     showMonthlyOrders: true,
@@ -160,7 +165,7 @@ export const VARIANT_FEATURES: Record<CardVariant, ProductCardFeatures> = {
     showTrustScore: false,
     showQuantitySelector: false,
     showDelivery: false,
-    showCategory: false,
+    showCategory: true,
     showBrand: false,
     showDiscountPct: true,
     showSavings: false,

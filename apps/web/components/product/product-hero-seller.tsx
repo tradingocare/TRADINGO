@@ -53,7 +53,7 @@ export function ProductHeroSeller({
   void reviewCount;
   void responseRate;
   const locationParts = [company?.city, company?.state].filter(Boolean);
-  const locationText = locationParts.length > 0 ? locationParts.join(', ') : (hasLocation ? 'Location verified' : 'Pan India');
+  const locationText = locationParts.length > 0 ? locationParts.join(', ') : (hasLocation ? 'Location verified' : 'Location on request');
   const sellerYears = yearsActive ? `${yearsActive}+ Years` : 'Established';
 
   return (
