@@ -19,6 +19,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { BrandSelect } from '@/components/enterprise-catalog/brand-select';
+import { CanonicalTaxonomyPicker, EMPTY_CANONICAL_SELECTION, type CanonicalTripleSelection } from '@/components/taxonomy/canonical-taxonomy-picker';
+import { marketplaceCatalogBridgeApi } from '@/lib/api/marketplace-catalog-bridge';
 import { apiClient } from '@/lib/api-client';
 import { WIZARD_STEPS, type ProductDraft, type AttributeTemplate, type ProductCompletenessScore, type ProductDraftSpec, type ProductDraftVariant, type ProductDraftMedia, type ProductDraftAttachment, type ProductDraftCertification, type ProductDraftMultiLangDesc, type ProductDraftPriceSlab, type AttributeTemplateField } from '@/lib/product-onboarding/types';
 import { getTemplateForCategory } from '@/lib/product-onboarding/attribute-template-engine';
@@ -65,7 +67,11 @@ export function NewProductWizard() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [completeness, setCompleteness] = useState<ProductCompletenessScore | null>(null);
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  // F-07: explicit cascade pick (IDs drive the selection; the legacy
+  // categoryId below follows via new-to-old resolve so templates,
+  // validation, and the draft flow keep working unchanged).
+  const [cascadeTriple, setCascadeTriple] = useState<CanonicalTripleSelection>({ ...EMPTY_CANONICAL_SELECTION });
+  const cascadeSeededForRef = useRef<string | null>(null);
   const [specs, setSpecs] = useState<ProductDraftSpec[]>([]);
   const [variants, setVariants] = useState<ProductDraftVariant[]>([]);
   const [media, setMedia] = useState<ProductDraftMedia[]>([]);
@@ -104,14 +110,43 @@ export function NewProductWizard() {
     }
   }, [showToast, router]);
 
+  const handleCascadePick = async (sel: CanonicalTripleSelection) => {
+    // F-07: explicit cascade pick wins; the legacy categoryId (templates,
+    // validation, draft persistence) follows through the bridge so the rest
+    // of the wizard behaves exactly as with a manual legacy pick.
+    setCascadeTriple(sel);
+    if (!sel.categoryId) {
+      handleFieldChange('categoryId', '');
+      return;
+    }
+    try {
+      const resolved = await marketplaceCatalogBridgeApi.batchResolveNewToOld([sel.categoryId]);
+      handleFieldChange('categoryId', resolved?.resolved?.[0]?.targetId || '');
+    } catch {
+      handleFieldChange('categoryId', '');
+    }
+  };
+
+  // Best-effort draft restore: seed the cascade display from a saved legacy
+  // categoryId. Silent no-op when unresolvable — the seller simply re-picks.
   useEffect(() => {
-    apiClient.get<{ data: { data?: { id: string; name: string }[] } }>('/categories?page=1&limit=100')
-      .then(res => {
-        const list = Array.isArray(res?.data) ? res.data : res?.data?.data;
-        setCategories(Array.isArray(list) ? list : []);
-      })
-      .catch(() => { showToast({ title: 'Failed to load categories', variant: 'destructive' }); });
-  }, []);
+    const legacyId = v.categoryId || '';
+    if (!legacyId || cascadeSeededForRef.current === legacyId) return;
+    cascadeSeededForRef.current = legacyId;
+    let cancelled = false;
+    marketplaceCatalogBridgeApi.batchResolveOldToNew([legacyId]).then((res) => {
+      if (cancelled) return;
+      const hit = res?.resolved?.[0];
+      if (hit?.targetId) {
+        setCascadeTriple((prev) => prev.categoryId ? prev : {
+          ...EMPTY_CANONICAL_SELECTION,
+          categoryId: hit.targetId,
+          categoryName: hit.targetName || '',
+        });
+      }
+    }).catch(() => { /* picker starts empty; manual pick still works */ });
+    return () => { cancelled = true; };
+  }, [v.categoryId]);
 
   useEffect(() => {
     (async () => {
@@ -289,12 +324,11 @@ export function NewProductWizard() {
                     </div>
                     <div>
                       <Label>Category *</Label>
-                      <Select value={v.categoryId || ''} onChange={(e) => handleFieldChange('categoryId', e.target.value)}>
-                        <option value="">Select category</option>
-                        {categories.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </Select>
+                      <CanonicalTaxonomyPicker
+                        idPrefix="wizard-category"
+                        value={cascadeTriple}
+                        onChange={handleCascadePick}
+                      />
                       {errors.categoryId && <p className="mt-1 text-xs text-red-500">{errors.categoryId[0]}</p>}
                     </div>
                     <div>

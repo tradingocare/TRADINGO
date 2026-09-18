@@ -285,6 +285,43 @@ export class AuthService {
     });
   }
 
+  /**
+   * F-07 cascade picks (vendor Step-5): link already-disambiguated canonical
+   * category IDs. Each ID is re-validated server-side (exists + active) and
+   * bridged to its legacy twin — never trusted blindly, never re-resolved by
+   * name (that would reintroduce F-06 ambiguity). Fail-closed like the name
+   * path: unknown/inactive/untwinned IDs reject with 400 and write nothing.
+   */
+  private async linkCompanyCanonicalCategories(companyId: string, catalogCategoryIds: (string | null | undefined)[], tx: Prisma.TransactionClient) {
+    const uniqueIds = [...new Set((catalogCategoryIds || []).map((id) => id?.trim()).filter(Boolean))] as string[];
+    if (uniqueIds.length === 0) return;
+
+    const legacyIds: string[] = [];
+    for (const catalogCategoryId of uniqueIds) {
+      const canonical = await tx.catalogCategory.findUnique({
+        where: { id: catalogCategoryId },
+        select: { id: true, isActive: true },
+      });
+      if (!canonical || !canonical.isActive) {
+        throw new BadRequestException(
+          'Unknown or inactive business category selection. Please reselect the category.',
+        );
+      }
+      const legacyId = await this.taxonomyPersistence.bridgeLegacyCategoryId(canonical.id);
+      if (!legacyId) {
+        throw new BadRequestException(
+          'Business category selection cannot be linked yet. Please select a different category.',
+        );
+      }
+      legacyIds.push(legacyId);
+    }
+
+    await tx.companyCategory.createMany({
+      data: legacyIds.map((categoryId) => ({ companyId, categoryId })),
+      skipDuplicates: true,
+    });
+  }
+
   async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -1012,7 +1049,17 @@ export class AuthService {
         });
       }
 
-      await this.linkCompanyCategories(company.id, [dto.primaryCategory, ...(dto.secondaryCategories || [])], tx);
+      // F-07: cascade-picked canonical IDs are authoritative when present;
+      // otherwise the F-06 fail-closed name path applies unchanged.
+      if (dto.primaryCatalogCategoryId || (dto.secondaryCatalogCategoryIds || []).length > 0) {
+        await this.linkCompanyCanonicalCategories(
+          company.id,
+          [dto.primaryCatalogCategoryId, ...(dto.secondaryCatalogCategoryIds || [])],
+          tx,
+        );
+      } else {
+        await this.linkCompanyCategories(company.id, [dto.primaryCategory, ...(dto.secondaryCategories || [])], tx);
+      }
 
       const updated = await tx.user.update({
         where: { id: user.id },
