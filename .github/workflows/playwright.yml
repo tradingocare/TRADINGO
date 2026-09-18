@@ -96,6 +96,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
           NODE_PATH: apps/api/node_modules
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD || 'TestSeedAdmin@123' }}
+          SEED_TEST_ADMIN_PASSWORD: ${{ secrets.SEED_TEST_ADMIN_PASSWORD || 'TestSeedTestAdmin@123' }}
 
       - name: Seed E2E test data
         run: pnpm exec ts-node --transpile-only --project tsconfig.seed.json tests/helpers/e2e-seed.ts
