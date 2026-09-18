@@ -126,7 +126,6 @@ export class CategoryDemandService {
     const viewsArray = rawSignals.map((s) => s.totalViews);
     const savedArray = rawSignals.map((s) => s.totalSaved);
     // const conversionArray = rawSignals.map((s) => s.conversionRatio); // REMOVED
-    const recencyArray = rawSignals.map((s) => s.recencyRatio);
 
     // Compute percentile ranks (0-100 scale) for each signal
     const getPercentile = (value: number, array: number[]) => {
