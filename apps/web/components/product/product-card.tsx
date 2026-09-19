@@ -135,6 +135,13 @@ export const ProductCard = memo(function ProductCard({
             </h3>
           </Link>
 
+          {/* Vendor short description (default variant only, hidden when absent) */}
+          {isDefault && product.description && (
+            <p className="text-[10px] leading-snug line-clamp-1 text-text-tertiary" title={product.description}>
+              {product.description}
+            </p>
+          )}
+
           {/* Brand */}
           {features.showBrand && product.brand && (
             <p className="text-[10px] text-text-tertiary">by {product.brand}</p>

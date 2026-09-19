@@ -12,6 +12,7 @@ export function fromDiscoveryResult(dr: DiscoveryResult): ProductCardModel {
     id: dr.id,
     slug: dr.slug,
     title: dr.name,
+    description: dr.description || undefined,
     images: dr.images?.length ? dr.images : ['/placeholder-product.jpg'],
     categoryName: dr.categoryName,
     subCategory: dr.subCategory,
@@ -69,6 +70,8 @@ export function fromNearMeProduct(np: NearMeProduct): ProductCardModel {
     id: np.productId || np.id,
     slug: np.slug,
     title: np.name,
+    // Authoritative vendor short description. Hidden when absent.
+    description: np.shortDescription || undefined,
     images: np.imageUrl ? [np.imageUrl] : [],
     categoryName: np.categoryName || '',
     price: np.price ?? 0,
@@ -114,6 +117,8 @@ export function fromEnrichedProduct(ep: any): ProductCardModel {
     id: ep.id,
     slug: ep.slug,
     title: ep.name,
+    // Authoritative vendor texts. Hidden when absent — never synthesized.
+    description: ep.shortDescription || ep.description || undefined,
     images: images.length ? images : [],
     categoryName: typeof ep.category === 'object' ? ep.category?.name : ep.categoryName || '',
     subCategory: ep.subCategory,
@@ -133,6 +138,8 @@ export function fromEnrichedProduct(ep: any): ProductCardModel {
       isoCertified: company.isoCertified,
       yearsActive: company.yearsActive,
       city: company.city,
+      // Authoritative Company.businessType. Hidden when absent.
+      businessType: company.businessType || undefined,
     },
     rating: ep.rating || ep.trustScoreSnapshot || 0,
     reviewCount: ep.reviewCount || 0,
@@ -214,8 +221,12 @@ export function fromBasicProduct(bp: any): ProductCardModel {
     id: bp.id,
     slug: bp.slug || bp.id,
     title: bp.name,
+    // Authoritative vendor texts/classification. Hidden when absent.
+    description: bp.shortDescription || bp.description || undefined,
     images: bp.image ? [bp.image] : [],
     categoryName: bp.categoryName || (typeof bp.category === 'string' ? bp.category : bp.category?.name || ''),
+    subCategory: bp.subCategory || (typeof bp.subCategory === 'string' ? bp.subCategory : undefined),
+    brand: bp.brand || undefined,
     price: bp.price ?? bp.priceSlabs?.[0]?.price ?? 0,
     originalPrice: bp.originalPrice,
     unit: bp.unit || 'unit',
@@ -230,6 +241,8 @@ export function fromBasicProduct(bp: any): ProductCardModel {
       isoCertified: bp.seller?.isoCertified,
       yearsActive: bp.seller?.yearsActive,
       city: bp.city || bp.seller?.city,
+      // Authoritative Company.businessType. Hidden when absent.
+      businessType: bp.businessType || bp.seller?.businessType || undefined,
     },
     rating: bp.rating || 0,
     reviewCount: bp.reviewCount || 0,
@@ -256,6 +269,8 @@ export function fromWishlistItem(w: WishlistItem): ProductCardModel {
     id: p.id,
     slug: p.slug,
     title: p.name,
+    // Authoritative vendor short description. Hidden when absent.
+    description: p.shortDescription || p.description || undefined,
     images: p.images?.length ? p.images : ['/placeholder-product.jpg'],
     videoUrl: p.videoUrl,
     categoryName: p.categoryName || '',

@@ -45,9 +45,10 @@ interface AiRecommendationBarProps {
 }
 
 export function AiRecommendationBar({ data, onChat }: AiRecommendationBarProps) {
-  const trustScore = data.seller.trustScore || 0;
-  const label = trustScore >= 85 ? 'Highly Recommended' : trustScore >= 65 ? 'Recommended' : 'Good Fit';
-  const rating = data.rating ?? (trustScore ? Math.min(5, Math.max(3.8, trustScore / 20)) : 4.7);
+  // Real buyer rating only — never a trustScore-derived pseudo-rating.
+  const hasRating = data.rating != null && data.rating > 0;
+  const rating = hasRating ? (data.rating as number) : 0;
+  const label = !hasRating ? 'New Listing' : rating >= 4.5 ? 'Highly Recommended' : rating >= 4 ? 'Recommended' : 'Good Fit';
   const stats = data.stats;
 
   return (
@@ -63,19 +64,23 @@ export function AiRecommendationBar({ data, onChat }: AiRecommendationBarProps) 
           </p>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-text-secondary">
             {data.seller.verified && 'Platform-verified supplier. '}
-            {stats?.onTimeDelivery && `Consistent ${stats.onTimeDelivery.toLowerCase()} delivery. `}
+            {stats?.onTimeDelivery && `Lead time ${stats.onTimeDelivery.toLowerCase()}. `}
             {stats?.responseRate && `${stats.responseRate} response rate. `}
-            Trusted by {stats?.happyBuyers || 'buyers'} across the marketplace.
+            {stats?.happyBuyers ? `Trusted by ${stats.happyBuyers} buyers across the marketplace.` : 'Contact the seller for buyer references.'}
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <span className="text-2xl font-black text-text-primary">{rating.toFixed(1)}</span>
+        <span className="text-2xl font-black text-text-primary">{hasRating ? rating.toFixed(1) : 'New'}</span>
         <div>
-          <RatingStars rating={rating} />
+          {hasRating ? (
+            <RatingStars rating={rating} />
+          ) : (
+            <p className="text-[11px] font-semibold text-text-secondary">No buyer reviews yet</p>
+          )}
           <p className="mt-0.5 text-[11px] text-text-tertiary">
-            {data.reviewCount ? `${data.reviewCount} reviews` : 'Buyer rating'}
+            {data.reviewCount ? `${data.reviewCount} reviews` : 'Ask the seller for references'}
           </p>
         </div>
       </div>
@@ -115,10 +120,11 @@ export function StatStrip({ data }: StatStripProps) {
   const statItems = [
     { label: 'Products Listed', value: data.seller.productsListed != null ? String(data.seller.productsListed) : '—' },
     { label: 'Happy Buyers', value: stats?.happyBuyers || '—' },
-    { label: 'On-Time Delivery', value: stats?.onTimeDelivery || '—' },
+    { label: 'Lead Time', value: stats?.onTimeDelivery || 'Ask seller' },
     { label: 'Buyer Rating', value: data.rating ? `${data.rating.toFixed(1)} / 5` : 'New Listing' },
     { label: 'Customer Support', value: '24/7' },
-    { label: 'Easy Returns', value: data.returnPolicy || 'Policy on request' },
+    // Vendor policy — never presented as a TRADINGO platform guarantee.
+    { label: 'Returns (Vendor Policy)', value: data.returnPolicy || 'Ask seller' },
   ];
 
   return (
@@ -139,9 +145,11 @@ interface InfoCardsProps {
 }
 
 export function InfoCards({ data, onChat }: InfoCardsProps) {
+  // Shipping coverage from the authoritative free-delivery threshold only.
+  // No geographic coverage is inferred — absent data shows Ask-Seller.
   const coverage = data.freeDeliveryAbove
     ? `Free above ₹${data.freeDeliveryAbove.toLocaleString('en-IN')}`
-    : 'Pan India';
+    : 'Ask seller for shipping terms';
 
   return (
     <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -192,9 +200,11 @@ export function InfoCards({ data, onChat }: InfoCardsProps) {
           </div>
           <p className="text-sm font-bold text-text-primary">Returns &amp; Warranty</p>
         </div>
-        <p className="mt-3 text-xs text-text-secondary">{data.returnPolicy || 'Return policy available on request'}</p>
+        <p className="mt-3 text-xs text-text-secondary">
+          {data.returnPolicy ? `${data.returnPolicy} (vendor policy)` : 'Return / replacement — as per vendor policy (ask seller)'}
+        </p>
         <p className="mt-1 text-xs text-text-secondary">
-          Warranty: <span className="font-semibold text-text-primary">{data.warranty || 'As per terms'}</span>
+          Warranty: <span className="font-semibold text-text-primary">{data.warranty ? `${data.warranty} (vendor policy)` : 'Ask seller'}</span>
         </p>
       </div>
 
@@ -211,7 +221,7 @@ export function InfoCards({ data, onChat }: InfoCardsProps) {
         </p>
         <p className="mt-1 flex items-center gap-1.5 text-xs text-text-secondary">
           <Mail size={11} className="text-accent" />
-          {data.supportEmail || 'support@tradingo.com'}
+          {data.supportEmail || 'tradingocare@tradingo.in'}
         </p>
         <button
           type="button"
@@ -241,7 +251,7 @@ export function MetaRow({ data }: MetaRowProps) {
         Product ID: {data.productId}
       </span>
       <Link
-        href={`mailto:${data.supportEmail || 'support@tradingo.com'}?subject=${encodeURIComponent(`Report listing ${data.productId}`)}`}
+        href={`mailto:${data.supportEmail || 'tradingocare@tradingo.in'}?subject=${encodeURIComponent(`Report listing ${data.productId}`)}`}
         className="inline-flex items-center gap-1.5 text-status-error transition-colors hover:underline"
       >
         <Flag size={12} />
@@ -270,9 +280,11 @@ export function TrustBadge({ icon: Icon, label, className }: {
 const GRADIENT_BORDER = 'linear-gradient(90deg, #FF4D00, #F59E0B, #3D8BFF, #9B5DE5)';
 
 export function AiTrustGrid({ data }: { data: ProductDetailViewData }) {
-  const trustScore = data.seller.trustScore || 0;
-  const aiScore = data.rating ?? (trustScore ? Math.min(5, Math.max(3.8, trustScore / 20)) : 4.7);
-  const label = aiScore >= 4.5 ? 'Highly Recommended' : aiScore >= 4 ? 'Recommended' : 'Good Fit';
+  // Buyer rating comes from real reviews only. When no reviews exist we show
+  // an honest "New Listing" state — never a trustScore-derived pseudo-rating.
+  const hasRating = data.rating != null && data.rating > 0;
+  const aiScore = hasRating ? (data.rating as number) : 0;
+  const label = !hasRating ? 'New Listing' : aiScore >= 4.5 ? 'Highly Recommended' : aiScore >= 4 ? 'Recommended' : 'Good Fit';
   const stats = data.stats;
   const seller = data.seller;
 
@@ -284,16 +296,25 @@ export function AiTrustGrid({ data }: { data: ProductDetailViewData }) {
             <Sparkles size={12} />
           </div>
           <p className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-text-tertiary">AI Recommendation</p>
-          <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-            <span className="text-xs font-black leading-none text-text-primary">
-              {aiScore.toFixed(1)}
-              <span className="text-[8px] font-semibold text-text-tertiary">/5</span>
+          {hasRating ? (
+            <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+              <span className="text-xs font-black leading-none text-text-primary">
+                {aiScore.toFixed(1)}
+                <span className="text-[8px] font-semibold text-text-tertiary">/5</span>
+              </span>
+              <RatingStars rating={aiScore} size="xs" />
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-accent">
+                <Star size={9} className="fill-accent" /> {label}
+              </span>
             </span>
-            <RatingStars rating={aiScore} size="xs" />
-            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-accent">
-              <Star size={9} className="fill-accent" /> {label}
+          ) : (
+            <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+              <span className="text-xs font-black leading-none text-text-primary">New</span>
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-text-secondary">
+                No buyer reviews yet — ask the seller for references
+              </span>
             </span>
-          </span>
+          )}
         </div>
       </div>
 
@@ -342,7 +363,7 @@ export function AiTrustGrid({ data }: { data: ProductDetailViewData }) {
           </ul>
           {seller.verified && (
             <p className="inline-flex items-center gap-1 shrink-0 text-[9px] font-semibold whitespace-nowrap text-status-success">
-              <BadgeCheck size={9} /> Platform Verified
+              <BadgeCheck size={9} /> Seller Verified
             </p>
           )}
         </div>
@@ -356,7 +377,7 @@ export function VerifiedBadgeRow({ data, compact = false, hideRating = false }: 
   return (
     <div className={cn('flex flex-wrap items-center', compact ? 'gap-1.5' : 'gap-2')}>
       {seller.verified && (
-        <TrustBadge icon={BadgeCheck} label="Verified" className="border-status-success/20 bg-status-success/10 text-status-success" />
+        <TrustBadge icon={BadgeCheck} label="Seller Verified" className="border-status-success/20 bg-status-success/10 text-status-success" />
       )}
       {seller.elite && (
         <TrustBadge icon={Star} label="Elite Seller" className="border-accent-amber/25 bg-accent-amber/10 text-accent-amber" />
