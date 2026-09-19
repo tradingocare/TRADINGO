@@ -1,11 +1,14 @@
 ﻿import { test, expect } from '../fixtures/auth-fixture';
 import { createFlowHelper } from '../helpers/business-flows';
 import { SELLER_USER } from '../helpers/auth';
+// TEMPORARY CI-04D diagnostic hook (no assertion changes).
+import { attachNetworkForensics } from '../helpers/network-forensics';
 
 test.describe('Company Creation Flow', () => {
   test('seller should see company profile page', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'company-t01');
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
@@ -16,6 +19,7 @@ test.describe('Company Creation Flow', () => {
   test('seller profile should have company details section', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'company-t02');
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
@@ -28,6 +32,7 @@ test.describe('Company Creation Flow', () => {
   test('seller profile should have contact information', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'company-t03');
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
@@ -41,6 +46,7 @@ test.describe('Company Creation Flow', () => {
   test('seller profile should show company information card', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'company-t04');
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
@@ -53,6 +59,7 @@ test.describe('Company Creation Flow', () => {
   test('seller should navigate to onboarding if not completed', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'company-t05');
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/onboarding');
