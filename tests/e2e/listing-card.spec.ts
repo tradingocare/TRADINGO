@@ -57,7 +57,9 @@ test.describe('Product Listing Card — 8-Group Upgrade', () => {
 
     await expect(card.getByRole('button', { name: /Request Call \/ RFQ/ }).first()).toBeVisible();
     await expect(card.getByText('Chat with Seller').first()).toBeVisible();
-    await expect(card.locator('a[href*="/products"]').first()).toBeVisible();
+    // Canonical product route is /trading/{slug} (ProductCard links /trading,
+    // never /products/{slug} -- see card-actions Info link + title link).
+    await expect(card.locator('a[href*="/trading"]').first()).toBeVisible();
     await page.screenshot({ path: `${SCREENSHOT_DIR}/cards-grid.png` });
   });
 
