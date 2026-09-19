@@ -87,7 +87,12 @@ jobs:
         run: pnpm db:generate
 
       - name: Run database migrations
-        run: pnpm db:migrate
+        run: pnpm --filter @tradingo/api exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
+
+      - name: Verify database schema
+        run: pnpm --filter @tradingo/api exec prisma migrate status
         env:
           DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
 
