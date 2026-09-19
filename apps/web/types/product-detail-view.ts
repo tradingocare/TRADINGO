@@ -14,6 +14,10 @@ export interface ProductDetailViewSeller {
   location?: string;
   distance?: string;
   yearsInBusiness?: number;
+  // Vendor business type (Manufacturer / Wholesaler / Trader / ...).
+  // Optional — UI hides the slot when the API does not provide it.
+  businessType?: string;
+  // Seller/Company verification outcome. NOT product verification.
   verified: boolean;
   elite?: boolean;
   gstVerified?: boolean;
@@ -51,10 +55,16 @@ export interface ProductDetailViewData {
   productId: string;
   slug: string;
   title: string;
+  // Vendor-provided short positioning line. Optional — never synthesized.
+  subtitle?: string;
   brand?: string;
   category?: { name: string; slug: string };
+  // Canonical subcategory name when the API provides one. Optional.
+  subcategory?: string;
   breadcrumb: ProductDetailViewBreadcrumb[];
   images: string[];
+  // Present only when the vendor supplied a product video.
+  videoUrl?: string;
   price: number;
   mrp?: number;
   discount?: number;
@@ -72,6 +82,8 @@ export interface ProductDetailViewData {
   documents?: ProductDetailViewDocument[];
   listedDate?: string;
   securePayments?: boolean;
+  // Vendor-provided policy text. Shown as vendor policy, never as a
+  // TRADINGO platform guarantee. Absent => UI shows an Ask-Seller state.
   returnPolicy?: string;
   warranty?: string;
   freeDeliveryAbove?: number;

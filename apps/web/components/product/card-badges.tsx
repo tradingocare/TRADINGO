@@ -1,6 +1,6 @@
 'use client'
 
-import { Star, Package, Truck, CheckCircle2, TrendingUp, MapPin, Coins, Heart, Globe, RotateCcw, ShieldCheck, BadgeCheck, Cpu, Clock, Receipt, CreditCard } from 'lucide-react'
+import { Star, Package, Truck, CheckCircle2, MapPin, Coins, RotateCcw, ShieldCheck, BadgeCheck, Cpu, Clock, Receipt, CreditCard } from 'lucide-react'
 import type { ProductCardModel } from '@/types/product-card'
 import type { ProductCardFeatures } from '@/types/product-card'
 
@@ -38,29 +38,19 @@ export function CardBadges({ product, features }: CardBadgesProps) {
           {product.rating.toFixed(1)} ({product.reviewCount})
         </span>
       )}
-      {features.showMonthlyOrders && !!product.monthlyOrders && (
-        <span className="inline-flex items-center gap-1" style={{ color: 'var(--status-success)' }}>
-          <TrendingUp size={11} /> {product.monthlyOrders} orders
-        </span>
-      )}
-      {features.showHappyBuyers && !!product.monthlyOrders && (
-        <span className="inline-flex items-center gap-1">
-          <Heart size={10} /> {product.monthlyOrders}+ buyers
-        </span>
-      )}
-      {features.showPanIndia && (
-        <span className="inline-flex items-center gap-1"><Globe size={10} /> Pan India</span>
-      )}
+      {/* Removed: monthlyOrders as "orders" and "buyers" — semantically unsafe fallback */}
+      {/* Removed: Pan India — no authoritative geographic coverage source */}
       {features.showFreeDelivery && !!product.freeDeliveryAbove && (
         <span className="inline-flex items-center gap-1" style={{ color: 'var(--status-success)' }}>
           <Truck size={10} /> Free above &#8377;{product.freeDeliveryAbove.toLocaleString('en-IN')}
         </span>
       )}
+      {/* Vendor policies explicitly labeled as vendor policy — never Tradingo guarantee */}
       {features.showReturnWarranty && !!product.returnPolicy && (
-        <span className="inline-flex items-center gap-1"><RotateCcw size={10} /> {product.returnPolicy}</span>
+        <span className="inline-flex items-center gap-1"><RotateCcw size={10} /> {product.returnPolicy} (Vendor Policy)</span>
       )}
       {features.showReturnWarranty && !!product.warrantyPeriod && (
-        <span className="inline-flex items-center gap-1"><ShieldCheck size={10} /> {product.warrantyPeriod}</span>
+        <span className="inline-flex items-center gap-1"><ShieldCheck size={10} /> {product.warrantyPeriod} (Vendor Policy)</span>
       )}
       {features.showCertifications && !!product.certifications?.length && (
         <span className="inline-flex items-center gap-1">

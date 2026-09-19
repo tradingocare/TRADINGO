@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import type { ComponentType } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { BadgeCheck, Building2, ChevronRight, Clock3, Globe, MapPin, PackageCheck, Search, ShieldCheck, TrendingUp } from 'lucide-react'
+import { BadgeCheck, Building2, ChevronRight, Clock3, Globe, Headphones, Mail, MapPin, PackageCheck, Phone, RotateCcw, Search, ShieldCheck, Star, Tags, Timer, TrendingUp, Truck } from 'lucide-react'
 import { ProductGallery } from '@/components/product-detail-view/gallery'
 import { BuyBox } from '@/components/product-detail-view/buy-box'
 import { AiTrustGrid, VerifiedBadgeRow, RatingStars } from '@/components/product-detail-view/sections'
@@ -34,16 +35,22 @@ function toDetailViewData(model: ProductCardModel): ProductDetailViewData {
     productId: model.id,
     slug: model.slug,
     title: model.title,
+    // Vendor-provided short positioning line. Shown under the title only
+    // when the feed supplies it — never synthesized.
+    subtitle: model.description || undefined,
     brand: model.brand,
     category: model.categoryName
       ? { name: model.categoryName, slug: model.subCategory || model.categoryName }
       : undefined,
+    subcategory: model.subCategory || undefined,
     breadcrumb: [
       { label: 'Home', href: '/' },
       { label: 'Products', href: '/trading' },
       { label: model.title, href: `/trading/${model.slug}` },
     ],
     images: model.images?.length ? model.images : ['/placeholder-product.jpg'],
+    // Vendor video only — the gallery shows its Video control solely when set.
+    videoUrl: model.videoUrl || undefined,
     price: model.price,
     mrp: model.originalPrice,
     discount,
@@ -60,7 +67,8 @@ function toDetailViewData(model: ProductCardModel): ProductDetailViewData {
       name: model.seller.name,
       slug: model.seller.slug,
       logo: model.seller.logo,
-      location: model.seller.city,
+      // Vendor location only. Undefined hides the slot — never "Pan India".
+      location: model.seller.city || undefined,
       distance: model.geoLabel,
       yearsInBusiness: model.seller.yearsActive,
       verified: model.seller.isVerified,
@@ -74,7 +82,9 @@ function toDetailViewData(model: ProductCardModel): ProductDetailViewData {
     gocash: { eligible: !!model.gocashEarn, earn: model.gocashEarn },
     stats: {
       responseRate: model.seller.avgResponseTime ? `< ${model.seller.avgResponseTime}` : undefined,
-      happyBuyers: model.monthlyOrders ? `${model.monthlyOrders}+` : undefined,
+      // Buyer proof from the authoritative review aggregate only.
+      // monthlyOrders is order velocity, NOT fulfilled buyers — never used.
+      happyBuyers: model.reviewCount > 0 ? `${formatCompactCount(model.reviewCount)}+` : undefined,
     },
     specs: model.specifications?.map((spec) => ({
       key: spec.key,
@@ -108,15 +118,18 @@ export function ProductFullCard({ product, preview = false }: ProductFullCardPro
 
   const data = useMemo(() => toDetailViewData(product), [product])
 
-  const media: ProductDetailMedia[] = useMemo(
-    () =>
-      (product.images?.length ? product.images : ['/placeholder-product.jpg']).map((url, index) => ({
-        id: `${product.id}-img-${index}`,
-        type: 'IMAGE' as const,
-        url,
-      })),
-    [product.id, product.images],
-  )
+  const media: ProductDetailMedia[] = useMemo(() => {
+    const imgs: ProductDetailMedia[] = (product.images?.length ? product.images : ['/placeholder-product.jpg']).map((url, index) => ({
+      id: `${product.id}-img-${index}`,
+      type: 'IMAGE' as const,
+      url,
+    }));
+    // Vendor video rides along only when the seller actually supplied one.
+    if (product.videoUrl) {
+      imgs.push({ id: `${product.id}-video-0`, type: 'VIDEO' as const, url: product.videoUrl });
+    }
+    return imgs;
+  }, [product.id, product.images, product.videoUrl])
 
   const priceSlabs: ProductDetailPriceSlab[] = useMemo(
     () =>
@@ -263,9 +276,24 @@ export function ProductFullCard({ product, preview = false }: ProductFullCardPro
             {data.title}
           </Link>
         </h2>
+        {data.subtitle && (
+          <p className="w-full truncate text-xs text-text-secondary" title={data.subtitle}>
+            {data.subtitle}
+          </p>
+        )}
         {data.category?.name && (
           <span className="inline-flex items-center rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-semibold text-text-secondary">
             {data.category.name}
+          </span>
+        )}
+        {data.subcategory && (
+          <span className="inline-flex items-center rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-semibold text-text-secondary">
+            {data.subcategory}
+          </span>
+        )}
+        {data.brand && (
+          <span className="inline-flex items-center rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-semibold text-text-tertiary">
+            {data.brand}
           </span>
         )}
         <span className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 text-[10px] font-semibold text-text-secondary">
@@ -321,46 +349,124 @@ export function ProductFullCard({ product, preview = false }: ProductFullCardPro
         </div>
       </div>
 
-      <TrustSupportSection data={data} />
+      <TrustSupportSection data={data} product={product} />
       </div>
     </motion.section>
   )
 }
 
-function TrustSupportSection({ data }: { data: ProductDetailViewData }) {
+function formatCompactCount(value: number): string {
+  return new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+interface TrustStripItem {
+  icon: ComponentType<{ size?: number | string; className?: string }>;
+  value: string;
+  sub: string;
+  boxClass: string;
+  iconClass: string;
+}
+
+function TrustSupportSection({ data, product }: { data: ProductDetailViewData; product: ProductCardModel }) {
   const gradientBorder = 'linear-gradient(90deg, #FF4D00, #F59E0B, #3D8BFF, #9B5DE5)';
+  const hasRating = product.rating > 0 && product.reviewCount > 0;
 
-  const items = [
-    { emoji: '🔄', label: data.returnPolicy || '7 Days Easy Returns', chip: 'border-orange-400/25 bg-orange-400/10 text-orange-400' },
-    { emoji: '🛡️', label: data.warranty || '1 Year Warranty', chip: 'border-sky-400/25 bg-sky-400/10 text-sky-400' },
-    { emoji: '💳', label: 'UPI / NetBanking', chip: 'border-status-success/25 bg-status-success/10 text-status-success' },
-    { emoji: '📞', label: data.supportPhone || '+91 78277 28852', chip: 'border-red-400/25 bg-red-400/10 text-red-400' },
+  // Every slot below is real vendor/platform data. Missing data hides the
+  // slot (or shows an explicit Ask-Seller state) — nothing is synthesized.
+  const items: TrustStripItem[] = [
+    {
+      icon: Star,
+      value: hasRating ? `${product.rating.toFixed(1)}/5` : 'New',
+      sub: hasRating ? `Seller Rating (${product.reviewCount})` : 'No reviews yet',
+      boxClass: 'border-accent-amber/25 bg-accent-amber/10',
+      iconClass: 'text-accent-amber',
+    },
   ];
 
-  const payments = [
-    { emoji: '📱', label: 'UPI', chip: 'border-status-success/25 bg-status-success/10 text-status-success' },
-    { emoji: '💳', label: 'Cards', chip: 'border-sky-400/25 bg-sky-400/10 text-sky-400' },
-    { emoji: '🪙', label: 'TradePay', chip: 'border-orange-400/25 bg-orange-400/10 text-orange-400' },
-  ];
+  if (data.leadTime) {
+    items.push({
+      icon: Truck,
+      value: data.leadTime,
+      sub: 'Lead Time',
+      boxClass: 'border-orange-400/25 bg-orange-400/10',
+      iconClass: 'text-orange-400',
+    });
+  }
+
+  if (product.seller.avgResponseTime) {
+    items.push({
+      icon: Timer,
+      value: product.seller.avgResponseTime,
+      sub: 'Avg Response',
+      boxClass: 'border-status-success/25 bg-status-success/10',
+      iconClass: 'text-status-success',
+    });
+  }
+
+  // Vendor policies are labelled as vendor policy — never as TRADINGO
+  // platform guarantees.
+  items.push({
+    icon: RotateCcw,
+    value: data.returnPolicy || 'Ask Seller',
+    sub: 'Returns (Vendor Policy)',
+    boxClass: 'border-orange-400/25 bg-orange-400/10',
+    iconClass: 'text-orange-400',
+  });
+  items.push({
+    icon: ShieldCheck,
+    value: data.warranty || 'Ask Seller',
+    sub: 'Warranty (Vendor Policy)',
+    boxClass: 'border-sky-400/25 bg-sky-400/10',
+    iconClass: 'text-sky-400',
+  });
+
+  if (product.keywords?.length) {
+    items.push({
+      icon: Tags,
+      value: product.keywords.slice(0, 2).join(' · '),
+      sub: 'Catalogue Tags',
+      boxClass: 'border-violet-400/25 bg-violet-400/10',
+      iconClass: 'text-violet-400',
+    });
+  }
+
+  items.push({
+    icon: Headphones,
+    value: '24/7',
+    sub: 'TRADINGO Support',
+    boxClass: 'border-status-success/25 bg-status-success/10',
+    iconClass: 'text-status-success',
+  });
 
   return (
     <div className="mt-5 rounded-2xl p-[1.5px]" style={{ background: gradientBorder }}>
-      <div className="rounded-[14px] bg-surface px-3 py-2">
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+      <div className="rounded-[14px] bg-surface px-4 py-3">
+        <div className="flex flex-wrap gap-x-6 gap-y-3">
           {items.map((item) => (
-            <span key={item.label} className={cn('inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded border px-1 py-0.5 text-[8px] font-semibold', item.chip)}>
-              <span className="text-[10px] leading-none">{item.emoji}</span>
-              {item.label}
-            </span>
+            <div key={item.sub} className="flex min-w-[150px] flex-1 items-center gap-2.5">
+              <span className={cn('flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border', item.boxClass, item.iconClass)}>
+                <item.icon size={15} />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-bold text-text-primary" title={item.value}>{item.value}</span>
+                <span className="block truncate text-[11px] text-text-tertiary" title={item.sub}>{item.sub}</span>
+              </span>
+            </div>
           ))}
-          <span className="h-3 w-px shrink-0 bg-border" />
-          <span className="shrink-0 text-[7px] font-semibold uppercase tracking-wider text-text-tertiary">Pay via</span>
-          {payments.map((item) => (
-            <span key={item.label} className={cn('inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded border px-1 py-0.5 text-[8px] font-semibold', item.chip)}>
-              <span className="text-[10px] leading-none">{item.emoji}</span>
-              {item.label}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-2.5 text-[11px] text-text-secondary">
+          {data.securePayments && (
+            <span className="inline-flex items-center gap-1 font-semibold text-status-success">
+              <ShieldCheck size={11} /> Escrow-backed secure payments
             </span>
-          ))}
+          )}
+          <span className="inline-flex items-center gap-1">
+            <Phone size={11} className="text-accent" /> {data.supportPhone || '+91 78277 28852'}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Mail size={11} className="text-accent" /> {data.supportEmail || 'tradingocare@tradingo.in'}
+          </span>
+          <span className="text-text-tertiary">TRADINGO platform support — not the seller&apos;s private contact</span>
         </div>
       </div>
     </div>
@@ -388,14 +494,25 @@ function SellerSection({ seller, stats }: { seller: ProductDetailViewData['selle
           <div className="min-w-0">
             <p className="flex items-center gap-1 truncate text-xs font-bold text-text-primary">
               {seller.name}
-              {seller.verified && <BadgeCheck size={12} className="shrink-0 text-status-success" />}
+              {seller.verified && (
+                <span className="inline-flex items-center gap-0.5 shrink-0">
+                  <BadgeCheck size={10} className="text-status-success" />
+                  <span className="text-[9px] font-semibold text-status-success">Seller Verified</span>
+                </span>
+              )}
               {seller.elite && <ShieldCheck size={12} className="shrink-0 text-accent" />}
             </p>
             <p className="mt-0.5 flex items-center gap-1 text-[10px] text-text-secondary">
               <MapPin size={9} className="text-accent" />
-              {seller.location || 'Pan India'}
+              {seller.location || 'Location on request'}
               {seller.distance ? ` (${seller.distance})` : ''}
             </p>
+            {seller.businessType && (
+              <p className="mt-0.5 flex items-center gap-1 text-[10px] text-text-tertiary">
+                <Building2 size={9} className="text-accent" />
+                {seller.businessType}
+              </p>
+            )}
           </div>
         </div>
 
