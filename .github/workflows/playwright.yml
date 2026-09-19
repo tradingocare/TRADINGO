@@ -162,6 +162,32 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
 
+      # TEMPORARY CI-04D forensic instrumentation (revert after root cause).
+      # Collect server logs while /tmp/*.log still exist (before job teardown).
+      - name: Collect server logs
+        if: always()
+        run: |
+          mkdir -p server-logs
+          cp /tmp/api.log server-logs/api.log 2>/dev/null || echo "api.log not found, skipping"
+          cp /tmp/web.log server-logs/web.log 2>/dev/null || echo "web.log not found, skipping"
+          ls -la server-logs/ || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-server-logs
+          path: server-logs/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-network-forensics
+          path: forensics/
+          if-no-files-found: warn
+          retention-days: 30
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

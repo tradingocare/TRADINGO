@@ -1,11 +1,14 @@
 ﻿import { test, expect } from '../fixtures/auth-fixture';
 import { loginAs, SELLER_USER } from '../helpers/auth';
 import { navigateTo, expectPageTitle } from '../helpers/navigation';
+// TEMPORARY CI-04D diagnostic hook (no assertion changes).
+import { attachNetworkForensics } from '../helpers/network-forensics';
 
 test.describe('Seller Geo-location Management', () => {
   test('should navigate to product locations page', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t01');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -17,6 +20,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should have product location table', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t02');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -29,6 +33,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should show location status badges', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t03');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -41,6 +46,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should filter products by location status', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t04');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -55,6 +61,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should have search input for products', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t05');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -67,6 +74,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should show product count in table', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t06');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -79,6 +87,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should have edit links for each product', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t07');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -91,6 +100,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should navigate to single product location page', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t08');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -107,6 +117,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should show bulk set location button when products selected', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t09');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');
@@ -124,6 +135,7 @@ test.describe('Seller Geo-location Management', () => {
   test('should show missing locations banner', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    attachNetworkForensics(page, 'seller-geo-t10');
     await loginAs(page, SELLER_USER);
     await page.goto('/seller/products/locations');
     await page.waitForLoadState('load');

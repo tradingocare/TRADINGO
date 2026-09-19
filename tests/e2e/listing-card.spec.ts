@@ -1,5 +1,7 @@
 ﻿import { test, expect, Page } from '@playwright/test';
 import { BUYER_USER, loginAs } from '../helpers/auth';
+// TEMPORARY CI-04D diagnostic hook (no assertion changes).
+import { attachNetworkForensics } from '../helpers/network-forensics';
 
 const SCREENSHOT_DIR = 'docs/review/listing-card';
 
@@ -12,6 +14,11 @@ async function findCard(page: Page, title: string) {
 }
 
 test.describe('Product Listing Card — 8-Group Upgrade', () => {
+  // TEMPORARY CI-04D: attach redacted network observers; assertions untouched.
+  test.beforeEach(async ({ page }, testInfo) => {
+    attachNetworkForensics(page, `listing-card/${testInfo.title}`);
+  });
+
   test('default card renders pricing, badges, trust and social proof', async ({ page }) => {
     await page.goto('/products');
     await page.waitForLoadState('load');
