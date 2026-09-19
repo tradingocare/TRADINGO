@@ -13,6 +13,7 @@ import { LinkedInStrategy } from './strategies/linkedin.strategy';
 import { QueueNames } from '../../jobs/queues';
 import { MembershipModule } from '../membership/membership.module';
 import { VendorCodesModule } from '../vendor-codes/vendor-codes.module';
+import { MarketplaceCatalogBridgeModule } from '../marketplace-catalog-bridge/marketplace-catalog-bridge.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { VendorCodesModule } from '../vendor-codes/vendor-codes.module';
     BullModule.registerQueue({ name: QueueNames.EMAIL }),
     MembershipModule,
     VendorCodesModule,
+    MarketplaceCatalogBridgeModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, TurnstileService, JwtStrategy, RefreshTokenStrategy, GoogleStrategy, LinkedInStrategy],

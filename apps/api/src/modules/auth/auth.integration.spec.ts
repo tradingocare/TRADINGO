@@ -14,6 +14,8 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { MembershipService } from '../membership/membership.service';
 import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
+import { CatalogClassifyService } from '../marketplace-catalog-bridge/catalog-classify.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { CanActivate } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -25,6 +27,7 @@ const mockPrisma = {
   companyOwner: { create: jest.fn().mockResolvedValue({}), findMany: jest.fn().mockResolvedValue([]) },
   companyLocation: { create: jest.fn().mockResolvedValue({}) },
   category: { findMany: jest.fn().mockResolvedValue([]) },
+  catalogCategory: { count: jest.fn().mockResolvedValue(1) },
   companyCategory: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
   sellerPayoutAccount: { upsert: jest.fn().mockResolvedValue({}) },
   newsletterSubscriber: { upsert: jest.fn().mockResolvedValue({}) },
@@ -40,6 +43,10 @@ const mockNotificationService = { create: jest.fn().mockResolvedValue({ id: 'not
 const mockMembershipService = { enrollTrial: jest.fn().mockResolvedValue({ success: true, status: 'TRIAL' }) };
 const mockVendorCodesService = { assignReferral: jest.fn().mockResolvedValue(undefined), getCodeOwner: jest.fn().mockResolvedValue({ type: 'RM', userId: 'rm-1', name: 'RM' }) };
 const mockEventEmitter = { emit: jest.fn() };
+// F-06 defaults mirror auth.service.spec.ts: 'Steel' resolves exactly with a
+// legacy twin so flow tests keep exercising the success path.
+const mockCatalogClassify = { resolveCategoryText: jest.fn().mockResolvedValue({ categoryId: 'cc-1', categoryName: 'Steel', matchType: 'exact' }) };
+const mockTaxonomyPersistence = { bridgeLegacyCategoryId: jest.fn().mockResolvedValue('legacy-1') };
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -86,6 +93,8 @@ describe('Auth Flow Integration', () => {
         { provide: NotificationService, useValue: mockNotificationService },
         { provide: MembershipService, useValue: mockMembershipService },
         { provide: VendorCodesService, useValue: mockVendorCodesService },
+        { provide: CatalogClassifyService, useValue: mockCatalogClassify },
+        { provide: CatalogTaxonomyPersistenceService, useValue: mockTaxonomyPersistence },
         { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     })
