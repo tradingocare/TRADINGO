@@ -400,7 +400,7 @@ jobs:
 
       - name: Install dependencies (frozen lockfile)
         working-directory: ${{ env.RC_DIR }}
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --shamefully-hoist
 
       - name: Generate Prisma Client
         working-directory: ${{ env.RC_DIR }}
