@@ -407,6 +407,7 @@ jobs:
         run: cd apps/api && npx prisma generate
         env:
           DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
+          PRISMA_GENERATE_SKIP_AUTOINSTALL: "true"
 
       - name: Lint API
         working-directory: ${{ env.RC_DIR }}
