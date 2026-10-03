@@ -114,6 +114,10 @@ jobs:
     name: Ingest frozen RC tarball
     runs-on: ubuntu-latest
     needs: [validate_inputs]
+    # Draft-release visibility requires push/write access: this job alone
+    # elevates to contents:write. Workflow default stays contents:read.
+    permissions:
+      contents: write
     outputs:
       rc_dir: ${{ steps.paths.outputs.rc_dir }}
     steps:
