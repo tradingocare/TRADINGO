@@ -56,6 +56,14 @@ env:
   PNPM_VERSION: '9.15.0'
   RC_DIR: rc-source
 
+# Minimal GITHUB_TOKEN scopes for this workflow only:
+# - contents:read → release asset download + pinned-base checkout
+# - actions:write → workflow artifact upload/download between jobs
+# Nothing else granted (no deployments, packages, id-token, admin, contents:write).
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   validate_inputs:
     name: Validate dispatch inputs (fail closed)
