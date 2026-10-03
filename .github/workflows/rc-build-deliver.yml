@@ -56,6 +56,14 @@ env:
   PNPM_VERSION: '9.15.0'
   RC_DIR: rc-source
 
+# Minimal GITHUB_TOKEN scopes for this workflow only:
+# - contents:read → release asset download + pinned-base checkout
+# - actions:write → workflow artifact upload/download between jobs
+# Nothing else granted (no deployments, packages, id-token, admin, contents:write).
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   validate_inputs:
     name: Validate dispatch inputs (fail closed)
@@ -106,6 +114,10 @@ jobs:
     name: Ingest frozen RC tarball
     runs-on: ubuntu-latest
     needs: [validate_inputs]
+    # Draft-release visibility requires push/write access: this job alone
+    # elevates to contents:write. Workflow default stays contents:read.
+    permissions:
+      contents: write
     outputs:
       rc_dir: ${{ steps.paths.outputs.rc_dir }}
     steps:
