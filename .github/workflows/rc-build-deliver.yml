@@ -404,7 +404,7 @@ jobs:
 
       - name: Generate Prisma Client
         working-directory: ${{ env.RC_DIR }}
-        run: npx prisma generate
+        run: cd apps/api && npx prisma generate
         env:
           DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
 
