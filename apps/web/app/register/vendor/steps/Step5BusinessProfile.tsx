@@ -2,11 +2,12 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Briefcase, Upload, X, ChevronDown, MapPin } from 'lucide-react'
+import { Briefcase, Upload, X, MapPin } from 'lucide-react'
 import { Select } from '@/components/ui/select'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
 import { lookupPincode } from '@/lib/utils/india-lookup'
+import { CanonicalTaxonomyPicker, EMPTY_CANONICAL_SELECTION, type CanonicalTripleSelection } from '@/components/taxonomy/canonical-taxonomy-picker'
 import type { BusinessProfileForm } from '@/types/vendor-registration'
 
 const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
@@ -17,10 +18,6 @@ const inputStyle = (hasError: boolean) => ({
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
 const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
-
-import { CATALOG_CATEGORIES } from '@/data/catalog-data'
-
-const CATEGORIES = CATALOG_CATEGORIES.map(c => c.name)
 
 const LEAD_TIMES = [
   'Same day / Ready stock', '1-3 days', '4-7 days', '1-2 weeks', '2-4 weeks', '4-8 weeks', 'Depends on order size',
@@ -48,7 +45,9 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
     description: '',
     tagline: '',
     primaryCategory: '',
+    primaryCatalogCategoryId: '',
     secondaryCategories: [],
+    secondaryCatalogCategoryIds: [],
     productTypes: '',
     moqRange: '',
     supplyCapacity: '',
@@ -64,16 +63,13 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
     ...data,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [catSearch, setCatSearch] = useState('')
-  const [showCatDropdown, setShowCatDropdown] = useState(false)
   const [pincodeLookup, setPincodeLookup] = useState<string>('')
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [bannerPreview, setBannerPreview] = useState<string | null>(null)
   const logoRef = useRef<HTMLInputElement>(null)
   const bannerRef = useRef<HTMLInputElement>(null)
-  const catDropdownRef = useRef<HTMLDivElement>(null)
-  const [showSecondary, setShowSecondary] = useState(false)
-  const [secSearch, setSecSearch] = useState('')
+  // F-07: secondary staging picker — one canonical category per Add.
+  const [secPick, setSecPick] = useState<CanonicalTripleSelection>({ ...EMPTY_CANONICAL_SELECTION })
 
   useEffect(() => {
     if (form.logo && form.logo instanceof File) {
@@ -90,16 +86,6 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
       return () => URL.revokeObjectURL(url)
     }
   }, [form.bannerImage])
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (catDropdownRef.current && !catDropdownRef.current.contains(e.target as Node)) {
-        setShowCatDropdown(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
 
   const set = useCallback((key: keyof BusinessProfileForm, value: unknown) => {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -124,27 +110,23 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
     }
   }, [set])
 
-  const filteredCategories = CATEGORIES.filter(c =>
-    c.toLowerCase().includes(catSearch.toLowerCase())
-  )
-
-  const filteredSecondary = CATEGORIES.filter(c =>
-    c.toLowerCase().includes(secSearch.toLowerCase()) &&
-    c !== form.primaryCategory &&
-    !(form.secondaryCategories || []).includes(c)
-  )
-
-  const addSecondary = (cat: string) => {
+  // F-07: secondary categories are canonical IDs picked through the shared
+  // cascade. Display names ride alongside for the DTO-required string fields;
+  // the backend links the IDs (authoritative) and falls back to F-06 name
+  // resolution only when no ID is present (e.g. restored legacy drafts).
+  const addSecondaryFromPick = () => {
     const current = form.secondaryCategories || []
-    if (current.length < 5) {
-      set('secondaryCategories', [...current, cat])
-    }
-    setSecSearch('')
-    setShowSecondary(false)
+    const currentIds = form.secondaryCatalogCategoryIds || []
+    if (!secPick.categoryId || current.length >= 5 || currentIds.includes(secPick.categoryId)) return
+    if (secPick.categoryId === form.primaryCatalogCategoryId) return
+    set('secondaryCategories', [...current, secPick.categoryName])
+    set('secondaryCatalogCategoryIds', [...currentIds, secPick.categoryId])
+    setSecPick({ ...EMPTY_CANONICAL_SELECTION })
   }
 
-  const removeSecondary = (cat: string) => {
-    set('secondaryCategories', (form.secondaryCategories || []).filter(c => c !== cat))
+  const removeSecondary = (index: number) => {
+    set('secondaryCategories', (form.secondaryCategories || []).filter((_, i) => i !== index))
+    set('secondaryCatalogCategoryIds', (form.secondaryCatalogCategoryIds || []).filter((_, i) => i !== index))
   }
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,103 +202,57 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
         </FormField>
 
         <FormField label="Primary Category" required error={errors.primaryCategory}>
-          <div className="relative" ref={catDropdownRef}>
-            <input
-              className={INPUT_CLASS}
-              style={inputStyle(!!errors.primaryCategory)}
-              value={form.primaryCategory || catSearch}
-              onChange={e => {
-                setCatSearch(e.target.value)
-                set('primaryCategory', '')
-                setShowCatDropdown(true)
-              }}
-              onFocus={() => setShowCatDropdown(true)}
-              placeholder="Search categories..."
-            />
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
-            <AnimatePresence>
-              {showCatDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="absolute z-20 w-full mt-1 rounded-xl max-h-48 overflow-y-auto"
-                   style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
-                  >
-                    {filteredCategories.map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                      onClick={() => { set('primaryCategory', c); setCatSearch(''); setShowCatDropdown(false) }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:text-white transition-colors"
-                      style={{ background: c === form.primaryCategory ? 'rgba(245, 158, 11, 0.12)' : 'transparent' }}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                  {filteredCategories.length === 0 && (
-                    <p className="px-4 py-3 text-white/30 text-xs">No categories found</p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <CanonicalTaxonomyPicker
+            idPrefix="step5-primary"
+            value={{
+              categoryId: form.primaryCatalogCategoryId || null,
+              categoryName: form.primaryCategory || '',
+              subcategoryId: null,
+              subcategoryName: '',
+              catalogItemId: null,
+              catalogItemName: '',
+            }}
+            onChange={(sel) => {
+              set('primaryCategory', sel.categoryName);
+              set('primaryCatalogCategoryId', sel.categoryId || '');
+            }}
+          />
         </FormField>
 
         <FormField label="Secondary Categories" hint="Up to 5 categories (cannot include primary)">
           <div className="flex flex-wrap gap-2 mb-2">
-            {(form.secondaryCategories || []).map(cat => (
+            {(form.secondaryCategories || []).map((cat, index) => (
               <span
-                key={cat}
+                key={`${cat}-${index}`}
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-white/80"
                 style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)' }}
               >
                 {cat}
-                <button type="button" onClick={() => removeSecondary(cat)} className="ml-0.5 text-white/50 hover:text-white">
+                <button type="button" onClick={() => removeSecondary(index)} className="ml-0.5 text-white/50 hover:text-white" aria-label={`Remove ${cat}`}>
                   <X size={12} />
                 </button>
               </span>
             ))}
           </div>
           {(form.secondaryCategories || []).length < 5 && (
-            <div className="relative">
-              <input
-                className={INPUT_CLASS}
-                style={inputStyle(false)}
-                value={secSearch}
-                onChange={e => { setSecSearch(e.target.value); setShowSecondary(true) }}
-                onFocus={() => setShowSecondary(true)}
-                placeholder="Add secondary category..."
+            <div className="space-y-2">
+              <CanonicalTaxonomyPicker
+                idPrefix="step5-secondary"
+                value={secPick}
+                onChange={setSecPick}
               />
-              <AnimatePresence>
-                {showSecondary && secSearch && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    className="absolute z-20 w-full mt-1 rounded-xl max-h-40 overflow-y-auto"
-                     style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
-                    >
-                      {filteredSecondary.map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => addSecondary(c)}
-                        className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:text-white transition-colors"
-                      >
-                        {c}
-                      </button>
-                    ))}
-                    {filteredSecondary.length === 0 && (
-                      <p className="px-4 py-3 text-white/30 text-xs">No matching categories</p>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <button
+                type="button"
+                disabled={!secPick.categoryId}
+                onClick={addSecondaryFromPick}
+                className="rounded-lg px-4 py-2 text-xs font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
+                style={btnPrimary}
+              >
+                Add secondary category
+              </button>
             </div>
           )}
         </FormField>
-
         <FormField label="Product Types" required error={errors.productTypes}>
           <input
             className={INPUT_CLASS}

@@ -52,6 +52,17 @@ export class MarketplaceCatalogBridgeController {
         });
     }
 
+    @Get('subcategories/:id/items')
+    @Public()
+    @ApiOperation({ summary: 'List active catalog items of a subcategory (F-07 cascade picker)' })
+    async listSubcategoryItems(
+        @Param('id') id: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        return this.service.listSubcategoryItems(id, page ? parseInt(page) : 1, limit ? parseInt(limit) : 50);
+    }
+
     @Get('coverage')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('ADMIN', 'SUPER_ADMIN')

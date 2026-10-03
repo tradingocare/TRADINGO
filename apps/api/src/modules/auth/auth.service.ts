@@ -15,6 +15,8 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { MembershipService } from '../membership/membership.service';
 import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
+import { CatalogClassifyService } from '../marketplace-catalog-bridge/catalog-classify.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -41,6 +43,8 @@ export class AuthService {
     private readonly notification: NotificationService,
     private readonly membership: MembershipService,
     private readonly vendorCodes: VendorCodesService,
+    private readonly catalogClassify: CatalogClassifyService,
+    private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
     private readonly eventEmitter: EventEmitter2,
     @InjectQueue(QueueNames.EMAIL) private readonly emailQueue: Queue,
   ) {}
@@ -234,25 +238,88 @@ export class AuthService {
     const uniqueNames = [...new Set((categoryNames || []).map((n) => n?.trim()).filter(Boolean))];
     if (uniqueNames.length === 0) return;
 
-    const matches = await tx.category.findMany({
-      where: { name: { in: uniqueNames, mode: 'insensitive' }, isActive: true },
-      select: { id: true },
-    });
-
-    if (matches.length === 0) {
-      this.logger.warn(`No Category matches for company ${companyId} from names: ${uniqueNames.join(', ')}`);
-      return;
+    // F-06 (fail-closed, founder-approved): every name resolves through the
+    // canonical resolver BEFORE any write. Exactly one valid resolution links
+    // via the existing CompanyCategory join; unresolvable or ambiguous names
+    // reject the whole registration with 400 — never warn-and-continue, never
+    // multi-link, never silent drop. All names resolve first so a late reject
+    // leaves no partial linkage (the callers run inside $transaction anyway).
+    const legacyIds: string[] = [];
+    for (const name of uniqueNames) {
+      const resolved = await this.catalogClassify.resolveCategoryText(name);
+      if (!resolved) {
+        throw new BadRequestException(
+          `Unknown business category: "${name}". Please select a category from the list.`,
+        );
+      }
+      const exactMatches = await tx.catalogCategory.count({
+        where: { isActive: true, name: { equals: name, mode: 'insensitive' } },
+      });
+      if (exactMatches > 1) {
+        throw new BadRequestException(
+          `Ambiguous business category: "${name}" matches multiple categories. Please select a more specific category.`,
+        );
+      }
+      if (resolved.matchType === 'synonym') {
+        const fuzzyMatches = await tx.catalogCategory.count({
+          where: { isActive: true, name: { contains: name, mode: 'insensitive' } },
+        });
+        if (fuzzyMatches > 1) {
+          throw new BadRequestException(
+            `Ambiguous business category: "${name}" matches multiple categories. Please select a more specific category.`,
+          );
+        }
+      }
+      const legacyId = await this.taxonomyPersistence.bridgeLegacyCategoryId(resolved.categoryId);
+      if (!legacyId) {
+        throw new BadRequestException(
+          `Business category "${name}" cannot be linked yet. Please select a different category.`,
+        );
+      }
+      legacyIds.push(legacyId);
     }
 
     await tx.companyCategory.createMany({
-      data: matches.map((m) => ({ companyId, categoryId: m.id })),
+      data: legacyIds.map((categoryId) => ({ companyId, categoryId })),
       skipDuplicates: true,
     });
+  }
 
-    const unmatched = uniqueNames.length - matches.length;
-    if (unmatched > 0) {
-      this.logger.warn(`${unmatched} category name(s) not linked (no DB match) for company ${companyId}`);
+  /**
+   * F-07 cascade picks (vendor Step-5): link already-disambiguated canonical
+   * category IDs. Each ID is re-validated server-side (exists + active) and
+   * bridged to its legacy twin — never trusted blindly, never re-resolved by
+   * name (that would reintroduce F-06 ambiguity). Fail-closed like the name
+   * path: unknown/inactive/untwinned IDs reject with 400 and write nothing.
+   */
+  private async linkCompanyCanonicalCategories(companyId: string, catalogCategoryIds: (string | null | undefined)[], tx: Prisma.TransactionClient) {
+    const uniqueIds = [...new Set((catalogCategoryIds || []).map((id) => id?.trim()).filter(Boolean))] as string[];
+    if (uniqueIds.length === 0) return;
+
+    const legacyIds: string[] = [];
+    for (const catalogCategoryId of uniqueIds) {
+      const canonical = await tx.catalogCategory.findUnique({
+        where: { id: catalogCategoryId },
+        select: { id: true, isActive: true },
+      });
+      if (!canonical || !canonical.isActive) {
+        throw new BadRequestException(
+          'Unknown or inactive business category selection. Please reselect the category.',
+        );
+      }
+      const legacyId = await this.taxonomyPersistence.bridgeLegacyCategoryId(canonical.id);
+      if (!legacyId) {
+        throw new BadRequestException(
+          'Business category selection cannot be linked yet. Please select a different category.',
+        );
+      }
+      legacyIds.push(legacyId);
     }
+
+    await tx.companyCategory.createMany({
+      data: legacyIds.map((categoryId) => ({ companyId, categoryId })),
+      skipDuplicates: true,
+    });
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
@@ -982,7 +1049,17 @@ export class AuthService {
         });
       }
 
-      await this.linkCompanyCategories(company.id, [dto.primaryCategory, ...(dto.secondaryCategories || [])], tx);
+      // F-07: cascade-picked canonical IDs are authoritative when present;
+      // otherwise the F-06 fail-closed name path applies unchanged.
+      if (dto.primaryCatalogCategoryId || (dto.secondaryCatalogCategoryIds || []).length > 0) {
+        await this.linkCompanyCanonicalCategories(
+          company.id,
+          [dto.primaryCatalogCategoryId, ...(dto.secondaryCatalogCategoryIds || [])],
+          tx,
+        );
+      } else {
+        await this.linkCompanyCategories(company.id, [dto.primaryCategory, ...(dto.secondaryCategories || [])], tx);
+      }
 
       const updated = await tx.user.update({
         where: { id: user.id },

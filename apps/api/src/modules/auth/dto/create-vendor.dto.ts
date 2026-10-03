@@ -78,6 +78,12 @@ export class CreateVendorDto {
   @IsOptional() @IsArray()
   @ApiPropertyOptional({ description: 'Secondary categories' })
   secondaryCategories?: string[];
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Primary canonical category ID from the F-07 cascade picker (authoritative when present; falls back to name resolution when absent)' })
+  primaryCatalogCategoryId?: string;
+  @IsOptional() @IsArray()
+  @ApiPropertyOptional({ description: 'Secondary canonical category IDs from the F-07 cascade picker' })
+  secondaryCatalogCategoryIds?: string[];
   @IsString()
   @ApiProperty({ description: 'Product types' })
   productTypes: string;

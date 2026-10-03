@@ -14,9 +14,10 @@ import { BrandService } from './brand.service';
 import { ProductExportController } from './product-export.controller';
 import { ProductExportService } from './product-export.service';
 import { SearchModule } from '../search/search.module';
+import { MarketplaceCatalogBridgeModule } from '../marketplace-catalog-bridge/marketplace-catalog-bridge.module';
 
 @Module({
-  imports: [SearchModule],
+  imports: [SearchModule, MarketplaceCatalogBridgeModule],
   controllers: [
     SellerProductController,
     ApprovalController,

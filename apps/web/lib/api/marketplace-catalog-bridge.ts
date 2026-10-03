@@ -99,9 +99,24 @@ export interface BatchResolveResponse {
   unresolvedCount: number;
 }
 
+export interface SubcategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  type: string;
+}
+
+export interface SubcategoryItemsResponse {
+  data: SubcategoryItem[];
+  meta: { total: number; page: number; limit: number; subcategoryId: string; categoryId: string };
+}
+
 export const marketplaceCatalogBridgeApi = {
   getEnrichedTree: () =>
     apiClient.get<EnrichedCategoryTreeResponse>('/marketplace-catalog-bridge/categories/tree').then(r => r.data),
+
+  listSubcategoryItems: (subcategoryId: string, page = 1, limit = 50) =>
+    apiClient.get<SubcategoryItemsResponse>(`/marketplace-catalog-bridge/subcategories/${subcategoryId}/items`, { params: { page, limit } }).then(r => r.data),
 
   getEnrichedCategory: (id: string) =>
     apiClient.get<EnrichedCategoryResponse>(`/marketplace-catalog-bridge/categories/${id}`).then(r => r.data),

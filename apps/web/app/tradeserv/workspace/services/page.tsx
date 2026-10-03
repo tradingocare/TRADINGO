@@ -11,6 +11,7 @@ import { StatBox } from '@/components/tradeserv/stat-box';
 import { SaveToast } from '@/components/tradeserv/save-toast';
 import { useSaveToast } from '@/hooks/use-save-toast';
 import { useServices, useAddService, useUpdateService, useDeleteService } from '@/hooks/use-tradeserv';
+import { CanonicalTaxonomyPicker, EMPTY_CANONICAL_SELECTION, type CanonicalTripleSelection } from '@/components/taxonomy/canonical-taxonomy-picker';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function ServicesCatalogPage() {
@@ -24,10 +25,27 @@ export default function ServicesCatalogPage() {
   const [showNew, setShowNew] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
-    name: '', description: '', category: '', priceMin: '', priceMax: '', pricingType: 'fixed', deliveryDays: '', isActive: true,
+    name: '', description: '', category: '', catalogItemId: undefined as string | null | undefined, priceMin: '', priceMax: '', pricingType: 'fixed', deliveryDays: '', isActive: true,
   });
+  // F-07: local cascade triple. Empty = untouched (update keeps persisted
+  // linkage) or cleared (null item = display echo only, backend classifies).
+  const [pick, setPick] = useState<CanonicalTripleSelection>({ ...EMPTY_CANONICAL_SELECTION });
 
-  const resetForm = () => setForm({ name: '', description: '', category: '', priceMin: '', priceMax: '', pricingType: 'fixed', deliveryDays: '', isActive: true });
+  const resetForm = () => {
+    setForm({ name: '', description: '', category: '', catalogItemId: undefined, priceMin: '', priceMax: '', pricingType: 'fixed', deliveryDays: '', isActive: true });
+    setPick({ ...EMPTY_CANONICAL_SELECTION });
+  };
+
+  const handlePickChange = (sel: CanonicalTripleSelection) => {
+    setPick(sel);
+    // Untouched (all empty) = omit so updates keep linkage; otherwise send
+    // the display echo plus the leaf item (or null to re-derive from name).
+    setForm((prev) => ({
+      ...prev,
+      category: sel.categoryName,
+      catalogItemId: !sel.categoryId && !sel.catalogItemId ? undefined : sel.catalogItemId,
+    }));
+  };
 
   const list = Array.isArray(services) ? services : [];
   const total = list.length;
@@ -36,10 +54,12 @@ export default function ServicesCatalogPage() {
 
   const openEdit = (svc: any) => {
     setEditId(svc.id);
+    setPick({ ...EMPTY_CANONICAL_SELECTION });
     setForm({
       name: svc.name || '',
       description: svc.description || '',
       category: svc.category || '',
+      catalogItemId: svc.catalogItemId ?? undefined,
       priceMin: svc.priceMin?.toString() || '',
       priceMax: svc.priceMax?.toString() || '',
       pricingType: svc.pricingType || 'fixed',
@@ -57,6 +77,9 @@ export default function ServicesCatalogPage() {
       pricingType: form.pricingType || undefined,
       isActive: form.isActive,
     };
+    // F-07: leaf item rides only when the cascade touched it; untouched =
+    // omitted so updates keep the persisted linkage.
+    if (form.catalogItemId !== undefined) payload.catalogItemId = form.catalogItemId;
     if (form.priceMin) payload.priceMin = parseFloat(form.priceMin);
     if (form.priceMax) payload.priceMax = parseFloat(form.priceMax);
     if (form.deliveryDays) payload.deliveryDays = parseInt(form.deliveryDays, 10);
@@ -148,7 +171,17 @@ export default function ServicesCatalogPage() {
                   <p className="text-xs font-semibold text-text-tertiary">Editing: {svc.name}</p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <FormInput label="Service Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-                    <FormInput label="Category" value={form.category} onChange={(v) => setForm({ ...form, category: v })} placeholder="e.g. Audit, GST, Tax" />
+                    <div>
+                      <span className="mb-1.5 block text-xs text-text-tertiary">Category</span>
+                      <CanonicalTaxonomyPicker
+                        idPrefix="service-category-edit"
+                        value={pick}
+                        onChange={handlePickChange}
+                      />
+                      {!pick.categoryId && form.category && (
+                        <p className="mt-1 text-xs text-text-tertiary">Current: {form.category} — pick above to change.</p>
+                      )}
+                    </div>
                   </div>
                   <FormInput label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} textarea rows={2} />
                   <div className="grid gap-3 sm:grid-cols-4">
@@ -216,7 +249,17 @@ export default function ServicesCatalogPage() {
                 </h4>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <FormInput label="Service Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-                  <FormInput label="Category" value={form.category} onChange={(v) => setForm({ ...form, category: v })} placeholder="e.g. Audit, GST, Tax" />
+                  <div>
+                    <span className="mb-1.5 block text-xs text-text-tertiary">Category</span>
+                    <CanonicalTaxonomyPicker
+                      idPrefix="service-category-new"
+                      value={pick}
+                      onChange={handlePickChange}
+                    />
+                    {!pick.categoryId && form.category && (
+                      <p className="mt-1 text-xs text-text-tertiary">Current: {form.category} — pick above to change.</p>
+                    )}
+                  </div>
                 </div>
                 <FormInput label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} textarea rows={2} />
                 <div className="grid gap-3 sm:grid-cols-4">
