@@ -1,0 +1,763 @@
+# TRADINGO RC Build & Deliver (Option B tarball path) — APPROVED RC ONLY.
+#
+# Builds the EXACT frozen Release Candidate (filesystem artifact described by
+# RC_MANIFEST.json) — NEVER repository HEAD — into immutable API/migrate/Web
+# images, packages them as loadable tarballs, and stops at a production
+# approval gate. No registry push. No VPS contact. No deployment.
+#
+# Handoff (founder-controlled, outside this workflow):
+#   1. Create draft GitHub Release <release_tag> holding exactly 4 assets:
+#        rc-source-<RC-ID>.tar.gz + .sha256 + RC_MANIFEST.json + .sha256
+#   2. Dispatch this workflow with release_tag, rc_id, expected tarball SHA,
+#      expected manifest SHA, pinned full base SHA, public API URL.
+# Reconstructs: pinned base checkout + delta overlay + 15 manifest deletions,
+# then verifies (hashes, git-status delta, migration set) before build.
+#
+# Fail-closed at every gate: any hash/structure mismatch aborts the run.
+
+name: RC Build Deliver
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Draft release tag holding the frozen RC tarball (e.g. RC-BPLUS-20261002-01)'
+        required: true
+        type: string
+      rc_id:
+        description: 'Immutable RC identifier (e.g. RC-BPLUS-20261002-01)'
+        required: true
+        type: string
+      expected_tarball_sha256:
+        description: 'Expected SHA-256 of rc-source-<RC-ID>.tar.gz'
+        required: true
+        type: string
+      expected_manifest_sha256:
+        description: 'Expected SHA-256 of the RC_MANIFEST.json sidecar'
+        required: true
+        type: string
+      base_sha:
+        description: 'Frozen base commit the RC was curated against (full 40-hex SHA)'
+        required: false
+        default: 'b1fcec67982110b12e910dad167b77ac9dbf5fbf'
+        type: string
+      next_public_api_url:
+        description: 'Baked public API base for the Web image'
+        required: false
+        default: 'https://api.tradingo.in/api/v1'
+        type: string
+
+concurrency:
+  group: rc-build-${{ github.event.inputs.rc_id }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '9.15.0'
+  RC_DIR: rc-source
+
+jobs:
+  validate_inputs:
+    name: Validate dispatch inputs (fail closed)
+    runs-on: ubuntu-latest
+    outputs:
+      rc_id: ${{ steps.validated.outputs.rc_id }}
+      release_tag: ${{ steps.validated.outputs.release_tag }}
+      expected_tarball_sha256: ${{ steps.validated.outputs.expected_tarball_sha256 }}
+      expected_manifest_sha256: ${{ steps.validated.outputs.expected_manifest_sha256 }}
+      base_sha: ${{ steps.validated.outputs.base_sha }}
+      next_public_api_url: ${{ steps.validated.outputs.next_public_api_url }}
+    steps:
+      - name: Allowlist validation (no raw input reaches shell/JS unvalidated)
+        id: validated
+        env:
+          RC_ID: ${{ github.event.inputs.rc_id }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+          EXPECTED_SHA256: ${{ github.event.inputs.expected_tarball_sha256 }}
+          EXPECTED_MANIFEST_SHA256: ${{ github.event.inputs.expected_manifest_sha256 }}
+          BASE_SHA: ${{ github.event.inputs.base_sha }}
+          NEXT_API_URL: ${{ github.event.inputs.next_public_api_url }}
+        run: |
+          set -euo pipefail
+          fail() { echo "INPUT VALIDATION FAILED: $1" >&2; exit 1; }
+          case "$RC_ID" in ''|*[!A-Za-z0-9._-]*) fail "rc_id charset";; esac
+          [ "${#RC_ID}" -le 128 ] || fail "rc_id length"
+          case "$RELEASE_TAG" in ''|*[!A-Za-z0-9._/-]*|*..*) fail "release_tag charset";; esac
+          [ "${#RELEASE_TAG}" -le 128 ] || fail "release_tag length"
+          printf '%s' "$EXPECTED_SHA256" | grep -Eq '^[a-f0-9]{64}$' || fail "expected_tarball_sha256 format"
+          printf '%s' "$EXPECTED_MANIFEST_SHA256" | grep -Eq '^[a-f0-9]{64}$' || fail "expected_manifest_sha256 format"
+          printf '%s' "$BASE_SHA" | grep -Eq '^[a-f0-9]{40}$' || fail "base_sha must be a full 40-hex commit SHA"
+          printf '%s' "$NEXT_API_URL" | grep -Eq '^https?://[^[:space:]]+$' || fail "next_public_api_url shape"
+          if printf '%s' "$NEXT_API_URL" | grep -Eq '[$`]'; then fail "next_public_api_url charset"; fi
+          if printf '%s' "$NEXT_API_URL" | grep -Eq '"'; then fail "next_public_api_url charset"; fi
+          case $NEXT_API_URL in *"'"*) fail "next_public_api_url charset";; esac
+          case $NEXT_API_URL in *\\*) fail "next_public_api_url charset";; esac
+          {
+            echo "rc_id=$RC_ID"
+            echo "release_tag=$RELEASE_TAG"
+            echo "expected_tarball_sha256=$EXPECTED_SHA256"
+            echo "expected_manifest_sha256=$EXPECTED_MANIFEST_SHA256"
+            echo "base_sha=$BASE_SHA"
+            echo "next_public_api_url=$NEXT_API_URL"
+          } >> "$GITHUB_OUTPUT"
+          echo "All dispatch inputs within allowlist."
+
+  ingest_rc:
+    name: Ingest frozen RC tarball
+    runs-on: ubuntu-latest
+    needs: [validate_inputs]
+    outputs:
+      rc_dir: ${{ steps.paths.outputs.rc_dir }}
+    steps:
+      - name: Download RC release assets (read-only, no checkout of app source)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate_inputs.outputs.release_tag }}
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p _rc_handoff
+          gh release download "$RELEASE_TAG" \
+            --pattern "rc-source-$RC_ID.tar.gz" \
+            --pattern "rc-source-$RC_ID.tar.gz.sha256" \
+            --pattern 'RC_MANIFEST.json' \
+            --pattern 'RC_MANIFEST.json.sha256' \
+            --dir _rc_handoff
+          ls -la _rc_handoff
+          test -f "_rc_handoff/rc-source-$RC_ID.tar.gz"
+          test -f "_rc_handoff/rc-source-$RC_ID.tar.gz.sha256"
+          test -f "_rc_handoff/RC_MANIFEST.json"
+          test -f "_rc_handoff/RC_MANIFEST.json.sha256"
+
+      - name: Verify tarball + manifest SHA-256 (fail closed)
+        env:
+          EXPECTED_SHA256: ${{ needs.validate_inputs.outputs.expected_tarball_sha256 }}
+          EXPECTED_MANIFEST_SHA256: ${{ needs.validate_inputs.outputs.expected_manifest_sha256 }}
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          cd _rc_handoff
+          echo "$EXPECTED_SHA256  rc-source-$RC_ID.tar.gz" | sha256sum -c -
+          echo "$EXPECTED_MANIFEST_SHA256  RC_MANIFEST.json" | sha256sum -c -
+          echo "Tarball + manifest SHAs verified."
+
+      - name: Record RC path
+        id: paths
+        run: echo "rc_dir=${{ env.RC_DIR }}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload RC handoff assets (audit trail)
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc-handoff-${{ needs.validate_inputs.outputs.rc_id }}
+          path: _rc_handoff/
+          retention-days: 90
+
+  materialize_base:
+    name: Materialize pinned base + overlay RC delta
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, ingest_rc]
+    steps:
+      - name: Download RC handoff assets
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-handoff-${{ needs.validate_inputs.outputs.rc_id }}
+          path: _rc_handoff
+
+      - name: Checkout pinned base commit (no HEAD, no branch)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate_inputs.outputs.base_sha }}
+          path: ${{ env.RC_DIR }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify checked-out HEAD equals pinned base SHA
+        env:
+          BASE_SHA: ${{ needs.validate_inputs.outputs.base_sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL="$(git -C '${{ env.RC_DIR }}' rev-parse HEAD)"
+          if [ "$ACTUAL" != "$BASE_SHA" ]; then
+            echo "BASE SHA MISMATCH: got $ACTUAL, want $BASE_SHA" >&2
+            exit 1
+          fi
+          echo "Base commit verified: $ACTUAL"
+
+      - name: Overlay verified RC delta (traversal + duplicate checked)
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          TARBALL="_rc_handoff/rc-source-$RC_ID.tar.gz"
+          if tar -tzf "$TARBALL" | grep -Eq '(^/|(^|[\\/])\.\.(/|$))'; then echo "UNSAFE ARCHIVE PATH REJECTED" >&2; exit 1; fi
+          if [ -n "$(tar -tzf "$TARBALL" | sort | uniq -d)" ]; then echo "DUPLICATE ARCHIVE PATH REJECTED" >&2; exit 1; fi
+          tar -xzf "$TARBALL" -C "${{ env.RC_DIR }}"
+
+      - name: Apply explicit manifest deletions
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const RC = '${{ env.RC_DIR }}';
+          const m = JSON.parse(fs.readFileSync('_rc_handoff/RC_MANIFEST.json', 'utf8'));
+          let bad = 0;
+          for (const d of m.deletions) {
+            if (typeof d.path !== 'string' || d.path.length === 0) { console.error('DELETION PATH EMPTY'); bad++; continue; }
+            if (d.path.startsWith('/') || d.path.split('/').includes('..')) { console.error('UNSAFE DELETION PATH REJECTED: ' + d.path); bad++; continue; }
+            const p = path.join(RC, d.path);
+            if (!fs.existsSync(p)) { console.error('DELETION TARGET MISSING (wrong base?): ' + d.path); bad++; continue; }
+            fs.rmSync(p, { recursive: true, force: true });
+          }
+          if (bad > 0) { process.exit(1); }
+          console.log('Deletions applied: ' + m.deletions.length);
+          "
+
+      - name: Verify tarball content equals manifest file set
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const { execSync } = require('child_process');
+          const RC = '${{ env.RC_DIR }}';
+          const m = JSON.parse(fs.readFileSync('_rc_handoff/RC_MANIFEST.json', 'utf8'));
+          let bad = 0;
+          const expected = new Set(m.files.map((f) => f.path));
+          const listed = execSync('git -C ' + JSON.stringify(RC) + ' ls-files -z --others', { encoding: 'buffer' });
+          const parts = listed.toString('utf8').split('\0').filter(Boolean);
+          for (const p of parts) {
+            if (!expected.has(p)) { console.error('TARBALL CARRIES UNMANIFESTED FILE: ' + p); bad++; }
+          }
+          if (bad > 0) { process.exit(1); }
+          console.log('Tarball content reconciled against manifest.');
+          "
+
+      - name: Verify tree delta equals manifest exactly (git status)
+        run: |
+          node -e "
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+          const path = require('path');
+          const RC = '${{ env.RC_DIR }}';
+          const m = JSON.parse(fs.readFileSync('_rc_handoff/RC_MANIFEST.json', 'utf8'));
+          let bad = 0;
+          const porcelain = execSync('git -C ' + JSON.stringify(RC) + ' status --porcelain=v1 -uall', { encoding: 'utf8' })
+            .split('\n').map((l) => l.replace(/\r$/, '')).filter(Boolean);
+          const manifestPaths = new Set(m.files.map((f) => f.path));
+          const manifestDels = new Set(m.deletions.map((d) => d.path));
+          const accounted = new Set();
+          for (const line of porcelain) {
+            const code = line.slice(0, 2);
+            let p = line.slice(3).trim().replace(/^\"|\"$/g, '');
+            if (p.includes(' -> ')) p = p.split(' -> ')[1].trim();
+            accounted.add(p);
+            if (code.includes('M') || code.includes('A') || code === '??') {
+              if (!manifestPaths.has(p)) { console.error('UNAPPROVED DELTA FILE: ' + line); bad++; }
+            } else if (code.includes('D')) {
+              if (!manifestDels.has(p)) { console.error('UNAPPROVED DELETION: ' + p); bad++; }
+            }
+          }
+          for (const f of m.files) {
+            if (!accounted.has(f.path)) { console.error('MANIFEST FILE NOT REFLECTED IN TREE DELTA: ' + f.path); bad++; }
+          }
+          if (bad > 0) { console.error('DELTA VERIFICATION FAILED with ' + bad + ' problem(s)'); process.exit(1); }
+          console.log('Tree delta matches manifest exactly.');
+          "
+
+      - name: Upload reconstructed RC tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc-tree-${{ needs.validate_inputs.outputs.rc_id }}
+          path: ${{ env.RC_DIR }}/
+          retention-days: 30
+
+  verify_rc:
+    name: Verify RC manifest + allowlist
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, materialize_base]
+    steps:
+      - name: Download reconstructed RC tree
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-tree-${{ needs.validate_inputs.outputs.rc_id }}
+          path: ${{ env.RC_DIR }}
+
+      - name: Download RC handoff sidecars
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-handoff-${{ needs.validate_inputs.outputs.rc_id }}
+          path: _rc_meta
+
+      - name: Verify manifest structure, base SHA, per-file hashes, deletions
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+          EXP_BASE_SHA: ${{ needs.validate_inputs.outputs.base_sha }}
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const crypto = require('crypto');
+          const RC = '${{ env.RC_DIR }}';
+          const m = JSON.parse(fs.readFileSync(path.join('_rc_meta', 'RC_MANIFEST.json'), 'utf8'));
+          const expBase = process.env.EXP_BASE_SHA;
+          if (typeof m.base !== 'string' || m.base.length === 0 || m.base.length > 40 || !/^[a-f0-9]+$/.test(m.base)) { console.error('MANIFEST BASE PREFIX INVALID (must be 1-40 lowercase hex chars)'); process.exit(1); }
+          if (!expBase.startsWith(m.base)) { console.error('BASE-SHA PREFIX MISMATCH: manifest base ' + m.base + ' is not a prefix of supplied ' + expBase); process.exit(1); }
+          if (!Array.isArray(m.files) || !Array.isArray(m.deletions)) { console.error('MANIFEST STRUCTURE INVALID'); process.exit(1); }
+          let bad = 0;
+          for (const f of m.files) {
+            if (!f.path || !f.sha256 || typeof f.bytes !== 'number') { console.error('MANIFEST ENTRY INVALID: ' + JSON.stringify(f)); bad++; continue; }
+            const p = path.join(RC, f.path);
+            if (!fs.existsSync(p)) { console.error('MISSING: ' + f.path); bad++; continue; }
+            const b = fs.readFileSync(p);
+            const h = crypto.createHash('sha256').update(b).digest('hex');
+            if (h !== f.sha256 || b.length !== f.bytes) { console.error('HASH MISMATCH: ' + f.path); bad++; }
+          }
+          for (const d of m.deletions) {
+            if (fs.existsSync(path.join(RC, d.path))) { console.error('DELETION PRESENT: ' + d.path); bad++; }
+          }
+          // HOLD migrations must be absent from the RC tree
+          for (const held of ['prisma/migrations/20260911000000_seller_registration_form', 'prisma/migrations/20260913000000_p02_canonical_draft_taxonomy']) {
+            if (fs.existsSync(path.join(RC, held))) { console.error('HELD MIGRATION PRESENT: ' + held); bad++; }
+          }
+          // Required migrations must be present
+          for (const need of ['prisma/migrations/20260909000000_plan_versioning', 'prisma/migrations/20260912000000_p02_canonical_taxonomy', 'prisma/migrations/20260930000000_category_mapping_foundation', 'prisma/migrations/20261002000000_ai_usage_scoped_idempotency']) {
+            if (!fs.existsSync(path.join(RC, need, 'migration.sql'))) { console.error('REQUIRED MIGRATION MISSING: ' + need); bad++; }
+          }
+          // Exact migration set: nothing beyond the approved tracked + required set
+          const approvedMigrations = new Set(['20260801000000_initial_full_schema', '20260807000000_add_company_istradgoelite', '20260818000000_company_structure', '20260828000000_add_company_registration_documents', '20260909000000_plan_versioning', '20260912000000_p02_canonical_taxonomy', '20260930000000_category_mapping_foundation', '20261002000000_ai_usage_scoped_idempotency']);
+          for (const e of fs.readdirSync(path.join(RC, 'prisma/migrations'), { withFileTypes: true })) {
+            if (!e.isDirectory() || e.name.startsWith('.')) continue;
+            if (!approvedMigrations.has(e.name)) { console.error('UNAPPROVED MIGRATION DIRECTORY: ' + e.name); bad++; }
+          }
+          if (bad > 0) { console.error('VERIFY FAILED with ' + bad + ' problem(s)'); process.exit(1); }
+          console.log('RC VERIFIED: files=' + m.files.length + ' deletions=' + m.deletions.length);
+          "
+
+      - name: Persist verified RC for downstream jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc-verified-${{ needs.validate_inputs.outputs.rc_id }}
+          path: ${{ env.RC_DIR }}/
+          retention-days: 30
+
+  install_test:
+    name: Install + lint + typecheck + Jest
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, verify_rc]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tradingo
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: tradingo_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - name: Download verified RC
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-verified-${{ needs.validate_inputs.outputs.rc_id }}
+          path: ${{ env.RC_DIR }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: ${{ env.RC_DIR }}/pnpm-lock.yaml
+
+      - name: Install dependencies (frozen lockfile)
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint API
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/api lint
+
+      - name: Typecheck API
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/api typecheck
+
+      - name: Typecheck Web
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/web typecheck
+
+      - name: Generate Prisma Client
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/api exec prisma generate
+        env:
+          DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
+
+      - name: Run API Jest
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/api test -- --passWithNoTests
+        env:
+          DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test-jwt-secret-for-ci
+          JWT_REFRESH_SECRET: test-refresh-secret-for-ci
+          NODE_ENV: test
+
+      - name: Run Web Jest
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/web test -- --passWithNoTests
+
+  migration_dry_run:
+    name: Migration dry-run (disposable PG)
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, install_test]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tradingo
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: tradingo_migrate_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Download verified RC
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-verified-${{ needs.validate_inputs.outputs.rc_id }}
+          path: ${{ env.RC_DIR }}
+
+      - name: Setup pnpm + Node
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: ${{ env.RC_DIR }}/pnpm-lock.yaml
+
+      - name: Install dependencies (frozen lockfile)
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Assert HOLD migrations absent (fail closed)
+        working-directory: ${{ env.RC_DIR }}
+        run: |
+          set -euo pipefail
+          test ! -e prisma/migrations/20260911000000_seller_registration_form
+          test ! -e prisma/migrations/20260913000000_p02_canonical_draft_taxonomy
+          for m in 20260909000000_plan_versioning 20260912000000_p02_canonical_taxonomy 20260930000000_category_mapping_foundation 20261002000000_ai_usage_scoped_idempotency; do
+            test -f "prisma/migrations/$m/migration.sql"
+          done
+          echo "Migration set matches RC boundary."
+
+      - name: Prisma migrate deploy (disposable database only)
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/api exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_migrate_test
+
+      - name: Prisma migrate status (must be clean)
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/api exec prisma migrate status
+        env:
+          DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_migrate_test
+
+  build_api:
+    name: Build API image (Buildx, no push)
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, migration_dry_run]
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Download verified RC
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-verified-${{ needs.validate_inputs.outputs.rc_id }}
+          path: ${{ env.RC_DIR }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API runner image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.RC_DIR }}
+          file: ${{ env.RC_DIR }}/apps/api/Dockerfile
+          push: false
+          load: true
+          tags: |
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-api:${{ needs.validate_inputs.outputs.rc_id }}
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-api:sha-b1fcec679
+          labels: |
+            org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
+            org.tradingo.base-sha=b1fcec679
+          outputs: type=docker
+
+      - name: Save API image tarball
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          docker save "tradingo-rc-$RC_ID-api:$RC_ID" | gzip > "tradingo-rc-$RC_ID-api.tar.gz"
+          sha256sum "tradingo-rc-$RC_ID-api.tar.gz" > "tradingo-rc-$RC_ID-api.tar.gz.sha256"
+          docker inspect --format='{{.Id}}' "tradingo-rc-$RC_ID-api:$RC_ID" > "tradingo-rc-$RC_ID-api.digest"
+
+      - name: Upload API image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-api-${{ needs.validate_inputs.outputs.rc_id }}
+          path: |
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-api.tar.gz
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-api.tar.gz.sha256
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-api.digest
+          retention-days: 30
+
+  build_migrate:
+    name: Build migration image (Buildx, no push)
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, build_api]
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Download verified RC
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-verified-${{ needs.validate_inputs.outputs.rc_id }}
+          path: ${{ env.RC_DIR }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build migration image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.RC_DIR }}
+          file: ${{ env.RC_DIR }}/apps/api/Dockerfile
+          target: migration
+          push: false
+          load: true
+          tags: |
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-migrate:${{ needs.validate_inputs.outputs.rc_id }}
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-migrate:sha-b1fcec679
+          labels: |
+            org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
+            org.tradingo.base-sha=b1fcec679
+          outputs: type=docker
+
+      - name: Save migration image tarball
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          docker save "tradingo-rc-$RC_ID-migrate:$RC_ID" | gzip > "tradingo-rc-$RC_ID-migrate.tar.gz"
+          sha256sum "tradingo-rc-$RC_ID-migrate.tar.gz" > "tradingo-rc-$RC_ID-migrate.tar.gz.sha256"
+          docker inspect --format='{{.Id}}' "tradingo-rc-$RC_ID-migrate:$RC_ID" > "tradingo-rc-$RC_ID-migrate.digest"
+
+      - name: Upload migration image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-migrate-${{ needs.validate_inputs.outputs.rc_id }}
+          path: |
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-migrate.tar.gz
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-migrate.tar.gz.sha256
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-migrate.digest
+          retention-days: 30
+
+  build_web:
+    name: Build Web image (Buildx, no push)
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, build_migrate]
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Download verified RC
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-verified-${{ needs.validate_inputs.outputs.rc_id }}
+          path: ${{ env.RC_DIR }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Web image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.RC_DIR }}
+          file: ${{ env.RC_DIR }}/apps/web/Dockerfile
+          push: false
+          load: true
+          tags: |
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-web:${{ needs.validate_inputs.outputs.rc_id }}
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-web:sha-b1fcec679
+          labels: |
+            org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
+            org.tradingo.base-sha=b1fcec679
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ needs.validate_inputs.outputs.next_public_api_url }}
+          outputs: type=docker
+
+      - name: Save Web image tarball
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          docker save "tradingo-rc-$RC_ID-web:$RC_ID" | gzip > "tradingo-rc-$RC_ID-web.tar.gz"
+          sha256sum "tradingo-rc-$RC_ID-web.tar.gz" > "tradingo-rc-$RC_ID-web.tar.gz.sha256"
+          docker inspect --format='{{.Id}}' "tradingo-rc-$RC_ID-web:$RC_ID" > "tradingo-rc-$RC_ID-web.digest"
+
+      - name: Upload Web image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-web-${{ needs.validate_inputs.outputs.rc_id }}
+          path: |
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-web.tar.gz
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-web.tar.gz.sha256
+            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-web.digest
+          retention-days: 30
+
+  package_images:
+    name: Package digests + build report
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, build_api, build_migrate, build_web]
+    steps:
+      - name: Download image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: _images
+          pattern: image-*-${{ needs.validate_inputs.outputs.rc_id }}
+          merge-multiple: true
+
+      - name: Download RC handoff sidecars
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-handoff-${{ needs.validate_inputs.outputs.rc_id }}
+          path: _rc_meta
+
+      - name: Assemble digests + build report
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          for part in api migrate web; do
+            test -f "_images/tradingo-rc-${RC_ID}-${part}.tar.gz"
+            test -f "_images/tradingo-rc-${RC_ID}-${part}.tar.gz.sha256"
+            test -f "_images/tradingo-rc-${RC_ID}-${part}.digest"
+            (cd _images && sha256sum -c "tradingo-rc-${RC_ID}-${part}.tar.gz.sha256")
+          done
+          node -e "
+          const fs = require('fs');
+          const rc = process.env.RC_ID;
+          const read = (p) => fs.readFileSync(p, 'utf8').trim();
+          const digests = {
+            rc_id: rc,
+            base_sha: 'b1fcec679',
+            images: {
+              api: read('_images/tradingo-rc-' + rc + '-api.digest'),
+              migrate: read('_images/tradingo-rc-' + rc + '-migrate.digest'),
+              web: read('_images/tradingo-rc-' + rc + '-web.digest'),
+            },
+          };
+          fs.writeFileSync('image-digests-' + rc + '.json', JSON.stringify(digests, null, 2));
+          const report = {
+            rc_id: rc,
+            base_sha: 'b1fcec679',
+            workflow_run: '${{ github.run_id }}',
+            workflow_sha: '${{ github.sha }}',
+            created_at: new Date().toISOString(),
+            artifacts: fs.readdirSync('_images'),
+            digests: digests.images,
+          };
+          fs.writeFileSync('rc-build-report-' + rc + '.json', JSON.stringify(report, null, 2));
+          console.log(JSON.stringify(report, null, 2));
+          "
+
+      - name: Upload digests + build report + manifest copy
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc-release-${{ needs.validate_inputs.outputs.rc_id }}
+          path: |
+            image-digests-${{ needs.validate_inputs.outputs.rc_id }}.json
+            rc-build-report-${{ needs.validate_inputs.outputs.rc_id }}.json
+            _rc_meta/RC_MANIFEST.json
+          retention-days: 90
+
+  verify_artifacts:
+    name: Verify release artifacts
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, package_images]
+    steps:
+      - name: Download release bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: rc-release-${{ needs.validate_inputs.outputs.rc_id }}
+          path: _release
+
+      - name: Download image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: _images
+          pattern: image-*-${{ needs.validate_inputs.outputs.rc_id }}
+          merge-multiple: true
+
+      - name: Verify names, digests, manifest, report (fail closed)
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          for part in api migrate web; do
+            (cd _images && sha256sum -c "tradingo-rc-${RC_ID}-${part}.tar.gz.sha256")
+          done
+          node -e "
+          const fs = require('fs');
+          const rc = process.env.RC_ID;
+          const digests = JSON.parse(fs.readFileSync('_release/image-digests-' + rc + '.json', 'utf8'));
+          if (digests.rc_id !== rc) throw new Error('RC ID mismatch in digests');
+          if (digests.base_sha !== 'b1fcec679') throw new Error('base SHA mismatch in digests');
+          for (const part of ['api', 'migrate', 'web']) {
+            if (!digests.images[part] || !digests.images[part].startsWith('sha256:')) throw new Error('bad digest for ' + part);
+          }
+          const report = JSON.parse(fs.readFileSync('_release/rc-build-report-' + rc + '.json', 'utf8'));
+          if (report.rc_id !== rc) throw new Error('RC ID mismatch in report');
+          console.log('ALL RELEASE ARTIFACTS VERIFIED for ' + rc);
+          "
+
+  approval_for_delivery:
+    name: Approval for VPS delivery
+    runs-on: ubuntu-latest
+    needs: [validate_inputs, verify_artifacts]
+    environment: production
+    steps:
+      - name: Delivery authorization checkpoint (no deployment in this workflow)
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          echo "Release $RC_ID artifacts verified."
+          echo "VPS delivery (docker load + compose) belongs to a separately approved deployment phase."
+          echo "This job performs no SSH, no registry push, no migration, no deployment."
