@@ -12,6 +12,8 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { MembershipService } from '../membership/membership.service';
 import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
+import { CatalogClassifyService } from '../marketplace-catalog-bridge/catalog-classify.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -26,6 +28,7 @@ interface MockPrisma {
   companyOwner: Record<string, jest.Mock>;
   companyLocation: Record<string, jest.Mock>;
   category: Record<string, jest.Mock>;
+  catalogCategory: Record<string, jest.Mock>;
   companyCategory: Record<string, jest.Mock>;
   sellerPayoutAccount: Record<string, jest.Mock>;
   newsletterSubscriber: Record<string, jest.Mock>;
@@ -61,6 +64,8 @@ describe('AuthService', () => {
   let notificationService: Record<string, jest.Mock>;
   let membershipService: Record<string, jest.Mock>;
   let vendorCodesService: Record<string, jest.Mock>;
+  let catalogClassifyService: { resolveCategoryText: jest.Mock };
+  let taxonomyPersistenceService: { bridgeLegacyCategoryId: jest.Mock };
   let eventEmitter: { emit: jest.Mock };
 
   const mockUser = {
@@ -159,6 +164,7 @@ describe('AuthService', () => {
       },
       companyLocation: { create: jest.fn().mockResolvedValue({}), findFirst: jest.fn().mockResolvedValue(null) },
       category: { findMany: jest.fn().mockResolvedValue([]) },
+      catalogCategory: { count: jest.fn().mockResolvedValue(1) },
       companyCategory: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
       sellerPayoutAccount: { upsert: jest.fn().mockResolvedValue({}) },
       newsletterSubscriber: { upsert: jest.fn().mockResolvedValue({}) },
@@ -194,6 +200,13 @@ describe('AuthService', () => {
       getCodeOwner: jest.fn().mockResolvedValue({ type: 'RM', userId: 'rm-1', name: 'RM' }),
     };
     eventEmitter = { emit: jest.fn() };
+    // F-06 defaults: 'Steel' resolves exactly to one canonical category with
+    // a legacy twin, so pre-existing flow tests (which are not about taxonomy)
+    // keep exercising the success path.
+    catalogClassifyService = {
+      resolveCategoryText: jest.fn().mockResolvedValue({ categoryId: 'cc-1', categoryName: 'Steel', matchType: 'exact' }),
+    };
+    taxonomyPersistenceService = { bridgeLegacyCategoryId: jest.fn().mockResolvedValue('legacy-1') };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -207,6 +220,8 @@ describe('AuthService', () => {
         { provide: NotificationService, useValue: notificationService },
         { provide: MembershipService, useValue: membershipService },
         { provide: VendorCodesService, useValue: vendorCodesService },
+        { provide: CatalogClassifyService, useValue: catalogClassifyService },
+        { provide: CatalogTaxonomyPersistenceService, useValue: taxonomyPersistenceService },
         { provide: EventEmitter2, useValue: eventEmitter },
         {
           provide: ConfigService,
@@ -542,6 +557,140 @@ describe('AuthService', () => {
       expect(emailQueue.add).toHaveBeenCalled();
     });
   });
+
+
+  describe('vendor Step-5 fail-closed category linking (F-06)', () => {
+    function mockBuyerUser() {
+      prisma.user.findFirst.mockResolvedValue({ ...mockUser, id: 'user-1', email: 'vendor@example.com', role: 'BUYER', mobile: null });
+    }
+
+    it('links the resolved legacy category for a unique name (CASE A)', async () => {
+      mockBuyerUser();
+
+      const result = await service.vendorOnboarding('user-1', vendorDto);
+
+      expect(catalogClassifyService.resolveCategoryText).toHaveBeenCalledWith('Steel');
+      expect(prisma.companyCategory.createMany).toHaveBeenCalledWith({
+        data: [{ companyId: 'company-1', categoryId: 'legacy-1' }],
+        skipDuplicates: true,
+      });
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('rejects 400 with no write when the name is unresolvable (CASE B)', async () => {
+      mockBuyerUser();
+      catalogClassifyService.resolveCategoryText.mockResolvedValue(null);
+
+      await expect(service.vendorOnboarding('user-1', vendorDto)).rejects.toThrow(
+        'Unknown business category: "Steel"',
+      );
+
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects 400 with no write when the name is ambiguous (CASE C, exact duplicates)', async () => {
+      mockBuyerUser();
+      prisma.catalogCategory.count.mockResolvedValueOnce(2);
+
+      await expect(service.vendorOnboarding('user-1', vendorDto)).rejects.toThrow(
+        'Ambiguous business category: "Steel"',
+      );
+
+      // Not multi-linked: nothing is written at all.
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects 400 when a synonym-tier match is not unique (CASE C, fuzzy)', async () => {
+      mockBuyerUser();
+      catalogClassifyService.resolveCategoryText.mockResolvedValue({ categoryId: 'cc-9', categoryName: 'Alloy Steel', matchType: 'synonym' });
+      prisma.catalogCategory.count.mockResolvedValueOnce(0).mockResolvedValueOnce(3);
+
+      await expect(
+        service.vendorOnboarding('user-1', { ...vendorDto, primaryCategory: 'alloy stee' }),
+      ).rejects.toThrow('Ambiguous business category: "alloy stee"');
+
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+    });
+
+    it('writes nothing when a later name fails after an earlier valid one (no partial linkage)', async () => {
+      mockBuyerUser();
+      catalogClassifyService.resolveCategoryText.mockImplementation(async (text: string) =>
+        text === 'Steel'
+          ? { categoryId: 'cc-1', categoryName: 'Steel', matchType: 'exact' }
+          : null,
+      );
+
+      await expect(
+        service.vendorOnboarding('user-1', { ...vendorDto, secondaryCategories: ['Zzz Not Real'] }),
+      ).rejects.toThrow('Unknown business category: "Zzz Not Real"');
+
+      // The valid first name is NOT partially linked.
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('normalizes case/whitespace through the resolver contract', async () => {
+      mockBuyerUser();
+
+      const result = await service.vendorOnboarding('user-1', { ...vendorDto, primaryCategory: '  sTeEl  ' });
+
+      expect(catalogClassifyService.resolveCategoryText).toHaveBeenCalledWith('sTeEl');
+      expect(prisma.companyCategory.createMany).toHaveBeenCalledWith({
+        data: [{ companyId: 'company-1', categoryId: 'legacy-1' }],
+        skipDuplicates: true,
+      });
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('treats empty category input as no-op success (CASE D preserved)', async () => {
+      mockBuyerUser();
+
+      const result = await service.vendorOnboarding('user-1', { ...vendorDto, primaryCategory: '', secondaryCategories: [] });
+
+      expect(catalogClassifyService.resolveCategoryText).not.toHaveBeenCalled();
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('rejects 400 when the resolved category has no legacy twin (no silent drop)', async () => {
+      mockBuyerUser();
+      taxonomyPersistenceService.bridgeLegacyCategoryId.mockResolvedValue(null);
+
+      await expect(service.vendorOnboarding('user-1', vendorDto)).rejects.toThrow(
+        'Business category "Steel" cannot be linked yet',
+      );
+
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('links only the registering company (no cross-company association)', async () => {
+      mockBuyerUser();
+
+      await service.vendorOnboarding('user-1', { ...vendorDto, secondaryCategories: ['Steel'] });
+
+      const createCall = prisma.companyCategory.createMany.mock.calls[0][0];
+      expect(createCall.data.length).toBeGreaterThan(0);
+      for (const row of createCall.data) {
+        expect(row.companyId).toBe('company-1');
+      }
+    });
+
+    it('applies fail-closed linking to buyer registration too (shared helper)', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ ...mockUser, role: 'BUYER' });
+      catalogClassifyService.resolveCategoryText.mockResolvedValue(null);
+
+      await expect(
+        service.registerBuyer({ ...buyerDto, primaryCategories: ['Zzz Not Real'] } as any),
+      ).rejects.toThrow('Unknown business category: "Zzz Not Real"');
+
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+    });
+  });
+
 
   describe('registerBuyer', () => {
     it('runs all persisted writes in a single transaction including newsletter', async () => {

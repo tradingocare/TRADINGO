@@ -64,6 +64,7 @@ export function createMockPrisma() {
     professionalLanguage: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), upsert: jest.fn(), delete: jest.fn() },
     professionalServiceArea: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), delete: jest.fn() },
     companyOwner: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), deleteMany: jest.fn() },
+    companyLocation: { findFirst: jest.fn(), findMany: jest.fn() },
     booking: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
     professionalReview: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
     proposal: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },

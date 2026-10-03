@@ -655,12 +655,18 @@ model ProfessionalService {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   catalogItemId String?
+  catalogCategoryId String?
+  catalogSubcategoryId String?
   bookings      Booking[]
   catalogItem   CatalogItem? @relation(fields: [catalogItemId], references: [id])
+  catalogCategory CatalogCategory? @relation(fields: [catalogCategoryId], references: [id])
+  catalogSubcategory CatalogSubcategory? @relation(fields: [catalogSubcategoryId], references: [id])
   company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([catalogItemId])
+  @@index([catalogCategoryId])
+  @@index([catalogSubcategoryId])
   @@index([category])
   @@index([isActive])
   @@index([companyId, isActive])
@@ -1291,6 +1297,8 @@ model Product {
   focusKeywords       String[]
   brandId             String?
   catalogItemId       String?
+  catalogCategoryId String?
+  catalogSubcategoryId String?
   certifications      String[]
   complianceInfo      Json?
   countryOfOrigin     String?
@@ -1302,6 +1310,8 @@ model Product {
   qualityScores       CatalogQualityScore?
   productBrand        ProductBrand?          @relation(fields: [brandId], references: [id])
   catalogItem         CatalogItem?           @relation(fields: [catalogItemId], references: [id])
+  catalogCategory     CatalogCategory?       @relation(fields: [catalogCategoryId], references: [id])
+  catalogSubcategory  CatalogSubcategory?    @relation(fields: [catalogSubcategoryId], references: [id])
   category            Category?              @relation(fields: [categoryId], references: [id])
   company             Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   industry            Industry?              @relation(fields: [industryId], references: [id])
@@ -1329,6 +1339,8 @@ model Product {
   @@index([industryId])
   @@index([productMasterId])
   @@index([catalogItemId])
+  @@index([catalogCategoryId])
+  @@index([catalogSubcategoryId])
   @@index([status])
   @@index([productType])
   @@index([trustScoreSnapshot])
@@ -3052,6 +3064,8 @@ model CatalogCategory {
   subcategories    CatalogSubcategory[]
   rfqs             Rfq[]
   productItems     RfqProductItem[]
+  products         Product[]
+  professionalServices ProfessionalService[]
 
   @@index([slug])
   @@index([isActive])
@@ -3071,6 +3085,8 @@ model CatalogSubcategory {
   items            CatalogItem[]
   category         CatalogCategory          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   productItems     RfqProductItem[]
+  products         Product[]
+  professionalServices ProfessionalService[]
 
   @@unique([categoryId, slug])
   @@index([categoryId])
@@ -3236,6 +3252,9 @@ model ProductDraft {
   companyId        String
   categoryId       String?
   subcategoryId    String?
+  catalogCategoryId String?
+  catalogSubcategoryId String?
+  catalogItemId String?
   name             String?
   slug             String?                     @unique
   shortDescription String?
@@ -3280,6 +3299,7 @@ model ProductDraft {
   @@index([status])
   @@index([createdBy])
   @@index([slug])
+  @@index([catalogItemId])
 }
 
 model ProductDraftSpec {
