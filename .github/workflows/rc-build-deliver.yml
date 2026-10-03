@@ -402,6 +402,12 @@ jobs:
         working-directory: ${{ env.RC_DIR }}
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        working-directory: ${{ env.RC_DIR }}
+        run: pnpm --filter @tradingo/api exec prisma generate
+        env:
+          DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
+
       - name: Lint API
         working-directory: ${{ env.RC_DIR }}
         run: pnpm --filter @tradingo/api lint
@@ -413,12 +419,6 @@ jobs:
       - name: Typecheck Web
         working-directory: ${{ env.RC_DIR }}
         run: pnpm --filter @tradingo/web typecheck
-
-      - name: Generate Prisma Client
-        working-directory: ${{ env.RC_DIR }}
-        run: pnpm --filter @tradingo/api exec prisma generate
-        env:
-          DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
 
       - name: Run API Jest
         working-directory: ${{ env.RC_DIR }}
