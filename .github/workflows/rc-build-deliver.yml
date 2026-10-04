@@ -516,6 +516,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Derive Docker-safe image ID (lowercase RC_ID)
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          DOCKER_ID="${RC_ID,,}"
+          echo "DOCKER_ID=$DOCKER_ID" >> "$GITHUB_ENV"
+
       - name: Build API runner image
         id: build
         uses: docker/build-push-action@v6
@@ -525,8 +533,8 @@ jobs:
           push: false
           load: true
           tags: |
-            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-api:${{ needs.validate_inputs.outputs.rc_id }}
-            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-api:sha-b1fcec679
+            tradingo-rc-${{ env.DOCKER_ID }}-api:${{ env.DOCKER_ID }}
+            tradingo-rc-${{ env.DOCKER_ID }}-api:sha-b1fcec679
           labels: |
             org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
             org.tradingo.base-sha=b1fcec679
@@ -537,9 +545,9 @@ jobs:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
         run: |
           set -euo pipefail
-          docker save "tradingo-rc-$RC_ID-api:$RC_ID" | gzip > "tradingo-rc-$RC_ID-api.tar.gz"
+          docker save "tradingo-rc-$DOCKER_ID-api:$DOCKER_ID" | gzip > "tradingo-rc-$RC_ID-api.tar.gz"
           sha256sum "tradingo-rc-$RC_ID-api.tar.gz" > "tradingo-rc-$RC_ID-api.tar.gz.sha256"
-          docker inspect --format='{{.Id}}' "tradingo-rc-$RC_ID-api:$RC_ID" > "tradingo-rc-$RC_ID-api.digest"
+          docker inspect --format='{{.Id}}' "tradingo-rc-$DOCKER_ID-api:$DOCKER_ID" > "tradingo-rc-$RC_ID-api.digest"
 
       - name: Upload API image artifact
         uses: actions/upload-artifact@v4
@@ -567,6 +575,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Derive Docker-safe image ID (lowercase RC_ID)
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          DOCKER_ID="${RC_ID,,}"
+          echo "DOCKER_ID=$DOCKER_ID" >> "$GITHUB_ENV"
+
       - name: Build migration image
         id: build
         uses: docker/build-push-action@v6
@@ -577,8 +593,8 @@ jobs:
           push: false
           load: true
           tags: |
-            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-migrate:${{ needs.validate_inputs.outputs.rc_id }}
-            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-migrate:sha-b1fcec679
+            tradingo-rc-${{ env.DOCKER_ID }}-migrate:${{ env.DOCKER_ID }}
+            tradingo-rc-${{ env.DOCKER_ID }}-migrate:sha-b1fcec679
           labels: |
             org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
             org.tradingo.base-sha=b1fcec679
@@ -589,9 +605,9 @@ jobs:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
         run: |
           set -euo pipefail
-          docker save "tradingo-rc-$RC_ID-migrate:$RC_ID" | gzip > "tradingo-rc-$RC_ID-migrate.tar.gz"
+          docker save "tradingo-rc-$DOCKER_ID-migrate:$DOCKER_ID" | gzip > "tradingo-rc-$RC_ID-migrate.tar.gz"
           sha256sum "tradingo-rc-$RC_ID-migrate.tar.gz" > "tradingo-rc-$RC_ID-migrate.tar.gz.sha256"
-          docker inspect --format='{{.Id}}' "tradingo-rc-$RC_ID-migrate:$RC_ID" > "tradingo-rc-$RC_ID-migrate.digest"
+          docker inspect --format='{{.Id}}' "tradingo-rc-$DOCKER_ID-migrate:$DOCKER_ID" > "tradingo-rc-$RC_ID-migrate.digest"
 
       - name: Upload migration image artifact
         uses: actions/upload-artifact@v4
@@ -619,6 +635,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Derive Docker-safe image ID (lowercase RC_ID)
+        env:
+          RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+        run: |
+          set -euo pipefail
+          DOCKER_ID="${RC_ID,,}"
+          echo "DOCKER_ID=$DOCKER_ID" >> "$GITHUB_ENV"
+
       - name: Build Web image
         id: build
         uses: docker/build-push-action@v6
@@ -628,8 +652,8 @@ jobs:
           push: false
           load: true
           tags: |
-            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-web:${{ needs.validate_inputs.outputs.rc_id }}
-            tradingo-rc-${{ needs.validate_inputs.outputs.rc_id }}-web:sha-b1fcec679
+            tradingo-rc-${{ env.DOCKER_ID }}-web:${{ env.DOCKER_ID }}
+            tradingo-rc-${{ env.DOCKER_ID }}-web:sha-b1fcec679
           labels: |
             org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
             org.tradingo.base-sha=b1fcec679
@@ -642,9 +666,9 @@ jobs:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
         run: |
           set -euo pipefail
-          docker save "tradingo-rc-$RC_ID-web:$RC_ID" | gzip > "tradingo-rc-$RC_ID-web.tar.gz"
+          docker save "tradingo-rc-$DOCKER_ID-web:$DOCKER_ID" | gzip > "tradingo-rc-$RC_ID-web.tar.gz"
           sha256sum "tradingo-rc-$RC_ID-web.tar.gz" > "tradingo-rc-$RC_ID-web.tar.gz.sha256"
-          docker inspect --format='{{.Id}}' "tradingo-rc-$RC_ID-web:$RC_ID" > "tradingo-rc-$RC_ID-web.digest"
+          docker inspect --format='{{.Id}}' "tradingo-rc-$DOCKER_ID-web:$DOCKER_ID" > "tradingo-rc-$RC_ID-web.digest"
 
       - name: Upload Web image artifact
         uses: actions/upload-artifact@v4
