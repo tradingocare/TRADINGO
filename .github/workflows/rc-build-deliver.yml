@@ -276,11 +276,15 @@ jobs:
           console.log('Tree delta matches manifest exactly.');
           "
 
+      - name: Strip repository git metadata before artifact packaging
+        run: rm -rf "${{ env.RC_DIR }}/.git"
+
       - name: Upload reconstructed RC tree
         uses: actions/upload-artifact@v4
         with:
           name: rc-tree-${{ needs.validate_inputs.outputs.rc_id }}
           path: ${{ env.RC_DIR }}/
+          include-hidden-files: true
           retention-days: 30
 
   verify_rc:
@@ -350,6 +354,7 @@ jobs:
         with:
           name: rc-verified-${{ needs.validate_inputs.outputs.rc_id }}
           path: ${{ env.RC_DIR }}/
+          include-hidden-files: true
           retention-days: 30
 
   install_test:
