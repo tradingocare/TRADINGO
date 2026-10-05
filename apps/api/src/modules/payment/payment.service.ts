@@ -6,13 +6,15 @@ import { StripeService } from './gateways/stripe.service';
 import { getGateway } from './gateways/index';
 import { MembershipService } from '../membership/membership.service';
 import { EscrowService } from '../escrow/escrow.service';
+import { InvoiceService } from '../billing/invoice.service';
 import { CreatePaymentOrderDto, PaymentOrderType } from './dto/create-payment-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { CreateSubscriptionOrderDto, VerifySubscriptionPaymentDto } from './dto/subscription-order.dto';
 import { CreateRefundDto } from './dto/create-refund.dto';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
+import { getIndianFinancialYear, formatInvoiceNumber } from '../billing/utils/financial-year.util';
 import { maskSensitiveData } from '../../common/utils/pii';
 
 @Injectable()
@@ -25,6 +27,7 @@ export class PaymentService {
     private readonly stripeService: StripeService,
     private readonly membershipService: MembershipService,
     private readonly escrowService: EscrowService,
+    private readonly invoiceService: InvoiceService,
     private readonly notificationService: NotificationService,
     private readonly eventBus: EventEmitter2,
   ) {}
@@ -36,10 +39,22 @@ export class PaymentService {
     });
     if (!company) throw new NotFoundException('Company not found');
 
+    // R3 — for ORDER payments the gateway amount is derived exclusively
+    // from the persisted Order.totalAmount. The client-supplied `amount`
+    // is accepted syntactically (contract compatibility) but never
+    // determines the gateway charge. Other payment types keep their
+    // existing authoritative sources.
+    let gatewayAmount = dto.amount;
+    let gatewayCurrency = dto.currency || 'INR';
+
     if (dto.type === PaymentOrderType.ORDER) {
       if (!dto.orderId) throw new BadRequestException('orderId is required for ORDER_PAYMENT');
       const order = await this.prisma.order.findUnique({ where: { id: dto.orderId } });
-      if (!order) throw new NotFoundException('Order not found');
+      // The caller must own the order as its buyer. Masked as NotFound so
+      // the existence of foreign orders is never revealed.
+      if (!order || order.deletedAt || order.buyerCompanyId !== companyId) {
+        throw new NotFoundException('Order not found');
+      }
       const existing = await this.prisma.payment.findFirst({
         where: { companyId, orderId: dto.orderId, status: 'PENDING' },
         include: { refunds: true, order: { select: { orderNumber: true } } },
@@ -48,6 +63,8 @@ export class PaymentService {
         this.logger.log(`Returning existing PENDING payment ${existing.id} for order ${dto.orderId}`);
         return { id: existing.id, gatewayOrderId: existing.gatewayOrderId, amount: existing.amount, currency: existing.currency, keyId: this.razorpayService.getKeyId() };
       }
+      gatewayAmount = this.toOrderPaise(order);
+      gatewayCurrency = order.currency || 'INR';
     }
 
     if (dto.type === PaymentOrderType.CREDIT_PACK) {
@@ -66,8 +83,8 @@ export class PaymentService {
 
     const receipt = `rcpt_${companyId.slice(0, 8)}_${Date.now()}`;
     const razorpayOrder = await this.razorpayService.createOrder(
-      dto.amount,
-      dto.currency || 'INR',
+      gatewayAmount,
+      gatewayCurrency,
       receipt,
       { companyId, type: dto.type },
     );
@@ -79,8 +96,8 @@ export class PaymentService {
         gateway: 'RAZORPAY',
         status: 'PENDING',
         gatewayOrderId: razorpayOrder.id,
-        amount: dto.amount,
-        currency: dto.currency || 'INR',
+        amount: gatewayAmount,
+        currency: gatewayCurrency,
         description: dto.description,
         orderId: dto.orderId,
         rfqCreditPackId: dto.rfqCreditPackId,
@@ -94,6 +111,30 @@ export class PaymentService {
       currency: razorpayOrder.currency,
       keyId: this.razorpayService.getKeyId(),
     };
+  }
+
+  /**
+   * R3 — convert a persisted Order.totalAmount (rupees) to integer paise
+   * using Decimal arithmetic. Rejects anything that cannot become an exact
+   * paise integer: missing, non-finite, non-positive, and fractional-paise
+   * values are never rounded silently.
+   */
+  private toOrderPaise(order: { totalAmount: Prisma.Decimal | string | number | null | undefined }): number {
+    let total: Prisma.Decimal;
+    try {
+      if (order.totalAmount == null) throw new Error('missing total');
+      total = new Prisma.Decimal(order.totalAmount);
+    } catch {
+      throw new BadRequestException('Order has an invalid total amount');
+    }
+    if (total.isNaN() || !total.isFinite() || total.lte(0)) {
+      throw new BadRequestException('Order has an invalid total amount');
+    }
+    const paise = total.times(100);
+    if (!paise.isInteger() || !Number.isSafeInteger(paise.toNumber())) {
+      throw new BadRequestException('Order total cannot be represented as exact paise');
+    }
+    return paise.toNumber();
   }
 
   async verifyPayment(companyId: string, dto: VerifyPaymentDto) {
@@ -204,19 +245,26 @@ export class PaymentService {
   }
 
   private async generateInvoice(payment: any) {
-    // Use the canonical atomic TRD-INV series (same as InvoiceService)
-    // to prevent duplicate invoice numbers under concurrent requests.
-    const prefix = 'TRD-INV';
-    const year = new Date().getFullYear();
+    // Canonical atomic invoice numbering: TRD/YY-YY/NNNNNN (GST Rule 46(b))
+    const { startYear, fyLabel } = getIndianFinancialYear();
+    const prefix = 'TRD';
 
     const seq = await this.prisma.invoiceSequence.upsert({
-      where: { prefix_year: { prefix, year } },
+      where: { prefix_year: { prefix, year: startYear } },
       update: { lastSeq: { increment: 1 } },
-      create: { prefix, year, lastSeq: 1 },
+      create: { prefix, year: startYear, lastSeq: 1 },
     });
 
-    const invoiceNumber = `${prefix}-${year}-${String(seq.lastSeq).padStart(6, '0')}`;
+    const invoiceNumber = formatInvoiceNumber(prefix, fyLabel, seq.lastSeq);
     const amountInRupees = (payment.amount / 100).toFixed(2);
+
+    // Fetch buyer company details including GSTIN
+    const company = payment.companyId
+      ? await this.prisma.company.findUnique({
+          where: { id: payment.companyId },
+          select: { gstNumber: true },
+        })
+      : null;
 
     await this.prisma.invoice.create({
       data: {
@@ -226,6 +274,7 @@ export class PaymentService {
         subtotal: amountInRupees,
         totalAmount: amountInRupees,
         currency: payment.currency,
+        gstNumber: company?.gstNumber || null,
         status: 'GENERATED',
         paidAt: payment.paidAt || new Date(),
       },
@@ -390,6 +439,16 @@ export class PaymentService {
     const plan = await this.prisma.membershipPlan.findUnique({ where: { planId: dto.planId } });
     if (!plan) throw new NotFoundException('Plan not found');
 
+    // P0-2 remediation: fail fast — never create a gateway order for a plan that
+    // could not activate. Previously an unmappable plan produced a capturable order
+    // whose verification then failed after the money was taken.
+    // Free plans (₹0) are NOT payable here either: they must use the free activation
+    // path (POST /membership/activate-free), never a gateway order (Razorpay rejects
+    // zero-amount orders).
+    if (plan.isFree) {
+      throw new BadRequestException('Free plans are activated directly — no payment order is required');
+    }
+
     const existingPending = await this.prisma.payment.findFirst({
       where: { companyId, type: 'SUBSCRIPTION', status: 'PENDING' },
       orderBy: { createdAt: 'desc' },
@@ -408,7 +467,17 @@ export class PaymentService {
 
     const price = dto.planTier === 'B' ? plan.pricePlanB : dto.planTier === 'C' ? plan.pricePlanC : plan.pricePlanA;
     const totalAmount = price * dto.duration;
-    const amountInPaise = totalAmount;
+
+    // P0-5 remediation — Money unit contract:
+    //   MembershipPlan.pricePlanA/B/C are stored in INR RUPEES (₹6,000 – ₹1,50,000).
+    //   Razorpay's Orders API expects INTEGER PAISE. Payment.amount is the canonical
+    //   paise field (the booking-payment path and every downstream consumer — invoice,
+    //   notifications, revenue summary, payout, refund, finance aggregator — divide
+    //   it by 100 to render rupees). This was previously `amountInPaise = totalAmount`
+    //   (rupees passed straight to the gateway => 100x undercharge), and
+    //   `amount: totalAmount` stored rupees in the canonical paise field.
+    //   Exactly ONE deliberate conversion rupees -> paise happens here.
+    const amountInPaise = Math.round(totalAmount * 100);
     const receipt = `sub_${companyId.slice(0, 8)}_${Date.now()}`;
 
     const gateway = getGateway(gatewayName, this.razorpayService, this.stripeService);
@@ -428,7 +497,7 @@ export class PaymentService {
         gateway: gatewayName as any,
         status: 'PENDING',
         gatewayOrderId: gatewayOrder.gatewayOrderId,
-        amount: totalAmount,
+        amount: amountInPaise,
         currency: 'INR',
         description: `Subscription: ${plan.name} (${dto.planTier})`,
         notes: {
@@ -445,7 +514,7 @@ export class PaymentService {
       id: payment.id,
       orderId,
       gatewayOrderId: gatewayOrder.gatewayOrderId,
-      amount: totalAmount,
+      amount: amountInPaise,
       currency: 'INR',
       keyId: gateway.getKeyId(),
       planName: plan.name,
@@ -464,30 +533,52 @@ export class PaymentService {
       gatewayPaymentId: dto.gatewayPaymentId,
       gatewaySignature: dto.gatewaySignature,
     });
-    if (!isValid) throw new BadRequestException('Payment verification failed â€” signature mismatch');
-
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: 'CAPTURED',
-        gatewayPaymentId: dto.gatewayPaymentId,
-        gatewaySignature: dto.gatewaySignature,
-        paidAt: new Date(),
-      },
-    });
+    if (!isValid) throw new BadRequestException('Payment verification failed — signature mismatch');
 
     const notes = (payment.notes as any) || {};
     const planId = notes.planId || 'trade_start';
     const planTier = notes.planTier || 'A';
     const duration = notes.duration || 1;
 
-    await this.membershipService.activateSubscription({
-      companyId,
-      planId,
-      planTier,
-      amount: payment.amount,
-      paymentId: payment.id,
-      duration,
+    // P0-2 remediation — ATOMICITY:
+    // Previously the payment was flipped to CAPTURED and committed FIRST, and the
+    // plan-mapping/activation ran afterwards untransacted. When activation threw
+    // (e.g. toPlanType on launch plans), the money stayed captured with NO
+    // subscription and NO invoice — and because this path only accepts PENDING
+    // payments, the webhook could never recover it (it skips non-PENDING rows).
+    //
+    // Now: plan resolution + capture + activation + invoice commit in ONE
+    // prisma.$transaction. Any failure (including an unmappable plan) rolls back
+    // the CAPTURED update too — the payment remains PENDING, so:
+    //   - the Razorpay checkout can be re-verified idempotently, or
+    //   - the webhook (which processes PENDING rows) retries activation, or
+    //   - support can refund a never-activated charge via the existing refund path.
+    // The gateway charge itself cannot be rolled back by a DB transaction, but a
+    // PENDING local row means no double activation can occur and every retry path
+    // remains open. External-gateway compensation (auto-refund on local failure)
+    // is deliberately NOT invented in this wave.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'CAPTURED',
+          gatewayPaymentId: dto.gatewayPaymentId,
+          gatewaySignature: dto.gatewaySignature,
+          paidAt: new Date(),
+        },
+      });
+
+      await this.membershipService.activateSubscription(
+        {
+          companyId,
+          planId,
+          planTier,
+          amount: payment.amount,
+          paymentId: payment.id,
+          duration,
+        },
+        tx,
+      );
     });
 
     try {
@@ -558,20 +649,29 @@ export class PaymentService {
               this.logger.log(`Credits ${pack.credits} added to company ${updatedPayment.companyId} from pack ${pack.id}`);
             }
           } else if (updatedPayment.type === 'SUBSCRIPTION') {
-            const notes = updatedPayment.notes as { planId?: string; planTier?: string } | null;
+            const notes = updatedPayment.notes as { planId?: string; planTier?: string; duration?: string } | null;
             if (notes?.planId) {
-              try {
-                await this.membershipService.activateSubscription({
+              // P0-2 remediation: activation now runs INSIDE this webhook transaction
+              // (threaded tx client) and its failure is NO LONGER swallowed — the
+              // transaction aborts, the CAPTURED update rolls back, and the payment
+              // stays PENDING so this webhook (or the verify path) can retry safely.
+              // Previously the error was logged and swallowed, permanently stranding
+              // a captured payment with no subscription.
+              // P0-7 remediation: the legacy INV- invoice block that previously sat
+              // after this branch was replaced with the canonical InvoiceSequence
+              // numbering (see the P0-7 block below).
+              await this.membershipService.activateSubscription(
+                {
                   companyId: updatedPayment.companyId,
                   planId: notes.planId,
                   planTier: notes.planTier || 'A',
                   amount: updatedPayment.amount,
                   paymentId: updatedPayment.id,
-                });
-                this.logger.log(`Subscription activated via webhook for company ${updatedPayment.companyId}`);
-              } catch (err) {
-                this.logger.error(`Failed to activate subscription via webhook: ${(err as Error).message}`);
-              }
+                  duration: notes.duration ? Number(notes.duration) : undefined,
+                },
+                tx,
+              );
+              this.logger.log(`Subscription activated via webhook for company ${updatedPayment.companyId}`);
             }
           } else if (updatedPayment.type === 'BOOKING_PAYMENT') {
             const notes = updatedPayment.notes as { bookingId?: string } | null;
@@ -589,21 +689,41 @@ export class PaymentService {
             }
           }
 
-          const count = await tx.invoice.count();
-          const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(count + 1).padStart(4, '0')}`;
-          const amountInRupees = (updatedPayment.amount / 100).toFixed(2);
-          await tx.invoice.create({
-            data: {
-              invoiceNumber,
-              companyId: updatedPayment.companyId,
-              paymentId: updatedPayment.id,
-              subtotal: amountInRupees,
-              totalAmount: amountInRupees,
-              currency: updatedPayment.currency,
-              status: 'GENERATED',
-              paidAt: new Date(),
-            },
+          // P0-7 remediation — canonical atomic invoice numbering:
+          // The legacy INV-YYYYMMDD-NNNN number was built from tx.invoice.count()+1 —
+          // a non-atomic read-modify-write. Under concurrent webhook deliveries two
+          // transactions computed the same number and the invoiceNumber @unique
+          // constraint threw INSIDE this transaction, rolling back the CAPTURED
+          // update (paid webhook left PENDING). It also collided with the canonical
+          // TRD invoice already created by activateSubscription for SUBSCRIPTION
+          // payments (Invoice.paymentId @unique). Now the invoice number comes from
+          // the existing canonical InvoiceSequence (single-row atomic
+          // UPDATE lastSeq = lastSeq + 1) via InvoiceService.generateInvoiceNumber
+          // on the SAME transaction client — same TRD/YY-YY/NNNNNN statutory format,
+          // same atomic unit as capture. SUBSCRIPTION payments already receive their
+          // full statutory invoice from activateSubscription inside this same
+          // transaction (reads via tx see those uncommitted writes), so they are
+          // skipped here — exactly one invoice per payment.
+          const existingInvoice = await tx.invoice.findUnique({
+            where: { paymentId: updatedPayment.id },
+            select: { id: true },
           });
+          if (!existingInvoice) {
+            const invoiceNumber = await this.invoiceService.generateInvoiceNumber(tx);
+            const amountInRupees = (updatedPayment.amount / 100).toFixed(2);
+            await tx.invoice.create({
+              data: {
+                invoiceNumber,
+                companyId: updatedPayment.companyId,
+                paymentId: updatedPayment.id,
+                subtotal: amountInRupees,
+                totalAmount: amountInRupees,
+                currency: updatedPayment.currency,
+                status: 'GENERATED',
+                paidAt: new Date(),
+              },
+            });
+          }
         });
 
         // Emit event for booking payment webhook capture â€” orchestrator listens to create escrow
