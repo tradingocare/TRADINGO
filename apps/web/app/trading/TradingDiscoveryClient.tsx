@@ -13,7 +13,8 @@ import { SectionHeader } from '@/components/shared/section-header'
 import { ProductCard, ProductCardSkeleton } from '@/components/product/product-card'
 import { fromDiscoveryResult } from '@/components/product/card-converters'
 import { useAuthStore } from '@/store/auth-store'
-import { getDiscoveryFeed, discoverItemToDiscoveryResult } from '@/lib/api/discovery'
+import { discoverItemToDiscoveryResult } from '@/lib/api/discovery'
+import { useSharedDiscoveryFeed } from '@/hooks/use-discovery'
 import { getCompanyDirectory } from '@/lib/api/companies'
 import { subscribe as subscribeNewsletter } from '@/lib/api/notifications'
 import { aiBuyerRecommendations } from '@/lib/api/ai-search'
@@ -52,6 +53,7 @@ const CollectionsSection = dynamic(() =>
   { loading: () => <SectionShell><SkeletonCards count={8} /></SectionShell> },
 )
 import ProductDiscovery from '@/components/discovery/ProductDiscoveryClient'
+import { CatalogPopularRail } from '@/components/trading/trading-catalog-marketplace'
 
 function StatCard({ icon, label, value, loading }: { icon: React.ReactNode; label: string; value?: number; loading: boolean }) {
   const display = value == null || value === 0 ? '\u2014' : value.toLocaleString()
@@ -84,11 +86,9 @@ export default function TradingDiscoveryClient() {
   })
   const statsData = stats.data?.stats
 
-  const discover = useQuery({
-    queryKey: ['trading-discover'],
-    queryFn: () => getDiscoveryFeed(1, 50),
-    staleTime: 120_000,
-  })
+  // G4-2: shared with CategoriesSection's directory-discover (same
+  // GET /discover?page=1 payload) — one cached query, sliced locally.
+  const discover = useSharedDiscoveryFeed()
 
   const notifyMutation = useMutation({
     mutationFn: (email: string) => subscribeNewsletter({ email }),
@@ -108,7 +108,7 @@ export default function TradingDiscoveryClient() {
       }),
   })
 
-  const feed = useMemo(() => discover.data?.items ?? [], [discover.data])
+  const feed = useMemo(() => (discover.data?.items ?? []).slice(0, 50), [discover.data])
   const featuredProducts = useMemo(
     () => feed.filter(i => i.type === 'product' && i.reason === 'Trending Product').slice(0, 12),
     [feed],
@@ -138,7 +138,9 @@ export default function TradingDiscoveryClient() {
         unit: p.unit ?? 'unit',
         moq: Number(p.moq ?? 1),
         categoryName: p.categoryName ?? p.category ?? '',
-        inStock: true,
+        // R4: AI recommendation content carries no inventory data — unknown
+        // availability must not present as In Stock (the converter treats
+        // unknown as unavailable).
         isVerified: true,
         trustScore: 0,
         seller: { id: '', name: '', slug: '', isVerified: false, trustScore: 0 },
@@ -156,10 +158,20 @@ export default function TradingDiscoveryClient() {
       />
 
       <div className="relative z-10">
-        {/* ─── 6A. FULL PRODUCT DISCOVERY (migrated marketplace experience) ── */}
+        {/* ─── 6A+6B. MARKETPLACE (founder master diagram) ──────────────
+            Detail card LEFT (wide) + Popular rail RIGHT as true grid
+            siblings, level with the first card row. Category browser below. */}
         <section className="relative" aria-label="Full product discovery">
-          <ProductDiscovery key={discoveryKey} variant="embedded" basePath="/trading" />
+          <ProductDiscovery
+            key={discoveryKey}
+            variant="embedded"
+            basePath="/trading"
+            railRight={<CatalogPopularRail />}
+          />
         </section>
+
+        {/* ─── 6C. CATEGORY BROWSER lives on /categories now ───────────────
+            (relocated — same component/design, links target /trading) ─── */}
 
         {/* ─── 2. LIVE DIRECTORY STATS ───────────────────────────────── */}
         <section className="pb-6">
@@ -283,7 +295,9 @@ export default function TradingDiscoveryClient() {
                       unit: p.unit,
                       moq: p.moq,
                       categoryName: p.categoryName,
-                      inStock: true,
+                      // R4: no inventory data here — unknown availability must
+                      // not present as In Stock (converter defaults it to
+                      // unavailable).
                       seller: { id: '', name: '', slug: '', isVerified: false, trustScore: 0 },
                     } as any)}
                     variant="compact"

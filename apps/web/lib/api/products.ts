@@ -88,6 +88,8 @@ export interface WishlistItem {
     /** Never populated by the API (Product has no base price column) — display price derives from priceSlabs. */
     price?: number;
     priceSlabs?: { minQty: number; maxQty: number | null; price: number }[];
+    /** Present at runtime (wishlist query selects inventory); drives card availability. */
+    inventory?: { availableQuantity?: number | null; stockStatus?: string | null };
     originalPrice?: number;
     images?: string[];
     videoUrl?: string;
