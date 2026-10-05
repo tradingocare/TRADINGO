@@ -3,11 +3,37 @@ import type { DiscoveryResult } from '@/types/discovery'
 import type { NearMeProduct } from '@/lib/api/near-me'
 import type { WishlistItem } from '@/lib/api/products'
 
+/**
+ * R1 display-price derivation. The Product model has NO base price
+ * column — the authoritative unit price lives on price slabs, so the
+ * display price is the first slab's unit price (minQty ascending,
+ * i.e. the price at MOQ). `originalPrice` is a real vendor-declared
+ * reference price (display-only, never transactional) and is the
+ * established fallback when a product has no slabs. No price is ever
+ * invented: products with neither fall back to 0, which the
+ * authoritative pricing endpoint reports as not purchasable.
+ */
+function authoritativeDisplayPrice(
+  slabs?: { minQty: number; maxQty: number | null; price?: number | string | null }[] | null,
+  originalPrice?: number | null,
+): number {
+  if (slabs && slabs.length > 0) {
+    const first = [...slabs].sort((a, b) => a.minQty - b.minQty)[0]
+    const price = Number(first?.price)
+    if (Number.isFinite(price) && price > 0) return price
+  }
+  if (originalPrice != null && Number.isFinite(originalPrice) && originalPrice > 0) return originalPrice
+  return 0
+}
+
 function gocashEarn(price: number) {
   return Math.floor(price / 1000) * 100
 }
 
 export function fromDiscoveryResult(dr: DiscoveryResult): ProductCardModel {
+  // dr.price is the search-index minimum price (first slab by
+  // minQty) — authoritative; slabs/originalPrice are the fallbacks.
+  const price = dr.price ?? authoritativeDisplayPrice(dr.priceSlabs, dr.originalPrice)
   return {
     id: dr.id,
     slug: dr.slug,
@@ -16,7 +42,7 @@ export function fromDiscoveryResult(dr: DiscoveryResult): ProductCardModel {
     images: dr.images?.length ? dr.images : ['/placeholder-product.jpg'],
     categoryName: dr.categoryName,
     subCategory: dr.subCategory,
-    price: dr.price ?? 0,
+    price,
     originalPrice: dr.originalPrice,
     unit: dr.unit ?? 'unit',
     moq: dr.moq ?? 1,
@@ -50,13 +76,13 @@ export function fromDiscoveryResult(dr: DiscoveryResult): ProductCardModel {
     warrantyPeriod: dr.warrantyPeriod,
     certifications: dr.certifications,
     specifications: dr.specifications,
-    keywords: dr.keywords,
+    keywords: dr.keywords ?? (dr as any).focusKeywords,
     gstInvoiceAvailable: dr.gstInvoiceAvailable,
     tradeCreditEligible: dr.tradeCreditEligible,
     listedDate: dr.listedDate,
     distanceKm: dr.distanceKm,
     geoLabel: dr.geoLabel,
-    gocashEarn: dr.price ? gocashEarn(dr.price) : undefined,
+    gocashEarn: price ? gocashEarn(price) : undefined,
     trustScoreSnapshot: dr.trustScore,
     isPremium: dr.seller.isTradgoElite,
     isTradgo: undefined,
@@ -107,6 +133,7 @@ export function fromNearMeProduct(np: NearMeProduct): ProductCardModel {
 }
 
 export function fromEnrichedProduct(ep: any): ProductCardModel {
+  const price = authoritativeDisplayPrice(ep.priceSlabs, ep.originalPrice)
   const media = ep.media || []
   const images = media
     .filter((m: any) => m.type === 'IMAGE')
@@ -117,13 +144,14 @@ export function fromEnrichedProduct(ep: any): ProductCardModel {
     id: ep.id,
     slug: ep.slug,
     title: ep.name,
+    sku: ep.sku || undefined,
     // Authoritative vendor texts. Hidden when absent — never synthesized.
     description: ep.shortDescription || ep.description || undefined,
     images: images.length ? images : [],
     categoryName: typeof ep.category === 'object' ? ep.category?.name : ep.categoryName || '',
     subCategory: ep.subCategory,
     brand: ep.brand,
-    price: ep.price ?? ep.priceSlabs?.[0]?.price ?? 0,
+    price,
     originalPrice: ep.originalPrice,
     unit: ep.unit || 'unit',
     moq: ep.moq || 1,
@@ -155,7 +183,7 @@ export function fromEnrichedProduct(ep: any): ProductCardModel {
     tradeCreditEligible: ep.tradeCreditEligible,
     listedDate: ep.createdAt,
     trustScoreSnapshot: ep.trustScoreSnapshot,
-    gocashEarn: ep.price ? gocashEarn(ep.price) : undefined,
+    gocashEarn: price ? gocashEarn(price) : undefined,
     isBestseller: ep.isBestseller || ep.isFeatured,
     monthlyOrders: ep.monthlyOrders,
     isPremium: company.isTradgoElite,
@@ -164,16 +192,18 @@ export function fromEnrichedProduct(ep: any): ProductCardModel {
 }
 
 export function fromProductCardData(pcd: ProductCardData): ProductCardModel {
+  const price = authoritativeDisplayPrice(pcd.priceSlabs, pcd.originalPrice)
   return {
     id: pcd._id,
     slug: pcd.slug,
     title: pcd.title,
+    sku: pcd.sku,
     images: pcd.images,
     videoUrl: pcd.videoUrl,
     categoryName: pcd.categoryName,
     subCategory: pcd.subCategory,
     brand: undefined,
-    price: pcd.price,
+    price,
     originalPrice: pcd.originalPrice,
     unit: pcd.unit,
     moq: pcd.moq,
@@ -203,7 +233,7 @@ export function fromProductCardData(pcd: ProductCardData): ProductCardModel {
     deliveryEta: pcd.deliveryEta,
     freeDeliveryAbove: pcd.freeDeliveryAbove,
     distanceKm: pcd.seller.distanceKm,
-    gocashEarn: pcd.price ? gocashEarn(pcd.price) : undefined,
+    gocashEarn: price ? gocashEarn(price) : undefined,
     trustScoreSnapshot: pcd.seller.trustScore,
     isPremium: pcd.seller.isTradgoElite,
     gstInvoiceAvailable: pcd.gstInvoiceAvailable,
@@ -217,6 +247,7 @@ export function fromProductCardData(pcd: ProductCardData): ProductCardModel {
 }
 
 export function fromBasicProduct(bp: any): ProductCardModel {
+  const price = authoritativeDisplayPrice(bp.priceSlabs, bp.originalPrice)
   return {
     id: bp.id,
     slug: bp.slug || bp.id,
@@ -227,7 +258,7 @@ export function fromBasicProduct(bp: any): ProductCardModel {
     categoryName: bp.categoryName || (typeof bp.category === 'string' ? bp.category : bp.category?.name || ''),
     subCategory: bp.subCategory || (typeof bp.subCategory === 'string' ? bp.subCategory : undefined),
     brand: bp.brand || undefined,
-    price: bp.price ?? bp.priceSlabs?.[0]?.price ?? 0,
+    price,
     originalPrice: bp.originalPrice,
     unit: bp.unit || 'unit',
     moq: bp.moq || 1,
@@ -255,7 +286,7 @@ export function fromBasicProduct(bp: any): ProductCardModel {
     certifications: bp.certifications,
     gstInvoiceAvailable: bp.gstInvoiceAvailable,
     tradeCreditEligible: bp.tradeCreditEligible,
-    gocashEarn: bp.price ? gocashEarn(bp.price) : undefined,
+    gocashEarn: price ? gocashEarn(price) : undefined,
     isBestseller: bp.isBestseller,
     trustScoreSnapshot: bp.trustScoreSnapshot,
     monthlyOrders: bp.monthlyOrders,
@@ -265,6 +296,10 @@ export function fromBasicProduct(bp: any): ProductCardModel {
 
 export function fromWishlistItem(w: WishlistItem): ProductCardModel {
   const p = w.product
+  // The wishlist API normalizes products with priceSlabs but never
+  // populates a base price (no such column) — derive the display
+  // price from the first slab instead of fabricating ₹0.
+  const price = authoritativeDisplayPrice(p.priceSlabs, p.originalPrice)
   return {
     id: p.id,
     slug: p.slug,
@@ -274,7 +309,7 @@ export function fromWishlistItem(w: WishlistItem): ProductCardModel {
     images: p.images?.length ? p.images : ['/placeholder-product.jpg'],
     videoUrl: p.videoUrl,
     categoryName: p.categoryName || '',
-    price: p.price ?? 0,
+    price,
     originalPrice: p.originalPrice,
     unit: p.unit || 'unit',
     moq: p.moq || 1,
@@ -302,7 +337,7 @@ export function fromWishlistItem(w: WishlistItem): ProductCardModel {
     returnPolicy: p.returnPolicy,
     warrantyPeriod: p.warrantyPeriod,
     certifications: p.certifications,
-    gocashEarn: p.price ? gocashEarn(p.price) : undefined,
+    gocashEarn: price ? gocashEarn(price) : undefined,
     trustScoreSnapshot: p.seller.trustScore,
     isPremium: p.seller.isTradgoElite,
     type: 'product',

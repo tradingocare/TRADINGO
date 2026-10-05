@@ -85,7 +85,9 @@ export interface WishlistItem {
     sku?: string;
     unit: string;
     moq: number;
-    price: number;
+    /** Never populated by the API (Product has no base price column) — display price derives from priceSlabs. */
+    price?: number;
+    priceSlabs?: { minQty: number; maxQty: number | null; price: number }[];
     originalPrice?: number;
     images?: string[];
     videoUrl?: string;
