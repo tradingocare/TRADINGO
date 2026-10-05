@@ -75,7 +75,7 @@ export default function HomePage() {
           </div>
           <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
             <div className="mx-auto max-w-7xl text-center">
-              <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy" className="mx-auto opacity-50" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">Why Sell on TRADINGO?</h2>
                 <p className="mx-auto mt-4 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">Reach millions of buyers across India with zero upfront investment. Our platform is built for sellers.</p>
             </div>
@@ -129,7 +129,7 @@ export default function HomePage() {
           </div>
           <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
             <div className="mx-auto max-w-7xl text-center">
-              <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy" className="mx-auto opacity-50" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">Why Buy on TRADINGO?</h2>
                 <p className="mx-auto mt-4 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">Source verified products from trusted sellers. Get competitive quotes and trade with confidence.</p>
             </div>
@@ -183,7 +183,7 @@ export default function HomePage() {
         </div>
         <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
           <div className="mx-auto max-w-7xl text-center">
-            <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy" className="mx-auto opacity-50" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">Why TRADINGO?</h2>
                <p className="mx-auto mt-4 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">We&apos;re not just another marketplace. Here&apos;s what makes us different.</p>
           </div>
@@ -237,7 +237,7 @@ style={{ background: `radial-gradient(600px circle at 30% 50%, color-mix(in srgb
         </div>
         <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-12">
           <div className="mx-auto max-w-7xl text-center">
-            <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy" className="mx-auto opacity-50" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">GOCASH Rewards Program</h2>
                <p className="mx-auto mt-4 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">Earn GOCASH on every successful trade. Redeem for listing boosts, premium analytics, platform discounts, and exclusive seller tools.</p>
           </div>
@@ -289,7 +289,7 @@ style={{ background: `radial-gradient(600px circle at 30% 50%, color-mix(in srgb
         </div>
         <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl text-center">
-            <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy" className="mx-auto h-10 w-auto opacity-50 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy" className="mx-auto opacity-50" />
 <h2 className="mt-6 text-3xl font-black text-text-primary sm:text-4xl lg:text-5xl">TRADGO &mdash; Gamified Trading Races</h2>
                <p className="mx-auto mt-4 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">Turn trading into a sport. Compete in trading races, earn badges, climb leaderboards, and unlock exclusive rewards.</p>
           </div>

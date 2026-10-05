@@ -79,12 +79,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center
-                    px-4 py-12" style={{ background:'var(--bg-base)' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background:'var(--bg-base)' }}>
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px]
-                        h-[600px] rounded-full opacity-12"
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-12"
           style={{ background:'radial-gradient(circle,#f59e0b18,transparent 70%)',
                    filter:'blur(80px)' }} />
       </div>
@@ -121,13 +119,11 @@ export default function ForgotPasswordPage() {
                   </p>
                 </div>
                 <div>
-<label className="block text-text-secondary text-xs
-                                  font-semibold mb-1.5">
+<label className="block text-text-secondary text-xs font-semibold mb-1.5">
                     Email or Mobile Number
                   </label>
                   <div className="relative">
-                    <Mail size={15} className="absolute left-3.5 top-1/2
-                      -translate-y-1/2 text-gray-400" />
+                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
                     <input
                       value={email}
                       onChange={e => { setEmail(e.target.value); setError('') }}
@@ -152,9 +148,7 @@ export default function ForgotPasswordPage() {
                   disabled={loading}
                   whileHover={{ scale:1.02 }}
                   whileTap={{ scale:0.97 }}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm
-                             flex items-center justify-center gap-2
-                             disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                   style={{
                     background:'linear-gradient(135deg,#f59e0b,#fbbf24)',
                     color:'#fff',
@@ -167,8 +161,7 @@ export default function ForgotPasswordPage() {
                   }
                 </motion.button>
                 <Link href="/login"
-                  className="flex items-center justify-center gap-1.5
-                             text-xs text-text-tertiary hover:text-text-secondary">
+                  className="flex items-center justify-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary">
                   <ArrowLeft size={12} /> Back to Sign In
                 </Link>
               </motion.div>
@@ -196,10 +189,7 @@ export default function ForgotPasswordPage() {
                     placeholder="Enter 6-digit OTP"
                     maxLength={6}
                     inputMode="numeric"
-                    className="w-full text-center py-4 rounded-xl text-text-primary font-black text-2xl tracking-[0.5em]
-                               placeholder-white/35 placeholder:text-base
-                               placeholder:font-normal placeholder:tracking-normal
-                               focus:outline-none"
+                    className="w-full text-center py-4 rounded-xl text-text-primary font-black text-2xl tracking-[0.5em] placeholder-white/35 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none"
                     style={{
                       backgroundColor:'var(--bg-elevated)',
                       border: error
@@ -225,9 +215,7 @@ export default function ForgotPasswordPage() {
                   disabled={loading || otp.length !== 6}
                   whileHover={{ scale:1.02 }}
                   whileTap={{ scale:0.97 }}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm
-                             flex items-center justify-center gap-2
-                             disabled:opacity-40"
+                  className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40"
                   style={{
                     background:'linear-gradient(135deg,#f59e0b,#fbbf24)',
                     color:'#fff',
@@ -247,7 +235,7 @@ export default function ForgotPasswordPage() {
                       ? <span className="text-text-tertiary">  Resend in {countdown}s
                       </span>
                     : <button onClick={sendOtp}
-                        className="font-semibold flex items-center gap-1 text-accent-500">
+                        className="font-semibold flex items-center gap-1 text-accent-600 dark:text-accent-400">
                         <RefreshCw size={11} /> Resend OTP
                       </button>
                   }
@@ -260,8 +248,7 @@ export default function ForgotPasswordPage() {
                 initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }}
                 exit={{ opacity:0, x:-20 }} className="space-y-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center
-                                  justify-center"
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{ background:'rgba(74,222,128,0.12)',
                              border:'1px solid rgba(74,222,128,0.3)' }}>
                     <ShieldCheck size={18} className="text-green-400" />
@@ -276,13 +263,11 @@ export default function ForgotPasswordPage() {
                 </div>
                 <div className="space-y-3">
                   <div>
-<label className="block text-text-secondary text-xs
-                                     font-semibold mb-1.5">
+<label className="block text-text-secondary text-xs font-semibold mb-1.5">
                       New Password
                     </label>
                     <div className="relative">
-                      <Lock size={14} className="absolute left-3.5 top-1/2
-                        -translate-y-1/2 text-gray-400" />
+                      <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
                       <input
                         type={showPwd ? 'text' : 'password'}
                         value={newPwd}
@@ -294,20 +279,17 @@ export default function ForgotPasswordPage() {
                       />
                       <button type="button"
                         onClick={() => setShowPwd(p => !p)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2
-                                   text-text-tertiary hover:text-text-secondary">
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary">
                         {showPwd ? <EyeOff size={15}/> : <Eye size={15}/>}
                       </button>
                     </div>
                   </div>
                   <div>
-<label className="block text-text-secondary text-xs
-                                     font-semibold mb-1.5">
+<label className="block text-text-secondary text-xs font-semibold mb-1.5">
                       Confirm New Password
                     </label>
                     <div className="relative">
-                      <Lock size={14} className="absolute left-3.5 top-1/2
-                        -translate-y-1/2 text-gray-400" />
+                      <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
                       <input
                         type="password"
                         value={confirmPwd}
@@ -324,8 +306,7 @@ export default function ForgotPasswordPage() {
                         }}
                       />
                       {confirmPwd && confirmPwd === newPwd && (
-                        <CheckCircle2 size={14} className="absolute right-3.5
-                          top-1/2 -translate-y-1/2 text-green-400" />
+                        <CheckCircle2 size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-green-400" />
                       )}
                     </div>
                   </div>
@@ -338,9 +319,7 @@ export default function ForgotPasswordPage() {
                   disabled={loading}
                   whileHover={{ scale:1.02 }}
                   whileTap={{ scale:0.97 }}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm
-                             flex items-center justify-center gap-2
-                             disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                   style={{
                     background:'linear-gradient(135deg,#4ade80,#22c55e)',
                     color:'#fff',
@@ -364,8 +343,7 @@ export default function ForgotPasswordPage() {
                 <motion.div
                   animate={{ scale:[0,1.2,1] }}
                   transition={{ duration:0.5 }}
-                  className="w-16 h-16 rounded-2xl flex items-center
-                              justify-center mx-auto"
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
                   style={{ background:'rgba(74,222,128,0.12)',
                            border:'1px solid rgba(74,222,128,0.3)' }}>
                   <CheckCircle2 size={32} className="text-green-400" />
@@ -395,15 +373,14 @@ export default function ForgotPasswordPage() {
         </div>
 
         {step !== 'success' && (
-<div className="flex items-center justify-center gap-3 mt-5
-                        text-[10px] text-text-tertiary flex-wrap">
+<div className="flex items-center justify-center gap-3 mt-5 text-[10px] text-text-tertiary flex-wrap">
             <Link href="/login" className="hover:text-text-secondary">
               ? Back to Sign In
             </Link>
             <span>·</span>
-            <a href="mailto:support@tradingo.in"
+            <a href="mailto:tradingocare@tradingo.in"
               className="hover:text-text-secondary">
-              Support: support@tradingo.in
+              Support: tradingocare@tradingo.in
             </a>
             <span>·</span>
             <a href="tel:+911800000000"

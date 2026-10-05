@@ -7,11 +7,7 @@ export default function ClaimYourGrowth() {
       </div>
       <div className="relative z-10 mx-auto max-w-[1600px] px-4 text-center">
         <div className="glass-panel-prism p-6 sm:p-10">
-          <img
-            src="/logo/trdn5.png"
-            alt="TRADINGO"
-            className="mx-auto h-10 w-auto opacity-70 sm:h-12"
-          />
+          <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy" className="mx-auto opacity-70" />
 
           <h2 className="mt-6 text-3xl font-black text-primary sm:text-4xl lg:text-5xl bg-gradient-to-r from-[var(--text-primary)] via-[var(--text-secondary)] to-[var(--text-tertiary)] bg-clip-text text-transparent">
             Ready to Grow Your Business?
