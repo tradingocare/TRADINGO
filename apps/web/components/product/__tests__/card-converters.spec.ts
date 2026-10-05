@@ -9,6 +9,7 @@ import {
   fromBasicProduct,
   fromWishlistItem,
 } from '@/components/product/card-converters';
+import { toProductCard } from '@/app/products/[slug]/page';
 
 /**
  * R4 — Product Card data integrity.
@@ -304,5 +305,35 @@ describe('R4 regression', () => {
       product: { ...wishlistBase.product, inventory: { availableQuantity: 0, stockStatus: 'OUT_OF_STOCK' } },
     });
     expect(empty.inStock).toBe(false);
+  });
+});
+
+// R5 residual hardening page import carries heavy component/API modules;
+// none of these tests render, so stubbing them is behavior-neutral here.
+jest.mock('next/navigation', () => ({ notFound: jest.fn() }));
+jest.mock('@/lib/api/products', () => ({
+  getProduct: jest.fn(),
+  getProductReviews: jest.fn(),
+  getProductQuestions: jest.fn(),
+  getRelatedProducts: jest.fn(),
+}));
+jest.mock('@/lib/api/companies', () => ({ getCompanyProducts: jest.fn() }));
+jest.mock('@/components/product-detail-view/product-detail-view', () => ({}));
+jest.mock('@/components/product-detail-view/seller-products', () => ({}));
+jest.mock('@/lib/mappers/product-detail-view', () => ({ toProductDetailView: jest.fn() }));
+jest.mock('@/components/product/product-skeleton', () => ({}));
+jest.mock('@/components/sections/ClaimYourGrowth', () => ({ __esModule: true, default: () => null }));
+
+describe('R5 residual edge defaults', () => {
+  it('A. fromNearMeProduct defaults a missing MOQ to 1 without changing present values', () => {
+    expect(fromNearMeProduct({ ...nearMeBase, moq: undefined }).moq).toBe(1);
+    expect(fromNearMeProduct({ ...nearMeBase, moq: null }).moq).toBe(1);
+    expect(fromNearMeProduct({ ...nearMeBase, moq: 25 }).moq).toBe(25);
+  });
+
+  it('B. toProductCard defaults a missing MOQ to 1', () => {
+    expect(toProductCard({}).moq).toBe(1);
+    expect(toProductCard({ moq: 0 }).moq).toBe(1);
+    expect(toProductCard({ moq: 25 }).moq).toBe(25);
   });
 });

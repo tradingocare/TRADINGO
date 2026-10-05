@@ -154,7 +154,10 @@ export function fromNearMeProduct(np: NearMeProduct): ProductCardModel {
     price: np.price ?? 0,
     originalPrice: undefined,
     unit: np.unit ?? 'unit',
-    moq: np.moq,
+    // R5: defensive default — the locked card calls toLocaleString on MOQ,
+    // so an absent value must not reach it as undefined. No behavior change
+    // when the API provides MOQ (schema: required with default 1).
+    moq: np.moq ?? 1,
     seller: {
       id: np.seller.id,
       name: np.seller.name,
