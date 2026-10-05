@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 
@@ -36,8 +37,8 @@ export default function AboutTradingo() {
             </div>
 
             <div className="relative z-10 flex flex-col items-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
-              <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy"
-                className="mx-auto h-10 w-auto opacity-40 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy"
+                className="mx-auto opacity-40" />
               <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent-500">
                 {'\u2728'} What is TRADINGO?
               </span>
