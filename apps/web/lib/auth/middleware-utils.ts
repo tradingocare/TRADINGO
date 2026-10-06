@@ -50,6 +50,16 @@ export function getRouteDecision(
     return { redirect: null };
   }
 
+  // Dedicated admin authentication surface: /admin/login IS the admin
+  // sign-in form, so unauthenticated visitors must reach it directly
+  // instead of being bounced to /login. EXACT-PATH exception only —
+  // every other /admin/* route keeps standard protection. Authenticated
+  // visitors fall through to the admin role gate below, so buyer/seller
+  // (and RM) tokens are still bounced to their own dashboards.
+  if (pathname === '/admin/login' && !isAuth) {
+    return { redirect: null };
+  }
+
   // Not authenticated, route is protected → redirect to login
   if (!isAuth && isRouteProtected(pathname)) {
     return { redirect: redirectToLogin(pathname, true) };

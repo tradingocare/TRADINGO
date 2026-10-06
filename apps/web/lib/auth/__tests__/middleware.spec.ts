@@ -311,6 +311,66 @@ describe('getRouteDecision', () => {
       expect(result.redirect).toBeNull();
     });
   });
+
+  describe('admin login surface (dedicated /admin/login)', () => {
+    it('allows unauthenticated access to /admin/login (the admin sign-in form)', () => {
+      const result = getRouteDecision('/admin/login', null);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('still redirects unauthenticated users from other /admin/* routes to login', () => {
+      const result = getRouteDecision('/admin/users', null);
+      expect(result.redirect).toMatch(/^\/login\?next=%2Fadmin%2Fusers/);
+    });
+
+    it('bounces authenticated BUYER from /admin/login to the buyer dashboard', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('bounces authenticated VIEWER from /admin/login to the buyer dashboard', () => {
+      const payload = makePayload({ role: ROLES.VIEWER });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('bounces authenticated SELLER from /admin/login to the seller dashboard', () => {
+      const payload = makePayload({ role: ROLES.SELLER });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBe('/seller/dashboard');
+    });
+
+    it('renders /admin/login for ADMIN (page-level cookie redirect handles UX)', () => {
+      const payload = makePayload({ role: ROLES.ADMIN });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('renders /admin/login for SUPER_ADMIN (page-level cookie redirect handles UX)', () => {
+      const payload = makePayload({ role: ROLES.SUPER_ADMIN });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('keeps the admin role gate for /admin/dashboard (buyer bounced)', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/admin/dashboard', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('keeps the admin role gate for unknown roles (RM is not an admin role)', () => {
+      const payload = makePayload({ role: 'RM' });
+      const result = getRouteDecision('/admin/dashboard', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('keeps the admin role gate for RM on /admin/login (bounced to buyer dashboard)', () => {
+      const payload = makePayload({ role: 'RM' });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+  });
 });
 
 describe('getRouteRole', () => {
