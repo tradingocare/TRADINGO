@@ -17,8 +17,8 @@
 
 :root {
   /* ── Background Layer ──────────────────────────────────── */
-  --bg-base:       #00001c;
-  --bg-elevated:   #00072d;
+  --bg-base:       #004B49;
+  --bg-elevated:   #0F4C64;
   --bg-elevated-2: var(--bg-elevated);
   --bg-overlay:    rgba(0, 0, 28, 0.85);
 
@@ -45,32 +45,32 @@
   --accent-yellow: #FBBF24;
 
   /* ── Card Surface ──────────────────────────────────────── */
-  --surface-solid:          #00072d;
+  --surface-solid:          #0F4C64;
   --surface-solid-secondary: var(--bg-elevated);
   --surface-solid-tertiary:  var(--bg-elevated);
 
-  --card-bg:           #00072d;
+  --card-bg:           #0F4C64;
   --card-bg-hover:     var(--bg-elevated);
-  --card-border:       rgba(255, 255, 255, 0.06);
+  --card-border:       rgba(255, 255, 255, 0.12);
   --card-border-hover: rgba(255, 255, 255, 0.14);
   --card-shadow:       0 8px 40px rgba(0, 0, 0, 0.55);
   --card-shadow-hover: 0 16px 64px rgba(0, 0, 0, 0.65);
 
   /* ── Border ────────────────────────────────────────────── */
-  --border-color: rgba(255, 255, 255, 0.07);
-  --border-light: rgba(255, 255, 255, 0.04);
+  --border-color: rgba(255, 255, 255, 0.12);
+  --border-light: rgba(255, 255, 255, 0.06);
 
   /* ── Typography ────────────────────────────────────────── */
   --text-primary:   #f0f4ff;
   --text-secondary: #a8b4cc;
-  --text-tertiary:  #6b7894;
-  --text-muted:     #6b7894;
+  --text-tertiary:  #94a3b8;
+  --text-muted:     #94a3b8;
   --text-on-accent: #ffffff;
 
   /* ── Glass ──────────────────────────────────────────────── */
-  --glass-bg: #00072d;
+  --glass-bg: #0F4C64;
   --glass-bg-hover: var(--bg-elevated);
-  --glass-border:       rgba(255, 255, 255, 0.06);
+  --glass-border:       rgba(255, 255, 255, 0.12);
   --glass-border-hover: rgba(255, 255, 255, 0.14);
   --glass-shadow:       0 8px 40px rgba(0, 0, 0, 0.55);
   --glass-shadow-hover: 0 16px 64px rgba(0, 0, 0, 0.65);
@@ -106,7 +106,7 @@
   --shadow-xl:  0 16px 64px rgba(0, 0, 0, 0.65);
 
   /* ── Divider ──────────────────────────────────────────── */
-  --divider-color: rgba(255, 255, 255, 0.06);
+  --divider-color: rgba(255, 255, 255, 0.12);
 
   /* ── Hover & Focus ────────────────────────────────────── */
   --hover-brightness:   1.05;
@@ -123,31 +123,31 @@
   --nav-border:      rgba(255, 255, 255, 0.08);
 
   /* ── Sidebar ──────────────────────────────────────────── */
-  --sidebar-bg:          #00072d;
+  --sidebar-bg:          #0F4C64;
   --sidebar-text:        #a8b4cc;
   --sidebar-active-bg:   rgba(255, 77, 0, 0.10);
   --sidebar-active-text: #FF7A33;
-  --sidebar-icon:        #6b7894;
+  --sidebar-icon:        #94a3b8;
 
   /* ── Header & Footer ──────────────────────────────────── */
   --header-bg:   rgba(0, 29, 0, 0.95);
   --header-text: #FFFFFF;
-  --footer-bg:   #00072d;
-  --footer-text: #6b7894;
+  --footer-bg:   #0F4C64;
+  --footer-text: #94a3b8;
 
   /* ── Input ────────────────────────────────────────────── */
-  --input-bg:            #00072d;
-  --input-border:        rgba(255, 255, 255, 0.08);
+  --input-bg:            #0F4C64;
+  --input-border:        rgba(255, 255, 255, 0.14);
   --input-focus-border:  rgba(0, 180, 255, 0.45);
   --input-text:          #f0f4ff;
-  --input-placeholder:   #6b7894;
+  --input-placeholder:   #94a3b8;
   --input-disabled-bg:   rgba(255, 255, 255, 0.04);
 
   /* ── Button ───────────────────────────────────────────── */
   --btn-primary-bg:       linear-gradient(135deg, #ff4d00, #ff7a33);
   --btn-primary-text:     #ffffff;
   --btn-primary-hover-bg: linear-gradient(135deg, #ff7a33, #ff4d00);
-  --btn-glass-bg:         #00072d;
+  --btn-glass-bg:         #0F4C64;
   --btn-glass-text:       #a8b4cc;
   --btn-glass-hover-bg:   #11084d;
   --btn-glass-hover-text: #f0f4ff;
@@ -177,41 +177,47 @@
 
 html[data-theme="light"] {
   /* ── Background Layer ──────────────────────────────────── */
-  --bg-base:       #A7E6FF;
-  --bg-elevated:   #E6FEFC;
-  --bg-elevated-2: #E6FEFC;
+  --bg-base:       #F5E3D9;
+  --bg-elevated:   #F8F8FF;
+  --bg-elevated-2: #F8F8FF;
   --bg-overlay:    rgba(0, 0, 0, 0.30);
 
   /* ── Card Surface ──────────────────────────────────────── */
-  --surface-solid:          #E6FEFC;
-  --surface-solid-secondary: #E6FEFC;
-  --surface-solid-tertiary:  #E6FEFC;
+  --surface-solid:          #F8F8FF;
+  --surface-solid-secondary: #F8F8FF;
+  --surface-solid-tertiary:  #F8F8FF;
 
-  --card-bg:           #E6FEFC;
+  --card-bg:           #F8F8FF;
   --card-bg-hover:     rgba(255, 255, 255, 0.90);
-  --card-border:       rgba(148, 163, 184, 0.15);
+  --card-border:       rgba(15, 23, 42, 0.18);
   --card-border-hover: rgba(255, 77, 0, 0.25);
-  --card-shadow:       0 4px 24px rgba(0, 0, 0, 0.04);
-  --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.07);
+  /* FD-4 (Phase B): Sun elevation — two-layer shadow (contact + spread) for
+     perceivable card lift on #A7E6FF/#E6FEFC; alpha kept gentle per design language. */
+  --card-shadow:       0 1px 2px rgba(9, 19, 21, 0.06), 0 4px 16px rgba(9, 19, 21, 0.10);
+  --card-shadow-hover: 0 2px 4px rgba(9, 19, 21, 0.08), 0 12px 32px rgba(9, 19, 21, 0.14);
 
   /* ── Border ────────────────────────────────────────────── */
-  --border-color: rgba(148, 163, 184, 0.20);
+  --border-color: rgba(15, 23, 42, 0.18);
   --border-light: rgba(148, 163, 184, 0.12);
 
   /* ── Typography ────────────────────────────────────────── */
+  /* FD-3 (Phase B, 2026-09-05): tertiary/muted darkened from #6B7280 (3.55:1
+     on #A7E6FF — sub-AA) to #4B5563 (5.54:1 page / 7.18:1 card / 7.56:1 input).
+     Hierarchy preserved: primary #000000 (21) > secondary #374151 (9.8)
+     > tertiary/muted #4B5563 (7.2). Moon :root values unchanged. */
   --text-primary:   #000000;
   --text-secondary: #374151;
-  --text-tertiary:  #6B7280;
-  --text-muted:     #6B7280;
+  --text-tertiary:  #4B5563;
+  --text-muted:     #4B5563;
   --text-on-accent: #FFFFFF;
 
   /* ── Glass (light-appropriate frosted) ──────────────────── */
-  --glass-bg: #E6FEFC;
+  --glass-bg: #F8F8FF;
   --glass-bg-hover: #f1f5f9;
-  --glass-border:       rgba(148, 163, 184, 0.15);
+  --glass-border:       rgba(15, 23, 42, 0.18);
   --glass-border-hover: rgba(255, 77, 0, 0.25);
-  --glass-shadow:       0 4px 24px rgba(0, 0, 0, 0.04);
-  --glass-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.07);
+  --glass-shadow:       0 1px 2px rgba(9, 19, 21, 0.06), 0 4px 16px rgba(9, 19, 21, 0.10);
+  --glass-shadow-hover: 0 2px 4px rgba(9, 19, 21, 0.08), 0 12px 32px rgba(9, 19, 21, 0.14);
 
   /* ── Neon RGB (shared — brand presence in light mode) ──── */
   --neon-blue-rgb:   0, 180, 255;
@@ -248,7 +254,7 @@ html[data-theme="light"] {
 
   /* ── Shadow ───────────────────────────────────────────── */
   --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-md:  0 4px 12px rgba(9, 19, 21, 0.10);
   --shadow-lg:  0 8px 40px rgba(0, 0, 0, 0.04);
   --shadow-xl:  0 16px 64px rgba(0, 0, 0, 0.07);
 
@@ -287,7 +293,10 @@ html[data-theme="light"] {
   --input-border:        rgba(148, 163, 184, 0.3);
   --input-focus-border:  #FF4D00;
   --input-text:          #000000;
-  --input-placeholder:   #9CA3AF;
+  /* FD-3 (Phase B): placeholder #9CA3AF (2.54:1 on #FFFFFF input — sub-AA) ->
+     #6B7280 (4.83:1 on input; distinct from input-text #000000 so entered
+     values remain visually distinguishable from placeholder hints). */
+  --input-placeholder:   #6B7280;
   --input-disabled-bg:   #F3F4F6;
 
   /* ── Button ───────────────────────────────────────────── */
@@ -323,7 +332,7 @@ html[data-theme="light"] {
 
 /* Navbar capsule fill (inline style hook — dark fallback unchanged) */
 html[data-theme="light"] {
-  --nav-capsule-fill: #E6FEFC;
+  --nav-capsule-fill: #F8F8FF;
 }
 
 /* Selection: brand-accent fill + guaranteed-readable label */
@@ -1886,7 +1895,7 @@ html[data-theme="light"] .badge-orange {
   @apply rounded-xl backdrop-blur-xl;
   border: 1px solid transparent;
   background-image:
-    linear-gradient(var(--surface-solid, #00072d), var(--surface-solid, #00072d)),
+    linear-gradient(var(--surface-solid, #0F4C64), var(--surface-solid, #0F4C64)),
     linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07));
   background-clip: padding-box, border-box;
   background-origin: border-box;
@@ -1895,7 +1904,7 @@ html[data-theme="light"] .badge-orange {
 
 .glass-card:hover {
   background-image:
-    linear-gradient(var(--surface-solid, #00072d), var(--surface-solid, #00072d)),
+    linear-gradient(var(--surface-solid, #0F4C64), var(--surface-solid, #0F4C64)),
     linear-gradient(135deg, rgba(0, 180, 255, 0.55), rgba(168, 85, 247, 0.45), rgba(247, 37, 133, 0.40), rgba(255, 170, 0, 0.35), rgba(6, 255, 200, 0.45), rgba(0, 180, 255, 0.55));
   background-size: 100% 100%, 300% 300%;
   animation: prismSpin 6s linear infinite;
