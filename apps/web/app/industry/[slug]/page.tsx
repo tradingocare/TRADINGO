@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { ChevronRight, LayoutGrid, Package, Building2 } from 'lucide-react';
 import { getProducts } from '@/lib/api/products';
 import { getIndustry } from '@/lib/api/industries';
+import { buildSelfCanonical, ROBOTS_INDEX_FOLLOW } from '@/lib/seo/seo-policy';
 import type { Product } from '@/lib/api/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,9 @@ import { fromBasicProduct } from '@/components/product/card-converters';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  // PHASE 2-A §7 — self-canonical for industry landings (was missing).
+  // Title/description from the real industry record (unchanged behavior).
+  const canonical = buildSelfCanonical(`https://tradingo.in/industry/${slug}`, {});
   try {
     const industry: any = await getIndustry(slug);
     return {
@@ -24,9 +28,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         title: `${industry.name} Industry | TRADINGO`,
         description: `Find ${industry.name} products and suppliers.`,
       },
+      robots: ROBOTS_INDEX_FOLLOW,
+      alternates: { canonical },
     };
   } catch {
-    return { title: 'Industry | TRADINGO' };
+    return { title: 'Industry | TRADINGO', robots: ROBOTS_INDEX_FOLLOW, alternates: { canonical } };
   }
 }
 
@@ -158,7 +164,7 @@ async function IndustryContent({ slug }: { slug: string }) {
         title={`Join the ${industry.name} Industry on TRADINGO`}
         subtitle="Connect with buyers and sellers in your industry today."
         primaryLabel="Get Started"
-        primaryHref="/seller-plans"
+        primaryHref="/plans"
         secondaryLabel="Browse All Industries"
         secondaryHref="/industries"
         variant="accent"

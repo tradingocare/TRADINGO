@@ -4,14 +4,50 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronRight, Package } from 'lucide-react';
 import { getProducts } from '@/lib/api/products';
-import type { Product } from '@/lib/api/types';
-import { ProductCard } from '@/components/product/product-card';
-import { fromBasicProduct } from '@/components/product/card-converters';
-import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
+import { getCategory } from '@/lib/api/categories';
+import { buildSelfCanonical, ROBOTS_INDEX_FOLLOW } from '@/lib/seo/seo-policy';
 
+/**
+ * PHASE 2-A §6 — category metadata from authoritative SEO fields.
+ * CURRENT: title/description built by title-casing the URL slug; no canonical.
+ * PROBLEM: ignores the authoritative Category.seoTitle / seoDescription fields.
+ * POLICY: where a valid category record exists for the slug AND carries
+ *   non-empty seoTitle/seoDescription, use those verbatim (no rewriting);
+ *   otherwise keep the exact previous title-cased fallback. Self-canonical
+ *   always. Listing behavior, UX, and breadcrumbs are untouched.
+ * DOCUMENTED GAP: CatalogCategory.seoTitle/seoDescription has NO public read
+ *   path from the web app (enterprise taxonomy-tree endpoint is admin-guarded;
+ *   /search/catalog is relevance-ranked, not an exact lookup; the
+ *   category-mapping resolver returns IDs only). The legacy Category record
+ *   shares this route's slug namespace and the same field semantics, so it is
+ *   the authoritative-per-URL fallback. A minimal public
+ *   catalog-category-by-slug endpoint is recommended as a Phase 2-B item.
+ */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const categoryName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const canonical = buildSelfCanonical(`https://tradingo.in/categories/${slug}`, {});
+  try {
+    const record = await getCategory(slug).catch(() => null);
+    const seoTitle = record?.seoTitle?.trim();
+    const seoDescription = record?.seoDescription?.trim();
+    if (seoTitle || seoDescription) {
+      return {
+        title: seoTitle || `${categoryName} - Browse Products`,
+        description:
+          seoDescription ||
+          `Explore ${categoryName} products on TRADINGO TEM E-Marketplace. Find quality suppliers and competitive prices.`,
+        openGraph: {
+          title: seoTitle || `${categoryName} | TRADINGO`,
+          description: seoDescription || `Browse ${categoryName} products from verified sellers.`,
+        },
+        robots: ROBOTS_INDEX_FOLLOW,
+        alternates: { canonical },
+      };
+    }
+  } catch {
+    // fall through to the previous title-cased metadata (never break the route)
+  }
   return {
     title: `${categoryName} - Browse Products`,
     description: `Explore ${categoryName} products on TRADINGO TEM E-Marketplace. Find quality suppliers and competitive prices.`,
@@ -19,8 +55,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: `${categoryName} | TRADINGO`,
       description: `Browse ${categoryName} products from verified sellers.`,
     },
+    robots: ROBOTS_INDEX_FOLLOW,
+    alternates: { canonical },
   };
 }
+import type { Product } from '@/lib/api/types';
+import { ProductCard } from '@/components/product/product-card';
+import { fromBasicProduct } from '@/components/product/card-converters';
+import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 
 const shimmer = 'relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent'
 
