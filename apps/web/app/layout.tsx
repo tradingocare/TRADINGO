@@ -13,6 +13,7 @@ import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 import { Providers } from '@/components/providers/providers';
 import { ServiceWorkerRegister } from '@/components/shared/service-worker-register';
 import { PwaInstallPrompt } from '@/components/shared/pwa-install-prompt';
+import Script from 'next/script';
 import { Toaster } from '@/components/ui/toaster';
 import { ScrollToTop } from '@/components/ui/scroll-to-top';
 import CompareBar from '@/components/product/compare-bar';
@@ -23,6 +24,21 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800', '900'], variable: '--font-display' });
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in';
+
+/**
+ * THEME-UI Phase A — SSR theme bootstrap (investigation finding ARCH-1 P0).
+ *
+ * Pre-Phase A, SSR HTML shipped with no `.dark` class / `data-theme` attribute:
+ * CSS-var tokens defaulted to Moon (`:root`) but all `dark:` utilities and
+ * `.dark`-scoped rules stayed inert until ThemeProvider's effect ran, leaving a
+ * mixed-theme window on every fresh visit. This deterministic inline script
+ * runs before first paint and establishes the same theme representation the
+ * ThemeProvider manages (localStorage key `tradingo-theme`, allow-list
+ * `light`|`dark`, fallback `dark` — matching the provider default).
+ * It does not replace or alter ThemeProvider; it only pre-sets the DOM state
+ * the provider will re-affirm on hydration.
+ */
+const themeBootstrapScript = `(function(){try{var t=localStorage.getItem('tradingo-theme');if(t!=='light'&&t!=='dark'){t='dark';}var d=document.documentElement;if(t==='dark'){d.classList.add('dark');}else{d.classList.remove('dark');}d.setAttribute('data-theme',t);}catch(e){var d2=document.documentElement;d2.classList.add('dark');d2.setAttribute('data-theme','dark');}})();`;
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -103,6 +119,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script id="tradingo-theme-bootstrap" strategy="beforeInteractive">
+          {themeBootstrapScript}
+        </Script>
+      </head>
       <body className={`${inter.variable} ${playfair.variable} min-h-screen antialiased`}>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-accent focus:text-btn-primary-text focus:rounded-lg focus:outline-none">
           Skip to main content

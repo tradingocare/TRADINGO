@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 export default function ClaimYourGrowth() {
   return (
     <section className="relative overflow-hidden py-14 sm:py-16 lg:py-20">

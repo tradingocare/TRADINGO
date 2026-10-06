@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import HeroSection from '@/components/sections/HeroSection';
 import TradingAcrossBorders from '@/components/sections/TradingAcrossBorders';
 import IndiaHubs from '@/components/sections/IndiaHubs';
