@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'TRADINGO — The Global Smart Trade System. Discover, connect, negotiate, and grow through trust, technology, and transparency.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#004B49',
+    background_color: '#1F261C',
     theme_color: '#0F4C64',
     orientation: 'portrait-primary',
     categories: ['business', 'shopping', 'ecommerce'],

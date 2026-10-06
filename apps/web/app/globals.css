@@ -17,7 +17,7 @@
 
 :root {
   /* ── Background Layer ──────────────────────────────────── */
-  --bg-base:       #004B49;
+  --bg-base:       #1F261C;
   --bg-elevated:   #0F4C64;
   --bg-elevated-2: var(--bg-elevated);
   --bg-overlay:    rgba(0, 0, 28, 0.85);
