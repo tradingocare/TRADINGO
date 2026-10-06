@@ -18,10 +18,10 @@ COPY prisma ./prisma
 RUN npx prisma generate --schema=/app/prisma/schema.prisma
 
 # Build-time environment (Next.js inlines NEXT_PUBLIC_* at build time)
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
-ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
-ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
-ARG NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
+ARG NEXT_PUBLIC_API_URL=https://api.tradingo.in/api/v1
+ARG NEXT_PUBLIC_SITE_URL=https://tradingo.in
+ARG NEXT_PUBLIC_APP_URL=https://tradingo.in
+ARG NEXT_PUBLIC_SOCKET_URL=https://api.tradingo.in
 ARG NEXT_PUBLIC_APP_VERSION=v1.0.0
 ARG NEXT_PUBLIC_APP_ENV=production
 ARG NEXT_PUBLIC_RAZORPAY_KEY_ID=
