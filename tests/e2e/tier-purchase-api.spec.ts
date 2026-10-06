@@ -45,7 +45,7 @@ interface PlanRow {
 }
 
 async function livePlans(): Promise<PlanRow[]> {
-  const res = await api.get('/membership/plans');
+  const res = await api.get('/api/v1/membership/plans');
   expect(res.status()).toBe(200);
   const body = await res.json();
   const list = (body.data || body) as PlanRow[];
@@ -54,7 +54,7 @@ async function livePlans(): Promise<PlanRow[]> {
 }
 
 async function postGatewayOrder(dto: Record<string, unknown>) {
-  const res = await api.post('/payment/razorpay/order', {
+  const res = await api.post('/api/v1/payment/razorpay/order', {
     headers: { Authorization: `Bearer ${sellerToken}` },
     data: dto,
   });

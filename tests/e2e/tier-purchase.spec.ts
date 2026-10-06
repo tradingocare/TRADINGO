@@ -81,7 +81,17 @@ test.beforeAll(async ({ request }) => {
   // Bootstrap a real SELLER: register → onboard → use the issued tokens
   // directly (no /auth/login role-param guessing, no role faking).
   const api: APIRequestContext = request;
-  const reg = await api.post(`${API_URL}/auth/register/vendor`, { data: vendorPayload(SELLER.email, SELLER.pan, SELLER.mobile) });
+  // CSRF prehandler requires the Wassaf token + cookie pair on anonymous
+  // POSTs (same contract as the web apiClient: GET /auth/csrf first).
+  const csrfRes = await api.get(`${API_URL}/auth/csrf`);
+  if (!csrfRes.ok()) throw new Error(`bootstrap csrf failed: ${csrfRes.status()}`);
+  const csrfBody = await csrfRes.json();
+  const csrfToken: string = (csrfBody.data || csrfBody).token;
+  if (!csrfToken) throw new Error('bootstrap csrf failed: no token issued');
+  const reg = await api.post(`${API_URL}/auth/register/vendor`, {
+    headers: { 'x-csrf-token': csrfToken },
+    data: vendorPayload(SELLER.email, SELLER.pan, SELLER.mobile),
+  });
   if (!reg.ok()) throw new Error(`bootstrap register failed: ${reg.status()}`);
   const regBody = await reg.json();
   const regData = regBody.data || regBody;
