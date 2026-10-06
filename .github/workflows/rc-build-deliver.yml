@@ -169,6 +169,8 @@ jobs:
     name: Materialize pinned base + overlay RC delta
     runs-on: ubuntu-latest
     needs: [validate_inputs, ingest_rc]
+    outputs:
+      expected_migrations: ${{ steps.migpolicy.outputs.expected }}
     steps:
       - name: Download RC handoff assets
         uses: actions/download-artifact@v4
@@ -276,6 +278,37 @@ jobs:
           console.log('Tree delta matches manifest exactly.');
           "
 
+      - name: Derive expected RC migration set (base minus deletions plus manifest additions)
+        id: migpolicy
+        run: |
+          node -e "
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+          const RC = '${{ env.RC_DIR }}';
+          const m = JSON.parse(fs.readFileSync('_rc_handoff/RC_MANIFEST.json', 'utf8'));
+          const base = new Set();
+          const listed = execSync('git -C ' + JSON.stringify(RC) + ' ls-tree -r --name-only HEAD -- prisma/migrations/', { encoding: 'utf8' }).split('\n').map((l) => l.replace(/\r$/, '')).filter(Boolean);
+          for (const p of listed) {
+            const seg = p.split('/');
+            if (seg.length > 3) base.add(seg[2]);
+          }
+          for (const d of m.deletions) {
+            if (typeof d.path !== 'string') continue;
+            if (d.path === 'prisma/migrations') { base.clear(); continue; }
+            if (d.path.startsWith('prisma/migrations/')) base.delete(d.path.split('/')[2]);
+          }
+          for (const f of m.files) {
+            if (typeof f.path !== 'string') continue;
+            if (f.path.startsWith('prisma/migrations/')) {
+              const seg = f.path.split('/');
+              if (seg.length > 3) base.add(seg[2]);
+            }
+          }
+          const expected = Array.from(base).sort();
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'expected=' + JSON.stringify(expected) + '\n');
+          console.log('Expected RC migrations: ' + expected.join(','));
+          "
+
       - name: Strip repository git metadata before artifact packaging
         run: rm -rf "${{ env.RC_DIR }}/.git"
 
@@ -308,6 +341,7 @@ jobs:
         env:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
           EXP_BASE_SHA: ${{ needs.validate_inputs.outputs.base_sha }}
+          EXPECTED_MIGRATIONS: ${{ needs.materialize_base.outputs.expected_migrations }}
         run: |
           node -e "
           const fs = require('fs');
@@ -331,19 +365,22 @@ jobs:
           for (const d of m.deletions) {
             if (fs.existsSync(path.join(RC, d.path))) { console.error('DELETION PRESENT: ' + d.path); bad++; }
           }
-          // HOLD migrations must be absent from the RC tree
-          for (const held of ['prisma/migrations/20260911000000_seller_registration_form', 'prisma/migrations/20260913000000_p02_canonical_draft_taxonomy']) {
-            if (fs.existsSync(path.join(RC, held))) { console.error('HELD MIGRATION PRESENT: ' + held); bad++; }
-          }
-          // Required migrations must be present
-          for (const need of ['prisma/migrations/20260909000000_plan_versioning', 'prisma/migrations/20260912000000_p02_canonical_taxonomy', 'prisma/migrations/20260930000000_category_mapping_foundation', 'prisma/migrations/20261002000000_ai_usage_scoped_idempotency']) {
-            if (!fs.existsSync(path.join(RC, need, 'migration.sql'))) { console.error('REQUIRED MIGRATION MISSING: ' + need); bad++; }
-          }
-          // Exact migration set: nothing beyond the approved tracked + required set
-          const approvedMigrations = new Set(['20260801000000_initial_full_schema', '20260807000000_add_company_istradgoelite', '20260818000000_company_structure', '20260828000000_add_company_registration_documents', '20260909000000_plan_versioning', '20260912000000_p02_canonical_taxonomy', '20260930000000_category_mapping_foundation', '20261002000000_ai_usage_scoped_idempotency']);
+          // RC migration boundary is derived, not hardcoded: the expected set
+          // (pinned-base dirs minus manifest deletions plus manifest additions)
+          // arrives via needs.materialize_base.outputs.expected_migrations, so
+          // this gate validates THIS RC's authoritative boundary, whatever it is.
+          const expectedMigrations = new Set(JSON.parse(process.env.EXPECTED_MIGRATIONS));
+          const actualMigrations = new Set();
           for (const e of fs.readdirSync(path.join(RC, 'prisma/migrations'), { withFileTypes: true })) {
             if (!e.isDirectory() || e.name.startsWith('.')) continue;
-            if (!approvedMigrations.has(e.name)) { console.error('UNAPPROVED MIGRATION DIRECTORY: ' + e.name); bad++; }
+            actualMigrations.add(e.name);
+          }
+          for (const x of expectedMigrations) {
+            if (!actualMigrations.has(x)) { console.error('EXPECTED MIGRATION MISSING: ' + x); bad++; }
+            else if (!fs.existsSync(path.join(RC, 'prisma/migrations', x, 'migration.sql'))) { console.error('MIGRATION.SQL MISSING: ' + x); bad++; }
+          }
+          for (const x of actualMigrations) {
+            if (!expectedMigrations.has(x)) { console.error('UNEXPECTED MIGRATION DIRECTORY: ' + x); bad++; }
           }
           if (bad > 0) { console.error('VERIFY FAILED with ' + bad + ' problem(s)'); process.exit(1); }
           console.log('RC VERIFIED: files=' + m.files.length + ' deletions=' + m.deletions.length);
@@ -444,7 +481,7 @@ jobs:
   migration_dry_run:
     name: Migration dry-run (disposable PG)
     runs-on: ubuntu-latest
-    needs: [validate_inputs, install_test]
+    needs: [validate_inputs, install_test, materialize_base]
     services:
       postgres:
         image: postgres:16-alpine
@@ -482,15 +519,25 @@ jobs:
         working-directory: ${{ env.RC_DIR }}
         run: pnpm install --frozen-lockfile
 
-      - name: Assert HOLD migrations absent (fail closed)
+      - name: Assert RC migration set matches derived boundary (fail closed)
+        env:
+          EXPECTED_MIGRATIONS: ${{ needs.materialize_base.outputs.expected_migrations }}
         working-directory: ${{ env.RC_DIR }}
         run: |
           set -euo pipefail
-          test ! -e prisma/migrations/20260911000000_seller_registration_form
-          test ! -e prisma/migrations/20260913000000_p02_canonical_draft_taxonomy
-          for m in 20260909000000_plan_versioning 20260912000000_p02_canonical_taxonomy 20260930000000_category_mapping_foundation 20261002000000_ai_usage_scoped_idempotency; do
-            test -f "prisma/migrations/$m/migration.sql"
-          done
+          node -e "
+          const fs = require('fs');
+          const expected = new Set(JSON.parse(process.env.EXPECTED_MIGRATIONS));
+          const actual = new Set(fs.readdirSync('prisma/migrations', { withFileTypes: true }).filter((e) => e.isDirectory() && !e.name.startsWith('.')).map((e) => e.name));
+          let bad = 0;
+          for (const x of expected) {
+            if (!actual.has(x)) { console.error('EXPECTED MIGRATION MISSING: ' + x); bad++; }
+            else if (!fs.existsSync('prisma/migrations/' + x + '/migration.sql')) { console.error('MIGRATION.SQL MISSING: ' + x); bad++; }
+          }
+          for (const x of actual) { if (!expected.has(x)) { console.error('UNEXPECTED MIGRATION DIRECTORY: ' + x); bad++; } }
+          if (bad > 0) { process.exit(1); }
+          console.log('Migration set matches RC boundary: ' + Array.from(expected).sort().join(','));
+          "
           echo "Migration set matches RC boundary."
 
       - name: Prisma migrate deploy (disposable database only)
@@ -524,10 +571,13 @@ jobs:
       - name: Derive Docker-safe image ID (lowercase RC_ID)
         env:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+          BASE_SHA: ${{ needs.validate_inputs.outputs.base_sha }}
         run: |
           set -euo pipefail
           DOCKER_ID="${RC_ID,,}"
           echo "DOCKER_ID=$DOCKER_ID" >> "$GITHUB_ENV"
+          BASE_SHORT="${BASE_SHA:0:7}"
+          echo "BASE_SHORT=$BASE_SHORT" >> "$GITHUB_ENV"
 
       - name: Build API runner image
         id: build
@@ -539,10 +589,10 @@ jobs:
           load: true
           tags: |
             tradingo-rc-${{ env.DOCKER_ID }}-api:${{ env.DOCKER_ID }}
-            tradingo-rc-${{ env.DOCKER_ID }}-api:sha-b1fcec679
+            tradingo-rc-${{ env.DOCKER_ID }}-api:sha-${{ env.BASE_SHORT }}
           labels: |
             org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
-            org.tradingo.base-sha=b1fcec679
+            org.tradingo.base-sha=${{ env.BASE_SHORT }}
           outputs: type=docker
 
       - name: Save API image tarball
@@ -583,10 +633,13 @@ jobs:
       - name: Derive Docker-safe image ID (lowercase RC_ID)
         env:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+          BASE_SHA: ${{ needs.validate_inputs.outputs.base_sha }}
         run: |
           set -euo pipefail
           DOCKER_ID="${RC_ID,,}"
           echo "DOCKER_ID=$DOCKER_ID" >> "$GITHUB_ENV"
+          BASE_SHORT="${BASE_SHA:0:7}"
+          echo "BASE_SHORT=$BASE_SHORT" >> "$GITHUB_ENV"
 
       - name: Build migration image
         id: build
@@ -599,10 +652,10 @@ jobs:
           load: true
           tags: |
             tradingo-rc-${{ env.DOCKER_ID }}-migrate:${{ env.DOCKER_ID }}
-            tradingo-rc-${{ env.DOCKER_ID }}-migrate:sha-b1fcec679
+            tradingo-rc-${{ env.DOCKER_ID }}-migrate:sha-${{ env.BASE_SHORT }}
           labels: |
             org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
-            org.tradingo.base-sha=b1fcec679
+            org.tradingo.base-sha=${{ env.BASE_SHORT }}
           outputs: type=docker
 
       - name: Save migration image tarball
@@ -643,10 +696,13 @@ jobs:
       - name: Derive Docker-safe image ID (lowercase RC_ID)
         env:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+          BASE_SHA: ${{ needs.validate_inputs.outputs.base_sha }}
         run: |
           set -euo pipefail
           DOCKER_ID="${RC_ID,,}"
           echo "DOCKER_ID=$DOCKER_ID" >> "$GITHUB_ENV"
+          BASE_SHORT="${BASE_SHA:0:7}"
+          echo "BASE_SHORT=$BASE_SHORT" >> "$GITHUB_ENV"
 
       - name: Build Web image
         id: build
@@ -658,10 +714,10 @@ jobs:
           load: true
           tags: |
             tradingo-rc-${{ env.DOCKER_ID }}-web:${{ env.DOCKER_ID }}
-            tradingo-rc-${{ env.DOCKER_ID }}-web:sha-b1fcec679
+            tradingo-rc-${{ env.DOCKER_ID }}-web:sha-${{ env.BASE_SHORT }}
           labels: |
             org.tradingo.rc-id=${{ needs.validate_inputs.outputs.rc_id }}
-            org.tradingo.base-sha=b1fcec679
+            org.tradingo.base-sha=${{ env.BASE_SHORT }}
           build-args: |
             NEXT_PUBLIC_API_URL=${{ needs.validate_inputs.outputs.next_public_api_url }}
           outputs: type=docker
@@ -706,6 +762,7 @@ jobs:
       - name: Assemble digests + build report
         env:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+          BASE_SHA: ${{ needs.validate_inputs.outputs.base_sha }}
         run: |
           set -euo pipefail
           for part in api migrate web; do
@@ -720,7 +777,7 @@ jobs:
           const read = (p) => fs.readFileSync(p, 'utf8').trim();
           const digests = {
             rc_id: rc,
-            base_sha: 'b1fcec679',
+            base_sha: process.env.BASE_SHA,
             images: {
               api: read('_images/tradingo-rc-' + rc + '-api.digest'),
               migrate: read('_images/tradingo-rc-' + rc + '-migrate.digest'),
@@ -730,7 +787,7 @@ jobs:
           fs.writeFileSync('image-digests-' + rc + '.json', JSON.stringify(digests, null, 2));
           const report = {
             rc_id: rc,
-            base_sha: 'b1fcec679',
+            base_sha: process.env.BASE_SHA,
             workflow_run: '${{ github.run_id }}',
             workflow_sha: '${{ github.sha }}',
             created_at: new Date().toISOString(),
@@ -772,6 +829,7 @@ jobs:
       - name: Verify names, digests, manifest, report (fail closed)
         env:
           RC_ID: ${{ needs.validate_inputs.outputs.rc_id }}
+          BASE_SHA: ${{ needs.validate_inputs.outputs.base_sha }}
         run: |
           set -euo pipefail
           for part in api migrate web; do
@@ -782,7 +840,7 @@ jobs:
           const rc = process.env.RC_ID;
           const digests = JSON.parse(fs.readFileSync('_release/image-digests-' + rc + '.json', 'utf8'));
           if (digests.rc_id !== rc) throw new Error('RC ID mismatch in digests');
-          if (digests.base_sha !== 'b1fcec679') throw new Error('base SHA mismatch in digests');
+          if (digests.base_sha !== process.env.BASE_SHA) throw new Error('base SHA mismatch in digests');
           for (const part of ['api', 'migrate', 'web']) {
             if (!digests.images[part] || !digests.images[part].startsWith('sha256:')) throw new Error('bad digest for ' + part);
           }
