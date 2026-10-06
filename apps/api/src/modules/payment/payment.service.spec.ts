@@ -47,6 +47,9 @@ const mockPrisma = {
     count: jest.fn(),
     findUnique: jest.fn(),
   },
+  invoiceSequence: {
+    upsert: jest.fn().mockResolvedValue({ lastSeq: 1 }),
+  },
   auditLog: {
     create: jest.fn(),
   },
