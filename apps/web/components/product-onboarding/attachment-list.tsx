@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { FileText, Image, FileSpreadsheet, File, GripVertical, X, Filter } from 'lucide-react';
@@ -20,7 +20,7 @@ function getAttachmentIcon(type: string) {
 }
 
 function formatFileSize(bytes?: number): string {
-  if (!bytes) return '—';
+  if (!bytes) return 'â€”';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -73,7 +73,7 @@ export function AttachmentList({ attachments, onChange, types }: AttachmentListP
               'rounded-lg px-3 py-1 text-xs font-medium transition-colors',
               activeFilter === type
                 ? 'bg-accent-500/10 text-accent-600 dark:bg-accent-500/20 dark:text-accent-400'
-                : 'bg-surface-secondary text-text-secondary hover:bg-surface-tertiary dark:bg-dark-surface-secondary dark:text-dark-text-secondary dark:hover:bg-dark-surface-tertiary',
+                : 'bg-surface-secondary text-text-secondary hover:bg-surface-tertiary bg-surface-secondary text-text-secondary hover:bg-surface-tertiary',
             )}
           >
             {type}
@@ -91,7 +91,7 @@ export function AttachmentList({ attachments, onChange, types }: AttachmentListP
       </div>
 
       {filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-10 text-center dark:border-dark-border dark:bg-dark-surface-secondary">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-10 text-center">
           <File className="mb-2 h-8 w-8 text-text-tertiary" />
           <p className="text-sm text-text-tertiary">
             {activeFilter
@@ -113,7 +113,7 @@ export function AttachmentList({ attachments, onChange, types }: AttachmentListP
               onDragOver={(e) => handleDragOver(e, actualIndex)}
               onDragEnd={handleDragEnd}
               className={cn(
-                'flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 transition-all dark:border-dark-border dark:bg-dark-surface',
+                'flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 transition-all border-border bg-surface',
                 dragIndex === actualIndex && 'opacity-50 shadow-md',
                 'hover:border-primary-300 dark:hover:border-primary-600',
               )}
@@ -121,16 +121,16 @@ export function AttachmentList({ attachments, onChange, types }: AttachmentListP
               <div className="cursor-grab text-text-tertiary hover:text-text-secondary">
                 <GripVertical className="h-4 w-4" />
               </div>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary dark:text-dark-text-secondary">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-secondary text-text-secondary">
                 <Icon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                <p className="truncate text-sm font-medium text-text-primary">
                   {attachment.title || attachment.url.split('/').pop() || 'Untitled'}
                 </p>
                 <div className="flex items-center gap-3 text-xs text-text-tertiary">
                   <span>{formatFileSize(attachment.fileSize)}</span>
-                  <span className="rounded bg-surface-secondary px-1.5 py-0.5 dark:bg-dark-surface-secondary">
+                  <span className="rounded bg-surface-secondary px-1.5 py-0.5">
                     {attachment.type}
                   </span>
                 </div>

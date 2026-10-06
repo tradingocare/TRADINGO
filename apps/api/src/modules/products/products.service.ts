@@ -9,6 +9,9 @@ import { Role } from '../../common/enums/role.enum';
 import { v4 as uuid } from 'uuid';
 import { ProductAttributeDisplayService } from './services/product-attribute-display.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { MembershipService } from '../membership/membership.service';
+import { MarketplaceCatalogBridgeService } from '../marketplace-catalog-bridge/marketplace-catalog-bridge.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `prod-${uuid().slice(0, 8)}`;
@@ -31,6 +34,9 @@ export class ProductsService {
     private readonly searchService: SearchService,
     private readonly attributeDisplayService: ProductAttributeDisplayService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly membershipService: MembershipService,
+    private readonly catalogBridge: MarketplaceCatalogBridgeService,
+    private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
   ) {}
 
   private normalizeProduct(product: any) {
@@ -217,13 +223,40 @@ export class ProductsService {
     const slug = await this.generateUniqueSlug(dto.name, company.slug);
 
     if (dto.media?.length) this.validateMediaLimits(dto.media);
-    if (dto.priceSlabs?.length) this.validatePriceSlabs(dto.priceSlabs);
+    if (dto.priceSlabs?.length) {
+      this.validatePriceSlabs(dto.priceSlabs);
+      // 2B-2B: slab-count cap for version-pinned companies (legacy: no-op).
+      await this.membershipService.enforcePriceTierLimit(dto.companyId, dto.priceSlabs.length, 0);
+    }
+
+    // P0-2: resolve canonical triple (confirmed triple first, then
+    // deterministic exact-only classify). Null keeps legacy behavior.
+    const canonical = await this.taxonomyPersistence.resolvePersistableTaxonomy({
+      confirmed: {
+        categoryId: dto.catalogCategoryId ?? null,
+        subcategoryId: dto.catalogSubcategoryId ?? null,
+        catalogItemId: dto.catalogItemId ?? null,
+      },
+      name: dto.name,
+      description: dto.shortDescription ?? dto.description ?? null,
+      brand: dto.brand ?? null,
+      context: 'product',
+      expectedType: 'Product',
+    });
+    let legacyCategoryId = dto.categoryId;
+    if (canonical && !legacyCategoryId) {
+      legacyCategoryId =
+        (await this.taxonomyPersistence.bridgeLegacyCategoryId(canonical.categoryId)) ?? undefined;
+    }
 
     const product = await this.prisma.$transaction(async (tx) => {
       const p = await tx.product.create({
         data: {
           companyId: dto.companyId,
-          categoryId: dto.categoryId,
+          categoryId: legacyCategoryId,
+          catalogItemId: canonical?.catalogItemId ?? null,
+          catalogCategoryId: canonical?.categoryId ?? null,
+          catalogSubcategoryId: canonical?.subcategoryId ?? null,
           industryId: dto.industryId,
           name: dto.name,
           slug,
@@ -316,10 +349,20 @@ export class ProductsService {
 
   async findAll(query: {
     cursor?: string; limit?: number; search?: string;
-    companyId?: string; categoryId?: string; industryId?: string;
+    companyId?: string; categoryId?: string; category?: string; industryId?: string;
     productType?: string; status?: string; ownerId?: string; isFeatured?: string;
   }) {
-    const { cursor, search, companyId, categoryId, industryId, productType, status, isFeatured } = query;
+    const { cursor, search, companyId, industryId, productType, status, isFeatured } = query;
+    let { categoryId } = query;
+    // Phase 14 — identifier contract: accept `category` as slug-or-ID.
+    // Unresolvable slug => honest empty (never unfiltered-wrong).
+    if (!categoryId && query.category) {
+      const resolved = await this.catalogBridge.resolveLegacyCategorySlugOrId(query.category);
+      if (!resolved) {
+        return { data: [], meta: { total: 0, limit: Number(query.limit) || 20, cursor: undefined } };
+      }
+      categoryId = resolved.id;
+    }
     const limit = Number(query.limit) || 20;
     const where: Prisma.ProductWhereInput = { deletedAt: null };
 
@@ -404,7 +447,7 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({
       where: { slug, deletedAt: null, status: 'ACTIVE' },
       include: {
-        company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true, responseRate: true, gstNumber: true, totalProducts: true, certificationDocs: { where: { status: 'APPROVED' }, select: { id: true, type: true, documentNumber: true } }, locations: { where: { isPrimary: true }, select: { city: true, state: true }, take: 1 } } },
+        company: { select: { id: true, name: true, slug: true, logo: true, trustScore: true, verificationLevel: true, responseRate: true, gstNumber: true, totalProducts: true, establishedYear: true, businessType: true, employeeCount: true, certificationDocs: { where: { status: 'APPROVED' }, select: { id: true, type: true, documentNumber: true } }, locations: { where: { isPrimary: true }, select: { city: true, state: true }, take: 1 } } },
         category: { select: { id: true, name: true, slug: true } },
         industry: { select: { id: true, name: true, slug: true } },
         media: { orderBy: { sortOrder: 'asc' } },
@@ -436,9 +479,47 @@ export class ProductsService {
     await this.requireCompanyOwner(product.companyId, userId);
 
     if (dto.media?.length) this.validateMediaLimits(dto.media);
-    if (dto.priceSlabs?.length) this.validatePriceSlabs(dto.priceSlabs);
+    if (dto.priceSlabs?.length) {
+      this.validatePriceSlabs(dto.priceSlabs);
+      // 2B-2B: slab-count cap with grandfathering — an update is never
+      // blocked merely because the existing slab count already exceeds a
+      // reduced cap (legacy subscribers: no-op).
+      const existingSlabs = await this.prisma.productPriceSlab.count({ where: { productId: id } });
+      await this.membershipService.enforcePriceTierLimit(product.companyId, dto.priceSlabs.length, existingSlabs);
+    }
 
-    const { media, specifications, variants, availableQuantity, minimumThreshold, priceSlabs, ...updateData } = dto;
+    const { media, specifications, variants, availableQuantity, minimumThreshold, priceSlabs, catalogItemId, catalogCategoryId, catalogSubcategoryId, ...restData } = dto;
+    const updateData: Record<string, unknown> = { ...restData };
+
+    // P0-2: a confirmed canonical triple on update validates server-side and
+    // replaces the persisted lineage (Tick/Change). Invalid confirmation is
+    // refused (400) rather than silently dropped or fabricated.
+    if (catalogItemId !== undefined || catalogCategoryId !== undefined || catalogSubcategoryId !== undefined) {
+      const hasAny = Boolean(catalogItemId || catalogCategoryId || catalogSubcategoryId);
+      const validated = hasAny
+        ? await this.taxonomyPersistence.validateConfirmedTriple({
+            categoryId: catalogCategoryId ?? null,
+            subcategoryId: catalogSubcategoryId ?? null,
+            catalogItemId: catalogItemId ?? null,
+            expectedType: 'Product',
+          })
+        : null;
+      if (hasAny && !validated) {
+        throw new BadRequestException('Invalid canonical taxonomy — pick from the structured catalog');
+      }
+      if (validated) {
+        // P1 O-1: atomic canonical-triple write — item + category columns
+        // move together (create-path parity).
+        Object.assign(updateData, this.taxonomyPersistence.applyCanonicalTriple(validated));
+        if (!updateData.categoryId) {
+          updateData.categoryId =
+            (await this.taxonomyPersistence.bridgeLegacyCategoryId(validated.categoryId)) ?? undefined;
+        }
+      } else {
+        // P1 O-1: deliberate clear nulls the entire triple (never item-only).
+        Object.assign(updateData, this.taxonomyPersistence.applyCanonicalTriple(null));
+      }
+    }
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const u = await tx.product.update({

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Globe, Zap, Shield } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -20,12 +20,12 @@ const sellerFeatures = FEATURES_SELLER;
 
 const sellerPlans = SELLER_PRICING_PLANS.map(p => ({
   name: p.name,
-  price: p.price === '₹0' ? 'Free' : p.price,
+  price: p.price === 'â‚¹0' ? 'Free' : p.price,
   period: p.period === 'forever' ? 'month' : p.period.replace('/', ''),
   description: p.description,
   features: p.features,
   popular: p.popular,
-  href: '/register',
+    href: '/register/vendor',
   ...(p.name === 'Enterprise' ? { highlight: 'Best Value' } : {}),
 }));
 
@@ -52,11 +52,11 @@ export default function ForSellersPage() {
                   { value: '50,000+', label: 'Products Listed' },
                   { value: '15,000+', label: 'Active Sellers' },
                   { value: '500+', label: 'Cities Covered' },
-                  { value: '₹500Cr+', label: 'Trading Volume' },
+                  { value: 'â‚¹500Cr+', label: 'Trading Volume' },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+                  <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm">
                     <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{item.value}</p>
-                    <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">{item.label}</p>
+                    <p className="mt-2 text-sm text-text-secondary">{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -67,7 +67,7 @@ export default function ForSellersPage() {
 
       <Separator />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Seller Features"
@@ -93,12 +93,12 @@ export default function ForSellersPage() {
 
       <Separator />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Choose Your Plan"
             subtitle="Start free and upgrade as your business grows."
-            viewMoreHref="/seller-plans"
+            viewMoreHref="/plans"
             viewMoreLabel="Compare All Plans"
           />
           <PricingCards plans={sellerPlans} />
@@ -123,12 +123,12 @@ export default function ForSellersPage() {
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.title} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+                    <div key={item.title} className="rounded-xl border border-border bg-surface p-6 shadow-sm">
                       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">{item.title}</h3>
-                      <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{item.desc}</p>
+                      <h3 className="font-semibold text-text-primary">{item.title}</h3>
+                      <p className="mt-1 text-sm text-text-secondary">{item.desc}</p>
                     </div>
                   );
                 })}
@@ -142,9 +142,9 @@ export default function ForSellersPage() {
         title="Start Selling on TRADINGO Today"
         subtitle="Create your free seller account and reach millions of buyers across India."
         primaryLabel="Start Selling"
-        primaryHref="/register"
+        primaryHref="/golive"
         secondaryLabel="Learn More"
-        secondaryHref="/seller-plans"
+        secondaryHref="/plans"
         variant="accent"
       />
     </>

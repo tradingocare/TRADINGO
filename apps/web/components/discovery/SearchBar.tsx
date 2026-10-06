@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Mic, Camera, X, Clock,
-  TrendingUp,
+  Search, Mic, Camera, X,
+  Building2, Tag, ArrowRight,
 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { SearchFilters, SearchMode } from '../../types/discovery'
@@ -14,6 +14,40 @@ import { SEARCH_PLACEHOLDERS, SEARCH_MODES } from '@/data/master-data'
 const PLACEHOLDERS = SEARCH_PLACEHOLDERS
 
 const MODES = SEARCH_MODES
+
+// Real backend contract: GET /search/autocomplete returns a flat array of
+// { type: 'products' | 'companies' | 'categories' | 'industries', id, text,
+//   slug?, logo?, subText? }. The previously-called /search-ai/autocomplete
+// never existed and the grouped shape below was never actually served.
+interface AutocompleteResult {
+  type: 'products' | 'companies' | 'categories' | 'industries'
+  id: string
+  text: string
+  slug?: string
+  logo?: string
+  subText?: string
+}
+
+interface GroupedSuggestions {
+  products: AutocompleteResult[]
+  companies: AutocompleteResult[]
+  categories: AutocompleteResult[]
+}
+
+// Small adapter: groups the flat backend response by its existing `type`
+// field. No data is invented — types the UI does not render (industries) are
+// dropped, and trending/recent (previously-expected keys the backend does not
+// provide) are simply absent, which the render handles via its existing
+// optional-section guards.
+function groupAutocomplete(results: AutocompleteResult[]): GroupedSuggestions {
+  const grouped: GroupedSuggestions = { products: [], companies: [], categories: [] }
+  for (const r of results) {
+    if (r.type === 'products') grouped.products.push(r)
+    else if (r.type === 'companies') grouped.companies.push(r)
+    else if (r.type === 'categories') grouped.categories.push(r)
+  }
+  return grouped
+}
 
 interface Props {
   initialFilters: SearchFilters
@@ -27,8 +61,8 @@ export default function SearchBar({
 }: Props) {
   const [query, setQuery]         = useState(initialFilters.q || '')
   const [mode, setMode]           = useState<SearchMode>(initialFilters.mode || 'all')
-  const [suggestions, setSugg]    = useState<any>(null)
-  const [showSugg, setShowSugg]   = useState(false)
+  const [suggestions, setSugg]    = useState<GroupedSuggestions | null>(null)
+  const [showSugg, setShowSugg]    = useState(false)
   const [phIdx, setPhIdx]         = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -42,10 +76,13 @@ export default function SearchBar({
     const t = setTimeout(async () => {
       try {
         const res: any = await api.get(
-          `/search-ai/autocomplete?q=${encodeURIComponent(query)}&limit=6`
+          `/search/autocomplete?q=${encodeURIComponent(query)}&limit=8`
         )
-        setSugg(res.data || res)
-      } catch {}
+        const list: AutocompleteResult[] = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : [])
+        setSugg(list.length ? groupAutocomplete(list) : null)
+      } catch {
+        setSugg(null)
+      }
     }, 280)
     return () => clearTimeout(t)
   }, [query])
@@ -146,48 +183,58 @@ export default function SearchBar({
               border: '1px solid var(--border-color)',
               boxShadow: '0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}>
-            {!!suggestions.trending?.length && (
-              <div className="p-3">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-text-tertiary mb-2 px-2">
-                  Trending
-                </p>
-                {suggestions.trending.map((t: any) => (
-                  <button key={t.text}
-                    onClick={() => { setQuery(t.text); submit(t.text) }}
-                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-surface-secondary text-left transition-all">
-                    <TrendingUp size={13} className="text-accent" />
-                    <span className="text-text-primary text-sm">{t.text}</span>
-                    <span className="text-text-tertiary text-xs ml-auto">
-                      {t.searchCount?.toLocaleString()} searches
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
             {!!suggestions.products?.length && (
               <div className="border-t p-3" style={{ borderColor: 'var(--border-color)' }}>
                 <p className="text-[9px] font-bold uppercase tracking-widest text-text-tertiary mb-2 px-2">
                   Products
                 </p>
-                {suggestions.products.map((p: any) => (
+                {suggestions.products.map((p) => (
                   <button key={p.id}
-                    onClick={() => { setQuery(p.name); submit(p.name) }}
+                    onClick={() => { setQuery(p.text); submit(p.text) }}
                     className="flex items-center gap-3 w-full px-3 py-2 rounded-xl hover:bg-surface-secondary text-left transition-all">
                     <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-surface-secondary">
-                      {p.images?.[0]
-                        ? <img src={p.images[0]} alt="" className="w-full h-full object-cover" />
+                      {p.logo
+                        ? <img src={p.logo} alt="" className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center text-text-tertiary">
                             <Search size={14} />
                           </div>
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-text-primary text-sm truncate">{p.name}</p>
-                      <p className="text-text-tertiary text-xs">
-                        Rs {p.price}/{p.unit}
-                      </p>
+                      <p className="text-text-primary text-sm truncate">{p.text}</p>
+                      {p.subText && (
+                        <p className="text-text-tertiary text-xs truncate">{p.subText}</p>
+                      )}
                     </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!!suggestions.companies?.length && (
+              <div className="border-t p-3" style={{ borderColor: 'var(--border-color)' }}>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-text-tertiary mb-2 px-2">
+                  Suppliers
+                </p>
+                {suggestions.companies.map((c) => (
+                  <button key={c.id}
+                    onClick={() => { setQuery(c.text); submit(c.text) }}
+                    className="flex items-center gap-3 w-full px-3 py-2 rounded-xl hover:bg-surface-secondary text-left transition-all">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-surface-secondary">
+                      {c.logo
+                        ? <img src={c.logo} alt="" className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center text-text-tertiary">
+                            <Building2 size={14} />
+                          </div>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-text-primary text-sm truncate">{c.text}</p>
+                      {c.subText && (
+                        <p className="text-text-tertiary text-xs truncate">{c.subText}</p>
+                      )}
+                    </div>
+                    <ArrowRight size={13} className="text-text-tertiary flex-shrink-0" />
                   </button>
                 ))}
               </div>
@@ -199,7 +246,7 @@ export default function SearchBar({
                   Categories
                 </p>
                 <div className="flex flex-wrap gap-2 px-2">
-                  {suggestions.categories.map((c: any) => (
+                  {suggestions.categories.map((c) => (
                     <button key={c.id}
                       onClick={() => {
                         onSearch({ categoryId: c.id, q: '', page: 1 })
@@ -210,27 +257,11 @@ export default function SearchBar({
                         border: '1px solid var(--border-color)',
                         color: 'var(--text-secondary)',
                       }}>
-                      <span>{c.icon}</span>
-                      {c.name}
+                      <Tag size={11} className="flex-shrink-0" />
+                      {c.text}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {!!suggestions.recent?.length && (
-              <div className="border-t p-3" style={{ borderColor: 'var(--border-color)' }}>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-text-tertiary mb-2 px-2">
-                  Recent
-                </p>
-                {suggestions.recent.map((r: string) => (
-                  <button key={r}
-                    onClick={() => { setQuery(r); submit(r) }}
-                    className="flex items-center gap-3 w-full px-3 py-2 rounded-xl hover:bg-surface-secondary text-left transition-all">
-                    <Clock size={13} className="text-text-tertiary flex-shrink-0" />
-                    <span className="text-text-secondary text-sm">{r}</span>
-                  </button>
-                ))}
               </div>
             )}
           </motion.div>

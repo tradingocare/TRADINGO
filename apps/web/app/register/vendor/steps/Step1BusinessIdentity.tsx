@@ -5,12 +5,13 @@ import type { BusinessIdentityForm } from '@/types/vendor-registration'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
 import { Select } from '@/components/ui/select'
+import { RefinedSection } from '@/components/registration/RefinedSection'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   backgroundColor: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
 
@@ -38,6 +39,30 @@ const TURNOVER_OPTIONS = ['Below 10L', '10L-50L', '50L-1Cr', '1Cr-5Cr', '5Cr-25C
 
 const currentYear = new Date().getFullYear()
 const YEARS = Array.from({ length: currentYear - 1949 }, (_, i) => currentYear - i)
+
+// Module-scoped so the component identity is stable across renders — defining
+// it inside the render body remounted the whole grid on every keystroke,
+// intermittently losing clicks/selections (E2E-02).
+function RadioCardGrid({ items, value, onChange, cols = 2 }: { items: { value: string; label: string; desc: string }[]; value: string; onChange: (v: string) => void; cols?: number }) {
+  return (
+    <div className={`grid gap-2.5`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+      {items.map(item => {
+        const selected = value === item.value
+        return (
+          <button key={item.value} type="button" onClick={() => onChange(item.value)}
+            className="text-left p-3 rounded-xl transition-all duration-200"
+            style={{
+              background: selected ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-elevated)',
+              border: selected ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
+            }}>
+            <p className="text-text-primary text-xs font-semibold">{item.label}</p>
+            <p className="text-text-tertiary text-[10px] mt-0.5">{item.desc}</p>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 interface Props {
   data: Partial<BusinessIdentityForm>
@@ -80,27 +105,20 @@ export default function Step1BusinessIdentity({ data, onNext }: Props) {
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }))
 
-  const RadioCardGrid = ({ items, value, onChange, cols = 2 }: { items: { value: string; label: string; desc: string }[]; value: string; onChange: (v: string) => void; cols?: number }) => (
-    <div className={`grid gap-2.5`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
-      {items.map(item => {
-        const selected = value === item.value
-        return (
-          <button key={item.value} type="button" onClick={() => onChange(item.value)}
-            className="text-left p-3 rounded-xl transition-all duration-200"
-            style={{
-              background: selected ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-elevated)',
-              border: selected ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
-            }}>
-            <p className="text-white text-xs font-semibold">{item.label}</p>
-            <p className="text-white/40 text-[10px] mt-0.5">{item.desc}</p>
-          </button>
-        )
-      })}
-    </div>
-  )
+  const requiredValues = [businessName, businessType, sellerType, yearEstablished, totalEmployees, annualTurnover]
+  const requiredDone = requiredValues.filter(v => String(v ?? '').trim() !== '').length
+  const validationSummary = Object.values(errors).filter((m): m is string => !!m)
 
   return (
     <StepCard icon={<span className="text-lg">🏢</span>} title="Business Identity" subtitle="Tell us about your business">
+      <RefinedSection
+        title="Business / Company Details"
+        subtitle="Legal identity of the selling business"
+        helperText="Use the business name as registered with government/GST records. This identity is reused for all plans — free and paid."
+        requiredDone={requiredDone}
+        requiredTotal={requiredValues.length}
+        validationSummary={validationSummary}
+      >
       <div className="space-y-5">
         <FormField label="Business Name" required error={touched.businessName ? errors.businessName : undefined} hint="As registered with government/GST">
           <input className={INPUT_CLASS} style={inputStyle(!!errors.businessName && touched.businessName)} placeholder="e.g. Kumar Enterprises"
@@ -154,6 +172,7 @@ export default function Step1BusinessIdentity({ data, onNext }: Props) {
           Continue →
         </button>
       </div>
+      </RefinedSection>
     </StepCard>
   )
 }

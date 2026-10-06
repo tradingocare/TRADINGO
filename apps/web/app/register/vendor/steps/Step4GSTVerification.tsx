@@ -5,15 +5,16 @@ import apiClient from '@/lib/api/client'
 import type { GSTForm } from '@/types/vendor-registration'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
+import { RefinedSection } from '@/components/registration/RefinedSection'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   backgroundColor: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
-const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }
 
 const GST_REGEX = /^\d{2}[A-Z]{5}\d{4}[A-Z]\d[Z][A-Z\d]$/
 
@@ -122,9 +123,17 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
 
   return (
     <StepCard icon={<span className="text-lg">📋</span>} title="GST Verification" subtitle="Tax compliance details">
+      <RefinedSection
+        title="GST / Tax Information"
+        subtitle="Tax identity used for B2B invoicing"
+        helperText="GST details are verified against the official registry. Businesses without GST select an exemption reason instead."
+        requiredDone={(hasGst ? [gstNumber] : [gstExemptReason]).filter(v => String(v ?? '').trim() !== '').length}
+        requiredTotal={1}
+        validationSummary={Object.values(errors).filter((m): m is string => !!m)}
+      >
       <div className="space-y-5">
-        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-          <p className="font-semibold text-white/60 mb-1">Why GST matters:</p>
+        <div className="p-3 rounded-xl text-text-secondary text-xs" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
+          <p className="font-semibold text-text-secondary mb-1">Why GST matters:</p>
           <p>✓ B2B buyers require GST invoices</p>
           <p>✓ GST-verified badge</p>
           <p>✓ Unlocks bulk orders</p>
@@ -167,16 +176,16 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
             {gstVerified && (
               <div className="p-4 rounded-xl space-y-3" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
                 <div>
-                  <p className="text-white/40 text-[10px] uppercase tracking-wider mb-0.5">Business Name</p>
-                  <p className="text-white text-sm font-semibold">{gstBusinessName}</p>
+                  <p className="text-text-tertiary text-[10px] uppercase tracking-wider mb-0.5">Business Name</p>
+                  <p className="text-text-primary text-sm font-semibold">{gstBusinessName}</p>
                 </div>
                 <div>
-                  <p className="text-white/40 text-[10px] uppercase tracking-wider mb-0.5">Registered Address</p>
-                  <p className="text-white text-xs">{gstAddress}</p>
+                  <p className="text-text-tertiary text-[10px] uppercase tracking-wider mb-0.5">Registered Address</p>
+                  <p className="text-text-secondary text-xs">{gstAddress}</p>
                 </div>
                 <div>
-                  <p className="text-white/40 text-[10px] uppercase tracking-wider mb-0.5">State</p>
-                  <p className="text-white text-xs">{gstState}</p>
+                  <p className="text-text-tertiary text-[10px] uppercase tracking-wider mb-0.5">State</p>
+                  <p className="text-text-secondary text-xs">{gstState}</p>
                 </div>
               </div>
             )}
@@ -188,18 +197,18 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
                   {gstCertPreview ? (
                     <img src={gstCertPreview} alt="GST preview" className="w-16 h-16 rounded-lg object-cover" />
                   ) : (
-                    <div className="w-16 h-16 rounded-lg flex items-center justify-center text-white/40 text-xs" style={{ backgroundColor: 'var(--bg-elevated)' }}>PDF</div>
+                    <div className="w-16 h-16 rounded-lg flex items-center justify-center text-text-tertiary text-xs" style={{ backgroundColor: 'var(--bg-elevated)' }}>PDF</div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-xs truncate">{gstCertificateImage.name}</p>
-                    <p className="text-white/30 text-[10px]">{(gstCertificateImage.size / 1024 / 1024).toFixed(1)} MB</p>
+                    <p className="text-text-primary text-xs truncate">{gstCertificateImage.name}</p>
+                    <p className="text-text-tertiary text-[10px]">{(gstCertificateImage.size / 1024 / 1024).toFixed(1)} MB</p>
                   </div>
                   <button type="button" onClick={() => { setGstCertificateImage(null); setGstCertPreview(null); if (fileRef.current) fileRef.current.value = '' }}
-                    className="text-white/40 text-xs hover:text-red-400">Remove</button>
+                    className="text-text-tertiary text-xs hover:text-red-400">Remove</button>
                 </div>
               ) : (
                 <button type="button" onClick={() => fileRef.current?.click()}
-                  className="w-full py-6 rounded-xl border border-dashed text-white/30 text-xs hover:text-white/50 transition-colors"
+                  className="w-full py-6 rounded-xl border border-dashed text-text-tertiary text-xs hover:text-text-secondary transition-colors"
                   style={{ borderColor: 'var(--border-color)' }}>
                   Click to upload GST certificate
                 </button>
@@ -224,7 +233,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
                           style={{ borderColor: selected ? '#f59e0b' : 'rgba(255,255,255,0.2)' }}>
                           {selected && <div className="w-2 h-2 rounded-full" style={{ background: '#f59e0b' }} />}
                         </div>
-                        <span className="text-white text-xs">{r.label}</span>
+                        <span className="text-text-primary text-xs">{r.label}</span>
                       </div>
                     </button>
                   )
@@ -232,8 +241,8 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
               </div>
             </FormField>
 
-            <div className="p-3 rounded-xl text-white/50 text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
-              Even without GST, you can sell on TRADINGO. Buyers will see <span className="text-white/70">GST Not Applicable</span>. You can add GST later.
+            <div className="p-3 rounded-xl text-text-secondary text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
+              Even without GST, you can sell on TRADINGO. Buyers will see <span className="text-text-primary">GST Not Applicable</span>. You can add GST later.
             </div>
           </>
         )}
@@ -243,6 +252,7 @@ export default function Step4GSTVerification({ data, onNext, onBack }: Props) {
           <button onClick={handleNext} className="flex-1 py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]" style={btnPrimary}>Continue →</button>
         </div>
       </div>
+      </RefinedSection>
     </StepCard>
   )
 }

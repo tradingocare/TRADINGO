@@ -100,7 +100,7 @@ return {
       { label: 'Home', href: '/' },
       { label: 'Products', href: '/trading' },
       ...(product.category ? [{ label: product.category.name, href: `/categories/${product.category.slug}` }] : []),
-      { label: product.name, href: `/trading/${product.slug}` },
+      { label: product.name, href: `/products/${product.slug}` },
     ],
     images,
     videoUrl: product.videoUrl || undefined,
@@ -132,6 +132,8 @@ return {
       trustScore: company?.trustScore || product.trustScoreSnapshot || 0,
       responseRate: company?.responseRate,
       productsListed: company?.totalProducts,
+      // Pass through ONLY if the API exposes a public contact number.
+      phone: (company as any)?.mobile || (company as any)?.phone || undefined,
     },
     rating: reviewAvg || undefined,
     reviewCount: reviewTotal || undefined,

@@ -175,7 +175,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* ─── Card 4: TEM Market ─── */}
+          {/* ─── Card 4: TEM E-Marketplace ─── */}
           <div ref={temRef}
             className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300">
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
@@ -189,7 +189,7 @@ export function Footer() {
             </div>
             <div className="relative z-10 p-5 sm:p-6 pl-6 sm:pl-7">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-primary">
-                TEM Market
+                TEM E-Marketplace
               </h3>
               <ul className="space-y-3">
                 {FOOTER_MARKETPLACE_LINKS.map((link) => (

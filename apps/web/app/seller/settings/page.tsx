@@ -83,7 +83,7 @@ export default function SellerSettingsPage() {
         <DashboardPageHeader title="Settings" description="Manage your account and preferences" />
         <Card>
           <CardContent className="py-10 text-center">
-            <p className="text-text-secondary dark:text-dark-text-secondary">Failed to load settings. Please try again.</p>
+            <p className="text-text-secondary">Failed to load settings. Please try again.</p>
           </CardContent>
         </Card>
       </div>
@@ -109,23 +109,23 @@ export default function SellerSettingsPage() {
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Company Name</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary">Company Name</label>
               <Input value={profile.name} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Phone</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary">Phone</label>
               <Input value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">GSTIN</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary">GSTIN</label>
               <Input value={profile.gst} onChange={(e) => setProfile((p) => ({ ...p, gst: e.target.value }))} />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Business Type</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary">Business Type</label>
               <Input value={profile.type} onChange={(e) => setProfile((p) => ({ ...p, type: e.target.value }))} />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Address</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary">Address</label>
               <Input value={profile.address} onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))} />
             </div>
           </div>
@@ -158,10 +158,10 @@ export default function SellerSettingsPage() {
               { key: 'payments', label: 'Payment Confirmations', desc: 'Get notified when payments are processed' },
               { key: 'digest', label: 'Weekly Digest', desc: 'Receive a weekly summary of your store activity' },
             ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-4 dark:border-dark-border dark:bg-dark-surface-secondary/50">
+              <div key={item.key} className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-4">
                 <div>
-                  <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{item.label}</p>
-                  <p className="text-xs text-text-secondary dark:text-dark-text-secondary">{item.desc}</p>
+                  <p className="text-sm font-medium text-text-primary">{item.label}</p>
+                  <p className="text-xs text-text-secondary">{item.desc}</p>
                 </div>
                 <label className="relative inline-flex cursor-pointer items-center">
                   <input type="checkbox" className="peer sr-only" checked={notifications[item.key as keyof typeof notifications]} onChange={() => setNotifications((n) => {
@@ -169,7 +169,7 @@ export default function SellerSettingsPage() {
                     apiClient.patch('/auth/me', { notifications: updated }).catch(() => toast({ title: 'Failed to update notification preferences', variant: 'destructive' }));
                     return updated;
                   })} />
-                  <div className="h-6 w-11 rounded-full bg-surface-tertiary after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full" />
+                  <div className="h-6 w-11 rounded-full bg-surface-tertiary after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-accent peer-checked:after:translate-x-full" />
                 </label>
               </div>
             ))}
@@ -192,11 +192,11 @@ export default function SellerSettingsPage() {
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Current Password</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary">Current Password</label>
               <Input type="password" placeholder="Enter current password" value={password.current} onChange={(e) => setPassword((p) => ({ ...p, current: e.target.value }))} />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">New Password</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary">New Password</label>
               <Input type="password" placeholder="Enter new password" value={password.newPwd} onChange={(e) => setPassword((p) => ({ ...p, newPwd: e.target.value }))} />
             </div>
           </div>
@@ -222,10 +222,10 @@ export default function SellerSettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-4 dark:border-dark-border dark:bg-dark-surface-secondary/50">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-4">
             <div>
-              <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Dark Mode</p>
-              <p className="text-xs text-text-secondary dark:text-dark-text-secondary">Switch between light and dark appearance</p>
+              <p className="text-sm font-medium text-text-primary">Dark Mode</p>
+              <p className="text-xs text-text-secondary">Switch between light and dark appearance</p>
             </div>
             <label className="relative inline-flex cursor-pointer items-center">
               <input type="checkbox" className="peer sr-only" checked={isDark} onChange={() => {
@@ -233,7 +233,7 @@ export default function SellerSettingsPage() {
                 setTheme(next ? 'dark' : 'light');
                 setIsDark(next);
               }} />
-              <div className="h-6 w-11 rounded-full bg-surface-tertiary after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full" />
+              <div className="h-6 w-11 rounded-full bg-surface-tertiary after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-accent peer-checked:after:translate-x-full" />
             </label>
           </div>
         </CardContent>

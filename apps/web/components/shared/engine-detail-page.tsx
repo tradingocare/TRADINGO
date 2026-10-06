@@ -132,7 +132,7 @@ export default function EngineDetailPage({ engineId: _engineId }: { engineId: st
             </motion.span>
           </Link>
           <div className="mt-3 flex items-center justify-center gap-3 text-xs">
-            <Link href="/register" className="text-gray-400 underline underline-offset-2 hover:text-gray-600">Become a Seller</Link>
+            <Link href="/golive" className="text-text-tertiary underline underline-offset-2 hover:text-text-primary">Become a Seller</Link>
             <span className="text-primary/10">|</span>
             <Link href="/tradhexa" className="text-accent-500 underline underline-offset-2 hover:text-accent-500">Learn About TRADHEXA</Link>
           </div>

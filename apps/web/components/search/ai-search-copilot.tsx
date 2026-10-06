@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Sparkles, Search, Lightbulb, Package, Building2, BarChart3, UserCheck, TrendingUp, ShoppingBag, Sliders, Shuffle, LayoutDashboard } from 'lucide-react'
+import { Sparkles, Search, Lightbulb, Package, Building2, BarChart3, UserCheck, TrendingUp, ShoppingBag, Sliders, Shuffle, LayoutDashboard, Filter } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Input } from '@/components/ui/input'
 import { Tabs, type Tab } from '@/components/ui/tabs'
@@ -12,6 +12,16 @@ interface AiCopilotResponse {
   latencyMs: number
   cost: number
   content: string | Record<string, unknown>
+  // P0-3 Step 4/5: canonical taxonomy sidecar on intent results
+  taxonomy?: {
+    categoryId: string | null
+    subcategoryId: string | null
+    catalogItemId: string | null
+    type: string | null
+    confidence: number
+    band: 'HIGH' | 'MEDIUM' | 'LOW'
+    matchType: string
+  }
 }
 
 type CopilotTab = 'discover' | 'similar' | 'recommend' | 'rank'
@@ -28,6 +38,12 @@ interface AiSearchCopilotProps {
   onSearchSummary: (data: { query: string } & Record<string, unknown>) => Promise<unknown>
   onSmartFilters: (data: { query: string } & Record<string, unknown>) => Promise<unknown>
   onCrossSellUpsell: (data: Record<string, unknown>) => Promise<unknown>
+  // P0-3 Step 10 (F-12): the "AI Insights" button now drives the actual
+  // sidebar action (aiSearchSidebar) instead of duplicating ranking.
+  onAiSearchSidebar: (data: { query?: string } & Record<string, unknown>) => Promise<unknown>
+  // P0-3 Step 5: apply the intent sidecar's canonical taxonomy to the live
+  // search (shared boundary — one callback, not 11 copilot rewrites).
+  onApplyTaxonomy?: (taxonomy: NonNullable<AiCopilotResponse['taxonomy']>) => void
   contextData?: Record<string, unknown>
 }
 
@@ -45,6 +61,8 @@ export function AiSearchCopilot({
   onPersonalizedRanking,
   onBuyerRecommendations, onSellerRecommendations,
   onSearchSummary, onSmartFilters, onCrossSellUpsell,
+  onAiSearchSidebar,
+  onApplyTaxonomy,
 }: AiSearchCopilotProps) {
   const [activeTab, setActiveTab] = useState<CopilotTab>('discover')
   const [query, setQuery] = useState((contextData?.query as string) || '')
@@ -162,7 +180,8 @@ export function AiSearchCopilot({
               {loading === 'ranking' ? <LoadingSpinner size="xs" color="accent" /> : <BarChart3 className="h-3 w-3" />}
               Personalize Ranking
             </button>
-            <button onClick={() => handleAction('sidebar', onPersonalizedRanking, { query, ...contextData })}
+            {/* P0-3 Step 10 (F-12): sidebar endpoint now correctly wired */}
+            <button onClick={() => handleAction('sidebar', onAiSearchSidebar, { query, ...contextData })}
               disabled={loading === 'sidebar'}
               className="flex items-center gap-1 px-2 py-1 text-[11px] bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 disabled:opacity-40 transition-colors">
               {loading === 'sidebar' ? <LoadingSpinner size="xs" color="accent" /> : <LayoutDashboard className="h-3 w-3" />}
@@ -189,6 +208,30 @@ export function AiSearchCopilot({
           <pre className="text-[11px] text-text-primary max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
             {typeof result.content === 'string' ? result.content : JSON.stringify(result.content, null, 2)}
           </pre>
+          {result.taxonomy && result.taxonomy.categoryId && onApplyTaxonomy && (
+            <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-border pt-1.5">
+              <span className="text-[10px] text-text-tertiary truncate">
+                Canonical taxonomy: {result.taxonomy.categoryId.slice(0, 8)}… Â· {result.taxonomy.band} ({Math.round(result.taxonomy.confidence * 100)}%)
+              </span>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => onApplyTaxonomy(result.taxonomy!)}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-accent-500/10 text-accent-500 rounded hover:bg-accent-500/20 transition-colors"
+                >
+                  <Filter className="h-3 w-3" />
+                  Apply to Search
+                </button>
+                {/* P0-3 Step 6: explicit dismiss — suggestion is advisory only;
+                    dismissing never changes the live search. */}
+                <button
+                  onClick={() => setResult(null)}
+                  className="px-2 py-1 text-[10px] font-medium text-text-tertiary hover:text-text-primary rounded hover:bg-surface-secondary transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

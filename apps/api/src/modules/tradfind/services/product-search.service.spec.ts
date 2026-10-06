@@ -8,6 +8,7 @@ import { SearchRankingService } from './search-ranking.service';
 import { UnifiedRankingService } from './unified-ranking.service';
 import { SearchAnalyticsService } from './search-analytics.service';
 import { ProductSearchService } from './product-search.service';
+import { MarketplaceCatalogBridgeService } from '../../marketplace-catalog-bridge/marketplace-catalog-bridge.service';
 import { SearchSort } from '../enums/search.enums';
 
 const mockOpenSearchClient = { search: jest.fn() };
@@ -20,6 +21,7 @@ describe('ProductSearchService', () => {
   let service: ProductSearchService;
   let geoSearchService: GeoSearchService;
   let rankingService: SearchRankingService;
+  let bridge: MarketplaceCatalogBridgeService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -32,6 +34,15 @@ describe('ProductSearchService', () => {
         SearchService,
         { provide: PrismaService, useValue: createMockPrisma() },
         { provide: SearchAnalyticsService, useValue: { trackSearch: jest.fn() } },
+        // Phase 14 identifier contract: passthrough mock preserves existing
+        // filter expectations (input already canonical in these tests).
+        {
+          provide: MarketplaceCatalogBridgeService,
+          useValue: {
+            resolveLegacyCategorySlugOrId: jest.fn(async (input: string) => ({ id: input })),
+            resolveSubcategoryDisplayName: jest.fn(async (input: string) => input),
+          },
+        },
         {
           provide: ConfigService,
           useValue: {
@@ -52,6 +63,7 @@ describe('ProductSearchService', () => {
     service = module.get<ProductSearchService>(ProductSearchService);
     geoSearchService = module.get<GeoSearchService>(GeoSearchService);
     rankingService = module.get<SearchRankingService>(SearchRankingService);
+    bridge = module.get<MarketplaceCatalogBridgeService>(MarketplaceCatalogBridgeService);
   });
 
   describe('searchProducts', () => {
@@ -127,6 +139,37 @@ describe('ProductSearchService', () => {
           { term: { industryId: 'ind1' } },
           { term: { productType: 'finished' } },
           { term: { status: 'ACTIVE' } },
+        ]),
+      );
+    });
+
+    it('should resolve category slug and subcategory name before filtering (Phase 14)', async () => {
+      mockOpenSearchClient.search.mockResolvedValue({
+        body: { hits: { hits: [], total: { value: 0 } } },
+      });
+      const bridgeMock = bridge as unknown as {
+        resolveLegacyCategorySlugOrId: jest.Mock;
+        resolveSubcategoryDisplayName: jest.Mock;
+      };
+      bridgeMock.resolveLegacyCategorySlugOrId.mockResolvedValueOnce({ id: 'cat-9' });
+      bridgeMock.resolveSubcategoryDisplayName.mockResolvedValueOnce('Steel Pipes');
+
+      await service.search({
+        q: 'test',
+        categoryId: 'steel-metals',
+        subCategory: 'steel-pipes',
+        page: 1,
+        limit: 20,
+      });
+
+      expect(bridgeMock.resolveLegacyCategorySlugOrId).toHaveBeenCalledWith('steel-metals');
+      expect(bridgeMock.resolveSubcategoryDisplayName).toHaveBeenCalledWith('steel-pipes');
+      const searchCall = mockOpenSearchClient.search.mock.calls[0][0];
+      const filters = searchCall.body.query.bool.filter;
+      expect(filters).toEqual(
+        expect.arrayContaining([
+          { term: { categoryId: 'cat-9' } },
+          { term: { subCategory: 'Steel Pipes' } },
         ]),
       );
     });

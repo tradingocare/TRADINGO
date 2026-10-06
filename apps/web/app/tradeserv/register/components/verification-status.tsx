@@ -9,7 +9,7 @@ const STATUS_STYLES: Record<VerificationStatus, { bg: string; text: string; dot:
   approved: { bg: 'bg-green-500/10', text: 'text-green-400', dot: 'bg-green-400' },
   rejected: { bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-400' },
   needs_resubmission: { bg: 'bg-orange-500/10', text: 'text-orange-400', dot: 'bg-orange-400' },
-  suspended: { bg: 'bg-bg-elevated', text: 'text-gray-400', dot: 'bg-gray-400' },
+  suspended: { bg: 'bg-bg-elevated', text: 'text-text-tertiary', dot: 'bg-gray-400' },
   expired: { bg: 'bg-zinc-500/10', text: 'text-zinc-400', dot: 'bg-zinc-400' },
 };
 

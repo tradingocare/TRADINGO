@@ -1,6 +1,6 @@
-import { Controller, Post, Get, Param, Body, Query, UseGuards, HttpCode, HttpStatus, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query, UseGuards, HttpCode, HttpStatus, UploadedFile, UseInterceptors, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FastifyFileInterceptor } from '../common/interceptors/fastify-file.interceptor';
 import { CatalogImportService } from './catalog-import.service';
 import { CsvParserService } from './services/csv-parser.service';
 import { ImportOrchestratorService } from './services/import-orchestrator.service';
@@ -10,6 +10,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { ImportJobType, ImportJobStatus } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RateLimits } from '../common/constants/rate-limits.const';
+import { ClamAvService } from '../modules/malware/clamav.service';
 
 const ALLOWED_IMPORT_MIME = [
   'text/csv',
@@ -22,15 +23,29 @@ const ALLOWED_IMPORT_MIME = [
 const ALLOWED_IMPORT_EXTS = ['.csv', '.xlsx', '.xls', '.txt', '.json'];
 const MAX_IMPORT_SIZE = 50 * 1024 * 1024;
 
+/**
+ * Multipart text fields always arrive as strings, so an HTTP caller can
+ * only ever send `catalogOnly` as `"true"` — never boolean `true`
+ * (in-process callers pass the real boolean). Accept exactly those two
+ * representations; everything else (`"1"`, `"yes"`, `"on"`, `"TRUE"`,
+ * arbitrary strings, false) takes the default full-import path.
+ */
+function isCatalogOnlyFlag(value: unknown): boolean {
+  return value === true || value === 'true';
+}
+
 @Controller('catalog-import')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN', 'ADMIN')
 @Throttle(RateLimits.ADMIN_WRITE)
 export class CatalogImportController {
+  private readonly logger = new Logger(CatalogImportController.name);
+
   constructor(
     private readonly catalogImportService: CatalogImportService,
     private readonly csvParserService: CsvParserService,
     private readonly importOrchestratorService: ImportOrchestratorService,
+    private readonly clamavService: ClamAvService,
   ) {}
 
   private validateImportFile(file: Express.Multer.File) {
@@ -44,6 +59,23 @@ export class CatalogImportController {
     }
     if (file.size > MAX_IMPORT_SIZE) {
       throw new BadRequestException(`File exceeds maximum size of 50MB`);
+    }
+  }
+
+  /** Synchronous malware scan � fail-closed on scan failure or infection */
+  private async scanFileBuffer(buffer: Buffer, fileName: string): Promise<void> {
+    let scanResult;
+    try {
+      scanResult = await this.clamavService.scanBuffer(buffer);
+    } catch (err) {
+      this.logger.error(`Malware scan failed for ${fileName}: ${err.message}`);
+      throw new InternalServerErrorException('File upload temporarily unavailable � security scan failed');
+    }
+    if (!scanResult.clean) {
+      this.logger.warn(`Malware detected in import file ${fileName}: ${scanResult.signatures.join(', ')}`);
+      throw new BadRequestException(
+        `File rejected: malware detected (${scanResult.signatures.join(', ')})`,
+      );
     }
   }
 
@@ -62,28 +94,37 @@ export class CatalogImportController {
   }
 
   @Post('csv-import')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FastifyFileInterceptor('file'))
   async importCsv(
     @UploadedFile() file: Express.Multer.File,
     @Body('companyId') companyId: string | undefined,
     @CurrentUser() user: any,
+    @Body('catalogOnly') catalogOnly?: boolean | string,
   ) {
     this.validateImportFile(file);
+    await this.scanFileBuffer(file.buffer, file.originalname);
     const effectiveCompanyId = companyId || user?.companyId;
     if (!effectiveCompanyId) {
       throw new BadRequestException('companyId is required');
+    }
+    // Conditional pass-through preserves the historical 2-arg call shape
+    // (existing specs assert it) when the flag is absent.
+    if (isCatalogOnlyFlag(catalogOnly)) {
+      return this.importOrchestratorService.runFullImport(file.buffer, effectiveCompanyId, undefined, undefined, { catalogOnly: true });
     }
     return this.importOrchestratorService.runFullImport(file.buffer, effectiveCompanyId);
   }
 
   @Post('file-import')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FastifyFileInterceptor('file'))
   async importFile(
     @UploadedFile() file: Express.Multer.File,
     @Body('companyId') companyId: string | undefined,
     @CurrentUser() user: any,
+    @Body('catalogOnly') catalogOnly?: boolean | string,
   ) {
     this.validateImportFile(file);
+    await this.scanFileBuffer(file.buffer, file.originalname);
     const effectiveCompanyId = companyId || user?.companyId;
     if (!effectiveCompanyId) {
       throw new BadRequestException('companyId is required');
@@ -94,6 +135,9 @@ export class CatalogImportController {
       || (file.buffer[0] === 0x50 && file.buffer[1] === 0x4b);
 
     const format = isXlsx ? 'xlsx' as const : 'csv' as const;
+    if (isCatalogOnlyFlag(catalogOnly)) {
+      return this.importOrchestratorService.runFullImport(file.buffer, effectiveCompanyId, undefined, format, { catalogOnly: true });
+    }
     return this.importOrchestratorService.runFullImport(file.buffer, effectiveCompanyId, undefined, format);
   }
 
@@ -103,19 +147,24 @@ export class CatalogImportController {
     @Param('jobId') jobId: string,
     @Body('companyId') companyId: string | undefined,
     @CurrentUser() user: any,
+    @Body('catalogOnly') catalogOnly?: boolean | string,
   ) {
     const effectiveCompanyId = companyId || user?.companyId;
     if (!effectiveCompanyId) {
       throw new BadRequestException('companyId is required');
     }
+    if (isCatalogOnlyFlag(catalogOnly)) {
+      return this.importOrchestratorService.resumeImport(jobId, effectiveCompanyId, { catalogOnly: true });
+    }
     return this.importOrchestratorService.resumeImport(jobId, effectiveCompanyId);
   }
 
   @Post('csv-preview')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FastifyFileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   async previewCsv(@UploadedFile() file: Express.Multer.File) {
     this.validateImportFile(file);
+    await this.scanFileBuffer(file.buffer, file.originalname);
     const result = this.csvParserService.parse(file.buffer);
     return {
       totalRows: result.totalRows,
@@ -195,7 +244,7 @@ export class CatalogImportController {
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FastifyFileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     this.validateImportFile(file);

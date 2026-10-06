@@ -4,7 +4,7 @@ import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
   title: 'Buyer Agreement | TRADINGO',
-  description: 'TRADINGO Buyer Agreement governing purchasing, payments, returns, refunds, and supplier communications on India\'s first Trusted Electronic Marketplace (TEM).',
+  description: 'TRADINGO Buyer Agreement governing purchasing, payments, returns, refunds, and supplier communications on India\'s first TRADINGO E-Marketplace (TEM).',
   openGraph: {
     title: 'Buyer Agreement | TRADINGO',
     description: 'Review the TRADINGO Buyer Agreement including purchasing rules, payment terms, return policies, and dispute resolution.',
@@ -224,13 +224,13 @@ const sections = [
       },
       {
         heading: 'Arbitration',
-        text: 'Unresolved disputes shall be settled by binding arbitration in Mumbai, Maharashtra, under the Arbitration and Conciliation Act, 1996.',
+        text: 'Unresolved disputes shall be settled by binding arbitration in New Delhi, under the Arbitration and Conciliation Act, 1996.',
       },
     ],
   },
   {
     title: '12. Governing Law',
-    content: 'This agreement is governed by the laws of India. Courts in Mumbai, Maharashtra have exclusive jurisdiction over all disputes.',
+    content: 'This agreement is governed by the laws of India. Courts in New Delhi have exclusive jurisdiction over all disputes.',
     subsections: [
       {
         heading: 'Applicable Law',
@@ -238,7 +238,7 @@ const sections = [
       },
       {
         heading: 'Jurisdiction',
-        text: 'All legal proceedings shall be brought exclusively in the courts of Mumbai, Maharashtra.',
+        text: 'All legal proceedings shall be brought exclusively in the courts of New Delhi.',
       },
       {
         heading: 'Severability',
@@ -260,7 +260,7 @@ const sections = [
       },
       {
         heading: 'Registered Address',
-        text: 'TRADINGO Technologies Pvt. Ltd., Mumbai, Maharashtra, India.',
+        text: 'Niksa Global Ventures Limited, House No. 194, Block-G, Pocket 6, Sector 16, Rohini, New Delhi - 110089, India.',
       },
     ],
   },

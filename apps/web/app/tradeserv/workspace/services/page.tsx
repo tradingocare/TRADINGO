@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Briefcase, Plus, X, Star, Clock, DollarSign, Save, AlertCircle,
+  Briefcase, Plus, X, Star, Clock, DollarSign, Save, AlertCircle, Sparkles, Check,
 } from 'lucide-react';
 import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
 import { GlassCard } from '@/components/tradeserv/glass-card';
@@ -11,7 +11,136 @@ import { StatBox } from '@/components/tradeserv/stat-box';
 import { SaveToast } from '@/components/tradeserv/save-toast';
 import { useSaveToast } from '@/hooks/use-save-toast';
 import { useServices, useAddService, useUpdateService, useDeleteService } from '@/hooks/use-tradeserv';
+import { CanonicalTaxonomyPicker, EMPTY_CANONICAL_SELECTION, type CanonicalTripleSelection } from '@/components/taxonomy/canonical-taxonomy-picker';
 import { useToast } from '@/components/ui/use-toast';
+import { marketplaceCatalogBridgeApi, type ClassifyCatalogResult } from '@/lib/api/marketplace-catalog-bridge';
+
+/**
+ * Phase 12 (FD-TAX-01/02/04): structured service-category field.
+ * Replaces the old free-text input: the value always comes from either an
+ * AI suggestion (Tick to confirm) or the canonical tree picker (Change).
+ * Arbitrary typing is impossible by construction.
+ * P0-2: Confirm/Change now emit the canonical catalogItemId alongside the
+ * display name — the ID is the persistence contract (name = display echo).
+ */
+function ServiceCategoryField({
+  serviceName,
+  description,
+  value,
+  onChange,
+}: {
+  serviceName: string;
+  description: string;
+  value: string;
+  onChange: (v: string, catalogItemId?: string | null) => void;
+}) {
+  const { toast } = useToast();
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestion, setSuggestion] = useState<ClassifyCatalogResult | null>(null);
+  // F-07: local cascade triple. Empty = untouched (update keeps persisted
+  // linkage) or cleared (null item = re-resolve server-side, as before).
+  const [pick, setPick] = useState<CanonicalTripleSelection>({ ...EMPTY_CANONICAL_SELECTION });
+
+  const handleSuggest = async () => {
+    if (!serviceName.trim()) {
+      toast({ title: 'Enter a service name first', variant: 'destructive' });
+      return;
+    }
+    setSuggesting(true);
+    setSuggestion(null);
+    try {
+      const result = await marketplaceCatalogBridgeApi.classifyCatalog({
+        name: serviceName.trim(),
+        description: description.trim() || undefined,
+        context: 'service',
+      });
+      if (result.categoryName) {
+        setSuggestion(result);
+      } else {
+        toast({ title: 'No confident match', description: 'Pick a category from the list.', variant: 'default' });
+      }
+    } catch {
+      toast({ title: 'Suggestion failed', description: 'Pick a category from the list.', variant: 'destructive' });
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  const suggestedLabel = suggestion
+    ? [suggestion.categoryName, suggestion.subcategoryName].filter(Boolean).join(' / ')
+    : '';
+
+  return (
+    <div>
+      <label className="mb-1.5 flex items-center gap-1.5 text-xs text-text-tertiary">
+        Category
+        <button
+          type="button"
+          onClick={handleSuggest}
+          disabled={suggesting || !serviceName.trim()}
+          className="ml-auto inline-flex items-center gap-1 rounded-full border border-accent/30 px-2 py-0.5 text-[10px] font-medium text-accent hover:bg-accent/10 disabled:opacity-50"
+        >
+          <Sparkles className="h-3 w-3" /> {suggesting ? 'Suggesting…' : 'AI Suggest'}
+        </button>
+      </label>
+      {suggestion && suggestion.categoryName && (
+        <div className="mb-2 rounded-lg border border-accent/30 bg-accent/[0.05] px-3 py-2" role="status" aria-label="AI category suggestion">
+          <p className="text-xs font-medium text-text-primary">
+            Suggested: {suggestedLabel}
+            <span className="ml-2 text-[10px] text-text-tertiary">
+              {Math.round(suggestion.confidence * 100)}% · {suggestion.band}
+            </span>
+          </p>
+          <div className="mt-1.5 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                // P0-2: Confirm emits display name + canonical catalogItemId.
+                onChange(suggestion.categoryName || '', suggestion.catalogItemId ?? null);
+                setPick({
+                  categoryId: suggestion.categoryId,
+                  categoryName: suggestion.categoryName || '',
+                  subcategoryId: suggestion.subcategoryId,
+                  subcategoryName: suggestion.subcategoryName || '',
+                  catalogItemId: suggestion.catalogItemId,
+                  catalogItemName: '',
+                });
+                setSuggestion(null);
+              }}
+              className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-bg-base"
+            >
+              <Check className="h-3 w-3" /> Use this
+            </button>
+            <button
+              type="button"
+              onClick={() => setSuggestion(null)}
+              className="rounded-full border border-border px-3 py-1 text-[11px] text-text-tertiary"
+            >
+              Change
+            </button>
+          </div>
+        </div>
+      )}
+      {/* F-07: canonical cascade replaces the legacy name list. An explicit
+          pick is authoritative (display echo + leaf item); clearing sends a
+          null item so the backend re-resolves from the name, as before. */}
+      <CanonicalTaxonomyPicker
+        idPrefix="service-category"
+        value={pick}
+        onChange={(sel) => {
+          setSuggestion(null);
+          setPick(sel);
+          // All-empty = untouched (omit so update keeps linkage); otherwise
+          // send the leaf item (or null to re-resolve from the name).
+          onChange(sel.categoryName, !sel.categoryId && !sel.catalogItemId ? undefined : sel.catalogItemId);
+        }}
+      />
+      {!pick.categoryId && value && (
+        <p className="mt-1 text-xs text-text-tertiary">Current: {value} — pick above to change.</p>
+      )}
+    </div>
+  );
+}
 
 export default function ServicesCatalogPage() {
   const { toast } = useToast();
@@ -23,11 +152,20 @@ export default function ServicesCatalogPage() {
 
   const [showNew, setShowNew] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    name: '', description: '', category: '', priceMin: '', priceMax: '', pricingType: 'fixed', deliveryDays: '', isActive: true,
+  // P0-2: catalogItemId rides alongside the display name. undefined = untouched
+  // (update keeps persisted linkage); null = re-resolve from name server-side.
+  const [form, setForm] = useState<{
+    name: string; description: string; category: string; catalogItemId?: string | null;
+    priceMin: string; priceMax: string; pricingType: string; deliveryDays: string; isActive: boolean;
+  }>({
+    name: '', description: '', category: '', catalogItemId: undefined,
+    priceMin: '', priceMax: '', pricingType: 'fixed', deliveryDays: '', isActive: true,
   });
 
-  const resetForm = () => setForm({ name: '', description: '', category: '', priceMin: '', priceMax: '', pricingType: 'fixed', deliveryDays: '', isActive: true });
+  const resetForm = () => setForm({
+    name: '', description: '', category: '', catalogItemId: undefined,
+    priceMin: '', priceMax: '', pricingType: 'fixed', deliveryDays: '', isActive: true,
+  });
 
   const list = Array.isArray(services) ? services : [];
   const total = list.length;
@@ -40,6 +178,7 @@ export default function ServicesCatalogPage() {
       name: svc.name || '',
       description: svc.description || '',
       category: svc.category || '',
+      catalogItemId: svc.catalogItemId ?? undefined,
       priceMin: svc.priceMin?.toString() || '',
       priceMax: svc.priceMax?.toString() || '',
       pricingType: svc.pricingType || 'fixed',
@@ -57,6 +196,11 @@ export default function ServicesCatalogPage() {
       pricingType: form.pricingType || undefined,
       isActive: form.isActive,
     };
+    // P0-2: canonical linkage rides with the payload when the seller
+    // confirmed a suggestion (string ID) or switched to the picker (null =
+    // re-resolve from name server-side). Untouched = omit (update keeps
+    // the persisted linkage).
+    if (form.catalogItemId !== undefined) payload.catalogItemId = form.catalogItemId;
     if (form.priceMin) payload.priceMin = parseFloat(form.priceMin);
     if (form.priceMax) payload.priceMax = parseFloat(form.priceMax);
     if (form.deliveryDays) payload.deliveryDays = parseInt(form.deliveryDays, 10);
@@ -77,6 +221,11 @@ export default function ServicesCatalogPage() {
   };
 
   const handleDelete = async (id: string) => {
+    // O-6 Tier 1: service deletion is irreversible (hard delete, no trash
+    // state) — require explicit confirmation first. Double-submit guarded by
+    // the shared pending flag below.
+    if (deleteMutation.isPending) return
+    if (!window.confirm('Delete this service permanently? This cannot be undone.')) return
     try {
       await deleteMutation.mutateAsync(id);
       handleSave();
@@ -148,7 +297,12 @@ export default function ServicesCatalogPage() {
                   <p className="text-xs font-semibold text-text-tertiary">Editing: {svc.name}</p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <FormInput label="Service Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-                    <FormInput label="Category" value={form.category} onChange={(v) => setForm({ ...form, category: v })} placeholder="e.g. Audit, GST, Tax" />
+                    <ServiceCategoryField
+                      serviceName={form.name}
+                      description={form.description}
+                      value={form.category}
+                      onChange={(v, catalogItemId) => setForm({ ...form, category: v, catalogItemId: catalogItemId ?? null })}
+                    />
                   </div>
                   <FormInput label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} textarea rows={2} />
                   <div className="grid gap-3 sm:grid-cols-4">
@@ -216,7 +370,12 @@ export default function ServicesCatalogPage() {
                 </h4>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <FormInput label="Service Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-                  <FormInput label="Category" value={form.category} onChange={(v) => setForm({ ...form, category: v })} placeholder="e.g. Audit, GST, Tax" />
+                  <ServiceCategoryField
+                    serviceName={form.name}
+                    description={form.description}
+                    value={form.category}
+                    onChange={(v, catalogItemId) => setForm({ ...form, category: v, catalogItemId: catalogItemId ?? null })}
+                  />
                 </div>
                 <FormInput label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} textarea rows={2} />
                 <div className="grid gap-3 sm:grid-cols-4">

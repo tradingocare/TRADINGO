@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { WifiOff, RefreshCw } from 'lucide-react';
@@ -10,8 +10,8 @@ export default function OfflinePage() {
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-900/20">
         <WifiOff className="h-10 w-10 text-amber-600 dark:text-amber-400" />
       </div>
-      <h1 className="text-3xl font-bold text-text-primary dark:text-dark-text-primary">You&apos;re Offline</h1>
-      <p className="mx-auto mt-3 max-w-md text-text-secondary dark:text-dark-text-secondary">
+      <h1 className="text-3xl font-bold text-text-primary">You&apos;re Offline</h1>
+      <p className="mx-auto mt-3 max-w-md text-text-secondary">
         Please check your internet connection and try again. Some features may be limited while offline.
       </p>
       <div className="mt-8 flex gap-4">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import { getSections, getFieldsBySection } from '@/lib/product-onboarding/attribute-template-engine';
@@ -42,7 +42,7 @@ export function DynamicForm({ fields, values, errors, onChange, template }: Dyna
 
   if (fields.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-12 text-center dark:border-dark-border dark:bg-dark-surface-secondary">
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-12 text-center">
         <p className="text-sm text-text-tertiary">No fields defined for this section.</p>
       </div>
     );
@@ -56,10 +56,10 @@ export function DynamicForm({ fields, values, errors, onChange, template }: Dyna
           <div key={section || '__default'}>
             {section && (
               <div className="mb-5">
-                <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                <h3 className="text-lg font-semibold text-text-primary">
                   {section.charAt(0).toUpperCase() + section.slice(1).replace(/([A-Z])/g, ' $1')}
                 </h3>
-                <div className="mt-1.5 h-px bg-border dark:bg-dark-border" />
+                <div className="mt-1.5 h-px bg-border dark:bg-border" />
               </div>
             )}
             <div className="space-y-5">

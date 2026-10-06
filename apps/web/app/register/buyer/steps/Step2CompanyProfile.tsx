@@ -2,19 +2,19 @@
 
 import { useState, useCallback } from 'react'
 import { Briefcase } from 'lucide-react'
-import type { CompanyProfileForm } from '@/types/buyer-registration'
+import type { CompanyProfileForm, BusinessAddressForm } from '@/types/buyer-registration'
 import { Select } from '@/components/ui/select'
 import StepCard from '../../vendor/components/StepCard'
 import FormField from '../../vendor/components/FormField'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   background: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
-const btnSecondary = { background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
+const btnSecondary = { background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }
 
 const DESIGNATIONS = ['Proprietor', 'Partner', 'Director', 'CEO/MD', 'Procurement Manager', 'Purchase Head', 'Manager', 'Other']
 
@@ -36,13 +36,25 @@ const COMPANY_SIZES = ['Just Me', '2-10', '11-50', '51-200', '201-500', '500+']
 
 const ANNUAL_PROCUREMENT = ['Below 10L', '10L-50L', '50L-1Cr', '1Cr-5Cr', '5Cr-25Cr', '25Cr-100Cr', 'Above 100Cr']
 
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+]
+
 interface Props {
   data: Partial<CompanyProfileForm>
-  onNext: (data: CompanyProfileForm) => void
+  addressData: Partial<BusinessAddressForm>
+  onNext: (data: CompanyProfileForm, address: BusinessAddressForm) => void
   onBack: () => void
 }
 
-export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
+export default function Step2CompanyProfile({ data, addressData, onNext, onBack }: Props) {
   const [form, setForm] = useState<Partial<CompanyProfileForm>>({
     companyName: '',
     companyType: undefined,
@@ -55,6 +67,15 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
     designation: '',
     ...data,
   })
+  const [address, setAddress] = useState<Partial<BusinessAddressForm>>({
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    district: '',
+    state: '',
+    pincode: '',
+    ...addressData,
+  })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
 
@@ -64,6 +85,11 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
   }, [])
 
   const markTouched = useCallback((field: string) => setTouched(prev => ({ ...prev, [field]: true })), [])
+
+  const setAddressField = useCallback((key: keyof BusinessAddressForm, value: string) => {
+    setAddress(prev => ({ ...prev, [key]: value }))
+    setErrors(prev => ({ ...prev, [key]: '' }))
+  }, [])
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
@@ -77,6 +103,12 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
     if (!form.companySize) errs.companySize = 'Select company size'
     if (!form.annualProcurement) errs.annualProcurement = 'Select annual procurement'
     if (form.gstNumber && form.gstNumber.length !== 15) errs.gstNumber = 'GSTIN must be 15 characters'
+    if (!address.addressLine1?.trim()) errs.addressLine1 = 'Address is required'
+    else if (address.addressLine1.trim().length < 5) errs.addressLine1 = 'Minimum 5 characters'
+    if (!address.city?.trim()) errs.city = 'City is required'
+    if (!address.district?.trim()) errs.district = 'District is required'
+    if (!address.state) errs.state = 'Select state'
+    if (!/^\d{6}$/.test(address.pincode || '')) errs.pincode = 'Enter a valid 6-digit pincode'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -93,6 +125,13 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
       gstNumber: form.gstNumber?.trim() || undefined,
       website: form.website?.trim() || undefined,
       designation: form.designation!,
+    }, {
+      addressLine1: address.addressLine1!.trim(),
+      addressLine2: address.addressLine2?.trim() || undefined,
+      city: address.city!.trim(),
+      district: address.district!.trim(),
+      state: address.state!,
+      pincode: address.pincode!,
     })
   }
 
@@ -125,10 +164,10 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
                   style={{
                     background: selected ? 'rgba(245, 158, 11, 0.15)' : 'var(--bg-elevated)',
                     border: selected ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-color)',
-                    color: selected ? '#fbbf24' : 'rgba(255,255,255,0.7)',
+                    color: selected ? '#fbbf24' : 'var(--text-secondary)',
                   }}>
                   <p className="font-semibold">{bt.label}</p>
-                  <p className="text-[10px] mt-0.5 text-white/40">{bt.desc}</p>
+                  <p className="text-[10px] mt-0.5 text-text-tertiary">{bt.desc}</p>
                 </button>
               )
             })}
@@ -174,6 +213,45 @@ export default function Step2CompanyProfile({ data, onNext, onBack }: Props) {
           <input className={INPUT_CLASS} style={inputStyle(!!errors.website && touched.website)} placeholder="https://yourcompany.com" type="url"
             value={form.website || ''} onChange={e => set('website', e.target.value)} onBlur={() => markTouched('website')} />
         </FormField>
+
+        <div className="pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
+          <p className="text-text-primary text-sm font-semibold mb-4">Business Address</p>
+          <div className="space-y-4">
+            <FormField label="Address Line 1" required error={errors.addressLine1}>
+              <input className={INPUT_CLASS} style={inputStyle(!!errors.addressLine1)} placeholder="Street, area, landmark"
+                value={address.addressLine1 || ''} onChange={e => setAddressField('addressLine1', e.target.value)} />
+            </FormField>
+
+            <FormField label="Address Line 2" error={errors.addressLine2}>
+              <input className={INPUT_CLASS} style={inputStyle(!!errors.addressLine2)} placeholder="Building, floor (optional)"
+                value={address.addressLine2 || ''} onChange={e => setAddressField('addressLine2', e.target.value)} />
+            </FormField>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="City" required error={errors.city}>
+                <input className={INPUT_CLASS} style={inputStyle(!!errors.city)} placeholder="City"
+                  value={address.city || ''} onChange={e => setAddressField('city', e.target.value)} />
+              </FormField>
+              <FormField label="District" required error={errors.district}>
+                <input className={INPUT_CLASS} style={inputStyle(!!errors.district)} placeholder="District"
+                  value={address.district || ''} onChange={e => setAddressField('district', e.target.value)} />
+              </FormField>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="State" required error={errors.state}>
+                <Select value={address.state || ''} onChange={e => setAddressField('state', e.target.value)}>
+                  <option value="" disabled>Select state</option>
+                  {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                </Select>
+              </FormField>
+              <FormField label="Pincode" required error={errors.pincode}>
+                <input className={INPUT_CLASS} style={inputStyle(!!errors.pincode)} placeholder="6-digit pincode" inputMode="numeric" maxLength={6}
+                  value={address.pincode || ''} onChange={e => setAddressField('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))} />
+              </FormField>
+            </div>
+          </div>
+        </div>
 
         <div className="flex gap-3">
           <button onClick={onBack} className="flex-1 py-3.5 rounded-xl font-semibold text-sm transition-all hover:opacity-80" style={btnSecondary}>← Back</button>

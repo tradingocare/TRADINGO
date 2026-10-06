@@ -4,7 +4,7 @@ import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | TRADINGO',
-  description: 'TRADINGO Privacy Policy explains how we collect, use, share, and protect your personal and business information on India\'s first Trusted Electronic Marketplace.',
+  description: 'TRADINGO Privacy Policy explains how we collect, use, share, and protect your personal and business information on India\'s first TRADINGO E-Marketplace.',
   openGraph: {
     title: 'Privacy Policy | TRADINGO',
     description: 'Learn how TRADINGO collects, uses, and protects your data on our B2B marketplace platform.',
@@ -145,7 +145,7 @@ const policySections = [
   {
     title: 'Contact Us',
     content:
-      'If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at support@tradingo.com or write to us at our Mumbai office.',
+      'If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at tradingocare@tradingo.in or write to us at our registered office: Niksa Global Ventures Limited, House No. 194, Block-G, Pocket 6, Sector 16, Rohini, New Delhi - 110089, India.',
     subsections: [],
   },
 ];
@@ -161,26 +161,26 @@ export default function PrivacyPage() {
       <section className="py-12">
         <div className="container-main">
           <div className="mx-auto max-w-3xl">
-            <p className="mb-12 text-sm text-text-secondary dark:text-dark-text-secondary">
+            <p className="mb-12 text-sm text-text-secondary">
               Last updated: June 1, 2025
             </p>
 
             {policySections.map((section) => (
               <div key={section.title} className="mb-12 last:mb-0">
-                <h2 className="mb-4 text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+                <h2 className="mb-4 text-2xl font-bold text-text-primary">
                   {section.title}
                 </h2>
-                <p className="mb-6 leading-relaxed text-text-secondary dark:text-dark-text-secondary">
+                <p className="mb-6 leading-relaxed text-text-secondary">
                   {section.content}
                 </p>
                 {section.subsections.length > 0 && (
                   <div className="space-y-6">
                     {section.subsections.map((sub) => (
                       <div key={sub.heading}>
-                        <h3 className="mb-2 text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                        <h3 className="mb-2 text-lg font-semibold text-text-primary">
                           {sub.heading}
                         </h3>
-                        <p className="leading-relaxed text-text-secondary dark:text-dark-text-secondary">
+                        <p className="leading-relaxed text-text-secondary">
                           {sub.text}
                         </p>
                       </div>
@@ -197,7 +197,7 @@ export default function PrivacyPage() {
         title="Start Trading with Confidence"
         subtitle="Your privacy and security are our top priorities. Join TRADINGO today and trade with peace of mind."
         primaryLabel="Create Free Account"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         variant="simple"
       />
     </>

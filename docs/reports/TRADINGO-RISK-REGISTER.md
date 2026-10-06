@@ -34,6 +34,7 @@
 | P1-08 | **No OpenSearch snapshot/backup script** | Data | OpenSearch data not backed up; S3 lifecycle exists but no implementation | Create opensearch-snapshot.sh using snapshot API | 1 day |
 | P1-09 | **Zero loading.tsx boundaries** across 177 buyer/seller/admin pages | UX | No route-level loading skeletons; inconsistent loading UX | Add loading.tsx to main route groups | 2 days |
 | P1-10 | **Analytics controller missing RolesGuard** | Security | Any authenticated user can access analytics data | Add @UseGuards(RolesGuard) + @Roles('ADMIN', 'SUPER_ADMIN') | 30 min |
+| P1-11 | **Buyer registration draft persists password in cleartext** (`BuyerRegistrationWizard.tsx:19,43-45` — `tradingo_buyer_reg_draft` saved without sanitization, unlike the vendor wizard allowlist-strip) | Security | Any script/XSS or shared device with localStorage access recovers the account password; must not be copied into server-draft architecture | Strip credentials before persist (mirror vendor `SENSITIVE_KEYS` pattern); server drafts enforce a NEVER-persist denylist | 1 hour |
 
 ---
 

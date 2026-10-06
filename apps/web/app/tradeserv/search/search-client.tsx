@@ -17,26 +17,101 @@ const DEFAULT_FILTERS: FilterState = {
   languages: [], availability: 'All', membership: 'All', verification: 'All',
 };
 
-function buildFacetGroups(aggregations: Record<string, unknown> | undefined): FacetGroup[] {
+function buildFacetGroups(
+  aggregations: Record<string, unknown> | undefined,
+  selected: Record<string, string[]>,
+): FacetGroup[] {
   if (!aggregations) return [];
   const groups: FacetGroup[] = [];
+  const aggs = aggregations as any;
 
-  const cats = (aggregations as any).categories as { key: string; doc_count: number }[] | undefined;
-  if (cats && cats.length > 0) {
+  // C-01 P1 F-8: canonical taxonomy facets (IDs authoritative, names display).
+  // Cascade (Phase 4): a selected parent restricts children to its own —
+  // subcategory options keep only entries whose parentId matches the selected
+  // category; item options only entries whose parent chain matches. The
+  // server re-validates every combination anyway (honest empty on mismatch).
+  const selectedCategory = selected.catalogCategory?.[0];
+  const selectedSubcategory = selected.catalogSubcategory?.[0];
+
+  const canonCats = (aggs.catalogCategories ?? []) as { key: string; doc_count: number; name?: string }[];
+  if (canonCats.length > 0) {
+    groups.push({
+      key: 'catalogCategory',
+      label: 'Category',
+      options: canonCats.map((c) => ({
+        value: c.key,
+        label: c.name ?? c.key,
+        count: c.doc_count,
+      })),
+      type: 'radio',
+    });
+  }
+
+  const canonSubs = (aggs.catalogSubcategories ?? []) as {
+    key: string; doc_count: number; name?: string; parentId?: string;
+  }[];
+  const visibleSubs = selectedCategory
+    ? canonSubs.filter((s) => !s.parentId || s.parentId === selectedCategory)
+    : canonSubs;
+  if (visibleSubs.length > 0) {
+    groups.push({
+      key: 'catalogSubcategory',
+      label: 'Subcategory',
+      options: visibleSubs.map((s) => ({
+        value: s.key,
+        label: s.name ?? s.key,
+        count: s.doc_count,
+      })),
+      type: 'radio',
+    });
+  }
+
+  const canonItems = (aggs.catalogItems ?? []) as {
+    key: string; doc_count: number; name?: string; parentId?: string;
+  }[];
+  // Item parentId = subcategory ID; resolve the item's visible parent chain
+  // through the subcategory bucket parentIds when available.
+  const subById = new Map(canonSubs.map((s) => [s.key, s]));
+  const visibleItems = selectedSubcategory
+    ? canonItems.filter((i) => !i.parentId || i.parentId === selectedSubcategory)
+    : selectedCategory
+      ? canonItems.filter((i) => {
+          const sub = subById.get(i.parentId ?? '');
+          return !sub || !sub.parentId || sub.parentId === selectedCategory;
+        })
+      : canonItems;
+  if (visibleItems.length > 0) {
+    groups.push({
+      key: 'catalogItem',
+      label: 'Service Type',
+      options: visibleItems.map((i) => ({
+        value: i.key,
+        label: i.name ?? i.key,
+        count: i.doc_count,
+      })),
+      type: 'radio',
+    });
+  }
+
+  // Legacy free-text category facets remain as a secondary option source —
+  // displayed only when no canonical facet data is present (index doc that
+  // predates canonical sync).
+  const cats = aggs.categories as { key: string; doc_count: number }[] | undefined;
+  if (cats && cats.length > 0 && canonCats.length === 0) {
     groups.push({ key: 'category', label: 'Category', options: cats.map(c => ({ value: c.key, label: c.key, count: c.doc_count })), type: 'checkbox' });
   }
 
-  const cities = (aggregations as any).cities as { key: string; doc_count: number }[] | undefined;
+  const cities = aggs.cities as { key: string; doc_count: number }[] | undefined;
   if (cities && cities.length > 0) {
     groups.push({ key: 'city', label: 'City', options: cities.map(c => ({ value: c.key, label: c.key, count: c.doc_count })), type: 'checkbox' });
   }
 
-  const types = (aggregations as any).professionalTypes as { key: string; doc_count: number }[] | undefined;
+  const types = aggs.professionalTypes as { key: string; doc_count: number }[] | undefined;
   if (types && types.length > 0) {
     groups.push({ key: 'professionalType', label: 'Professional Type', options: types.map(t => ({ value: t.key, label: t.key.replace(/_/g, ' '), count: t.doc_count })), type: 'radio' });
   }
 
-  const ratingRanges = (aggregations as any).ratingRanges as { key: string; doc_count: number }[] | undefined;
+  const ratingRanges = aggs.ratingRanges as { key: string; doc_count: number }[] | undefined;
   if (ratingRanges && ratingRanges.length > 0) {
     groups.push({ key: 'rating', label: 'Rating', options: ratingRanges.map(r => ({ value: r.key, label: r.key + ' Stars', count: r.doc_count })), type: 'radio' });
   }
@@ -78,7 +153,12 @@ export default function TradeServSearchClient() {
     }
     const activeFilters = Object.entries(facetSelected).filter(([_, v]) => v.length > 0);
     for (const [key, values] of activeFilters) {
-      if (key === 'category') params.category = values[0];
+      // C-01 P1 F-8: canonical facet keys map to the canonical search params
+      // (server re-validates every combination; mismatch = honest empty).
+      if (key === 'catalogCategory') params.catalogCategoryId = values[0];
+      else if (key === 'catalogSubcategory') params.catalogSubcategoryId = values[0];
+      else if (key === 'catalogItem') params.catalogItemId = values[0];
+      else if (key === 'category') params.category = values[0];
       else if (key === 'city') params.city = values[0];
       else if (key === 'professionalType') params.professionalType = values[0];
       else if (key === 'rating') {
@@ -87,7 +167,7 @@ export default function TradeServSearchClient() {
       }
     }
     return params;
-  }, [query, sort, facetSelected]);
+  }, [query, sort, facetSelected, searchParams]);
 
   const { data: searchResults, isLoading: searchLoading, isError } = useTradeServSearchV2(
     query ? searchParamsV2 : { query: '' }
@@ -102,7 +182,7 @@ export default function TradeServSearchClient() {
 
   const meta = v2Data?.meta;
   const aggregations = v2Data?.aggregations;
-  const facetGroups = useMemo(() => buildFacetGroups(aggregations), [aggregations]);
+  const facetGroups = useMemo(() => buildFacetGroups(aggregations, facetSelected), [aggregations, facetSelected]);
 
   const handleSearchSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -277,7 +357,24 @@ export default function TradeServSearchClient() {
               <FacetedFilters
                 groups={facetGroups}
                 selected={facetSelected}
-                onChange={(key, values) => setFacetSelected(prev => ({ ...prev, [key]: values }))}
+                onChange={(key, values) => {
+                  // C-01 P1 F-8 (Phase 4): parent/child coherence — selecting a
+                  // category clears incompatible subcategory/item picks (the
+                  // cascade already hides unrelated options; this drops stale
+                  // selections so the request never carries a contradictory
+                  // combination).
+                  setFacetSelected(prev => {
+                    const next = { ...prev, [key]: values };
+                    if (key === 'catalogCategory') {
+                      delete next.catalogSubcategory;
+                      delete next.catalogItem;
+                    }
+                    if (key === 'catalogSubcategory') {
+                      delete next.catalogItem;
+                    }
+                    return next;
+                  });
+                }}
                 onReset={() => setFacetSelected({})}
               />
             ) : (

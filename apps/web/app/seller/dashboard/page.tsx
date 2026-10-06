@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { DashboardPageHeader, StatCard, StatusBadge, DashboardSkeleton } from '@/components/dashboard';
@@ -100,7 +100,7 @@ export default function SellerDashboardPage() {
             ))}
           </div>
 
-          <div className="glass-card-xl p-6  transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(245, 158, 11, 0.15)]">
+          <div className="glass-card-xl p-6 transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(245, 158, 11, 0.15)]">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-white">Seller Recommendations</h2>
@@ -204,7 +204,7 @@ export default function SellerDashboardPage() {
           </Link>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="glass-card-xl p-6  transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(245, 158, 11, 0.15)]">
+            <div className="glass-card-xl p-6 transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(245, 158, 11, 0.15)]">
               <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
               <p className="mt-1 text-sm text-white/60">Common tasks to manage your store</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -222,7 +222,7 @@ export default function SellerDashboardPage() {
               </div>
             </div>
 
-            <div className="glass-card-xl p-6  transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(245, 158, 11, 0.15)]">
+            <div className="glass-card-xl p-6 transition-all duration-300 hover:border-orange-500/20 hover:shadow-[0_0_30px_-5px_rgba(245, 158, 11, 0.15)]">
               <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
               <p className="mt-1 text-sm text-white/60">Latest updates from your store</p>
               <div className="mt-4 space-y-4">

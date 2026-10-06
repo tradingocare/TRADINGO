@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -82,7 +82,7 @@ export function Sidebar({ items, sections, title, className }: SidebarProps) {
             'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
             isActive
               ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/30 dark:text-accent-400'
-              : 'text-text-secondary hover:bg-surface-secondary hover:text-text-primary dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary dark:hover:text-dark-text-primary',
+              : 'text-text-secondary hover:bg-surface-secondary hover:text-text-primary text-text-secondary hover:bg-surface-secondary hover:text-text-primary',
           )}
         >
           <Icon className="h-5 w-5 flex-shrink-0" />
@@ -104,20 +104,20 @@ export function Sidebar({ items, sections, title, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-16 z-30 flex h-[calc(100vh-4rem)] flex-col border-r border-border bg-surface transition-all duration-300 dark:bg-dark-surface dark:border-dark-border',
+        'fixed left-0 top-16 z-30 flex h-[calc(100vh-4rem)] flex-col border-r border-border bg-surface transition-all duration-300 bg-surface border-border',
         collapsed ? 'w-16' : 'w-64',
         className,
       )}
     >
-      <div className="flex items-center justify-between border-b border-border px-4 py-3 dark:border-dark-border">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         {!collapsed && title && (
-          <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary dark:text-dark-text-tertiary">
+          <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
             {title}
           </span>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary"
+          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-surface-secondary"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -133,7 +133,7 @@ export function Sidebar({ items, sections, title, className }: SidebarProps) {
                 <li key={section.title}>
                   <button
                     onClick={() => toggleSection(section.title)}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary transition-colors hover:text-text-secondary dark:text-dark-text-tertiary"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary transition-colors hover:text-text-secondary"
                   >
                     {!collapsed && (
                       <>

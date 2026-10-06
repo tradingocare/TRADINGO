@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsArray, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsBoolean, IsEnum } from 'class-validator';
+import { MessageType } from '@prisma/client';
 
 export class CreateConversationDto {
   @IsString()
@@ -23,8 +24,11 @@ export class CreateConversationDto {
 }
 
 export class SendMessageDto {
+  // P1-02 Part 3 — free-string type is rejected at the DTO boundary
+  // (global ValidationPipe: whitelist + forbidNonWhitelisted); omitted
+  // type keeps defaulting to TEXT in the service.
   @IsOptional()
-  @IsString()
+  @IsEnum(MessageType)
   type?: string;
 
   @IsOptional()
@@ -108,4 +112,23 @@ export class AddParticipantDto {
 
   @IsString()
   userId: string;
+}
+
+/**
+ * P1-02 Part 1 — open-or-create a 1:1 contact conversation.
+ * The frontend legitimately knows the target company (+optional product);
+ * participant userIds are resolved server-side (public company payloads
+ * deliberately strip owner user ids, so the client must never supply them).
+ */
+export class OpenConversationDto {
+  @IsString()
+  companyId: string;
+
+  @IsOptional()
+  @IsString()
+  productId?: string;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
 }

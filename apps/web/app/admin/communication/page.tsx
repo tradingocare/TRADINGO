@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useModerationReports, useModerationStats, useReviewReport, useDismissReport } from '@/hooks';
@@ -73,7 +73,7 @@ export default function AdminCommunicationPage() {
                     </div>
                     <p className="mt-2 text-sm font-medium text-text-primary">Reason: {report.reason}</p>
                     {report.description && <p className="mt-1 text-xs text-text-secondary">{report.description}</p>}
-                    <div className="mt-3 rounded-lg bg-surface-secondary/50 p-3 text-xs dark:bg-dark-surface-secondary/50">
+                    <div className="mt-3 rounded-lg bg-surface-secondary/50 p-3 text-xs">
                       <p className="font-medium text-text-primary">Message:</p>
                       <p className="mt-1 text-text-secondary">{report.message?.content || '[deleted]'}</p>
                     </div>

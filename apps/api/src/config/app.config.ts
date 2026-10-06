@@ -55,6 +55,18 @@ export const clickhouseConfig = registerAs('clickhouse', () => ({
   password: process.env.CLICKHOUSE_PASSWORD || '',
 }));
 
+// P0-4 remediation (auth-doc final audit): ClamAvService reads
+// malware.clamavHost/clamavPort/scanTimeout, but this namespace was never
+// registered — every environment silently fell back to localhost:3310 even
+// though docker-compose maps CLAMAV_HOST=clamav. Registering the namespace
+// makes the compose env vars effective; defaults stay localhost for bare
+// local runs (a running local clamav container is still reachable).
+export const malwareConfig = registerAs('malware', () => ({
+  clamavHost: process.env.CLAMAV_HOST || 'localhost',
+  clamavPort: parseInt(process.env.CLAMAV_PORT || '3310', 10),
+  scanTimeout: (parseInt(process.env.CLAMAV_TIMEOUT || '30', 10)) * 1000,
+}));
+
 export const validationSchema = Joi.object({
   PORT: Joi.number().default(3001),
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),

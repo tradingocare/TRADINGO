@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Plus, Trash2, IndianRupee } from 'lucide-react';
@@ -121,10 +121,10 @@ export function PricingSlabs({
         </Alert>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-border dark:border-dark-border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
           <THead>
-            <TR className="border-b border-border bg-surface-secondary dark:border-dark-border dark:bg-dark-surface-secondary">
+            <TR className="border-b border-border bg-surface-secondary">
               <TH>Min Qty</TH>
               <TH>Max Qty</TH>
               <TH>Price (INR)</TH>
@@ -135,7 +135,7 @@ export function PricingSlabs({
             {slabs.map((slab, index) => (
               <TR
                 key={slab.id || index}
-                className="border-b border-border transition-colors hover:bg-surface-secondary/50 last:border-b-0 dark:border-dark-border dark:hover:bg-dark-surface-secondary/50"
+                className="border-b border-border transition-colors hover:bg-surface-secondary/50 last:border-b-0"
               >
                 <TD>
                   <Input
@@ -154,7 +154,7 @@ export function PricingSlabs({
                     onChange={(e) =>
                       updateSlab(index, 'maxQty', e.target.value === '' ? undefined : Number(e.target.value))
                     }
-                    placeholder="∞"
+                    placeholder="âˆž"
                     className="h-8 w-20 text-xs"
                   />
                 </TD>

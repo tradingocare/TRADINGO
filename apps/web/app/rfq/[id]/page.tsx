@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+﻿import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -67,21 +67,21 @@ async function RfqContent({ id }: { id: string }) {
 
   return (
     <>
-      <section className="border-b border-border pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
+      <section className="border-b border-border pb-8 pt-24 bg-surface-secondary/50">
         <div className="container-main">
-          <nav className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+          <nav className="flex items-center gap-2 text-sm text-text-secondary">
             <Link href="/rfq" className="hover:text-primary-600 dark:hover:text-primary-400">RFQs</Link>
             <span className="mx-2">/</span>
-            <span className="text-text-primary dark:text-dark-text-primary">{rfq.productName}</span>
+            <span className="text-text-primary">{rfq.productName}</span>
           </nav>
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-dark-text-primary">
+              <h1 className="text-3xl font-bold tracking-tight text-text-primary">
                 {rfq.productName}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <StatusBadge status={rfq.status} />
-                <span className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                <span className="text-sm text-text-secondary">
                   <Hash className="mr-1 inline h-4 w-4" />{rfq.id.slice(0, 8)}
                 </span>
               </div>
@@ -106,7 +106,7 @@ async function RfqContent({ id }: { id: string }) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-text-secondary dark:text-dark-text-secondary leading-relaxed">
+                    <p className="text-text-secondary leading-relaxed">
                       {rfq.description}
                     </p>
                   </CardContent>
@@ -126,12 +126,12 @@ async function RfqContent({ id }: { id: string }) {
                 <CardContent>
                   {rfq.responseCount && rfq.responseCount > 0 ? (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-4 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-4">
                         <div>
-                          <p className="font-medium text-text-primary dark:text-dark-text-primary">
+                          <p className="font-medium text-text-primary">
                             {rfq.responseCount} quote{rfq.responseCount !== 1 ? 's' : ''} received
                           </p>
-                          <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                          <p className="text-sm text-text-secondary">
                             Review and compare quotes from sellers
                           </p>
                         </div>
@@ -140,8 +140,8 @@ async function RfqContent({ id }: { id: string }) {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center py-8 text-center">
-                      <MessageSquare className="h-10 w-10 text-text-secondary dark:text-dark-text-secondary" />
-                      <p className="mt-3 text-text-secondary dark:text-dark-text-secondary">
+                      <MessageSquare className="h-10 w-10 text-text-secondary" />
+                      <p className="mt-3 text-text-secondary">
                         No quotes received yet
                       </p>
                     </div>
@@ -157,17 +157,17 @@ async function RfqContent({ id }: { id: string }) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <Package className="h-4 w-4" /> Product
                     </span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{rfq.productName}</span>
+                    <span className="font-medium text-text-primary">{rfq.productName}</span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <Hash className="h-4 w-4" /> Quantity
                     </span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                    <span className="font-medium text-text-primary">
                       {rfq.quantity.toLocaleString()} {rfq.unit}
                     </span>
                   </div>
@@ -175,30 +175,30 @@ async function RfqContent({ id }: { id: string }) {
                     <>
                       <Separator />
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                        <span className="flex items-center gap-2 text-sm text-text-secondary">
                           <IndianRupee className="h-4 w-4" /> Budget
                         </span>
-                        <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                          ₹{rfq.budget.toLocaleString()}
+                        <span className="font-medium text-text-primary">
+                          â‚¹{rfq.budget.toLocaleString()}
                         </span>
                       </div>
                     </>
                   )}
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <CalendarDays className="h-4 w-4" /> Posted
                     </span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{postedDate}</span>
+                    <span className="font-medium text-text-primary">{postedDate}</span>
                   </div>
                   {rfq.city && (
                     <>
                       <Separator />
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                        <span className="flex items-center gap-2 text-sm text-text-secondary">
                           <Building2 className="h-4 w-4" /> Location
                         </span>
-                        <span className="font-medium text-text-primary dark:text-dark-text-primary">{rfq.city}</span>
+                        <span className="font-medium text-text-primary">{rfq.city}</span>
                       </div>
                     </>
                   )}

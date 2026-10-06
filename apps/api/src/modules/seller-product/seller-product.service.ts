@@ -6,6 +6,9 @@ import { ProductStatus, ProductType, MediaType, Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { CreateProductDto, SpecificationDto, PriceSlabDto, MediaDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { MembershipService } from '../membership/membership.service';
+import { entitlementLimit } from '../membership/plan-entitlements';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 
 const PRODUCT_INDEX = 'products';
 
@@ -29,6 +32,8 @@ export class SellerProductService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly searchService: SearchService,
+    private readonly membershipService: MembershipService,
+    private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
   ) {}
 
   private async resolveCompany(userId: string) {
@@ -84,6 +89,21 @@ export class SellerProductService {
 
     const plan = (company.subscriptionPlan || 'trade_start').toLowerCase();
     const limits = MEMBERSHIP_LIMITS[plan] || MEMBERSHIP_LIMITS.trade_start;
+
+    // 2B-2B: version-pinned companies enforce their snapshot cap
+    // (grandfathered terms); legacy subscribers keep the map above verbatim.
+    if (company.currentPlanVersionId) {
+      const snap = await this.membershipService.getVersionedEntitlements(companyId);
+      if (snap && 'product_listings_limit' in snap) {
+        const legacyMax = limits.maxProducts === -1 ? Infinity : limits.maxProducts;
+        const max = entitlementLimit(snap, 'product_listings_limit', legacyMax);
+        const current = await this.prisma.product.count({
+          where: { companyId, deletedAt: null, status: { not: 'DISCONTINUED' as ProductStatus } },
+        });
+        if (max === Infinity) return { allowed: true, current, max: Infinity };
+        return { allowed: current < max, current, max };
+      }
+    }
 
     const current = await this.prisma.product.count({
       where: { companyId, deletedAt: null, status: { not: 'DISCONTINUED' as ProductStatus } },
@@ -169,15 +189,42 @@ export class SellerProductService {
     const company = await this.resolveCompany(userId);
     const limit = await this.checkMembershipLimit(company.id);
     if (!limit.allowed) throw new BadRequestException(`Membership limit reached: ${limit.max} products`);
+    // 2B-2B: slab-count cap for version-pinned companies (legacy: no-op) — before any write.
+    if (dto.priceSlabs?.length) {
+      await this.membershipService.enforcePriceTierLimit(company.id, dto.priceSlabs.length, 0);
+    }
 
     const slug = dto.slug || slugify(dto.name);
     const existing = await this.prisma.product.findUnique({ where: { slug } });
     if (existing) throw new BadRequestException(`Slug "${slug}" already exists`);
 
+    // P0-2: resolve canonical triple (confirmed triple first, then
+    // deterministic exact-only classify on the product name).
+    const canonical = await this.taxonomyPersistence.resolvePersistableTaxonomy({
+      confirmed: {
+        categoryId: dto.catalogCategoryId ?? null,
+        subcategoryId: dto.catalogSubcategoryId ?? null,
+        catalogItemId: dto.catalogItemId ?? null,
+      },
+      name: dto.name,
+      description: dto.shortDescription ?? dto.description ?? null,
+      brand: dto.brand ?? null,
+      context: 'product',
+      expectedType: 'Product',
+    });
+    let legacyCategoryId = dto.categoryId;
+    if (canonical && !legacyCategoryId) {
+      legacyCategoryId =
+        (await this.taxonomyPersistence.bridgeLegacyCategoryId(canonical.categoryId)) ?? undefined;
+    }
+
     const product = await this.prisma.product.create({
       data: {
         companyId: company.id,
-        categoryId: dto.categoryId,
+        categoryId: legacyCategoryId,
+        catalogItemId: canonical?.catalogItemId ?? null,
+        catalogCategoryId: canonical?.categoryId ?? null,
+        catalogSubcategoryId: canonical?.subcategoryId ?? null,
         industryId: dto.industryId,
         name: dto.name,
         slug,
@@ -228,7 +275,7 @@ export class SellerProductService {
     return this.getProduct(userId, product.id);
   }
 
-  async quickCreateProduct(userId: string, dto: { name: string; categoryId?: string; price?: number }) {
+  async quickCreateProduct(userId: string, dto: { name: string; categoryId?: string; price?: number; catalogItemId?: string; catalogCategoryId?: string; catalogSubcategoryId?: string }) {
     const company = await this.resolveCompany(userId);
     const limit = await this.checkMembershipLimit(company.id);
     if (!limit.allowed) {
@@ -236,6 +283,28 @@ export class SellerProductService {
     }
 
     const slug = slugify(dto.name);
+    // O-4: slug-existence precheck — mirrors createProduct (:198-199) so a
+    // colliding quick-list name returns a clean 400 instead of a DB-level 500.
+    const existing = await this.prisma.product.findUnique({ where: { slug } });
+    if (existing) throw new BadRequestException(`Slug "${slug}" already exists`);
+    // P0-2: quick-create carries no confirmed triple — deterministic
+    // exact-only classify on the name persists canonical lineage for free
+    // (zero-loss preserved: unclassifiable rows import uncategorized as before).
+    const canonical = await this.taxonomyPersistence.resolvePersistableTaxonomy({
+      confirmed: {
+        categoryId: dto.catalogCategoryId ?? null,
+        subcategoryId: dto.catalogSubcategoryId ?? null,
+        catalogItemId: dto.catalogItemId ?? null,
+      },
+      name: dto.name,
+      context: 'product',
+      expectedType: 'Product',
+    });
+    let legacyCategoryId = dto.categoryId || undefined;
+    if (canonical && !legacyCategoryId) {
+      legacyCategoryId =
+        (await this.taxonomyPersistence.bridgeLegacyCategoryId(canonical.categoryId)) ?? undefined;
+    }
     const product = await this.prisma.product.create({
       data: {
         name: dto.name,
@@ -243,7 +312,10 @@ export class SellerProductService {
         companyId: company.id,
         createdBy: userId,
         status: 'DRAFT',
-        categoryId: dto.categoryId || undefined,
+        categoryId: legacyCategoryId,
+        catalogItemId: canonical?.catalogItemId ?? null,
+        catalogCategoryId: canonical?.categoryId ?? null,
+        catalogSubcategoryId: canonical?.subcategoryId ?? null,
         ...(dto.price ? { priceSlabs: [{ price: dto.price, minQuantity: 1 }] as any } : {}),
       },
     });
@@ -261,11 +333,50 @@ export class SellerProductService {
     });
     if (!product) throw new NotFoundException('Product not found');
 
+    // 2B-2B: slab-count cap with grandfathering (existing count honored) — before any write.
+    if (dto.priceSlabs !== undefined && dto.priceSlabs.length) {
+      const existingSlabs = await this.prisma.productPriceSlab.count({ where: { productId } });
+      await this.membershipService.enforcePriceTierLimit(company.id, dto.priceSlabs.length, existingSlabs);
+    }
+
     const updateData: any = { updatedBy: userId };
     const fields = ['name', 'shortDescription', 'description', 'productType', 'brand', 'model', 'sku', 'moq', 'unit', 'categoryId', 'industryId', 'originalPrice', 'videoUrl', 'returnPolicy', 'brandId'];
     const dtoAny = dto as Record<string, unknown>;
     for (const f of fields) {
       if (dtoAny[f] !== undefined) updateData[f] = dtoAny[f];
+    }
+    // P0-2: confirmed canonical triple on update — validate server-side,
+    // replace the persisted lineage, bridge legacy categoryId. Explicit
+    // null triple (all-null) clears canonical lineage deliberately.
+    const hasCanonicalUpdate =
+      dtoAny.catalogItemId !== undefined ||
+      dtoAny.catalogCategoryId !== undefined ||
+      dtoAny.catalogSubcategoryId !== undefined;
+    if (hasCanonicalUpdate) {
+      const hasAny = Boolean(dtoAny.catalogItemId || dtoAny.catalogCategoryId || dtoAny.catalogSubcategoryId);
+      const validated = hasAny
+        ? await this.taxonomyPersistence.validateConfirmedTriple({
+            categoryId: (dtoAny.catalogCategoryId as string) ?? null,
+            subcategoryId: (dtoAny.catalogSubcategoryId as string) ?? null,
+            catalogItemId: (dtoAny.catalogItemId as string) ?? null,
+            expectedType: 'Product',
+          })
+        : null;
+      if (hasAny && !validated) {
+        throw new BadRequestException('Invalid canonical taxonomy — pick from the structured catalog');
+      }
+      if (validated) {
+        // P1 O-1: atomic canonical-triple write — item + category columns
+        // move together (create-path parity).
+        Object.assign(updateData, this.taxonomyPersistence.applyCanonicalTriple(validated));
+        if (updateData.categoryId === undefined) {
+          updateData.categoryId =
+            (await this.taxonomyPersistence.bridgeLegacyCategoryId(validated.categoryId)) ?? undefined;
+        }
+      } else {
+        // P1 O-1: deliberate clear nulls the entire triple (never item-only).
+        Object.assign(updateData, this.taxonomyPersistence.applyCanonicalTriple(null));
+      }
     }
     if (dto.slug && dto.slug !== product.slug) {
       const existing = await this.prisma.product.findUnique({ where: { slug: dto.slug } });
@@ -357,11 +468,41 @@ export class SellerProductService {
 
     const limit = await this.checkMembershipLimit(company.id);
     if (!limit.allowed) throw new BadRequestException(`Membership limit reached: ${limit.max} products`);
+    // 2B-2B: a duplicated product is a new product — its copied slabs must
+    // fit the version snapshot cap (legacy subscribers: no-op).
+    if (original.priceSlabs.length) {
+      await this.membershipService.enforcePriceTierLimit(company.id, original.priceSlabs.length, 0);
+    }
+
+    // O-3r (REJECT semantics, founder-approved): the full triple below is
+    // preserved only when the source lineage is still live. A stale/invalid
+    // source item rejects the duplicate cleanly — no silent reclassification,
+    // no source mutation, no DRAFT carrying dead taxonomy. Uncategorized
+    // originals (no triple at all) duplicate as before.
+    if (original.catalogItemId || original.catalogCategoryId || original.catalogSubcategoryId) {
+      const validated = await this.taxonomyPersistence.validateConfirmedTriple({
+        categoryId: original.catalogCategoryId,
+        subcategoryId: original.catalogSubcategoryId,
+        catalogItemId: original.catalogItemId,
+        expectedType: 'Product',
+      });
+      if (!validated) {
+        throw new BadRequestException(
+          'Cannot duplicate product: its catalog classification is stale or invalid. Re-classify the original product first.',
+        );
+      }
+    }
 
     const newSlug = `${original.slug}-copy-${uuid().slice(0, 4)}`;
     const product = await this.prisma.product.create({
       data: {
-        companyId: company.id, categoryId: original.categoryId, name: `${original.name} (Copy)`,
+        companyId: company.id, categoryId: original.categoryId,
+        // P1 O-1: canonical lineage survives duplication as a whole triple
+        // (same item AND its category columns — never item-only).
+        catalogItemId: original.catalogItemId,
+        catalogCategoryId: original.catalogCategoryId ?? null,
+        catalogSubcategoryId: original.catalogSubcategoryId ?? null,
+        name: `${original.name} (Copy)`,
         slug: newSlug, shortDescription: original.shortDescription, description: original.description,
         productType: original.productType, status: 'DRAFT', brand: original.brand, model: original.model,
         sku: original.sku ? `${original.sku}-COPY` : undefined, moq: original.moq, unit: original.unit,

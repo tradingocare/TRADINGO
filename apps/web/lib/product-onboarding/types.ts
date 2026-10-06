@@ -11,6 +11,10 @@ export interface ProductDraft {
   companyId: string;
   categoryId?: string;
   subcategoryId?: string;
+  // P0-2 canonical confirmed triple (survives draft → submit).
+  catalogCategoryId?: string | null;
+  catalogSubcategoryId?: string | null;
+  catalogItemId?: string | null;
   name?: string;
   slug?: string;
   shortDescription?: string;

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { DashboardPageHeader } from '@/components/dashboard';
@@ -44,32 +44,32 @@ export default function BuyerNotificationsPage() {
       {isLoading ? (
         <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
       ) : isError ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <AlertCircle className="h-12 w-12 text-red-500" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">Failed to load notifications</h3>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Something went wrong. Please try again.</p>
+          <h3 className="mt-4 text-lg font-semibold text-text-primary">Failed to load notifications</h3>
+          <p className="mt-1 text-sm text-text-secondary">Something went wrong. Please try again.</p>
           <Button variant="accent" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       ) : notifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <Bell className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No notifications</h3>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">You&apos;re all caught up!</p>
+          <h3 className="mt-4 text-lg font-semibold text-text-primary">No notifications</h3>
+          <p className="mt-1 text-sm text-text-secondary">You&apos;re all caught up!</p>
         </div>
       ) : (
         <div className="space-y-2">
           {notifications.map((notif: any) => (
             <div key={notif.id}
-              className={`flex items-start gap-4 rounded-xl border p-4 transition-colors ${notif.readAt ? 'border-border bg-surface dark:bg-dark-surface dark:border-dark-border' : 'border-border bg-surface border-l-2 border-l-accent'}`}>
-              <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${typeIcons[notif.type] ?? 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary'}`}>
+              className={`flex items-start gap-4 rounded-xl border p-4 transition-colors ${notif.readAt ? 'border-border bg-surface bg-surface border-border' : 'border-border bg-surface border-l-2 border-l-accent'}`}>
+              <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${typeIcons[notif.type] ?? 'bg-surface-secondary text-text-secondary bg-surface-secondary'}`}>
                 <Bell className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{notif.title}</p>
+                  <p className="text-sm font-medium text-text-primary">{notif.title}</p>
                   <span className="flex-shrink-0 text-[10px] text-text-tertiary">{new Date(notif.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-text-secondary dark:text-dark-text-secondary">{notif.body}</p>
+                <p className="mt-0.5 text-xs text-text-secondary">{notif.body}</p>
                 {!notif.readAt && (
                   <Button variant="ghost" size="sm" className="mt-2 h-auto px-2 py-1 text-[11px] text-[#f97316]" onClick={() => markRead.mutate(notif.id)}>
                     <CheckCheck className="h-3 w-3 mr-1" /> Mark Read

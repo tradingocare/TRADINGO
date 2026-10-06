@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { DashboardPageHeader } from '@/components/dashboard';
 import { useBuyerAnalyticsOverview, useBuyerAnalyticsSpending, useBuyerAnalyticsTopProducts } from '@/hooks';
@@ -20,10 +20,10 @@ export default function BuyerAnalyticsPage() {
 
   if (ovError || spError || catError) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
         <AlertCircle className="h-12 w-12 text-red-500" />
-        <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">Failed to load analytics</h3>
-        <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Something went wrong. Please try again.</p>
+        <h3 className="mt-4 text-lg font-semibold text-text-primary">Failed to load analytics</h3>
+        <p className="mt-1 text-sm text-text-secondary">Something went wrong. Please try again.</p>
         <Button variant="accent" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
       </div>
     );
@@ -52,7 +52,7 @@ export default function BuyerAnalyticsPage() {
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">{card.value}</p>
+                    <p className="text-2xl font-bold text-text-primary">{card.value}</p>
                     <p className="text-xs text-text-secondary">{card.label}</p>
                   </div>
                 </div>
@@ -73,9 +73,9 @@ export default function BuyerAnalyticsPage() {
             ) : (
               <div className="space-y-2">
                 {spending.map((s: any) => (
-                  <div key={s.month} className="flex items-center justify-between rounded-lg bg-surface-secondary/50 px-4 py-2.5 text-sm dark:bg-dark-surface-secondary/50">
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{s.month}</span>
-                    <span className="text-text-secondary">₹{Number(s.total).toLocaleString('en-IN')}</span>
+                  <div key={s.month} className="flex items-center justify-between rounded-lg bg-surface-secondary/50 px-4 py-2.5 text-sm">
+                    <span className="font-medium text-text-primary">{s.month}</span>
+                    <span className="text-text-secondary">â‚¹{Number(s.total).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
               </div>
@@ -93,8 +93,8 @@ export default function BuyerAnalyticsPage() {
             ) : (
               <div className="space-y-2">
                 {categories.map((c: any) => (
-                  <div key={c.productName} className="flex items-center justify-between rounded-lg bg-surface-secondary/50 px-4 py-2.5 text-sm dark:bg-dark-surface-secondary/50">
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{c.productName}</span>
+                  <div key={c.productName} className="flex items-center justify-between rounded-lg bg-surface-secondary/50 px-4 py-2.5 text-sm">
+                    <span className="font-medium text-text-primary">{c.productName}</span>
                     <span className="text-text-secondary">{c.count} units</span>
                   </div>
                 ))}

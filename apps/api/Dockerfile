@@ -50,6 +50,7 @@ COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
+COPY scripts/lib/pg-backup.sh /scripts/lib/pg-backup.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["node", "dist/main"]

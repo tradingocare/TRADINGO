@@ -8,7 +8,8 @@ import { TradingoLogo } from '@/components/shared/tradingo-logo';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { NotificationDrawer } from '@/components/notifications/notification-drawer';
 import { UnreadBadge } from '@/components/notifications/unread-badge';
-import { clearTokens } from '@/lib/auth';
+import { clearSession } from '@/lib/auth/session';
+import { useAuth } from '@/components/auth/auth-provider';
 import { useNotificationContext } from '@/components/providers/notification-provider';
 
 interface TopbarProps {
@@ -16,17 +17,18 @@ interface TopbarProps {
 }
 
 export function Topbar({ title }: TopbarProps) {
- const router = useRouter();
- const [showProfile, setShowProfile] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
+  const [showProfile, setShowProfile] = useState(false);
  const [showNotifications, setShowNotifications] = useState(false);
  const [searchQuery, setSearchQuery] = useState('');
  const searchRef = useRef<HTMLInputElement>(null);
  const { notifications, unreadCount, markRead, markAllRead } = useNotificationContext();
 
- const handleSignOut = () => {
- clearTokens();
- window.location.href = '/login';
- };
+  const handleSignOut = () => {
+    clearSession();
+    window.location.href = '/login';
+  };
 
  const handleSearch = (e: React.FormEvent) => {
  e.preventDefault();
@@ -93,20 +95,20 @@ export function Topbar({ title }: TopbarProps) {
  onClick={() => setShowProfile(!showProfile)}
  className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-surface-secondary"
  >
- <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-400">
- A
- </div>
- <ChevronDown className="hidden h-4 w-4 text-text-secondary sm:block" />
- </button>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-400">
+              {(user?.name || 'U').charAt(0).toUpperCase()}
+            </div>
+            <ChevronDown className="hidden h-4 w-4 text-text-secondary sm:block" />
+          </button>
 
- {showProfile && (
- <>
- <div className="fixed inset-0 z-40" onClick={() => setShowProfile(false)} />
- <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-border bg-surface p-2 shadow-lg animate-slide-down">
- <div className="border-b border-border px-3 py-2">
- <p className="text-sm font-medium text-text-primary">Admin User</p>
- <p className="text-xs text-text-secondary">admin@tradingo.com</p>
- </div>
+          {showProfile && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowProfile(false)} />
+              <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-border bg-surface p-2 shadow-lg animate-slide-down">
+                <div className="border-b border-border px-3 py-2">
+                  <p className="text-sm font-medium text-text-primary">{user?.name || 'My Account'}</p>
+                  <p className="text-xs text-text-secondary">{user?.email || 'Manage your profile'}</p>
+                </div>
  <div className="mt-1 space-y-1">
  <Link
  href="/seller/settings"

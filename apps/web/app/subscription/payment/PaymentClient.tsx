@@ -167,7 +167,10 @@ export default function PaymentClient() {
           {amount > 0 && (
             <div className="flex items-center justify-between p-4 rounded-xl mb-6" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
               <span className="text-sm font-semibold text-white/70">Amount Due</span>
-              <span className="text-xl font-black text-amber-400">₹{amount.toLocaleString('en-IN')}</span>
+              {/* P0-5 remediation: `amount` (URL ?amount=) is the order amount in paise
+                  per the money unit contract — display converts once to rupees so the
+                  shown amount always equals the amount charged by the gateway. */}
+              <span className="text-xl font-black text-amber-400">₹{(amount / 100).toLocaleString('en-IN')}</span>
             </div>
           )}
 
@@ -254,7 +257,7 @@ export default function PaymentClient() {
                 <button onClick={handlePay} disabled={!selectedMethod || polling}
                   className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                   {polling ? <LoadingSpinner size="xs" /> : <Shield size={16} />}
-                  Pay ₹{amount.toLocaleString('en-IN')}
+                  Pay ₹{(amount / 100).toLocaleString('en-IN')}
                 </button>
               </motion.div>
             )}

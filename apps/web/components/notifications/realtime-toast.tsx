@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -20,12 +20,12 @@ export function NotificationToast() {
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-50 max-w-sm rounded-xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300 dark:bg-dark-surface dark:border-dark-border ${
+      className={`fixed bottom-4 right-4 z-50 max-w-sm rounded-xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300 bg-surface border-border ${
         visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
       }`}
     >
-      <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">{toast.title}</p>
-      <p className="mt-0.5 text-sm text-text-secondary dark:text-dark-text-secondary">{toast.message}</p>
+      <p className="text-sm font-semibold text-text-primary">{toast.title}</p>
+      <p className="mt-0.5 text-sm text-text-secondary">{toast.message}</p>
     </div>
   );
 }

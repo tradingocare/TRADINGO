@@ -2,25 +2,23 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Briefcase, Upload, X, ChevronDown, MapPin } from 'lucide-react'
+import { Briefcase, Upload, X, MapPin } from 'lucide-react'
 import { Select } from '@/components/ui/select'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
 import { lookupPincode } from '@/lib/utils/india-lookup'
+import { RefinedSection } from '@/components/registration/RefinedSection'
+import { CanonicalTaxonomyPicker, EMPTY_CANONICAL_SELECTION, type CanonicalTripleSelection } from '@/components/taxonomy/canonical-taxonomy-picker'
 import type { BusinessProfileForm } from '@/types/vendor-registration'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   backgroundColor: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
-const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
-
-import { CATALOG_CATEGORIES } from '@/data/catalog-data'
-
-const CATEGORIES = CATALOG_CATEGORIES.map(c => c.name)
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }
 
 const LEAD_TIMES = [
   'Same day / Ready stock', '1-3 days', '4-7 days', '1-2 weeks', '2-4 weeks', '4-8 weeks', 'Depends on order size',
@@ -48,7 +46,9 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
     description: '',
     tagline: '',
     primaryCategory: '',
+    primaryCatalogCategoryId: '',
     secondaryCategories: [],
+    secondaryCatalogCategoryIds: [],
     productTypes: '',
     moqRange: '',
     supplyCapacity: '',
@@ -64,16 +64,13 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
     ...data,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [catSearch, setCatSearch] = useState('')
-  const [showCatDropdown, setShowCatDropdown] = useState(false)
   const [pincodeLookup, setPincodeLookup] = useState<string>('')
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [bannerPreview, setBannerPreview] = useState<string | null>(null)
   const logoRef = useRef<HTMLInputElement>(null)
   const bannerRef = useRef<HTMLInputElement>(null)
-  const catDropdownRef = useRef<HTMLDivElement>(null)
-  const [showSecondary, setShowSecondary] = useState(false)
-  const [secSearch, setSecSearch] = useState('')
+  // F-07: secondary staging picker — one canonical category per Add.
+  const [secPick, setSecPick] = useState<CanonicalTripleSelection>({ ...EMPTY_CANONICAL_SELECTION })
 
   useEffect(() => {
     if (form.logo && form.logo instanceof File) {
@@ -90,16 +87,6 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
       return () => URL.revokeObjectURL(url)
     }
   }, [form.bannerImage])
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (catDropdownRef.current && !catDropdownRef.current.contains(e.target as Node)) {
-        setShowCatDropdown(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
 
   const set = useCallback((key: keyof BusinessProfileForm, value: unknown) => {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -124,27 +111,23 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
     }
   }, [set])
 
-  const filteredCategories = CATEGORIES.filter(c =>
-    c.toLowerCase().includes(catSearch.toLowerCase())
-  )
-
-  const filteredSecondary = CATEGORIES.filter(c =>
-    c.toLowerCase().includes(secSearch.toLowerCase()) &&
-    c !== form.primaryCategory &&
-    !(form.secondaryCategories || []).includes(c)
-  )
-
-  const addSecondary = (cat: string) => {
+  // F-07: secondary categories are canonical IDs picked through the shared
+  // cascade. Display names ride alongside for the DTO-required string fields;
+  // the backend links the IDs (authoritative) and falls back to F-06 name
+  // resolution only when no ID is present (e.g. restored legacy drafts).
+  const addSecondaryFromPick = () => {
     const current = form.secondaryCategories || []
-    if (current.length < 5) {
-      set('secondaryCategories', [...current, cat])
-    }
-    setSecSearch('')
-    setShowSecondary(false)
+    const currentIds = form.secondaryCatalogCategoryIds || []
+    if (!secPick.categoryId || current.length >= 5 || currentIds.includes(secPick.categoryId)) return
+    if (secPick.categoryId === form.primaryCatalogCategoryId) return
+    set('secondaryCategories', [...current, secPick.categoryName])
+    set('secondaryCatalogCategoryIds', [...currentIds, secPick.categoryId])
+    setSecPick({ ...EMPTY_CANONICAL_SELECTION })
   }
 
-  const removeSecondary = (cat: string) => {
-    set('secondaryCategories', (form.secondaryCategories || []).filter(c => c !== cat))
+  const removeSecondary = (index: number) => {
+    set('secondaryCategories', (form.secondaryCategories || []).filter((_, i) => i !== index))
+    set('secondaryCatalogCategoryIds', (form.secondaryCatalogCategoryIds || []).filter((_, i) => i !== index))
   }
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,6 +156,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
     if (!form.addressLine1) errs.addressLine1 = 'Enter address'
     if (!form.pincode || !/^\d{6}$/.test(form.pincode || '')) errs.pincode = 'Enter valid 6-digit pincode'
     if (!form.city) errs.city = 'Enter city'
+    if (!form.district || !(form.district || '').trim()) errs.district = 'Enter district (auto-filled by pincode lookup or type it manually)'
     if (!form.state) errs.state = 'Select state'
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -201,7 +185,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             maxLength={500}
           />
           <div className="flex justify-end">
-            <span className="text-white/25 text-[10px]">{(form.description || '').length}/500</span>
+            <span className="text-text-muted text-[10px]">{(form.description || '').length}/500</span>
           </div>
         </FormField>
 
@@ -215,104 +199,59 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             maxLength={100}
           />
           <div className="flex justify-end">
-            <span className="text-white/25 text-[10px]">{(form.tagline || '').length}/100</span>
+            <span className="text-text-muted text-[10px]">{(form.tagline || '').length}/100</span>
           </div>
         </FormField>
 
         <FormField label="Primary Category" required error={errors.primaryCategory}>
-          <div className="relative" ref={catDropdownRef}>
-            <input
-              className={INPUT_CLASS}
-              style={inputStyle(!!errors.primaryCategory)}
-              value={form.primaryCategory || catSearch}
-              onChange={e => {
-                setCatSearch(e.target.value)
-                set('primaryCategory', '')
-                setShowCatDropdown(true)
-              }}
-              onFocus={() => setShowCatDropdown(true)}
-              placeholder="Search categories..."
-            />
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
-            <AnimatePresence>
-              {showCatDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="absolute z-20 w-full mt-1 rounded-xl max-h-48 overflow-y-auto"
-                   style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
-                  >
-                    {filteredCategories.map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                      onClick={() => { set('primaryCategory', c); setCatSearch(''); setShowCatDropdown(false) }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:text-white transition-colors"
-                      style={{ background: c === form.primaryCategory ? 'rgba(245, 158, 11, 0.12)' : 'transparent' }}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                  {filteredCategories.length === 0 && (
-                    <p className="px-4 py-3 text-white/30 text-xs">No categories found</p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <CanonicalTaxonomyPicker
+            idPrefix="step5-primary"
+            value={{
+              categoryId: form.primaryCatalogCategoryId || null,
+              categoryName: form.primaryCategory || '',
+              subcategoryId: null,
+              subcategoryName: '',
+              catalogItemId: null,
+              catalogItemName: '',
+            }}
+            onChange={(sel) => {
+              set('primaryCategory', sel.categoryName);
+              set('primaryCatalogCategoryId', sel.categoryId || '');
+            }}
+          />
         </FormField>
 
         <FormField label="Secondary Categories" hint="Up to 5 categories (cannot include primary)">
           <div className="flex flex-wrap gap-2 mb-2">
-            {(form.secondaryCategories || []).map(cat => (
+            {(form.secondaryCategories || []).map((cat, index) => (
               <span
-                key={cat}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-white/80"
+                key={`${cat}-${index}`}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-text-primary"
                 style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)' }}
               >
                 {cat}
-                <button type="button" onClick={() => removeSecondary(cat)} className="ml-0.5 text-white/50 hover:text-white">
+                <button type="button" onClick={() => removeSecondary(index)} className="ml-0.5 text-text-tertiary hover:text-text-secondary" aria-label={`Remove ${cat}`}>
                   <X size={12} />
                 </button>
               </span>
             ))}
           </div>
           {(form.secondaryCategories || []).length < 5 && (
-            <div className="relative">
-              <input
-                className={INPUT_CLASS}
-                style={inputStyle(false)}
-                value={secSearch}
-                onChange={e => { setSecSearch(e.target.value); setShowSecondary(true) }}
-                onFocus={() => setShowSecondary(true)}
-                placeholder="Add secondary category..."
+            <div className="space-y-2">
+              <CanonicalTaxonomyPicker
+                idPrefix="step5-secondary"
+                value={secPick}
+                onChange={setSecPick}
               />
-              <AnimatePresence>
-                {showSecondary && secSearch && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    className="absolute z-20 w-full mt-1 rounded-xl max-h-40 overflow-y-auto"
-                     style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
-                    >
-                      {filteredSecondary.map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => addSecondary(c)}
-                        className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:text-white transition-colors"
-                      >
-                        {c}
-                      </button>
-                    ))}
-                    {filteredSecondary.length === 0 && (
-                      <p className="px-4 py-3 text-white/30 text-xs">No matching categories</p>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <button
+                type="button"
+                disabled={!secPick.categoryId}
+                onClick={addSecondaryFromPick}
+                className="rounded-lg px-4 py-2 text-xs font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
+                style={btnPrimary}
+              >
+                Add secondary category
+              </button>
             </div>
           )}
         </FormField>
@@ -361,8 +300,8 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
         <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/80 text-sm font-medium">Export Capability</p>
-              <p className="text-white/35 text-xs">Can you supply outside India?</p>
+              <p className="text-text-primary text-sm font-medium">Export Capability</p>
+              <p className="text-text-tertiary text-xs">Can you supply outside India?</p>
             </div>
             <button
               type="button"
@@ -397,8 +336,14 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
         </div>
 
         <div className="h-px" style={{ backgroundColor: 'var(--bg-elevated)' }} />
-        <p className="text-text-tertiary text-xs font-semibold uppercase tracking-wider">Business Location</p>
-
+        <RefinedSection
+          title="Business Address"
+          subtitle="Registered business location"
+          helperText="Enter the pincode to auto-fill city, district and state. Fields stay editable for corrections."
+          requiredDone={[form.addressLine1, form.city, form.district, form.state, form.pincode].filter(v => String(v ?? '').trim() !== '').length}
+          requiredTotal={5}
+          validationSummary={[errors.addressLine1, errors.city, errors.district, errors.state, errors.pincode].filter((m): m is string => !!m)}
+        >
         <FormField label="Address Line 1" required error={errors.addressLine1}>
           <input
             className={INPUT_CLASS}
@@ -432,7 +377,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
               maxLength={6}
               inputMode="numeric"
             />
-            <MapPin size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
+            <MapPin size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           </div>
           {pincodeLookup && (
             <p className="text-green-400 text-[10px] flex items-center gap-1">{pincodeLookup}</p>
@@ -450,10 +395,10 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             />
           </FormField>
 
-          <FormField label="District">
+          <FormField label="District" required error={errors.district}>
             <input
               className={INPUT_CLASS}
-              style={inputStyle(false)}
+              style={inputStyle(!!errors.district)}
               value={form.district || ''}
               onChange={e => set('district', e.target.value)}
               placeholder="District"
@@ -469,6 +414,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             ))}
           </Select>
         </FormField>
+        </RefinedSection>
 
         <div className="h-px" style={{ backgroundColor: 'var(--bg-elevated)' }} />
 
@@ -482,9 +428,9 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo preview" className="w-16 h-16 rounded-full object-cover" />
               ) : (
-                <Upload size={20} className="text-white/25" />
+                <Upload size={20} className="text-text-muted" />
               )}
-              <p className="text-white/25 text-[10px]">{logoPreview ? 'Change logo' : 'Upload logo'}</p>
+              <p className="text-text-muted text-[10px]">{logoPreview ? 'Change logo' : 'Upload logo'}</p>
               <input ref={logoRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
             </div>
           </FormField>
@@ -498,9 +444,9 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
               {bannerPreview ? (
                 <img src={bannerPreview} alt="Banner preview" className="w-full h-20 rounded-lg object-cover" />
               ) : (
-                <Upload size={20} className="text-white/25" />
+                <Upload size={20} className="text-text-muted" />
               )}
-              <p className="text-white/25 text-[10px]">{bannerPreview ? 'Change banner' : 'Upload banner'}</p>
+              <p className="text-text-muted text-[10px]">{bannerPreview ? 'Change banner' : 'Upload banner'}</p>
               <input ref={bannerRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
             </div>
           </FormField>

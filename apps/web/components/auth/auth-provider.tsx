@@ -3,7 +3,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
-import { getAccessToken, setAccessToken, clearTokens } from '@/lib/auth';
+import { getAccessToken } from '@/lib/auth';
+import { persistSession, persistSessionRole, clearSession } from '@/lib/auth/session';
 import type { User } from '@/lib/api/types';
 
 interface AuthContextType {
@@ -39,8 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await apiClient.get<{ user: User }>('/auth/me');
       setUser(res.data.user);
-      localStorage.setItem('userRole', res.data.user.role);
-      document.cookie = `userRole=${res.data.user.role}; path=/; max-age=86400; SameSite=Lax`;
+      persistSessionRole(res.data.user.role);
     } catch {
       // session expired
     } finally {
@@ -52,14 +52,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
+  // NOTE: login()/register() below are the legacy context clients. No page
+  // consumes them (usage-grep verified R3; the active login/register surfaces
+  // are LoginClient + buyer wizard + vendor wizard, all of which persist
+  // via lib/auth/session). They are retained for context API compatibility
+  // and now delegate to the SAME canonical session writer so the F-20
+  // role-divergence (register previously sent role + 1h cookie) cannot recur.
   const login = useCallback(async (email: string, password: string, rememberMe = false) => {
     const res = await apiClient.post<{ user: User; accessToken: string; refreshToken: string }>(
       '/auth/login',
       { email, password },
     );
-    setAccessToken(res.data.accessToken);
-    localStorage.setItem('userRole', res.data.user.role);
-    document.cookie = `userRole=${res.data.user.role}; path=/; max-age=86400; SameSite=Lax`;
+    persistSession({ user: res.data.user, accessToken: res.data.accessToken });
     if (rememberMe) {
       localStorage.setItem('rememberMe', 'true');
     }
@@ -71,9 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       '/auth/register',
       data,
     );
-    setAccessToken(res.data.accessToken);
-    localStorage.setItem('userRole', res.data.user.role);
-    document.cookie = `userRole=${res.data.user.role}; path=/; max-age=3600; SameSite=Lax`;
+    persistSession({ user: res.data.user, accessToken: res.data.accessToken });
     setUser(res.data.user);
   }, []);
 
@@ -83,12 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore server logout failure — still clear local state
     }
-    clearTokens();
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('rememberMe');
-    localStorage.removeItem('accessToken');
-    document.cookie = 'userRole=; path=/; max-age=0';
-    document.cookie = 'accessToken=; path=/; max-age=0';
+    clearSession();
     setUser(null);
     router.push('/login');
   }, [router]);

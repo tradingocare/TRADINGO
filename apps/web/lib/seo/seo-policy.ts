@@ -128,6 +128,55 @@ export const ROBOTS_NOINDEX_FOLLOW = { index: false, follow: true } as const;
 export const ROBOTS_INDEX_FOLLOW = { index: true, follow: true } as const;
 
 /**
+ * PHASE 2-B §8 — subcategory indexability eligibility.
+ *
+ * Three states, all computed from REAL data only (no invented thresholds):
+ *  - INDEX: category active AND subcategory exists AND ≥1 live product.
+ *    The page has genuine marketplace utility (listings + taxonomy).
+ *  - HOLD: category active AND subcategory exists AND zero live products BUT
+ *    ≥1 live catalog item. The taxonomy is real (items, attributes,
+ *    hierarchy, siblings) so the page is legitimate reference content that
+ *    internal links may safely discover — but it is NOT sitemap-submitted.
+ *  - NOINDEX: subcategory missing (callers 404 anyway), category inactive,
+ *    or taxonomy-degenerate (no products AND no items).
+ *
+ * Robots mapping: INDEX and HOLD both render index+follow; NOINDEX renders
+ * noindex+follow. (HOLD differs from INDEX in sitemap eligibility and
+ * monitoring, not in crawl permission — a deliberate architecture choice:
+ * HOLD pages earn discovery through the Category→Subcategory link graph
+ * while staying out of the submitted sitemap until listings arrive.)
+ *
+ * OPEN FOUNDER DECISION (documented, not invented): the volume/traffic bar
+ * that promotes HOLD → INDEX for SITEMAP submission (e.g. N live products,
+ * M organic entrances) is not yet approved. Current rule uses the minimum
+ * usefulness bar (≥1 live product). Subcategory URLs are NOT added to the
+ * XML sitemap in Phase 2-B regardless of state (§11).
+ */
+export type SubcategoryEligibility = 'INDEX' | 'HOLD' | 'NOINDEX';
+
+export interface SubcategoryEligibilityInput {
+  categoryIsActive: boolean;
+  subcategoryExists: boolean;
+  activeProductCount: number;
+  activeCatalogItemCount: number;
+}
+
+export function getSubcategoryEligibility(
+  input: SubcategoryEligibilityInput,
+): SubcategoryEligibility {
+  if (!input.subcategoryExists) return 'NOINDEX';
+  if (!input.categoryIsActive) return 'NOINDEX';
+  if (input.activeProductCount > 0) return 'INDEX';
+  if (input.activeCatalogItemCount > 0) return 'HOLD';
+  return 'NOINDEX';
+}
+
+/** INDEX/HOLD → index+follow; NOINDEX → noindex+follow. */
+export function eligibilityRobots(status: SubcategoryEligibility) {
+  return status === 'NOINDEX' ? ROBOTS_NOINDEX_FOLLOW : ROBOTS_INDEX_FOLLOW;
+}
+
+/**
  * Build an honest self-canonical for the current request: base URL plus the
  * request's own index-affecting params, sorted for stability, with tracking
  * params stripped. A base request (no params) canonicalizes to the bare base

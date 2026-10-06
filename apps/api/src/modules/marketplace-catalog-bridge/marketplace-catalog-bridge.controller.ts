@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MarketplaceCatalogBridgeService } from './marketplace-catalog-bridge.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -6,6 +6,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { EnrichedCategoryTreeResponse, MappingCoverageResponse, BatchResolveResponse } from './dto/bridge-response.dto';
+import { CardPreviewQueryDto } from './dto/card-preview.dto';
 
 @ApiTags('Marketplace Catalog Bridge')
 @Controller('marketplace-catalog-bridge')
@@ -26,11 +27,26 @@ export class MarketplaceCatalogBridgeController {
         return this.service.getEnrichedCategory(id);
     }
 
+    // NOTE: static 'products/card-preview' must stay ABOVE 'products/:id'
+    // so the router never treats it as an :id value.
+    @Get('products/card-preview')
+    @Public()
+    @ApiOperation({ summary: 'Card-scoped aggregated subcategory previews (read-only)' })
+    async getCardPreviews(@Query() query: CardPreviewQueryDto) {
+        const raw = query.catalogSubcategoryIds;
+        const ids = Array.isArray(raw) ? raw : raw ? [raw] : [];
+        return this.service.getCardPreviews(ids);
+    }
+
     @Get('products/:id')
     @Public()
     @ApiOperation({ summary: 'Get enriched product by ID with catalog mapping' })
     async getEnrichedProduct(@Param('id') id: string) {
-        return this.service.getEnrichedProduct(id);
+        // D1 (founder decision B): non-ACTIVE (or missing) product answers
+        // with the canonical 404, identical to /products/:slug behavior.
+        const product = await this.service.getEnrichedProduct(id);
+        if (!product) throw new NotFoundException('Product not found');
+        return product;
     }
 
     @Get('products/search')
@@ -40,6 +56,9 @@ export class MarketplaceCatalogBridgeController {
         @Query('q') q?: string,
         @Query('categoryId') categoryId?: string,
         @Query('brand') brand?: string,
+        @Query('catalogCategoryId') catalogCategoryId?: string,
+        @Query('catalogSubcategoryId') catalogSubcategoryId?: string,
+        @Query('catalogItemId') catalogItemId?: string,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
     ) {
@@ -47,9 +66,23 @@ export class MarketplaceCatalogBridgeController {
             q,
             categoryId,
             brand,
+            catalogCategoryId,
+            catalogSubcategoryId,
+            catalogItemId,
             page: page ? parseInt(page) : 1,
             limit: limit ? parseInt(limit) : 20,
         });
+    }
+
+    @Get('subcategories/:id/items')
+    @Public()
+    @ApiOperation({ summary: 'List active catalog items of a subcategory (F-07 cascade picker)' })
+    async listSubcategoryItems(
+        @Param('id') id: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        return this.service.listSubcategoryItems(id, page ? parseInt(page) : 1, limit ? parseInt(limit) : 50);
     }
 
     @Get('coverage')

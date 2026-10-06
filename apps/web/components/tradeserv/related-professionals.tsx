@@ -3,17 +3,32 @@
 import { ArrowRight, Users } from 'lucide-react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/tradeserv/glass-card';
-import { useFeaturedProfessionals } from '@/hooks/use-tradeserv';
+import { useFeaturedProfessionals, useTradeServSearchV2 } from '@/hooks/use-tradeserv';
 
 interface RelatedProfessionalsProps {
   currentSlug: string;
   category?: string;
+  // O-11: DB-proven canonical item IDs from the current profile's own
+  // services. When present, related professionals resolve through the
+  // server-validated V2 canonical path instead of the featured fallback.
+  catalogItemIds?: string[];
 }
 
-export function RelatedProfessionals({ currentSlug, category }: RelatedProfessionalsProps) {
-  const { data: featured, isLoading } = useFeaturedProfessionals(4);
+export function RelatedProfessionals({ currentSlug, category, catalogItemIds }: RelatedProfessionalsProps) {
+  const { data: featured, isLoading: featuredLoading } = useFeaturedProfessionals(4);
+  const canonicalId = (catalogItemIds ?? []).find(Boolean);
+  // O-11: canonical related query runs ONLY when the profile provides a
+  // DB-proven item ID; otherwise the component behaves exactly as before
+  // (featured fallback, no extra request).
+  const { data: canonicalResults, isLoading: canonicalLoading } = useTradeServSearchV2(
+    { catalogItemId: canonicalId ?? '' },
+    !!canonicalId,
+  );
+  void category;
 
-  const related = (featured ?? []).filter(
+  const source = canonicalId ? (canonicalResults?.data ?? []) : (featured ?? []);
+  const isLoading = canonicalId ? canonicalLoading : featuredLoading;
+  const related = source.filter(
     (p: any) => p.slug !== currentSlug
   ).slice(0, 3);
 

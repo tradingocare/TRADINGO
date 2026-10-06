@@ -41,6 +41,11 @@ export class CreateProfessionalServiceDto {
   @ApiProperty() @IsString() name: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() category?: string;
+  // P0-2: canonical taxonomy linkage (confirmed via Tick/Change or resolved
+  // server-side from the category/name). The category string remains as a
+  // display echo only — the canonical CatalogItem ID is the persistence
+  // contract (category/subcategory derive via the CatalogItem chain).
+  @ApiPropertyOptional() @IsOptional() @IsString() catalogItemId?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumber() priceMin?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() priceMax?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() pricingType?: string;
@@ -52,6 +57,8 @@ export class UpdateProfessionalServiceDto {
   @ApiPropertyOptional() @IsOptional() @IsString() name?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() category?: string;
+  // P0-2 canonical linkage (see CreateProfessionalServiceDto).
+  @ApiPropertyOptional() @IsOptional() @IsString() catalogItemId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsNumber() priceMin?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() priceMax?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() pricingType?: string;

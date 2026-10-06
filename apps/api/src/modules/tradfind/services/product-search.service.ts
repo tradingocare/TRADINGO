@@ -13,12 +13,26 @@ import { GeoSearchService } from './geo-search.service';
 import { SearchRankingService } from './search-ranking.service';
 import { UnifiedRankingService, UnifiedRankingScore } from './unified-ranking.service';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { MarketplaceCatalogBridgeService } from '../../marketplace-catalog-bridge/marketplace-catalog-bridge.service';
 import { SearchAnalyticsService } from './search-analytics.service';
 import { ProductSearchDto } from '../dto/product-search.dto';
 import { SearchSort } from '../enums/search.enums';
 import { UnifiedSearchResult, FacetCount, SearchFacets, SpellCorrection } from '../interfaces/search-types';
 import { PRODUCTS_INDEX } from '../tradfind.config';
 import { buildProductIndexDoc, ProductIndexInput } from '../../products/product-index.doc';
+
+/**
+ * P0-3 Step 5: resolved canonical filter values.
+ *
+ * `itemIds` is the exact, server-computed set of catalog item IDs the
+ * submitted category/subcategory (and item) filters resolve to. Consumers
+ * filter the EXISTING `catalogItemId.keyword` index field — no mapping
+ * change, no reindex. `null` itemIds = honest empty result (invalid IDs or
+ * a mismatched parent/child combination must never leak results).
+ */
+interface CanonicalFilterResolution {
+  itemIds: string[] | null;
+}
 
 const PRODUCT_FALLBACK_INCLUDE = {
   company: {
@@ -51,12 +65,29 @@ export class ProductSearchService {
     private readonly unifiedRanking: UnifiedRankingService,
     private readonly prisma: PrismaService,
     private readonly searchAnalytics: SearchAnalyticsService,
+    private readonly catalogBridge: MarketplaceCatalogBridgeService,
   ) {}
 
   async search(dto: ProductSearchDto): Promise<UnifiedSearchResult<Record<string, unknown>>> {
     const page = dto.page || 1;
     const limit = dto.limit || 20;
     const from = (page - 1) * limit;
+
+    // Phase 14 — identifier contract: accept category slug-or-ID and
+    // subcategory slug-or-name; resolve to canonical filter values first.
+    if (dto.categoryId) {
+      const resolved = await this.catalogBridge.resolveLegacyCategorySlugOrId(dto.categoryId);
+      if (resolved) dto.categoryId = resolved.id;
+    }
+    if (dto.subCategory) {
+      dto.subCategory = await this.catalogBridge.resolveSubcategoryDisplayName(dto.subCategory);
+    }
+
+    // P0-3 Step 5: canonical taxonomy filters. Resolve + server-validate
+    // every submitted canonical ID against the live catalog (existence and
+    // parent/child chain). Invalid IDs and mismatched combinations resolve
+    // to an honest empty result — never unfiltered, never leaking.
+    const canonical = await this.resolveCanonicalFilters(dto);
 
     const must: Record<string, unknown>[] = [];
     const filter: Record<string, unknown>[] = [];
@@ -90,6 +121,20 @@ export class ProductSearchService {
 
     if (dto.categoryId) filter.push({ term: { categoryId: dto.categoryId } });
     if (dto.subCategory) filter.push({ term: { subCategory: dto.subCategory } });
+    // P0-3 Step 5: canonical taxonomy filter on the EXISTING indexed field
+    // (catalogItemId + .keyword subfield — live-verified). itemIds is the
+    // server-resolved exact item set; honest-empty (no results) when the
+    // resolution failed. Matches on keyword subfield for exact ID semantics.
+    if (canonical.itemIds !== null) {
+      if (canonical.itemIds.length === 0) {
+        // Honest no-match: invalid IDs / mismatched parent-child must NOT
+        // leak results. A terms query on an impossible sentinel matches
+        // nothing without disabling the whole filter chain.
+        filter.push({ terms: { 'catalogItemId.keyword': ['__canonical_no_match__'] } });
+      } else {
+        filter.push({ terms: { 'catalogItemId.keyword': canonical.itemIds } });
+      }
+    }
     if (dto.industryId) filter.push({ term: { industryId: dto.industryId } });
     if (dto.productType) filter.push({ term: { productType: dto.productType } });
     if (dto.verificationLevel) filter.push({ term: { verificationLevel: dto.verificationLevel } });
@@ -224,7 +269,7 @@ export class ProductSearchService {
 
       return result;
     } catch (err) {
-      this.logger.error(`Product search failed: ${(err as Error).message}`);
+      this.logger.warn(`Product search failed (falling back to Prisma): ${(err as Error).message}`);
       try {
         const fallback = await this.fallbackToPrisma(dto);
         this.logger.log(`OpenSearch unavailable — served ${fallback.hits.length} products from PostgreSQL fallback`);
@@ -233,6 +278,112 @@ export class ProductSearchService {
         this.logger.error(`Prisma fallback for product search failed: ${(fbErr as Error).message}`);
         return { hits: [], total: 0, page, limit };
       }
+    }
+  }
+
+  /**
+   * P0-3 Step 5: server-side resolution + validation of canonical taxonomy
+   * filters against the live catalog (Postgres source of truth).
+   *
+   * Semantics (exact ID filtering, no leakage):
+   *  - catalogItemId: validated to exist + active. Intersection with any
+   *    submitted category/subcategory set (item must belong to both).
+   *  - catalogSubcategoryId: validated to exist + active; parent chain
+   *    (subcategory.categoryId) respected — a subcategory under a different
+   *    category than the submitted catalogCategoryId intersects to empty.
+   *  - catalogCategoryId: validated to exist + active.
+   *  - All submitted constraints are intersected: item ∈ category-set ∩
+   *    subcategory-set ∩ {item}. Invalid or unverifiable IDs → empty set
+   *    (honest no-match) — never unfiltered, never fabricated.
+   *
+   * Returns `{ itemIds: null }` when NO canonical filter was submitted
+   * (filter chain unchanged — full backwards compatibility).
+   */
+  private async resolveCanonicalFilters(dto: ProductSearchDto): Promise<CanonicalFilterResolution> {
+    if (!dto.catalogCategoryId && !dto.catalogSubcategoryId && !dto.catalogItemId) {
+      return { itemIds: null };
+    }
+
+    try {
+      let allowed: string[] | null = null; // null = unconstrained so far
+
+      if (dto.catalogCategoryId) {
+        const category = await this.prisma.catalogCategory.findFirst({
+          where: { id: dto.catalogCategoryId, isActive: true },
+          select: { id: true },
+        });
+        if (!category) {
+          this.logger.warn(`Canonical search filter: catalogCategoryId ${dto.catalogCategoryId} not found/active — honest empty`);
+          return { itemIds: [] };
+        }
+        const items = await this.prisma.catalogItem.findMany({
+          where: { isActive: true, subcategory: { categoryId: dto.catalogCategoryId } },
+          select: { id: true },
+        });
+        allowed = items.map((i) => i.id);
+      }
+
+      if (dto.catalogSubcategoryId) {
+        const sub = await this.prisma.catalogSubcategory.findFirst({
+          where: { id: dto.catalogSubcategoryId },
+          select: { id: true, categoryId: true },
+        });
+        if (!sub) {
+          this.logger.warn(`Canonical search filter: catalogSubcategoryId ${dto.catalogSubcategoryId} not found — honest empty`);
+          return { itemIds: [] };
+        }
+        // Parent-chain check: when a category filter is also submitted, the
+        // subcategory must belong to it — otherwise the combination is
+        // contradictory and must resolve to honest empty (no leakage).
+        if (dto.catalogCategoryId && sub.categoryId !== dto.catalogCategoryId) {
+          this.logger.warn(
+            `Canonical search filter: subcategory ${dto.catalogSubcategoryId} belongs to category ${sub.categoryId}, not the submitted ${dto.catalogCategoryId} — honest empty`,
+          );
+          return { itemIds: [] };
+        }
+        const items = await this.prisma.catalogItem.findMany({
+          where: { isActive: true, subcategoryId: dto.catalogSubcategoryId },
+          select: { id: true },
+        });
+        const subSet = items.map((i) => i.id);
+        allowed = allowed === null ? subSet : allowed.filter((id) => subSet.includes(id));
+      }
+
+      if (dto.catalogItemId) {
+        const item = await this.prisma.catalogItem.findFirst({
+          where: { id: dto.catalogItemId, isActive: true },
+          select: { id: true },
+        });
+        if (!item) {
+          this.logger.warn(`Canonical search filter: catalogItemId ${dto.catalogItemId} not found/active — honest empty`);
+          return { itemIds: [] };
+        }
+        allowed = allowed === null
+          ? [dto.catalogItemId]
+          : allowed.includes(dto.catalogItemId) ? [dto.catalogItemId] : [];
+      }
+
+      // Cap the resolved set (defensive bound for very large categories);
+      // the terms query stays correct because the cap is on candidate IDs,
+      // not on results — oversize categories are paginated by OpenSearch
+      // anyway. Products linked to items beyond the cap are a false-negative
+      // risk ONLY for categories with >10k active items; current catalog
+      // (33.6k items total across 60 categories) stays well under per-category.
+      const CANDIDATE_CAP = 10000;
+      const resolved = allowed ?? [];
+      if (resolved.length > CANDIDATE_CAP) {
+        this.logger.warn(
+          `Canonical search filter resolved ${resolved.length} candidate items (capped at ${CANDIDATE_CAP}) — prefer subcategory/item filters for this scope`,
+        );
+        return { itemIds: resolved.slice(0, CANDIDATE_CAP) };
+      }
+      return { itemIds: resolved };
+    } catch (err) {
+      // Resolution infrastructure failure → honest empty (never unfiltered).
+      this.logger.warn(
+        `Canonical search filter resolution failed: ${(err as Error).message} — honest empty`,
+      );
+      return { itemIds: [] };
     }
   }
 
@@ -247,7 +398,11 @@ export class ProductSearchService {
     const limit = Math.min(Math.max(dto.limit || 20, 1), 100);
     const skip = (page - 1) * limit;
 
-    const where = this.buildFallbackWhere(dto);
+    // P0-3 Step 5: same canonical resolution as the OpenSearch path (single
+    // source of semantics — fallback parity guaranteed by construction).
+    const canonical = await this.resolveCanonicalFilters(dto);
+
+    const where = this.buildFallbackWhere(dto, canonical);
     const orderBy = this.buildFallbackOrderBy(dto);
 
     const [products, total] = await Promise.all([
@@ -275,13 +430,28 @@ export class ProductSearchService {
     return { hits, total, page, limit };
   }
 
-  private buildFallbackWhere(dto: ProductSearchDto): Prisma.ProductWhereInput {
+  private buildFallbackWhere(
+    dto: ProductSearchDto,
+    canonical?: CanonicalFilterResolution,
+  ): Prisma.ProductWhereInput {
     const companyFilter: Prisma.CompanyWhereInput = { status: CompanyStatus.ACTIVE };
 
     const where: Prisma.ProductWhereInput = {
       status: ProductStatus.ACTIVE,
       deletedAt: null,
     };
+
+    // P0-3 Step 5: canonical taxonomy filter parity. itemIds === null → no
+    // canonical filter submitted (chain unchanged); [] → honest empty via an
+    // unsatisfiable IN (no leakage); otherwise exact ID membership on the
+    // existing Product→catalogItem relation.
+    if (canonical?.itemIds != null) {
+      if (canonical.itemIds.length === 0) {
+        where.catalogItemId = { in: ['__canonical_no_match__'] };
+      } else {
+        where.catalogItemId = { in: canonical.itemIds };
+      }
+    }
 
     if (dto.q && dto.q.trim()) {
       const q = dto.q.trim();

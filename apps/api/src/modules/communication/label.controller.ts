@@ -42,14 +42,23 @@ export class LabelController {
   @Post('conversations/:conversationId/labels/:labelId')
   @HttpCode(204)
   @ApiOperation({ summary: 'Assign label to conversation' })
-  assignLabel(@Param('conversationId') conversationId: string, @Param('labelId') labelId: string) {
-    return this.service.assignLabel(conversationId, labelId);
+  assignLabel(
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('companyId') companyId: string,
+    @Param('conversationId') conversationId: string,
+    @Param('labelId') labelId: string,
+  ) {
+    return this.service.assignLabel(conversationId, labelId, userId, companyId);
   }
 
   @Delete('conversations/:conversationId/labels/:labelId')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remove label from conversation' })
-  removeLabel(@Param('conversationId') conversationId: string, @Param('labelId') labelId: string) {
-    return this.service.removeLabel(conversationId, labelId);
+  removeLabel(
+    @CurrentUser('sub') userId: string,
+    @Param('conversationId') conversationId: string,
+    @Param('labelId') labelId: string,
+  ) {
+    return this.service.removeLabel(conversationId, labelId, userId);
   }
 }

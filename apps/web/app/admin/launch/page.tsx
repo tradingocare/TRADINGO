@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -110,20 +110,20 @@ export default function LaunchDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-text-secondary dark:text-dark-text-secondary" />
+            <TrendingUp className="h-4 w-4 text-text-secondary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">{data.conversionRate}%</div>
-            <p className="text-xs text-text-secondary dark:text-dark-text-secondary">Overall conversion</p>
+            <div className="text-2xl font-bold text-text-primary">{data.conversionRate}%</div>
+            <p className="text-xs text-text-secondary">Overall conversion</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Active Incidents</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-text-secondary dark:text-dark-text-secondary" />
+            <AlertTriangle className="h-4 w-4 text-text-secondary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">{data.activeIncidents}</div>
+            <div className="text-2xl font-bold text-text-primary">{data.activeIncidents}</div>
             <Link href="/admin/launch/incidents" className="text-xs text-primary-600 hover:underline dark:text-primary-400">
               View incidents
             </Link>
@@ -132,22 +132,22 @@ export default function LaunchDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Checklist Progress</CardTitle>
-            <ClipboardList className="h-4 w-4 text-text-secondary dark:text-dark-text-secondary" />
+            <ClipboardList className="h-4 w-4 text-text-secondary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+            <div className="text-2xl font-bold text-text-primary">
               {completedItems}/{totalItems}
             </div>
-            <p className="text-xs text-text-secondary dark:text-dark-text-secondary">Items completed</p>
+            <p className="text-xs text-text-secondary">Items completed</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Overall Readiness</CardTitle>
-            <Rocket className="h-4 w-4 text-text-secondary dark:text-dark-text-secondary" />
+            <Rocket className="h-4 w-4 text-text-secondary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">{readinessPercent}%</div>
+            <div className="text-2xl font-bold text-text-primary">{readinessPercent}%</div>
             <Progress value={readinessPercent} size="lg" className="mt-2" />
           </CardContent>
         </Card>
@@ -160,26 +160,26 @@ export default function LaunchDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {data.recentIncidents.length === 0 ? (
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No recent incidents</p>
+              <p className="text-sm text-text-secondary">No recent incidents</p>
             ) : (
               data.recentIncidents.slice(0, 5).map((incident) => (
                 <div
                   key={incident.id}
-                  className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-3 dark:border-dark-border dark:bg-dark-surface-secondary/50"
+                  className="flex items-center justify-between rounded-lg border border-border bg-surface-secondary/50 p-3"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Badge variant={severityConfig[incident.severity]?.variant ?? 'secondary'}>
                         {incident.severity}
                       </Badge>
-                      <span className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      <span className="text-xs text-text-secondary">
                         {statusLabel[incident.status] ?? incident.status}
                       </span>
                     </div>
-                    <p className="mt-1 truncate text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                    <p className="mt-1 truncate text-sm font-medium text-text-primary">
                       {incident.title}
                     </p>
-                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">{formatDate(incident.createdAt)}</p>
+                    <p className="text-xs text-text-secondary">{formatDate(incident.createdAt)}</p>
                   </div>
                 </div>
               ))

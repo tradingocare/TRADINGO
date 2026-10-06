@@ -3,7 +3,8 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '../store/auth-store';
 import { apiClient } from '../lib/api-client';
-import { getAccessToken, setAccessToken, clearTokens } from '../lib/auth';
+import { getAccessToken } from '../lib/auth';
+import { persistSession, clearSession } from '../lib/auth/session';
 
 export function useAuth() {
   const { user, accessToken, setAuth, clearAuth } = useAuthStore();
@@ -15,12 +16,16 @@ export function useAuth() {
           setAuth(res, getAccessToken()!);
         })
         .catch(() => {
-          clearTokens();
+          clearSession();
           clearAuth();
         });
     }
   }, [user, setAuth, clearAuth]);
 
+  // NOTE: login()/register()/signout() below are the legacy hook clients —
+  // no page consumes them (usage-grep verified R3; dashboards read `user`
+  // only). Retained for API compatibility; persisted through the SAME
+  // canonical session writer as the active surfaces.
   const login = async (email: string, password: string) => {
     const res = await apiClient.post<{
       user: { id: string; email: string; name: string; role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN'; isVerified: boolean; createdAt: string };
@@ -28,7 +33,7 @@ export function useAuth() {
       refreshToken: string;
     }>('/auth/login', { email, password });
 
-    setAccessToken(res.accessToken);
+    persistSession({ user: res.user, accessToken: res.accessToken });
     setAuth(res.user, res.accessToken);
   };
 
@@ -39,12 +44,12 @@ export function useAuth() {
       refreshToken: string;
     }>('/auth/register', { name, email, password });
 
-    setAccessToken(res.accessToken);
+    persistSession({ user: res.user, accessToken: res.accessToken });
     setAuth(res.user, res.accessToken);
   };
 
   const signout = () => {
-    clearTokens();
+    clearSession();
     clearAuth();
   };
 

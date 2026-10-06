@@ -13,23 +13,31 @@ const sellerBenefits = HOMEPAGE_SELLER_BENEFITS;
 const buyerBenefits = HOMEPAGE_BUYER_BENEFITS;
 
 
+/**
+ * PHASE 2-B §5 — homepage metadata reconciled to the FINAL founder-locked
+ * global SEO/SCO values (founder decision superseding the 2026-08-28 lock;
+ * prior value preserved in git history + TRADINGO-SEO-TITLE-META-REMEDIATION-REPORT.md).
+ * Scope is metadata ONLY: H1, design, sections, canonical (root layout),
+ * robots (root layout), JSON-LD, navigation, and theme are byte-untouched.
+ */
+const HOMEPAGE_TITLE = 'B2B E-Marketplace for Products & Services for Commercial & Retail';
+const HOMEPAGE_DESCRIPTION =
+  'Explore a wide range of products, raw materials, daily essentials, machinery, business supplies, and professional services from verified manufacturers, traders, distributors, and service providers worldwide. Find, Compare & Buy Products and Services with prices, connect directly with sellers, request quotations, and choose the right option for your business or everyday needs.';
+
 export const metadata: Metadata = {
-  title: { absolute: 'Goods & Services for Commercial and Retail | B2B e-Marketplace' },
-  description:
-    'Find manufacturers, traders, distributors, and buyers in one B2B e-Marketplace. Source branded products, daily essentials, workspace and production supplies, and machinery from trusted companies at competitive prices, with fast and reliable delivery. TRADINGO helps businesses operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors with trusted trade solutions.',
+  title: { absolute: HOMEPAGE_TITLE },
+  description: HOMEPAGE_DESCRIPTION,
   openGraph: {
-    title: 'Goods & Services for Commercial and Retail | B2B e-Marketplace',
-    description:
-      'Find manufacturers, traders, distributors, and buyers in one B2B e-Marketplace. Source branded products, daily essentials, workspace and production supplies, and machinery from trusted companies at competitive prices, with fast and reliable delivery. TRADINGO helps businesses operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors with trusted trade solutions.',
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_DESCRIPTION,
     images: [
       { url: '/og/tradingo-og-1200x630.png', width: 1200, height: 630, alt: 'TRADINGO — Trading Right. Go Bright.' },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Goods & Services for Commercial and Retail | B2B e-Marketplace',
-    description:
-      'Find manufacturers, traders, distributors, and buyers in one B2B e-Marketplace. Source branded products, daily essentials, workspace and production supplies, and machinery from trusted companies at competitive prices, with fast and reliable delivery. TRADINGO helps businesses operate smarter, grow efficiently, and scale sustainably across commercial, retail, and corporate sectors with trusted trade solutions.',
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_DESCRIPTION,
     images: ['/og/tradingo-og-1200x630.png'],
   },
 };

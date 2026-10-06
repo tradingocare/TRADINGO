@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { DashboardPageHeader } from '@/components/dashboard';
@@ -71,17 +71,17 @@ export default function BuyerRequirementsPage() {
           ))}
         </div>
       ) : isError ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <AlertCircle className="h-12 w-12 text-red-500" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">Failed to load requirement lists</h3>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Something went wrong. Please try again.</p>
+          <h3 className="mt-4 text-lg font-semibold text-text-primary">Failed to load requirement lists</h3>
+          <p className="mt-1 text-sm text-text-secondary">Something went wrong. Please try again.</p>
           <Button variant="accent" className="mt-4" onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       ) : !lists?.length ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <ClipboardList className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No requirement lists</h3>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Create a list to organize products you need to procure.</p>
+          <h3 className="mt-4 text-lg font-semibold text-text-primary">No requirement lists</h3>
+          <p className="mt-1 text-sm text-text-secondary">Create a list to organize products you need to procure.</p>
           <Button className="mt-4" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-2" /> Create List</Button>
         </div>
       ) : (
@@ -107,7 +107,7 @@ export default function BuyerRequirementsPage() {
                 {list.items?.length > 0 && (
                   <div className="mt-3 space-y-1">
                     {list.items.slice(0, expandedId === list.id ? undefined : 3).map((item: any) => (
-                      <div key={item.id} className="flex items-center justify-between rounded-lg bg-surface-secondary/50 px-3 py-1.5 text-xs dark:bg-dark-surface-secondary/50">
+                      <div key={item.id} className="flex items-center justify-between rounded-lg bg-surface-secondary/50 px-3 py-1.5 text-xs">
                         <span className="font-medium">{item.productName}</span>
                         <span className="text-text-secondary">{item.quantity} {item.unit}</span>
                       </div>
@@ -121,7 +121,7 @@ export default function BuyerRequirementsPage() {
                     )}
                   </div>
                 )}
-                <div className="mt-4 flex items-center justify-between border-t border-border pt-3 dark:border-dark-border">
+                <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
                   <Button variant="outline" size="sm" onClick={() => deleteList.mutate(list.id)} className="text-red-500">
                     <Trash2 className="h-3 w-3 mr-1" /> Delete
                   </Button>

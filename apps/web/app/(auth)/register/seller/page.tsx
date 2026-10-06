@@ -8,7 +8,7 @@ export default async function SellerRegistrationRedirectPage() {
   const hasSession = !!store.get('accessToken')?.value;
 
   if (!hasSession) {
-    redirect('/register');
+    redirect('/golive');
   }
 
   if (userRole === 'SELLER' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'MANAGER') {

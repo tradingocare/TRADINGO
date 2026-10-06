@@ -33,7 +33,7 @@ export function RadiusSelector({ selected, onChange, counts }: RadiusSelectorPro
               'flex-shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-all whitespace-nowrap',
               isActive
                 ? 'bg-accent text-btn-primary-text shadow-sm'
-                : 'bg-surface text-text-secondary hover:bg-surface-secondary dark:bg-dark-surface dark:text-dark-text-secondary dark:hover:bg-dark-surface-secondary',
+                : 'bg-surface text-text-secondary hover:bg-surface-secondary bg-surface text-text-secondary hover:bg-surface-secondary',
             )}
           >
             {opt.label}

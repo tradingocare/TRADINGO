@@ -15,6 +15,8 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { NotificationService } from '../notification/notification.service';
 import { MembershipService } from '../membership/membership.service';
 import { VendorCodesService } from '../vendor-codes/vendor-codes.service';
+import { CatalogClassifyService } from '../marketplace-catalog-bridge/catalog-classify.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -41,6 +43,8 @@ export class AuthService {
     private readonly notification: NotificationService,
     private readonly membership: MembershipService,
     private readonly vendorCodes: VendorCodesService,
+    private readonly catalogClassify: CatalogClassifyService,
+    private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
     private readonly eventEmitter: EventEmitter2,
     @InjectQueue(QueueNames.EMAIL) private readonly emailQueue: Queue,
   ) {}
@@ -132,7 +136,7 @@ export class AuthService {
       const roleMap: Record<string,string[]> = {
         buyer:  ['buyer', 'VIEWER', 'SELLER', 'BUYER'],
         vendor: ['vendor','seller','MANAGER','SELLER'],
-        admin:  ['admin','super_admin','rm','SUPER_ADMIN','ADMIN'],
+        admin:  ['admin','super_admin','rm','RM','SUPER_ADMIN','ADMIN'],
       };
       if (!roleMap[dto.role]?.includes(user.role as string))
         throw new UnauthorizedException('This account is not a ' + dto.role + ' account');
@@ -234,25 +238,88 @@ export class AuthService {
     const uniqueNames = [...new Set((categoryNames || []).map((n) => n?.trim()).filter(Boolean))];
     if (uniqueNames.length === 0) return;
 
-    const matches = await tx.category.findMany({
-      where: { name: { in: uniqueNames, mode: 'insensitive' }, isActive: true },
-      select: { id: true },
-    });
-
-    if (matches.length === 0) {
-      this.logger.warn(`No Category matches for company ${companyId} from names: ${uniqueNames.join(', ')}`);
-      return;
+    // F-06 (fail-closed, founder-approved): every name resolves through the
+    // canonical resolver BEFORE any write. Exactly one valid resolution links
+    // via the existing CompanyCategory join; unresolvable or ambiguous names
+    // reject the whole registration with 400 — never warn-and-continue, never
+    // multi-link, never silent drop. All names resolve first so a late reject
+    // leaves no partial linkage (the callers run inside $transaction anyway).
+    const legacyIds: string[] = [];
+    for (const name of uniqueNames) {
+      const resolved = await this.catalogClassify.resolveCategoryText(name);
+      if (!resolved) {
+        throw new BadRequestException(
+          `Unknown business category: "${name}". Please select a category from the list.`,
+        );
+      }
+      const exactMatches = await tx.catalogCategory.count({
+        where: { isActive: true, name: { equals: name, mode: 'insensitive' } },
+      });
+      if (exactMatches > 1) {
+        throw new BadRequestException(
+          `Ambiguous business category: "${name}" matches multiple categories. Please select a more specific category.`,
+        );
+      }
+      if (resolved.matchType === 'synonym') {
+        const fuzzyMatches = await tx.catalogCategory.count({
+          where: { isActive: true, name: { contains: name, mode: 'insensitive' } },
+        });
+        if (fuzzyMatches > 1) {
+          throw new BadRequestException(
+            `Ambiguous business category: "${name}" matches multiple categories. Please select a more specific category.`,
+          );
+        }
+      }
+      const legacyId = await this.taxonomyPersistence.bridgeLegacyCategoryId(resolved.categoryId);
+      if (!legacyId) {
+        throw new BadRequestException(
+          `Business category "${name}" cannot be linked yet. Please select a different category.`,
+        );
+      }
+      legacyIds.push(legacyId);
     }
 
     await tx.companyCategory.createMany({
-      data: matches.map((m) => ({ companyId, categoryId: m.id })),
+      data: legacyIds.map((categoryId) => ({ companyId, categoryId })),
       skipDuplicates: true,
     });
+  }
 
-    const unmatched = uniqueNames.length - matches.length;
-    if (unmatched > 0) {
-      this.logger.warn(`${unmatched} category name(s) not linked (no DB match) for company ${companyId}`);
+  /**
+   * F-07 cascade picks (vendor Step-5): link already-disambiguated canonical
+   * category IDs. Each ID is re-validated server-side (exists + active) and
+   * bridged to its legacy twin — never trusted blindly, never re-resolved by
+   * name (that would reintroduce F-06 ambiguity). Fail-closed like the name
+   * path: unknown/inactive/untwinned IDs reject with 400 and write nothing.
+   */
+  private async linkCompanyCanonicalCategories(companyId: string, catalogCategoryIds: (string | null | undefined)[], tx: Prisma.TransactionClient) {
+    const uniqueIds = [...new Set((catalogCategoryIds || []).map((id) => id?.trim()).filter(Boolean))] as string[];
+    if (uniqueIds.length === 0) return;
+
+    const legacyIds: string[] = [];
+    for (const catalogCategoryId of uniqueIds) {
+      const canonical = await tx.catalogCategory.findUnique({
+        where: { id: catalogCategoryId },
+        select: { id: true, isActive: true },
+      });
+      if (!canonical || !canonical.isActive) {
+        throw new BadRequestException(
+          'Unknown or inactive business category selection. Please reselect the category.',
+        );
+      }
+      const legacyId = await this.taxonomyPersistence.bridgeLegacyCategoryId(canonical.id);
+      if (!legacyId) {
+        throw new BadRequestException(
+          'Business category selection cannot be linked yet. Please select a different category.',
+        );
+      }
+      legacyIds.push(legacyId);
     }
+
+    await tx.companyCategory.createMany({
+      data: legacyIds.map((categoryId) => ({ companyId, categoryId })),
+      skipDuplicates: true,
+    });
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
@@ -525,15 +592,35 @@ export class AuthService {
     await this.redisService.set(`login:otp:${identifier}`, otp, 300);
     const isPhone = /^\+?[1-9]\d{9,14}$/.test(identifier);
     if (isPhone) {
-      await this.smsService.sendOtp(identifier, otp, 'OTP_LOGIN');
+      // P2C-R2 parity: an undeliverable SMS must not claim "OTP sent" —
+      // delete the stored code and surface the honest 503.
+      const smsResult = await this.smsService.sendOtp(identifier, otp, 'OTP_LOGIN');
+      if (!smsResult.success) {
+        await this.redisService.del(`login:otp:${identifier}`);
+        this.logger.warn(`Login OTP SMS not delivered to ${this.maskIdentifier(identifier)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     } else {
-      await this.emailQueue.add(QueueNames.EMAIL, {
-        type: EmailJobTypes.SEND_NOTIFICATION,
-        to: identifier,
-        subject: 'Your Login OTP',
-        template: 'otp-login',
-        context: { name: user?.name || identifier, otp },
-      }).catch((err) => this.logger.warn(`Failed to queue login OTP email: ${(err as Error).message}`));
+      // P2C-R2 parity: never claim delivery when no provider can deliver and
+      // never swallow enqueue failures — same honest 503 as sendOtp().
+      if (!this.isEmailDeliverable()) {
+        await this.redisService.del(`login:otp:${identifier}`);
+        this.logger.warn(`Email delivery unavailable — login OTP not queued for ${this.maskIdentifier(identifier)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      try {
+        await this.emailQueue.add(QueueNames.EMAIL, {
+          type: EmailJobTypes.SEND_NOTIFICATION,
+          to: identifier,
+          subject: 'Your Login OTP',
+          template: 'otp-login',
+          context: { name: user?.name || identifier, otp },
+        });
+      } catch (err) {
+        await this.redisService.del(`login:otp:${identifier}`);
+        this.logger.warn(`Failed to queue login OTP email: ${(err as Error).message}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     }
     return { success: true, message: 'If account exists, OTP sent', expiresIn: 300 };
   }
@@ -585,15 +672,35 @@ export class AuthService {
     await this.redisService.set(`reset:otp:${identifier}`, otp, 300);
     const isPhone = /^\+?[1-9]\d{9,14}$/.test(identifier);
     if (isPhone) {
-      await this.smsService.sendOtp(identifier, otp, 'OTP_RESET_PASSWORD');
+      // P2C-R2 parity: an undeliverable SMS must not claim "OTP sent" —
+      // delete the stored code and surface the honest 503.
+      const smsResult = await this.smsService.sendOtp(identifier, otp, 'OTP_RESET_PASSWORD');
+      if (!smsResult.success) {
+        await this.redisService.del(`reset:otp:${identifier}`);
+        this.logger.warn(`Reset OTP SMS not delivered to ${this.maskIdentifier(identifier)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     } else {
-      await this.emailQueue.add(QueueNames.EMAIL, {
-        type: EmailJobTypes.SEND_PASSWORD_RESET,
-        to: identifier,
-        subject: 'Password Reset OTP',
-        template: 'password-reset',
-        context: { name: user?.name || identifier, otp },
-      }).catch((err) => this.logger.warn(`Failed to queue password reset OTP email: ${(err as Error).message}`));
+      // P2C-R2 parity: never claim delivery when no provider can deliver and
+      // never swallow enqueue failures — same honest 503 as sendOtp().
+      if (!this.isEmailDeliverable()) {
+        await this.redisService.del(`reset:otp:${identifier}`);
+        this.logger.warn(`Email delivery unavailable — reset OTP not queued for ${this.maskIdentifier(identifier)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      try {
+        await this.emailQueue.add(QueueNames.EMAIL, {
+          type: EmailJobTypes.SEND_PASSWORD_RESET,
+          to: identifier,
+          subject: 'Password Reset OTP',
+          template: 'password-reset',
+          context: { name: user?.name || identifier, otp },
+        });
+      } catch (err) {
+        await this.redisService.del(`reset:otp:${identifier}`);
+        this.logger.warn(`Failed to queue password reset OTP email: ${(err as Error).message}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     }
     return { success: true, message: 'If account exists, reset OTP sent', expiresIn: 300 };
   }
@@ -682,7 +789,11 @@ export class AuthService {
         throw new ConflictException('Email already registered');
       }
 
-      const existingPan = await tx.company.findFirst({ where: { panNumber: dto.panNumber } });
+      // ONE PAN = ONE TRADINGO identity (lifetime): case-insensitive match so a
+      // case variant can never mint a second identity for the same PAN. The DTO
+      // regex already enforces canonical uppercase; the insensitive match is
+      // defense-in-depth for legacy rows.
+      const existingPan = await tx.company.findFirst({ where: { panNumber: { equals: dto.panNumber.trim().toUpperCase(), mode: 'insensitive' } } });
       if (existingPan) {
         throw new ConflictException('PAN number already registered');
       }
@@ -769,8 +880,9 @@ export class AuthService {
         slug,
         businessType,
         companyStructure,
-        panNumber: dto.panNumber,
-        gstNumber: dto.gstNumber || null,
+        // Canonical uppercase identity anchors (ONE PAN = ONE identity, lifetime).
+        panNumber: dto.panNumber.trim().toUpperCase(),
+        gstNumber: dto.gstNumber ? dto.gstNumber.trim().toUpperCase() : null,
         website: dto.website || null,
         email: dto.email,
         mobile: dto.mobileNumber,
@@ -849,8 +961,14 @@ export class AuthService {
         // or missing businessType is replaced by the vendor form's normalized value.
         businessType: company.businessType === 'PROFESSIONAL' ? company.businessType : businessType,
         companyStructure,
-        panNumber: company.panNumber || dto.panNumber,
-        gstNumber: company.gstNumber || dto.gstNumber || null,
+        // Canonical uppercase identity anchors — first declaration wins, never
+        // downgraded to a case variant (ONE PAN = ONE identity, lifetime).
+        panNumber: (company.panNumber || dto.panNumber).trim().toUpperCase(),
+        gstNumber: company.gstNumber
+          ? company.gstNumber.trim().toUpperCase()
+          : dto.gstNumber
+            ? dto.gstNumber.trim().toUpperCase()
+            : null,
         website: company.website || dto.website || null,
         email: company.email || dto.email,
         mobile: company.mobile || dto.mobileNumber,
@@ -926,7 +1044,7 @@ export class AuthService {
     }
 
     if (!ownedCompanies.length) {
-      const existingPan = await this.prisma.company.findFirst({ where: { panNumber: dto.panNumber } });
+      const existingPan = await this.prisma.company.findFirst({ where: { panNumber: { equals: dto.panNumber.trim().toUpperCase(), mode: 'insensitive' } } });
       if (existingPan) {
         throw new ConflictException('PAN number already registered');
       }
@@ -982,7 +1100,17 @@ export class AuthService {
         });
       }
 
-      await this.linkCompanyCategories(company.id, [dto.primaryCategory, ...(dto.secondaryCategories || [])], tx);
+      // F-07: cascade-picked canonical IDs are authoritative when present;
+      // otherwise the F-06 fail-closed name path applies unchanged.
+      if (dto.primaryCatalogCategoryId || (dto.secondaryCatalogCategoryIds || []).length > 0) {
+        await this.linkCompanyCanonicalCategories(
+          company.id,
+          [dto.primaryCatalogCategoryId, ...(dto.secondaryCatalogCategoryIds || [])],
+          tx,
+        );
+      } else {
+        await this.linkCompanyCategories(company.id, [dto.primaryCategory, ...(dto.secondaryCategories || [])], tx);
+      }
 
       const updated = await tx.user.update({
         where: { id: user.id },
@@ -1357,8 +1485,8 @@ export class AuthService {
     const ipCount = await this.redisService.incr(ipKey);
     if (ipCount === 1) await this.redisService.expire(ipKey, 60);
     if (ipCount > 10) {
-      this.logger.warn(`OTP rate limit exceeded for IP: ${ipAddress}`);
-      return { success: true, message: `OTP sent to ${value}`, expiresIn: 300 };
+      this.logger.warn(`OTP rate limit exceeded for IP: ${ipAddress} (recipient ${this.maskIdentifier(value)})`);
+      throw new HttpException('Too many OTP requests. Please try again later.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -1367,17 +1495,56 @@ export class AuthService {
     await this.redisService.set(key, otp, 300); // 5 min expiry
 
     if (type === 'mobile') {
-      await this.smsService.sendOtp(value, otp, 'OTP_VERIFY_MOBILE');
+      const result = await this.smsService.sendOtp(value, otp, 'OTP_VERIFY_MOBILE');
+      if (!result.success) {
+        await this.redisService.del(key);
+        this.logger.warn(`Registration OTP SMS not delivered to ${this.maskIdentifier(value)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     } else {
-      await this.emailQueue.add(QueueNames.EMAIL, {
-        type: EmailJobTypes.SEND_NOTIFICATION,
-        to: value,
-        subject: 'Your Verification OTP',
-        template: 'otp-verify',
-        context: { name: value, otp, type: 'Email' },
-      }).catch((err) => this.logger.warn(`Failed to queue verification OTP email: ${(err as Error).message}`));
+      // P2C-R2: never report delivery success when no provider can deliver.
+      // Mirrors EmailProcessor's configured-provider check (same config keys).
+      if (!this.isEmailDeliverable()) {
+        await this.redisService.del(key);
+        this.logger.warn(`Email delivery unavailable — registration OTP not queued for ${this.maskIdentifier(value)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      try {
+        await this.emailQueue.add(QueueNames.EMAIL, {
+          type: EmailJobTypes.SEND_NOTIFICATION,
+          to: value,
+          subject: 'Your Verification OTP',
+          template: 'otp-verify',
+          context: { name: value, otp, type: 'Email' },
+        });
+      } catch (err) {
+        await this.redisService.del(key);
+        this.logger.warn(`Failed to queue verification OTP email: ${(err as Error).message}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     }
     return { success: true, message: `OTP sent to ${value}`, expiresIn: 300 };
+  }
+
+  /**
+   * P2C-R2: canonical email-deliverability check. Mirrors EmailProcessor's
+   * provider selection (EMAIL_PROVIDER + aws.* / RESEND_API_KEY) without
+   * duplicating the sending service — auth only needs to know whether
+   * claiming delivery would be honest.
+   */
+  private isEmailDeliverable(): boolean {
+    const provider = this.configService.get<string>('EMAIL_PROVIDER', 'ses');
+    if (provider === 'resend') return !!this.configService.get<string>('RESEND_API_KEY');
+    return !!(this.configService.get<string>('aws.accessKeyId') && this.configService.get<string>('aws.secretAccessKey'));
+  }
+
+  /** Mask identifiers in logs: `a***@example.com`, `******1234`. Never logs OTPs. */
+  private maskIdentifier(value: string): string {
+    if (value.includes('@')) {
+      const [user, domain] = value.split('@');
+      return `${user.slice(0, 1)}***@${domain ?? ''}`;
+    }
+    return `******${value.slice(-4)}`;
   }
 
   async verifyOtp(type: 'mobile' | 'email', value: string, otp: string) {

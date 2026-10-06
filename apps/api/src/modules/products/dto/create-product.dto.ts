@@ -120,6 +120,24 @@ export class CreateProductDto {
   @ApiPropertyOptional({ description: 'Industry ID' })
   industryId?: string;
 
+  // P0-2 canonical taxonomy triple (confirmed via Tick/Change; validated
+  // server-side before persistence — never taken on faith from the client).
+  // Catalog IDs are cuid(), NOT UUID — IsUUID would reject them.
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Canonical CatalogItem ID (leaf)' })
+  catalogItemId?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Canonical CatalogCategory ID (when item not yet chosen)' })
+  catalogCategoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Canonical CatalogSubcategory ID (when item not yet chosen)' })
+  catalogSubcategoryId?: string;
+
   @IsString()
   @MinLength(1)
   @ApiProperty({ description: 'Product name' })

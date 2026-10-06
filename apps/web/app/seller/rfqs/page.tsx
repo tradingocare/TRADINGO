@@ -1,7 +1,7 @@
 'use client';
 
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
-import { useRfqs } from '@/hooks';
+import { useSellerIncomingRfqsList } from '@/hooks';
 import { useRouter } from 'next/navigation';
 import { FileText, Calendar, AlertCircle } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -9,7 +9,7 @@ import type { Rfq } from '@/lib/api/types';
 
 export default function SellerRfqsPage() {
   const router = useRouter();
-  const { data, isLoading, error } = useRfqs();
+  const { data, isLoading, error } = useSellerIncomingRfqsList();
 
   return (
     <div className="space-y-6">
@@ -25,8 +25,8 @@ export default function SellerRfqsPage() {
       ) : !data?.data?.length ? (
         <EmptyState icon={FileText} title="No RFQs yet" description="Buyer requests will appear here." />
       ) : (
-        <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">
+        <div className="rounded-xl border border-border bg-surface">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary sm:grid">
             <div className="col-span-3">Product</div>
             <div className="col-span-2">Quantity</div>
             <div className="col-span-2">Budget</div>
@@ -35,18 +35,18 @@ export default function SellerRfqsPage() {
             <div className="col-span-2" />
           </div>
           {data.data.map((rfq: Rfq) => (
-            <div key={rfq.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center dark:border-dark-border">
+            <div key={rfq.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
               <div className="flex items-center gap-3 sm:col-span-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                   <FileText className="h-5 w-5" />
                 </div>
-                <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{rfq.productName}</p>
+                <p className="text-sm font-medium text-text-primary">{rfq.productName}</p>
               </div>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-2">{rfq.quantity} {rfq.unit}</p>
-              <p className="text-sm text-text-primary dark:text-dark-text-primary sm:col-span-2">{rfq.budget ? `₹${rfq.budget.toLocaleString('en-IN')}` : '—'}</p>
+              <p className="text-sm text-text-secondary sm:col-span-2">{rfq.quantity} {rfq.unit}</p>
+              <p className="text-sm text-text-primary sm:col-span-2">{rfq.budget ? `â‚¹${rfq.budget.toLocaleString('en-IN')}` : 'â€”'}</p>
               <div className="flex items-center gap-2 sm:col-span-2">
                 <Calendar className="h-3.5 w-3.5 text-text-tertiary" />
-                <p className="text-sm text-text-secondary dark:text-dark-text-secondary">{new Date(rfq.createdAt).toLocaleDateString()}</p>
+                <p className="text-sm text-text-secondary">{new Date(rfq.createdAt).toLocaleDateString()}</p>
               </div>
               <div className="sm:col-span-1">
                 <StatusBadge status={rfq.status} />

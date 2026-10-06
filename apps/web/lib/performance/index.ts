@@ -1,38 +1,18 @@
 /**
- * Reports Web Vitals to analytics endpoint.
- * Usage: call in `app/layout.tsx` — `useReportWebVitals(measurePageLoad)`
+ * Web Vitals beacon — disabled (Wave A, 2026-09-05).
+ *
+ * The previous implementation beacons POST /api/vitals ~4x per page view.
+ * That endpoint never existed in production (404 on every visit, confirmed
+ * by the 2026-09-04 forensic audit) and the local route stub discarded all
+ * data, so no measurement was ever collected. Until a real ingestion
+ * endpoint exists (Wave B decision), this is a no-op that ships no beacon
+ * and pulls no web-vitals code into the bundle.
+ *
+ * To re-enable: point the handler at a real ingestion endpoint and mount
+ * WebVitalsTracker in app/layout.tsx again.
  */
 export function measurePageLoad(_name: string): void {
-  const handler = (metric: { name: string; value: number; rating: string; delta: number; id: string }) => {
-    const body: Record<string, unknown> = {
-      name: metric.name,
-      value: metric.value,
-      rating: metric.rating,
-      delta: metric.delta,
-      id: metric.id,
-      page: window.location.pathname,
-      timestamp: Date.now(),
-    };
-
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon('/api/vitals', JSON.stringify(body));
-    } else {
-      fetch('/api/vitals', {
-        method: 'POST',
-        body: JSON.stringify(body),
-        keepalive: true,
-      });
-    }
-  };
-
-  // Dynamic import to avoid bundling web-vitals in main chunk
-  import('web-vitals').then(({ onCLS, onFCP, onLCP, onTTFB, onINP }) => {
-    onCLS(handler);
-    onFCP(handler);
-    onLCP(handler);
-    onTTFB(handler);
-    onINP(handler);
-  });
+  // intentionally disabled — see note above
 }
 
 /**

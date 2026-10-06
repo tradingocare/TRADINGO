@@ -18,6 +18,7 @@ interface IndexSearchResult {
   hits: Record<string, unknown>[];
   total: number;
   entityType: string;
+  degraded?: boolean;
 }
 
 @Injectable()
@@ -52,6 +53,7 @@ export class EnterpriseSearchService {
       : ['brand', 'attribute', 'synonym', 'category', 'industry'];
 
     const results: IndexSearchResult[] = [];
+    let degraded = false;
 
     const searchPromises = entities.map(async (entityType) => {
       const index = this.getIndexForEntity(entityType);
@@ -72,10 +74,15 @@ export class EnterpriseSearchService {
         const searchResult = await this.searchService.search<Record<string, unknown>>(
           index, expandedQuery, filters, { page, limit },
         );
+        if (searchResult.degraded) {
+          degraded = true;
+          return { hits: [], total: 0, entityType, degraded: true };
+        }
         return { hits: searchResult.hits, total: searchResult.total, entityType };
       } catch (err) {
         this.logger.warn(`Search in ${index} failed: ${(err as Error).message}`);
-        return { hits: [], total: 0, entityType };
+        degraded = true;
+        return { hits: [], total: 0, entityType, degraded: true };
       }
     });
 
@@ -119,7 +126,7 @@ export class EnterpriseSearchService {
 
     return {
       data: ranked.slice(0, limit),
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit), synonymExpanded: synonymMatch, latencyMs, expandedQuery },
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit), synonymExpanded: synonymMatch, latencyMs, expandedQuery, degraded },
       byEntity: results.reduce((acc, r) => ({ ...acc, [r.entityType]: { total: r.total } }), {} as Record<string, { total: number }>),
     };
   }
@@ -169,7 +176,9 @@ export class EnterpriseSearchService {
 
       try {
         await this.searchService.deleteIndex(index);
-      } catch { /* may not exist */ }
+      } catch (err) {
+        this.logger.warn(`Reindex: deleteIndex ${index} failed (may not exist): ${(err as Error).message}`);
+      }
       await this.searchService.createIndex(index, ENTERPRISE_INDEX_MAPPINGS[index]);
       counts[index] = await this.indexDocuments(entityType, index);
     }
@@ -185,7 +194,8 @@ export class EnterpriseSearchService {
       try {
         const exists = await this.searchService.indexExists(index);
         health[index] = { exists };
-      } catch {
+      } catch (err) {
+        this.logger.warn(`Index health check failed for ${index}: ${(err as Error).message}`);
         health[index] = { exists: false };
       }
     }
@@ -214,8 +224,9 @@ export class EnterpriseSearchService {
         this.prisma.category.count({ where }),
       ]);
       return { hits: data.map(d => ({ ...d, _sourceType: 'category' })), total, entityType: 'category' };
-    } catch {
-      return { hits: [], total: 0, entityType: 'category' };
+    } catch (err: any) {
+      this.logger.error('Failed to search categories from Prisma', { error: err?.message });
+      return { hits: [], total: 0, entityType: 'category', degraded: true };
     }
   }
 
@@ -235,8 +246,9 @@ export class EnterpriseSearchService {
         this.prisma.industry.count({ where }),
       ]);
       return { hits: data.map(d => ({ ...d, _sourceType: 'industry' })), total, entityType: 'industry' };
-    } catch {
-      return { hits: [], total: 0, entityType: 'industry' };
+    } catch (err: any) {
+      this.logger.error('Failed to search industries from Prisma', { error: err?.message });
+      return { hits: [], total: 0, entityType: 'industry', degraded: true };
     }
   }
 

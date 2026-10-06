@@ -3,7 +3,8 @@ import { Suspense } from 'react'
 import CompanyDirectoryClient from './CompanyDirectoryClient'
 
 export const metadata: Metadata = {
-  title: 'Tradors Directory — TRADINGO',
+  // The root layout appends "| TRADINGO" — never repeat the brand here.
+  title: 'Tradors Directory',
   description: 'Browse verified Indian tradors — manufacturers, wholesalers, distributors and service providers. Find trusted B2B partners on TRADINGO.',
 }
 

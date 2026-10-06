@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { ArrowRight } from 'lucide-react';
 import { SectionHeader } from '@/components/shared/section-header';
 import { AnimatedSection } from '@/components/shared/animated-section';
@@ -14,7 +14,7 @@ import { LAUNCH_FEATURES, LAUNCH_PRICING_PLANS, LAUNCH_STATS } from '@/data/mast
 export const metadata: Metadata = {
   title: 'Launch Campaign | TRADINGO',
   description:
-    'India\'s Premier B2B Trade Platform Has Arrived. Join the beta — limited slots available. Start your 30-day free trial today.',
+    'India\'s Premier B2B Trade Platform Has Arrived. Join the beta â€” limited slots available. Start your 30-day free trial today.',
 };
 
 const launchFeatures = LAUNCH_FEATURES;
@@ -34,7 +34,7 @@ export default function LaunchPage() {
           <AnimatedSection>
             <div className="mx-auto max-w-4xl text-center">
               <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm">
-                Limited Beta — Slots Available
+                Limited Beta â€” Slots Available
               </Badge>
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                 India&apos;s Premier B2B Trade Platform Has Arrived
@@ -59,7 +59,7 @@ export default function LaunchPage() {
         </div>
       </section>
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <StatisticsCards stats={launchStats} />
@@ -83,7 +83,7 @@ export default function LaunchPage() {
 
       <Separator />
 
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <SectionHeader
@@ -103,7 +103,7 @@ export default function LaunchPage() {
         <div className="container-main">
           <div className="mx-auto max-w-3xl text-center text-white">
             <Badge variant="secondary" className="mb-4 px-4 py-1.5 text-sm">
-              Limited Slots Available — Join Before July
+              Limited Slots Available â€” Join Before July
             </Badge>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
               Limited Beta Slots Available
@@ -128,7 +128,7 @@ export default function LaunchPage() {
         title="Start Your 30-Day Free Trial"
         subtitle="Try the full Business plan free for 30 days. No credit card required. Cancel anytime."
         primaryLabel="Start Free Trial"
-        primaryHref="/register?ref=launch-trial"
+        primaryHref="/register/vendor?ref=launch-trial"
         secondaryLabel="See Plans"
         secondaryHref="#plans"
         variant="simple"

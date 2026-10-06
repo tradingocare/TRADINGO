@@ -52,7 +52,7 @@ export function WelcomeTour({ role }: { role: string }) {
   const current = steps[activeIndex];
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-80 rounded-2xl border border-border bg-surface-secondary p-5 shadow-2xl dark:bg-dark-surface-secondary">
+    <div className="fixed bottom-6 right-6 z-50 w-80 rounded-2xl border border-border bg-surface-secondary p-5 shadow-2xl">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
           <Sparkles className="h-4 w-4 text-accent-500" />
@@ -81,12 +81,12 @@ export function WelcomeTour({ role }: { role: string }) {
                 <span className="text-[10px] font-bold text-gray-900">{i + 1}</span>
               </div>
             ) : (
-              <Circle className="h-4 w-4 shrink-0 text-gray-400" />
+              <Circle className="h-4 w-4 shrink-0 text-text-tertiary" />
             )}
             <span className={cn('text-sm', i <= activeIndex ? 'text-text-primary' : 'text-text-tertiary')}>
               {step.label}
             </span>
-            {i === activeIndex && <ChevronRight className="ml-auto h-3.5 w-3.5 text-gray-400" />}
+            {i === activeIndex && <ChevronRight className="ml-auto h-3.5 w-3.5 text-text-tertiary" />}
           </a>
         ))}
       </div>

@@ -184,7 +184,7 @@ export default function BuyFromTradingoPage() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-sm font-medium text-accent">
               <ShieldCheck className="h-4 w-4" />
-              Verified Sellers Â· Secure Payments
+              Verified Sellers · Secure Payments
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
               Source Verified Products from{' '}

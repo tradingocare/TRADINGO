@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import {
   ArrowRight,
   ShoppingCart,
@@ -52,7 +52,7 @@ const engines: Engine[] = [
     icon: Shield,
     name: 'Secure Escrow',
     tagline: 'Zero Commission',
-    description: 'TRADINGO earns only from subscription plans — zero commission from any buyer or seller. Escrow protection included free, released only after you confirm delivery.',
+    description: 'TRADINGO earns only from subscription plans â€” zero commission from any buyer or seller. Escrow protection included free, released only after you confirm delivery.',
     href: '/why-tradingo',
     color: 'from-orange-500 to-red-500',
   },
@@ -95,7 +95,7 @@ export function TradingEngines() {
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">
                       {engine.name}
-                      <span className="ml-1 text-sm font-normal text-text-tertiary dark:text-dark-text-tertiary">
+                      <span className="ml-1 text-sm font-normal text-text-tertiary">
                         
                       </span>
                     </CardTitle>

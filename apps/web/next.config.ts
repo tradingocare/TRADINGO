@@ -71,6 +71,11 @@ const nextConfig: NextConfig = withBundleAnalyzer({
   async redirects() {
     return [
       {
+        source: '/seller-plans',
+        destination: '/plans',
+        permanent: true,
+      },
+      {
         source: '/product',
         destination: '/products',
         permanent: true,

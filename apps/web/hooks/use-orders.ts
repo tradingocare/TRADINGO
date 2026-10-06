@@ -1,10 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrders, getOrder, updateOrderStatus, type GetOrdersParams } from '@/lib/api/orders';
 
+// Batch B repair: these hooks previously resolved to bare `/orders` (404).
+// The canonical backend family is smart-order (`/smart-order/buyer|seller|admin/all`).
+// The role selects the canonical endpoint; buyers remain the default for the
+// existing no-arg call sites.
 export function useOrders(params?: GetOrdersParams) {
   return useQuery({
     queryKey: ['orders', params],
-    queryFn: () => getOrders(params),
+    queryFn: () => getOrders({ ...params, role: params?.role ?? 'buyer' }),
   });
 }
 

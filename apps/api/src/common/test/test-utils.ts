@@ -19,6 +19,7 @@ export function createMockPrisma() {
     $disconnect: jest.fn(),
     user: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
     company: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
+    companyLocation: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
     session: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), updateMany: jest.fn(), count: jest.fn() },
     order: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn(), aggregate: jest.fn() },
     orderItem: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), aggregate: jest.fn() },
@@ -47,6 +48,7 @@ export function createMockPrisma() {
     membership: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
     plan: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
     membershipPlan: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
+    membershipPlanVersion: { findUnique: jest.fn().mockResolvedValue(null), findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
     planFeature: { findMany: jest.fn(), create: jest.fn(), createMany: jest.fn(), deleteMany: jest.fn(), orderBy: jest.fn() },
     planHistory: { create: jest.fn(), findMany: jest.fn(), count: jest.fn() },
     planAddon: { findMany: jest.fn(), create: jest.fn(), delete: jest.fn(), count: jest.fn() },
@@ -84,6 +86,13 @@ export function createMockTx() {
     order: { findUnique: jest.fn() },
     escrow: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     escrowEvent: { create: jest.fn() },
+    payment: { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+    company: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+    companyLocation: { findFirst: jest.fn() },
+    subscriptionEvent: { create: jest.fn() },
+    planHistory: { create: jest.fn(), findMany: jest.fn() },
+    membershipPlanVersion: { findUnique: jest.fn().mockResolvedValue(null), findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
+    invoice: { findUnique: jest.fn(), create: jest.fn() },
   };
 }
 

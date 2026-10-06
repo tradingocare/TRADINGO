@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -63,12 +63,12 @@ export function MarketplaceCounters({ items, className }: MarketplaceCountersPro
       {items.map((item) => (
         <div
           key={item.label}
-          className="flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center shadow-sm dark:bg-dark-surface dark:border-dark-border"
+          className="flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center shadow-sm"
         >
           <span className="text-3xl font-bold text-primary-600 dark:text-primary-400 sm:text-4xl">
             <CountUp value={item.value} suffix={item.suffix} />
           </span>
-          <span className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+          <span className="mt-2 text-sm text-text-secondary">
             {item.label}
           </span>
         </div>

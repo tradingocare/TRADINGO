@@ -12,8 +12,6 @@ import { Public } from '../../common/decorators/public.decorator';
 import {
   ValidateCouponDto,
   ValidateReferralDto,
-  CreateOrderDto,
-  ProcessPaymentDto,
   CancelSubscriptionDto,
   PlanHistoryQueryDto,
   EnrollTrialDto,
@@ -63,6 +61,15 @@ export class MembershipController {
     return this.membershipService.getPlanBySlug(slug);
   }
 
+  // P2A: customer-facing six-plan comparison — canonical entitlement matrix.
+  // Read-only, deterministic, no legacy PlanFeature rows involved.
+  @Get('entitlement-matrix')
+  @ApiOperation({ summary: 'Get canonical entitlement comparison matrix' })
+  @Public()
+  getEntitlementMatrix() {
+    return this.membershipService.getEntitlementMatrix();
+  }
+
   @Post('plans/seed')
   @ApiOperation({ summary: 'Seed plans' })
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -79,33 +86,28 @@ export class MembershipController {
     return this.membershipService.getCurrentSubscription(company.id);
   }
 
-  @Post('order')
-  @ApiOperation({ summary: 'Create order' })
-  @UseGuards(JwtAuthGuard)
-  async createOrder(
-    @CurrentUser('sub') userId: string,
-    @Body() body: CreateOrderDto,
-  ) {
-    const company = await this.resolveCompany(userId);
-    return this.membershipService.createOrder(company.id, body.planId, body.planTier, body.duration || 1);
-  }
-
-  @Post('payment')
-  @ApiOperation({ summary: 'Process payment' })
-  @UseGuards(JwtAuthGuard)
-  async processPayment(
-    @CurrentUser('sub') userId: string,
-    @Body() body: ProcessPaymentDto,
-  ) {
-    const company = await this.resolveCompany(userId);
-    return this.membershipService.processPayment(company.id, userId, body.orderId, body.gateway as any, body.paymentData);
-  }
+  // P0-6 remediation: the legacy `POST /membership/order` and `POST /membership/payment`
+  // endpoints were removed. They served only the retired /plans/vendor/purchase mock
+  // checkout (apps/web/lib/payment/provider.ts), which could activate paid plans without
+  // a verified gateway payment. Canonical purchase flow: /subscription/purchase ->
+  // POST /payment/razorpay/order -> POST /payment/razorpay/verify (HMAC-verified).
+  // The service methods (createOrder/processPayment) were dead weight for a removed
+  // flow and are retired with their only callers.
 
   @Post('payment/confirm')
   @ApiOperation({ summary: 'Confirm payment' })
   @UseGuards(JwtAuthGuard)
-  confirmPayment(@Body() body: { paymentId: string; gatewayPaymentId: string; gatewaySignature: string }) {
-    return this.membershipService.confirmPayment(body.paymentId, body.gatewayPaymentId, body.gatewaySignature);
+  confirmPayment(
+    @CurrentUser('sub') userId: string,
+    @Body() body: { paymentId: string; gatewayPaymentId: string; gatewaySignature: string },
+  ) {
+    // P0-8 remediation: resolveCompany enforces tenant ownership before the service
+    // loads the payment (scoped by companyId), verifies the gateway HMAC, and
+    // transitions state transactionally.
+    return this.resolveCompany(userId)
+      .then((company) =>
+        this.membershipService.confirmPayment(company.id, body.paymentId, body.gatewayPaymentId, body.gatewaySignature),
+      );
   }
 
   @Post('coupon/validate')
@@ -181,6 +183,21 @@ export class MembershipController {
   async enrollTrial(@CurrentUser('sub') userId: string, @Body() body: EnrollTrialDto) {
     const company = await this.resolveCompany(userId);
     return this.membershipService.enrollTrial(company.id, body.planId);
+  }
+
+  // P0-2 remediation: free-plan (TRAD UP™) activation WITHOUT any gateway order.
+  // ₹0 plans must not require Razorpay (zero-amount orders are rejected by the
+  // gateway, which dead-ended the TRAD UP flow). Launch-mode visibility control
+  // is enforced inside the service — admin can close the plan via launch_mode.
+  @Post('activate-free')
+  @ApiOperation({ summary: 'Activate a free plan (e.g. TRAD UP) — no payment required' })
+  @UseGuards(JwtAuthGuard)
+  async activateFreePlan(
+    @CurrentUser('sub') userId: string,
+    @Body() body: { planId: string },
+  ) {
+    const company = await this.resolveCompany(userId);
+    return this.membershipService.activateFreePlan(company.id, body.planId);
   }
 
   @Post('upgrade')

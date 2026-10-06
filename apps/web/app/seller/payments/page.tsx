@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { DashboardPageHeader, StatCard, StatusBadge, StatCardSkeleton, TableSkeleton } from '@/components/dashboard';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -32,7 +32,7 @@ export default function SellerPaymentsPage() {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2">
-          <StatCard icon={DollarSign} label="GOCASH Balance" value={`₹${(balance?.balance ?? 0).toLocaleString('en-IN')}`} change="Available" changeType="neutral" />
+          <StatCard icon={DollarSign} label="GOCASH Balance" value={`â‚¹${(balance?.balance ?? 0).toLocaleString('en-IN')}`} change="Available" changeType="neutral" />
           <StatCard icon={Clock} label="Total Transactions" value={String(payments?.total ?? 0)} change="All time" changeType="neutral" />
         </div>
       )}
@@ -44,8 +44,8 @@ export default function SellerPaymentsPage() {
       ) : !payments?.data?.length ? (
         <EmptyState icon={DollarSign} title="No transactions yet" description="Your payment history will appear here." />
       ) : (
-        <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">
+        <div className="rounded-xl border border-border bg-surface">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary sm:grid">
             <div className="col-span-2">Transaction</div>
             <div className="col-span-2">From</div>
             <div className="col-span-2">Type</div>
@@ -54,15 +54,15 @@ export default function SellerPaymentsPage() {
             <div className="col-span-3">Date</div>
           </div>
           {payments.data.map((txn: Payment) => (
-            <div key={txn.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center dark:border-dark-border">
-              <p className="text-xs font-mono font-medium text-text-primary dark:text-dark-text-primary sm:col-span-2">#{txn.id.slice(0, 8)}</p>
-              <p className="text-sm text-text-primary dark:text-dark-text-primary sm:col-span-2">{txn.fromId}</p>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary capitalize sm:col-span-2">{txn.type.replace(/_/g, ' ').toLowerCase()}</p>
-              <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary sm:col-span-2">₹{txn.amount.toLocaleString('en-IN')}</p>
+            <div key={txn.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
+              <p className="text-xs font-mono font-medium text-text-primary sm:col-span-2">#{txn.id.slice(0, 8)}</p>
+              <p className="text-sm text-text-primary sm:col-span-2">{txn.fromId}</p>
+              <p className="text-sm text-text-secondary capitalize sm:col-span-2">{txn.type.replace(/_/g, ' ').toLowerCase()}</p>
+              <p className="text-sm font-semibold text-text-primary sm:col-span-2">â‚¹{txn.amount.toLocaleString('en-IN')}</p>
               <div className="sm:col-span-1">
                 <StatusBadge status={txn.status} />
               </div>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-3">{new Date(txn.createdAt).toLocaleDateString()}</p>
+              <p className="text-sm text-text-secondary sm:col-span-3">{new Date(txn.createdAt).toLocaleDateString()}</p>
             </div>
           ))}
         </div>

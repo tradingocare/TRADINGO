@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Mail, Menu, Phone, X } from 'lucide-react';
-import { getDashboardForRole } from '@/lib/auth/redirects';
 import { ThemeToggle } from './theme-toggle';
 import { TradingoLogoIcon } from './tradingo-logo';
 import { cn } from '@/lib/utils';
@@ -23,8 +22,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'TradeServ', subtitle: 'SERVICES', href: '/tradeserv' },
   { label: 'Tradors', subtitle: 'BUSINESS DIRECTORY', href: '/companies' },
   { label: 'TradeTalk', subtitle: 'BUSINESS NETWORK', href: '/tradetalk' },
-  { label: 'GoStart', subtitle: 'CREATE ACCOUNT', href: '/register' },
-  { label: 'GoLive', subtitle: 'VENDOR MODE', href: '/login?next=/register/vendor-onboarding' },
+  { label: 'GoStart', subtitle: 'CREATE ACCOUNT', href: '/register/buyer' },
+  { label: 'GoLive', subtitle: 'VENDOR MODE', href: '/plans' },
   { label: 'GoJoin', subtitle: 'LOGIN', href: '/login' },
 ];
 
@@ -68,14 +67,14 @@ function TopBar() {
       <div className="flex w-full max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-5">
           <a
-            href="mailto:tradingocare@gmail.com"
+            href="mailto:tradingocare@tradingo.in"
             className="group flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-text-secondary transition-colors duration-200 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
             <Mail className="h-3 w-3 text-accent-500 transition-colors duration-200 group-hover:text-[#FF7A33]" />
             <span>GoConect</span>
             <span className="mx-1 text-text-tertiary">/</span>
             <span className="text-text-secondary transition-colors duration-200 group-hover:text-accent-500">
-              tradingocare@gmail.com
+              tradingocare@tradingo.in
             </span>
           </a>
           <span className="h-3 w-px bg-border" />
@@ -247,20 +246,10 @@ function NavbarInner() {
   const shouldReduceMotion = useReducedMotion();
 
   const handleGoLive = () => {
-    const roleCookie = typeof document !== 'undefined'
-      ? (document.cookie.match(/(?:^|;\s*)userRole=([^;]*)/)?.[1] ?? '')
-      : '';
-    let target: string;
-    if (roleCookie === 'SELLER' || roleCookie === 'ADMIN' || roleCookie === 'SUPER_ADMIN' || roleCookie === 'MANAGER') {
-      target = getDashboardForRole(roleCookie);
-    } else if (roleCookie === 'BUYER') {
-      target = '/register/vendor-onboarding';
-    } else if (roleCookie === 'VIEWER') {
-      target = '/buyer/dashboard';
-    } else {
-      target = '/login?next=/register/vendor-onboarding';
-    }
-    router.push(target);
+    // Addendum canonical rule: GoLive is a commercial acquisition entry —
+    // every role first sees/selects a plan on /plans. Plan CTAs fan out
+    // (guest/buyer → /register/vendor direct, seller → purchase).
+    router.push('/plans');
   };
 
   const navItems = NAV_ITEMS.map(item =>
@@ -278,8 +267,22 @@ function NavbarInner() {
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [mobileOpen]);
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    // GoLive canonical entry (/golive) fans out server-side. Its journey
+    // surface is the plans acquisition page, the golive entry, the vendor
+    // wizard, the buyer→seller upgrade wizard, and the seller workspace.
+    // Highlight GoLive on those paths (F-14).
+    if (href === '/plans') {
+      return pathname === '/plans'
+        || pathname === '/golive'
+        || pathname === '/register/vendor'
+        || pathname.startsWith('/register/vendor/')
+        || pathname === '/register/vendor-onboarding'
+        || pathname.startsWith('/seller/');
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <>

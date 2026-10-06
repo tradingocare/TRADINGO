@@ -5,6 +5,7 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
+  opensearch_data:
 
 networks:
   tradingo-net:
@@ -101,6 +102,8 @@ services:
     restart: "no"
     networks:
       - tradingo-net
+    volumes:
+      - ./backups:/backups
     env_file:
       - .env.production.local
     environment:
@@ -112,15 +115,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    # Entrypoint runs migrations, then execs this command and exits.
-    command: ["sh", "-c", "echo 'TRADINGO migrations applied'"]
+    # Entrypoint runs migrations and verification, then execs this command
+    # and exits. This message only prints if the entrypoint succeeded —
+    # any migration/verification failure exits non-zero before reaching here.
+    command: ["sh", "-c", "echo 'TRADINGO migrations applied and verified'"]
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.tradingo.in/api/v1}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
         NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3001}
@@ -324,3 +329,38 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  # OpenSearch — founder-approved strict-limit provisioning (2026-09-12).
+  # Disposable search cache ONLY; PostgreSQL remains sole source of truth.
+  # Internal-only: NO host port binding. API must NOT depend on this service.
+  opensearch:
+    image: opensearchproject/opensearch:2.17.0
+    container_name: tradingo-opensearch
+    restart: unless-stopped
+    networks:
+      - tradingo-net
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      bootstrap.system_call_filter: "false"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 1.25G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -184,10 +184,10 @@ export default function IncidentsPage() {
                       {statusConfig[incident.status]?.label ?? incident.status}
                     </Badge>
                   </div>
-                  <p className="mt-2 text-base font-semibold text-text-primary dark:text-dark-text-primary">
+                  <p className="mt-2 text-base font-semibold text-text-primary">
                     {incident.title}
                   </p>
-                  <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
+                  <p className="mt-1 text-sm text-text-secondary">
                     Impacted:{' '}
                     {incident.impactedServices.length > 0
                       ? incident.impactedServices.join(', ')
@@ -207,7 +207,7 @@ export default function IncidentsPage() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Report Incident">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Title</label>
+            <label className="mb-1 block text-sm font-medium text-text-primary">Title</label>
             <Input
               placeholder="Issue title"
               value={form.title}
@@ -215,7 +215,7 @@ export default function IncidentsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Description</label>
+            <label className="mb-1 block text-sm font-medium text-text-primary">Description</label>
             <Textarea
               placeholder="Describe the incident..."
               value={form.description}
@@ -223,7 +223,7 @@ export default function IncidentsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Severity</label>
+            <label className="mb-1 block text-sm font-medium text-text-primary">Severity</label>
             <Select
               value={form.severity}
               onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value }))}
@@ -235,7 +235,7 @@ export default function IncidentsPage() {
             </Select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            <label className="mb-1 block text-sm font-medium text-text-primary">
               Impacted Services <span className="text-text-tertiary">(comma-separated)</span>
             </label>
             <Input

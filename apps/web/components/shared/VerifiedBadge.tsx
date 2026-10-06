@@ -20,7 +20,7 @@ const BADGE_CONFIG: Record<BadgeType, BadgeConfig> = {
   'top-buyer':       { label: 'Top Buyer',        icon: ShoppingBag,   className: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20' },
   'fast-responder':  { label: 'Fast Responder',   icon: Zap,           className: 'text-sky-500 bg-sky-500/10 border-sky-500/20' },
   'reliable-supplier': { label: 'Reliable Supplier', icon: Truck,      className: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
-  future:            { label: 'Future',            icon: Sparkles,      className: 'text-gray-400 bg-surface border-border' },
+  future:            { label: 'Future',            icon: Sparkles,      className: 'text-text-tertiary bg-surface border-border' },
 };
 
 interface VerifiedBadgeProps {

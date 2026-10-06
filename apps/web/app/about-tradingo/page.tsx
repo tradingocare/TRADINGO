@@ -10,7 +10,7 @@ import { ABOUT_MILESTONES, ABOUT_VALUES, ABOUT_TEAM } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'About TRADINGO | India\'s First TEM E-Marketplace',
-  description: 'Learn about TRADINGO — India\'s first Trusted Electronic Marketplace. Our mission, vision, milestones, and the team building the future of B2B trade.',
+  description: 'Learn about TRADINGO — India\'s first TEM (TRADINGO E-Marketplace). Our mission, vision, milestones, and the team building the future of B2B trade.',
 };
 
 const milestones = ABOUT_MILESTONES;
@@ -26,7 +26,7 @@ export default function AboutTradingoPage() {
     <>
       <PageHeader
         title="About TRADINGO"
-        description="India's first TEM (Trusted Electronic Marketplace) connecting buyers and sellers through trust, technology, and transparent trading."
+        description="India's first TEM (TRADINGO E-Marketplace) connecting buyers and sellers through trust, technology, and transparent trading."
       />
 
       {/* Mission & Vision */}
@@ -34,12 +34,12 @@ export default function AboutTradingoPage() {
         <div className="container-main">
           <div className="mx-auto grid max-w-5xl gap-12 lg:grid-cols-2">
             <AnimatedSection>
-              <div className="rounded-xl border border-border bg-surface p-8 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+              <div className="rounded-xl border border-border bg-surface p-8 shadow-sm">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                   <Target className="h-6 w-6" />
                 </div>
-                <h2 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">Our Mission</h2>
-                <p className="mt-4 text-text-secondary dark:text-dark-text-secondary leading-relaxed">
+                <h2 className="text-2xl font-bold text-text-primary">Our Mission</h2>
+                <p className="mt-4 text-text-secondary leading-relaxed">
                   To democratize B2B trading in India by creating a trusted, technology-driven marketplace where
                   every business — from small manufacturers to large enterprises — can trade with confidence,
                   transparency, and efficiency.
@@ -47,12 +47,12 @@ export default function AboutTradingoPage() {
               </div>
             </AnimatedSection>
             <AnimatedSection delay={150}>
-              <div className="rounded-xl border border-border bg-surface p-8 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+              <div className="rounded-xl border border-border bg-surface p-8 shadow-sm">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                   <Eye className="h-6 w-6" />
                 </div>
-                <h2 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">Our Vision</h2>
-                <p className="mt-4 text-text-secondary dark:text-dark-text-secondary leading-relaxed">
+                <h2 className="text-2xl font-bold text-text-primary">Our Vision</h2>
+                <p className="mt-4 text-text-secondary leading-relaxed">
                   To become India&apos;s most trusted trading ecosystem — connecting every city, every industry, and
                   every business on a single platform powered by trust, AI, and community-driven rewards.
                 </p>
@@ -65,7 +65,7 @@ export default function AboutTradingoPage() {
       <Separator />
 
       {/* Story */}
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <div className="mx-auto max-w-3xl text-center">
@@ -73,7 +73,7 @@ export default function AboutTradingoPage() {
                 title="Our Story"
                 subtitle="How TRADINGO went from an idea to India's first TEM E-Marketplace."
               />
-              <div className="space-y-6 text-left text-text-secondary dark:text-dark-text-secondary leading-relaxed">
+              <div className="space-y-6 text-left text-text-secondary leading-relaxed">
                 <p>
                   TRADINGO was born in 2020 out of a simple observation: India&apos;s B2B trading ecosystem was fragmented,
                   trust-deficient, and inefficient. Small manufacturers struggled to find buyers. Suppliers had no way to
@@ -85,7 +85,7 @@ export default function AboutTradingoPage() {
                   connecting buyers and sellers, but by creating a system where trust was built into every transaction.
                 </p>
                 <p>
-                  That vision became TEM — the Trusted Electronic Marketplace framework. Unlike traditional e-commerce
+                  That vision became TEM — the TRADINGO E-Marketplace framework. Unlike traditional e-commerce
                   marketplaces, TEM combines verified identities, escrow-protected payments, AI-powered matching, and a
                   rewards ecosystem into a single, unified trading experience.
                 </p>
@@ -113,7 +113,7 @@ export default function AboutTradingoPage() {
         </div>
       </section>
 
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Meet Our Team"
@@ -123,13 +123,13 @@ export default function AboutTradingoPage() {
           <div className="mx-auto grid max-w-4xl gap-8 sm:grid-cols-2">
             {teamMembers.map((member, i) => (
               <AnimatedSection key={member.name} delay={i * 100}>
-                <div className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+                <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-800 dark:text-primary-200">
                     <span className="text-lg font-bold">{member.name.split(' ').map(n => n[0]).join('')}</span>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">{member.name}</h3>
+                  <h3 className="mt-4 text-lg font-semibold text-text-primary">{member.name}</h3>
                   <p className="text-sm font-medium text-primary-600 dark:text-primary-400">{member.role}</p>
-                  <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">{member.bio}</p>
+                  <p className="mt-2 text-sm text-text-secondary">{member.bio}</p>
                 </div>
               </AnimatedSection>
             ))}
@@ -151,17 +151,17 @@ export default function AboutTradingoPage() {
               <AnimatedSection key={m.year} delay={i * 100}>
                 <div className="relative flex gap-6 pb-12 last:pb-0">
                   <div className="flex flex-col items-center">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
                       {m.year.slice(2)}
                     </div>
                     {i < milestones.length - 1 && (
-                      <div className="mt-2 w-px flex-1 bg-border dark:bg-dark-border" />
+                      <div className="mt-2 w-px flex-1 bg-border dark:bg-border" />
                     )}
                   </div>
                   <div className="flex-1 pt-1">
                     <p className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">{m.year}</p>
-                    <h3 className="mt-1 text-lg font-semibold text-text-primary dark:text-dark-text-primary">{m.title}</h3>
-                    <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{m.description}</p>
+                    <h3 className="mt-1 text-lg font-semibold text-text-primary">{m.title}</h3>
+                    <p className="mt-1 text-sm text-text-secondary">{m.description}</p>
                   </div>
                 </div>
               </AnimatedSection>
@@ -177,7 +177,7 @@ export default function AboutTradingoPage() {
         title="Join TRADINGO"
         subtitle="Be part of India's fastest-growing B2B trading ecosystem. Create your free account today."
         primaryLabel="Create Free Account"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         secondaryLabel="Explore Marketplace"
         secondaryHref="/trading"
         variant="accent"

@@ -4,6 +4,7 @@ import { PromptManagerService } from '../ai-gateway/prompt-manager.service'
 import { AiCreditsService } from '../ai-gateway/ai-credits.service'
 import { ModelRegistryService } from '../ai-gateway/model-registry.service'
 import { PrismaService } from '../../prisma/prisma.service'
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service'
 import { TaskType } from '@prisma/client'
 import {
   NaturalLanguageRfqDto, RefineRfqDto, DetectMissingDto, DetectDuplicatesDto,
@@ -22,6 +23,7 @@ export class AiRfqService implements OnModuleInit {
     private readonly credits: AiCreditsService,
     private readonly modelRegistry: ModelRegistryService,
     private readonly prisma: PrismaService,
+    private readonly taxonomy: CatalogTaxonomyPersistenceService,
   ) {}
 
   async onModuleInit() {
@@ -159,23 +161,66 @@ export class AiRfqService implements OnModuleInit {
     return Math.round((intersection / union) * 100)
   }
 
+  /**
+   * P0-3 Step 3: canonical delegation. The legacy free-text LLM prompt and
+   * the legacy-Category exact-match resolver are retired; the prediction now
+   * comes from the single canonical engine
+   * (CatalogClassifyService via the validated adapter), so the response
+   * carries the complete canonical contract
+   * {categoryId, subcategoryId, catalogItemId, confidence, band, matchType,
+   * reasons, alternatives} with all IDs server-side verified (parent chain,
+   * type, existence — never fabricated). Route, DTO, guards and throttle are
+   * unchanged. Exactly ONE classification pass happens — inside the engine
+   * (its deterministic tiers run first; the AI tier only fires when they
+   * miss, and only once). Unverifiable results degrade to an honest
+   * LOW/unclassified response with picker alternatives.
+   */
   async predictCategory(dto: PredictCategoryDto, companyId: string, userId?: string) {
-    const result = await this.callAi(TaskType.RFQ_ANALYSIS, {
-      action: 'predict_category',
-      instructions: 'Predict the most suitable product category for this RFQ item. Output ONLY valid JSON with fields: categoryName, categoryPath (e.g. "Food & Beverages > Cocoa > Cocoa Powder"), confidence (0-100), alternatives[] (array of {name, path, confidence}).',
-      data: JSON.stringify({ productName: dto.productName, description: dto.description || '' }),
-    }, companyId, userId)
-
-    const categories = await this.prisma.category.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true, slug: true, parentId: true },
-    })
-
-    const predictedName = result.data?.categoryName || dto.productName
-    const matched = categories.find(c => c.name.toLowerCase() === predictedName.toLowerCase())
-    if (matched) result.data.categoryId = matched.id
-
-    return result
+    // classifyValidated never throws by contract, but this endpoint must
+    // never 500 the wizard — degrade to an honest unclassified response.
+    let taxonomy: Awaited<ReturnType<typeof this.taxonomy.classifyValidated>>
+    try {
+      taxonomy = await this.taxonomy.classifyValidated(
+        {
+          name: dto.productName,
+          description: dto.description || undefined,
+        },
+        companyId,
+        userId,
+      )
+    } catch (err) {
+      this.logger.warn(
+        `predictCategory failed for "${dto.productName}": ${err instanceof Error ? err.message : String(err)} — returning unclassified`,
+      )
+      taxonomy = {
+        categoryId: null,
+        subcategoryId: null,
+        catalogItemId: null,
+        type: null,
+        confidence: 0,
+        band: 'LOW',
+        matchType: 'unclassified',
+        reasons: ['classification unavailable — structured picker required'],
+        alternatives: [],
+      }
+    }
+    return {
+      success: true,
+      data: {
+        categoryId: taxonomy.categoryId,
+        subcategoryId: taxonomy.subcategoryId,
+        catalogItemId: taxonomy.catalogItemId,
+        type: taxonomy.type,
+        confidence: taxonomy.confidence,
+        band: taxonomy.band,
+        matchType: taxonomy.matchType,
+        reasons: taxonomy.reasons,
+        alternatives: taxonomy.alternatives,
+        categoryName: taxonomy.categoryName ?? null,
+        subcategoryName: taxonomy.subcategoryName ?? null,
+      },
+      engine: 'catalog-classify-v1',
+    }
   }
 
   async suggestProducts(dto: SuggestProductsDto, companyId: string, userId?: string) {

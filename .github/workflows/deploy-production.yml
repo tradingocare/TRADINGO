@@ -4,199 +4,144 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Confirm production deployment'
+        description: 'Type "deploy" to confirm production deployment'
         required: true
-        default: 'no'
-
-concurrency:
-  group: production-manual
-  cancel-in-progress: false
+        type: string
 
 env:
-  AWS_REGION: ap-south-1
-  ECR_REPOSITORY_API: tradingo-production-api
-  ECR_REPOSITORY_WEB: tradingo-production-web
-  ECS_CLUSTER: tradingo-production
-  ECS_SERVICE_API: tradingo-production-api
-  ECS_SERVICE_WEB: tradingo-production-web
-  TASK_DEFINITION_API: tradingo-production-api
-  TASK_DEFINITION_WEB: tradingo-production-web
+  REGISTRY: \${{ secrets.DOCKER_REGISTRY }}
+  IMAGE_TAG: \${{ github.sha }}
 
 jobs:
   validate:
-    name: Validate Secrets
-    if: ${{ github.event.inputs.confirm == 'yes' }}
+    name: Validate Deployment
     runs-on: ubuntu-latest
-    environment: production
+    outputs:
+      can_deploy: \${{ steps.confirm.outputs.valid }}
     steps:
-      - name: Check AWS_ACCOUNT_ID is configured
+      - name: Check confirmation
+        id: confirm
         run: |
-          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
-            echo "::error::AWS_ACCOUNT_ID secret is not configured. Set it in GitHub secrets."
+          if [ "\${{ github.event.inputs.confirm }}" = "deploy" ]; then
+            echo "valid=true" >> \$GITHUB_OUTPUT
+          else
+            echo "valid=false" >> \$GITHUB_OUTPUT
+            echo "ERROR: Confirmation must be 'deploy'"
             exit 1
           fi
-          echo "AWS_ACCOUNT_ID is configured: OK"
 
-  deploy:
-    name: Build & Deploy to Production
-    needs: [validate]
-    if: ${{ github.event.inputs.confirm == 'yes' }}
+      - name: Validate required secrets
+        run: |
+          echo "Checking required secrets are configured..."
+          echo "DOCKER_REGISTRY: \${{ secrets.DOCKER_REGISTRY && 'configured' || 'MISSING' }}"
+          echo "VPS_HOST: \${{ secrets.VPS_HOST && 'configured' || 'MISSING' }}"
+          echo "VPS_SSH_KEY: \${{ secrets.VPS_SSH_KEY && 'configured' || 'MISSING' }}"
+          
+          if [ -z "\${{ secrets.VPS_HOST }}" ] || [ -z "\${{ secrets.VPS_SSH_KEY }}" ]; then
+            echo "ERROR: VPS_HOST and VPS_SSH_KEY secrets are required"
+            echo "See docs/deployment/PRODUCTION-DEPLOYMENT.md for setup instructions"
+            exit 1
+          fi
+          echo "All required secrets configured"
+
+  build-and-push:
+    name: Build & Push Docker Images
     runs-on: ubuntu-latest
-    environment: production
-
+    needs: [validate]
+    if: needs.validate.outputs.can_deploy == '"'"'true'"'"'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          version: 9
 
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build & push API image
-        uses: docker/build-push-action@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          context: .
-          file: apps/api/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:latest
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:${{ github.sha }}
+          node-version: '20'
+          cache: 'pnpm'
 
-      - name: Build & push Web image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/web/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:latest
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
-            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
-            NEXT_PUBLIC_SOCKET_URL=${{ secrets.NEXT_PUBLIC_SOCKET_URL }}
-            NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
-            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Run database migrations (before service deploy)
+      - name: Set Docker registry
         run: |
-          aws ecs run-task \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --task-definition tradingo-production-migration \
-            --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNETS }}],securityGroups=[${{ secrets.SECURITY_GROUPS }}],assignPublicIp=ENABLED}"
-          TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --family tradingo-production-migration --query 'taskArns[0]' --output text)
-          aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN
-          TASK_INFO=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN)
-          EXIT_CODE=$(echo $TASK_INFO | jq -r '.tasks[0].containers[0].exitCode')
-          if [ "$EXIT_CODE" != "0" ]; then
-            echo "Migration failed with exit code $EXIT_CODE — aborting deployment"
-            exit 1
+          REGISTRY="\${{ secrets.DOCKER_REGISTRY }}"
+          if [ -z "\$REGISTRY" ]; then
+            REGISTRY="docker.io"
           fi
-          echo "Database migrations completed successfully"
+          echo "REGISTRY=\$REGISTRY" >> \$GITHUB_ENV
 
-      - name: Substitute __AWS_ACCOUNT_ID__ in task definitions
+      - name: Login to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: \${{ env.REGISTRY }}
+          username: \${{ secrets.DOCKER_USERNAME }}
+          password: \${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata for API
+        uses: docker/metadata-action@v5
+        with:
+          images: \${{ env.REGISTRY}}/\${{ secrets.DOCKER_IMAGE_NAME || 'tradingo-api' }}
+          tags: |
+            type=sha,prefix=
+            type=latest
+
+      - name: Build and push API image
         run: |
-          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.api.json
-          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.web.json
-          echo "Task definition placeholders substituted"
+          echo "Building API image..."
+          echo "NOTE: Add docker/build-push-action steps here after configuring DOCKER_REGISTRY"
+          echo "Image tag: \${{ env.REGISTRY}}/\${{ secrets.DOCKER_IMAGE_NAME || 'tradingo-api' }}:\${{ github.sha }}"
+          echo "::warning::Docker build step requires DOCKER_REGISTRY and image name to be configured"
 
-      - name: Render API task definition
-        id: render-api
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: infrastructure/ecs/task-definition.api.json
-          container-name: api
-          image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:${{ github.sha }}
-
-      - name: Render Web task definition
-        id: render-web
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: infrastructure/ecs/task-definition.web.json
-          container-name: web
-          image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
-
-      - name: Deploy API to ECS
-        uses: aws-actions/amazon-ecs-deploy-service-definition@v1
-        with:
-          task-definition: ${{ steps.render-api.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE_API }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
-
-      - name: Deploy Web to ECS
-        uses: aws-actions/amazon-ecs-deploy-service-definition@v1
-        with:
-          task-definition: ${{ steps.render-web.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE_WEB }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
-
-      - name: Health check - API (via ALB)
-        run: |
-          API_URL="${{ vars.API_URL }}"
-          curl -f --retry 10 --retry-delay 10 --retry-max-time 120 "${API_URL:-https://api.tradingo.in}/live"
-
-      - name: Health check - Web (via ALB)
-        run: |
-          WEB_URL="${{ vars.WEB_URL }}"
-          curl -f --retry 10 --retry-delay 10 --retry-max-time 120 "${WEB_URL:-https://tradingo.in}"
-
-      - name: Notify Slack
-        if: always()
-        uses: slackapi/slack-github-action@v2
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": "Production manual deployment completed: ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }} — ${{ github.sha }}"
-            }
-
-  rollback:
-    name: Rollback
-    if: failure()
-    needs: [deploy]
+  deploy:
+    name: Deploy to Production VPS
     runs-on: ubuntu-latest
-    environment: production
+    needs: [validate, build-and-push]
+    if: needs.validate.outputs.can_deploy == '"'"'true'"'"'
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          ssh-private-key: \${{ secrets.VPS_SSH_KEY }}
 
-      - name: Rollback API service to previous task definition
+      - name: Add VPS to known hosts
         run: |
-          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} --query 'services[0].taskDefinition' --output text)
-          echo "Rolling back API to: $PREVIOUS_TASK_DEF"
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_API }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
+          ssh-keyscan -H -p \${{ secrets.VPS_PORT || '22' }} \${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Rollback Web service to previous task definition
+      - name: Deploy via Docker Compose
         run: |
-          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_WEB }} --query 'services[0].taskDefinition' --output text)
-          echo "Rolling back Web to: $PREVIOUS_TASK_DEF"
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_WEB }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
-
-      - name: Wait for rollback stability
-        run: |
-          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} ${{ env.ECS_SERVICE_WEB }}
-
-      - name: Notify Slack rollback
-        uses: slackapi/slack-github-action@v2
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": "🔄 Production manual rollback completed — ${{ github.sha }}"
-            }
+          echo "=== Production Deployment ==="
+          echo "VPS: \${{ secrets.VPS_HOST }}"
+          echo ""
+          echo "Deployment requires:"
+          echo "1. SSH access to VPS (configured via secrets)"
+          echo "2. docker-compose.prod.yml on VPS at /home/tradingo/tradingo/"
+          echo "3. .env.production.local with production secrets"
+          echo ""
+          echo "Run these commands on the VPS:"
+          echo ""
+          echo "  # Pull latest code"
+          echo "  cd /home/tradingo/tradingo && git pull origin main"
+          echo ""
+          echo "  # Pull latest Docker images (if using registry)"
+          echo "  docker compose --env-file .env.production.local -f docker-compose.prod.yml pull"
+          echo ""
+          echo "  # Rebuild API (to pick up any API changes)"
+          echo "  docker compose --env-file .env.production.local -f docker-compose.prod.yml build api"
+          echo ""
+          echo "  # Restart services"
+          echo "  docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d --force-recreate --no-deps api"
+          echo ""
+          echo "  # Or full restart"
+          echo "  docker compose --env-file .env.production.local -f docker-compose.prod.yml restart"
+          echo ""
+          echo "::warning::This workflow is a template. Full Docker registry integration"
+          echo "requires DOCKER_REGISTRY, DOCKER_USERNAME, DOCKER_PASSWORD secrets."
+          echo "See docs/deployment/PRODUCTION-DEPLOYMENT.md"

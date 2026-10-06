@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { DashboardPageHeader } from '@/components/dashboard';
@@ -35,23 +35,23 @@ export default function BuyerDownloadsPage() {
       {isLoading ? (
         <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <Download className="h-12 w-12 text-text-tertiary" />
-          <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">No downloads yet</h3>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Download catalogues, brochures, and invoices from suppliers.</p>
+          <h3 className="mt-4 text-lg font-semibold text-text-primary">No downloads yet</h3>
+          <p className="mt-1 text-sm text-text-secondary">Download catalogues, brochures, and invoices from suppliers.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {items.map((dl: any) => {
-            const cfg = typeConfig[dl.type] ?? { icon: File, color: 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary' };
+            const cfg = typeConfig[dl.type] ?? { icon: File, color: 'bg-surface-secondary text-text-secondary bg-surface-secondary' };
             const Icon = cfg.icon;
             return (
-              <div key={dl.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-[#f97316]/20 dark:bg-dark-surface dark:border-dark-border">
+              <div key={dl.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-[#f97316]/20">
                 <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${cfg.color}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{dl.title}</p>
+                  <p className="text-sm font-medium text-text-primary">{dl.title}</p>
                   <div className="mt-0.5 flex items-center gap-3 text-xs text-text-tertiary">
                     <span className="uppercase">{dl.type}</span>
                     {dl.fileSize && <span>{(dl.fileSize / 1024).toFixed(1)} KB</span>}

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
-import { TaskType } from '@prisma/client'
+import { Prisma, TaskType } from '@prisma/client'
 
 const CREDIT_COSTS: Partial<Record<TaskType, number>> = {
   [TaskType.PRODUCT_DESCRIPTION]: 10,
@@ -36,6 +36,15 @@ const PLAN_AI_CREDITS: Record<string, number> = {
   'trade_premium': 1000,
   'trade_elite': 2500,
 }
+
+/**
+ * Phase 3Y: single explicit representation for company-less AI callers
+ * (guests / users without a company). This is a USAGE-ATTRIBUTION MARKER
+ * ONLY (AiUsage has no company FK) — it must never reach company-owned
+ * tables, enforced by AiCreditsService.isCompanyOwned. Provider chat-role
+ * literals ({ role: 'system' }) are unrelated and untouched.
+ */
+export const COMPANY_LESS_USAGE_KEY = 'anonymous';
 
 export interface CreditBalance {
   total: number
@@ -97,11 +106,22 @@ export class AiCreditsService implements OnModuleInit {
     return { sufficient: balance.remaining >= cost, available: balance.remaining, required: cost }
   }
 
-  async deductCredits(companyId: string, taskType: TaskType): Promise<void> {
+  /** GAP-01: true only for real Company rows (FK-safe billing target). */
+  async isCompanyOwned(companyId: string): Promise<boolean> {
+    if (!companyId) return false
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true },
+    })
+    return !!company
+  }
+
+  async deductCredits(companyId: string, taskType: TaskType, tx?: Prisma.TransactionClient): Promise<void> {
     const cost = this.getCreditCost(taskType)
     const { periodStart, periodEnd } = getPeriod()
+    const db = tx ?? this.prisma
 
-    await this.prisma.aiCreditUsage.upsert({
+    await db.aiCreditUsage.upsert({
       where: { companyId_periodStart: { companyId, periodStart } },
       create: { companyId, periodStart, periodEnd, used: cost },
       update: { used: { increment: cost } },

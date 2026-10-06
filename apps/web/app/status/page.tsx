@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { CheckCircle2, AlertTriangle, AlertCircle, Clock, RefreshCw } from 'lucide-react';
@@ -57,7 +57,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
                   {incident.severity}
                 </Badge>
               </div>
-              <p className="mt-1 text-sm text-text-secondary ">
+              <p className="mt-1 text-sm text-text-secondary">
                 {incident.description}
               </p>
             </div>
@@ -72,7 +72,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
         <CardContent className="space-y-4">
           {incident.impactedServices.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              <span className="text-xs font-medium text-text-tertiary ">Impacted:</span>
+              <span className="text-xs font-medium text-text-tertiary">Impacted:</span>
               {incident.impactedServices.map((s) => (
                 <Badge key={s} variant="outline" className="text-xs">{s}</Badge>
               ))}
@@ -80,20 +80,20 @@ function IncidentCard({ incident }: { incident: Incident }) {
           )}
           {incident.updates && incident.updates.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-text-tertiary  uppercase tracking-wider">
+              <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
                 Latest Updates
               </p>
               {incident.updates.slice(-3).map((update) => (
-                <div key={update.id} className="rounded-lg border border-border bg-surface-secondary/50 p-3  ">
+                <div key={update.id} className="rounded-lg border border-border bg-surface-secondary/50 p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-accent">
                       {statusLabel(update.status as Incident['status'])}
                     </span>
-                    <span className="text-xs text-text-tertiary ">
+                    <span className="text-xs text-text-tertiary">
                       {new Date(update.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-text-secondary ">
+                  <p className="mt-1 text-sm text-text-secondary">
                     {update.message}
                   </p>
                 </div>
@@ -122,7 +122,7 @@ export default function StatusPage() {
       setResolvedIncidents(all);
       setLastChecked(new Date());
     } catch {
-      // Silently handle — UI will show stale data
+      // Silently handle â€” UI will show stale data
     } finally {
       setLoading(false);
     }
@@ -150,7 +150,7 @@ export default function StatusPage() {
         description="Current operational status of all TRADINGO services."
       />
 
-      <section className="py-12 ">
+      <section className="py-12">
         <div className="container-main">
           <div className={`flex flex-col items-center gap-4 rounded-2xl border p-8 text-center shadow-sm ${overallStatusBadge(overall).className}`}>
             <OverallIcon className="h-12 w-12" />
@@ -176,15 +176,15 @@ export default function StatusPage() {
           />
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-text-tertiary " />
+              <RefreshCw className="h-8 w-8 animate-spin text-text-tertiary" />
             </div>
           ) : activeIncidents.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
               <CheckCircle2 className="h-12 w-12 text-status-success" />
-              <p className="text-xl font-semibold text-text-primary ">
+              <p className="text-xl font-semibold text-text-primary">
                 No active incidents
               </p>
-              <p className="text-sm text-text-secondary ">
+              <p className="text-sm text-text-secondary">
                 All TRADINGO services are operating normally.
               </p>
             </div>
@@ -200,14 +200,14 @@ export default function StatusPage() {
 
       <Separator />
 
-      <section className="py-20 ">
+      <section className="py-20">
         <div className="container-main">
           <SectionHeader
             title="Recent Resolved Incidents"
             subtitle="Previously resolved incidents for transparency."
           />
           {resolvedIncidents.length === 0 ? (
-            <p className="text-center text-text-secondary ">
+            <p className="text-center text-text-secondary">
               No resolved incidents to display.
             </p>
           ) : (
@@ -218,10 +218,10 @@ export default function StatusPage() {
                     <div className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-status-success" />
                       <div>
-                        <p className="font-medium text-text-primary ">
+                        <p className="font-medium text-text-primary">
                           {incident.title}
                         </p>
-                        <p className="text-xs text-text-tertiary ">
+                        <p className="text-xs text-text-tertiary">
                           Resolved {incident.resolvedAt ? new Date(incident.resolvedAt).toLocaleString() : ''}
                         </p>
                       </div>

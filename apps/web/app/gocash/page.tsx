@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Sparkles, Award } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -40,12 +40,12 @@ export default function GocashPage() {
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-500 to-yellow-500 text-white shadow-xl">
                 <Award className="h-10 w-10" />
               </div>
-              <h2 className="mt-8 text-3xl font-bold sm:text-4xl dark:text-dark-text-primary">
+              <h2 className="mt-8 text-3xl font-bold sm:text-4xl text-text-primary">
                 Earn Rewards on Every Trade
               </h2>
-              <p className="mt-4 text-lg text-text-secondary dark:text-dark-text-secondary">
+              <p className="mt-4 text-lg text-text-secondary">
                 GOCASH is TRADINGO&apos;s proprietary rewards currency designed to put money back in your pocket.
-                Every successful trade on the platform earns you GOCASH — from instant purchases via TRADBUY
+                Every successful trade on the platform earns you GOCASH â€” from instant purchases via TRADBUY
                 to negotiated deals through RFQ. The more you trade, the more you earn.
               </p>
             </div>
@@ -71,27 +71,27 @@ export default function GocashPage() {
       <Separator />
 
       {/* Earning Rates Table */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Earning Rates"
             subtitle="Different transaction types earn different GOCASH rates. Here's how it breaks down."
           />
-          <div className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-border shadow-sm dark:border-dark-border">
+          <div className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-border shadow-sm">
             <table className="w-full">
               <thead>
                 <tr className="bg-accent-50 dark:bg-accent-900/20">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary dark:text-dark-text-primary">Transaction Type</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary dark:text-dark-text-primary">GOCASH Rate</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary dark:text-dark-text-primary">Earning Example</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Transaction Type</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">GOCASH Rate</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Earning Example</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border dark:divide-dark-border">
+              <tbody className="divide-y divide-border">
                 {earningRates.map((row) => (
-                  <tr key={row.type} className="bg-surface hover:bg-surface-secondary/50 dark:bg-dark-surface dark:hover:bg-dark-surface-secondary/50">
-                    <td className="px-6 py-4 text-sm font-medium text-text-primary dark:text-dark-text-primary">{row.type}</td>
+                  <tr key={row.type} className="bg-surface hover:bg-surface-secondary/50">
+                    <td className="px-6 py-4 text-sm font-medium text-text-primary">{row.type}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-amber-600 dark:text-amber-400">{row.rate}</td>
-                    <td className="px-6 py-4 text-sm text-text-secondary dark:text-dark-text-secondary">{row.minGocash}</td>
+                    <td className="px-6 py-4 text-sm text-text-secondary">{row.minGocash}</td>
                   </tr>
                 ))}
               </tbody>
@@ -118,7 +118,7 @@ export default function GocashPage() {
       <Separator />
 
       {/* Loyalty Tiers */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Loyalty Tiers"
@@ -152,7 +152,7 @@ export default function GocashPage() {
                   </div>
                   <ul className="space-y-2">
                     {tier.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                      <li key={feature} className="flex items-start gap-2 text-sm text-text-secondary">
                         <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
                         {feature}
                       </li>
@@ -177,7 +177,7 @@ export default function GocashPage() {
             {[
               {
                 q: 'How do I earn GOCASH?',
-                a: 'You earn GOCASH automatically on every successful trade completed on TRADINGO. The rate depends on the transaction type — TRADBUY purchases earn 2%, RFQ deals earn 3%, and bulk transactions earn up to 5%.',
+                a: 'You earn GOCASH automatically on every successful trade completed on TRADINGO. The rate depends on the transaction type â€” TRADBUY purchases earn 2%, RFQ deals earn 3%, and bulk transactions earn up to 5%.',
               },
               {
                 q: 'Does GOCASH expire?',
@@ -197,9 +197,9 @@ export default function GocashPage() {
               },
             ].map((faq, i) => (
               <AnimatedSection key={faq.q} delay={i * 50}>
-                <div className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
-                  <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">{faq.q}</h3>
-                  <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">{faq.a}</p>
+                <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-text-primary">{faq.q}</h3>
+                  <p className="mt-2 text-text-secondary">{faq.a}</p>
                 </div>
               </AnimatedSection>
             ))}
@@ -211,7 +211,7 @@ export default function GocashPage() {
         title="Start Earning GOCASH"
         subtitle="Create your free account and start earning GOCASH rewards on every trade today."
         primaryLabel="Get Started Free"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         secondaryLabel="Learn About Trading"
         secondaryHref="/trading"
         variant="accent"

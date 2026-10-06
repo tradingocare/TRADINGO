@@ -6,6 +6,7 @@ import { ProviderRouterService } from './provider-router.service'
 import { PromptManagerService } from './prompt-manager.service'
 import { ApiKeyVaultService } from './api-key-vault.service'
 import { AiCreditsService } from './ai-credits.service'
+import { GuestAiQuotaService } from './guest-ai-quota.service'
 import { UsageTrackerService } from './usage-tracker.service'
 import { CostEngineService } from './cost-engine.service'
 import { ProviderHealthService } from './provider-health.service'
@@ -28,6 +29,7 @@ import { FirecrawlProvider } from './providers/firecrawl.provider'
     PromptManagerService,
     ApiKeyVaultService,
     AiCreditsService,
+    GuestAiQuotaService,
     UsageTrackerService,
     CostEngineService,
     ProviderHealthService,

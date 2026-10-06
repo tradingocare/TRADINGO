@@ -219,16 +219,16 @@ export default function ContactPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Mail className="h-5 w-5 text-accent" />
-                      <a href="mailto:support@tradingo.com" className="text-sm font-medium text-accent hover:text-accent-dark">
-                        support@tradingo.com
+                      <a href="mailto:tradingocare@tradingo.in" className="text-sm font-medium text-accent hover:text-accent-dark">
+                        tradingocare@tradingo.in
                       </a>
                     </div>
                     <div className="flex items-start gap-3">
                       <MapPin className="mt-0.5 h-5 w-5 text-accent" />
                       <div>
-                        <p className="text-sm text-text-secondary">TRADINGO Technologies Pvt. Ltd.</p>
-                        <p className="text-sm text-text-secondary">BKC, Mumbai 400051</p>
-                        <p className="text-sm text-text-secondary">Maharashtra, India</p>
+                        <p className="text-sm text-text-secondary">Niksa Global Ventures Limited</p>
+                        <p className="text-sm text-text-secondary">House No. 194, Block-G, Pocket 6, Sector 16</p>
+                        <p className="text-sm text-text-secondary">Rohini, New Delhi - 110089, India</p>
                       </div>
                     </div>
                   </div>
@@ -273,7 +273,7 @@ export default function ContactPage() {
         title="Start Trading Today"
         subtitle="Join thousands of businesses already trading on TRADINGO. Create your free account in minutes."
         primaryLabel="Create Free Account"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         secondaryLabel="Explore Marketplace"
         secondaryHref="/trading"
         variant="accent"

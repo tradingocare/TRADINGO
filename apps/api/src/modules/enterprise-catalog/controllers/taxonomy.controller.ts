@@ -70,4 +70,16 @@ export class TaxonomyController {
   removeMapping(@Param('id') id: string) {
     return this.taxonomyService.removeIndustryCategoryMapping(id);
   }
+
+  // Phase 2-B — public CatalogCategory-by-slug authority (SEO foundation).
+  // Placed in the catalog-authority module (zero new module coupling) rather
+  // than under /search: TradfindModule does not import the catalog module,
+  // and /search/catalog is relevance-ranked, not an exact lookup. Same-module
+  // service call, same @Public() read pattern as synonyms/mappings above.
+  @Get('categories/slug/:slug')
+  @ApiOperation({ summary: 'Get public catalog category by slug (SEO authority)' })
+  @Public()
+  findCategoryBySlug(@Param('slug') slug: string) {
+    return this.taxonomyService.findCategoryBySlug(slug);
+  }
 }

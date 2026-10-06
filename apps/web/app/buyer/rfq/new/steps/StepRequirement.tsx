@@ -50,13 +50,70 @@ export function StepRequirement() {
     setAiGenerating(null)
   }
 
+  // P0-3 Step 3: the prediction result is CONSUMED, not discarded. It lands
+  // in the wizard store so it flows AI prediction → store → product item →
+  // submit → backend → RfqProductItem. HIGH-band results attach
+  // automatically (deterministic exact/synonym — same rule the backend
+  // applies); MEDIUM/LOW stay advisory (band label shown, picker
+  // alternatives preserved) until the buyer confirms via the Confirm button.
+  const [lastPrediction, setLastPrediction] = useState<{
+    name: string;
+    label: string;
+    band: 'HIGH' | 'MEDIUM' | 'LOW';
+    confidence: number;
+    categoryId: string | null;
+    subcategoryId: string | null;
+    catalogItemId: string | null;
+  } | null>(null)
+
   const handlePredictCategory = async (name: string) => {
     setAiGenerating('category')
     try {
       const { predictCategory } = await import('@/lib/api/ai-rfq')
-      await predictCategory(name)
+      const res = await predictCategory(name)
+      const data = res.data?.data
+      if (data) {
+        setLastPrediction({
+          name,
+          label: data.categoryName
+            ? `${data.categoryName}${data.subcategoryName ? ` / ${data.subcategoryName}` : ''}`
+            : 'No canonical match',
+          band: data.band,
+          confidence: data.confidence,
+          categoryId: data.categoryId,
+          subcategoryId: data.subcategoryId,
+          catalogItemId: data.catalogItemId,
+        })
+        // HIGH band = deterministic match → attach immediately to the
+        // matching product row (or the only product row).
+        if (data.band === 'HIGH' && data.categoryId) {
+          const store = useRfqWizardStore.getState()
+          const idx = store.products.findIndex((p) => p.productName === name)
+          if (idx >= 0) {
+            store.updateProduct(idx, {
+              catalogCategoryId: data.categoryId,
+              catalogSubcategoryId: data.subcategoryId ?? undefined,
+              catalogItemId: data.catalogItemId ?? undefined,
+            })
+          }
+        }
+      }
     } catch (err) { console.error('Failed to predict category:', err) }
     setAiGenerating(null)
+  }
+
+  const confirmPrediction = () => {
+    if (!lastPrediction?.categoryId) return
+    const store = useRfqWizardStore.getState()
+    const idx = store.products.findIndex((p) => p.productName === lastPrediction.name)
+    if (idx >= 0) {
+      store.updateProduct(idx, {
+        catalogCategoryId: lastPrediction.categoryId,
+        catalogSubcategoryId: lastPrediction.subcategoryId ?? undefined,
+        catalogItemId: lastPrediction.catalogItemId ?? undefined,
+      })
+      setLastPrediction(null)
+    }
   }
 
   const handleDetectDuplicates = async () => {
@@ -98,6 +155,29 @@ export function StepRequirement() {
         <div className="flex items-center gap-2 text-xs text-orange-400 bg-orange-500/5 px-3 py-2 rounded-lg">
           <LoadingSpinner size="xs" />
           AI is generating... {aiGenerating}
+        </div>
+      )}
+
+      {lastPrediction && (
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-white/60">
+                Predicted category for <span className="text-white font-medium">{lastPrediction.name}</span>
+              </p>
+              <p className="mt-1 truncate text-sm text-white">{lastPrediction.label}</p>
+              <p className="mt-0.5 text-xs text-white/40">
+                Confidence {(lastPrediction.confidence * 100).toFixed(0)}% · Band {lastPrediction.band}
+                {lastPrediction.band === 'HIGH' ? ' · applied automatically' : ' · confirm to apply'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {lastPrediction.categoryId && lastPrediction.band !== 'HIGH' && (
+                <Button size="sm" variant="outline" onClick={confirmPrediction}>Confirm</Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => setLastPrediction(null)}>Dismiss</Button>
+            </div>
+          </div>
         </div>
       )}
 

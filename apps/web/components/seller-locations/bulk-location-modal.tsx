@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback } from 'react';
 import { MapPin } from 'lucide-react';
@@ -70,7 +70,7 @@ export function BulkLocationModal({ isOpen, onClose, onApply, productCount }: Bu
   return (
     <Modal open={isOpen} onClose={onClose} title="Bulk Set Location">
       <div className="space-y-4">
-        <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+        <p className="text-sm text-text-secondary">
           Set the same location for <span className="font-semibold">{productCount} product{productCount !== 1 ? 's' : ''}</span>.
         </p>
 
@@ -78,7 +78,7 @@ export function BulkLocationModal({ isOpen, onClose, onApply, productCount }: Bu
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            <label className="block text-sm font-medium text-text-primary">
               Latitude
             </label>
             <Input
@@ -90,7 +90,7 @@ export function BulkLocationModal({ isOpen, onClose, onApply, productCount }: Bu
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            <label className="block text-sm font-medium text-text-primary">
               Longitude
             </label>
             <Input
@@ -110,17 +110,17 @@ export function BulkLocationModal({ isOpen, onClose, onApply, productCount }: Bu
         )}
 
         {latitude && longitude && (
-          <p className="text-xs text-text-tertiary dark:text-dark-text-tertiary">
+          <p className="text-xs text-text-tertiary">
             Location: {latitude}, {longitude} &middot; Radius: {radius}
           </p>
         )}
       </div>
 
-      <div className="flex items-center justify-end gap-3 border-t border-surface-border dark:border-dark-border bg-surface-secondary dark:bg-dark-surface-secondary -mx-6 -mb-6 px-6 py-4 rounded-b-xl mt-4">
+      <div className="flex items-center justify-end gap-3 border-t border-surface-border border-border bg-surface-secondary -mx-6 -mb-6 px-6 py-4 rounded-b-xl mt-4">
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg px-4 py-2 text-sm font-medium text-text-secondary dark:text-dark-text-secondary hover:bg-surface dark:hover:bg-dark-surface transition-colors"
+          className="rounded-lg px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface transition-colors"
         >
           Cancel
         </button>

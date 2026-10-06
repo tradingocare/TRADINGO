@@ -6,13 +6,15 @@ import {
   MapPin, Building2, Star,
   Shield, Package, MessageCircle, FileText,
   Trophy, CheckCircle2, Phone, Share2, Bookmark,
-  ChevronRight, Search, Crown, ArrowUpDown, ArrowRight, ShoppingCart,
+  ChevronRight, Search, Crown, ArrowUpDown, ArrowRight, ShoppingCart, Briefcase,
+  UserRound, ThumbsUp,
 } from 'lucide-react'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
 import toast from 'react-hot-toast'
 import api from '@/lib/api/client'
+import { openChat } from '@/lib/messaging/chat-navigation'
 import type { Company } from '@/lib/api/types'
 import CompanyCard from '@/components/company/CompanyCard'
 
@@ -49,6 +51,7 @@ function Chip({ icon: Icon, text, color, border }: { icon?: any; text: string; c
 export default function CompanyProfileClient({ slug }: { slug: string }) {
   const [company, setCompany]   = useState<Company | null>(null)
   const [products, setProducts] = useState<any>(null)
+  const [services, setServices] = useState<any>(null)
   const [reviews, setReviews]   = useState<any>(null)
   const [similar, setSimilar]   = useState<any[]>([])
   const [loading, setLoading]   = useState(true)
@@ -63,9 +66,10 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
 
   useEffect(() => {
     const load = async () => {
-      const [c, p, r, s] = await Promise.allSettled([
+      const [c, p, s, r, sim] = await Promise.allSettled([
         api.get(`/companies/${slug}`),
         api.get(`/companies/${slug}/products?page=1&limit=12`),
+        api.get(`/companies/${slug}/services?page=1&limit=12`),
         api.get(`/companies/${slug}/reviews?page=1&limit=6`),
         api.get(`/companies/${slug}/similar`),
       ])
@@ -75,10 +79,12 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
       const pd = get(p)
       setProducts(pd)
       setProductTotal(pd?.pagination?.total ?? pd?.products?.length ?? 0)
+      const sd = get(s)
+      setServices(sd)
       const rd = get(r)
       setReviews(rd)
-      const sd = get(s)
-      setSimilar(Array.isArray(sd) ? sd : sd?.companies || [])
+      const simd = get(sim)
+      setSimilar(Array.isArray(simd) ? simd : simd?.companies || [])
       setLoading(false)
     }
     load()
@@ -133,6 +139,10 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
   }
 
   const allProducts = products?.products || []
+  // C-01 F-4: REAL ProfessionalServices of this company (API-bounded);
+  // canonical taxonomy names with legacy `category` fallback (P0-2 read-safe).
+  const allServices = services?.services || []
+  const servicesTotal = services?.pagination?.total ?? allServices.length
   const filteredProducts = useMemo(() => {
     let result = [...allProducts]
     if (searchQuery) {
@@ -164,7 +174,7 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
   if (!company) return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-bg-base">
       <Building2 size={48} className="text-text-primary/15" />
-      <p className="text-text-primary font-bold text-xl">Trador not found</p>
+      <p className="text-text-primary font-bold text-xl">Trader not found</p>
       <Link href="/companies" className="text-sm font-semibold px-5 py-2 rounded-full bg-accent/15 text-accent">
         Back to Directory
       </Link>
@@ -185,6 +195,16 @@ export default function CompanyProfileClient({ slug }: { slug: string }) {
     (company.certificationDocs || []).some((c: any) => /ISO/i.test(c.name || ''))
   const totalProducts = company.totalProducts || (company as any)._count?.products || products?.pagination?.total || allProducts.length || 0
   const flagship = allProducts.find((p: any) => p.isFeatured) || allProducts[0]
+  // Real location row (prefers the primary address) — only real fields are shown.
+  const primaryLocation = ((company as any).locations || []).find((l: any) => l?.isPrimary) || location
+  const addressLine = [primaryLocation?.addressLine1, primaryLocation?.addressLine2].filter(Boolean).join(', ')
+  const ownerNames: string[] = (((company as any).owners || []) as any[]).map((o) => o?.user?.name).filter(Boolean)
+  // Verified filter identifier for the directory (real Category slug — the directory's
+  // `category` filter consumes slugs, never names).
+  const categorySlug: string | undefined = (((company as any).categories || []) as any[])
+    .map((c) => c?.category?.slug)
+    .find(Boolean)
+  const reviewRows: any[] = Array.isArray(reviews?.reviews) ? reviews.reviews : []
   const contactPhone = company.mobile || company.phone || ''
   const catalogueUrl = company.cataloguesUrl || company.catalogues?.[0]?.url
 
@@ -301,7 +321,7 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
                   <FileText size={13} /> Request Catalog
                 </motion.button>
                 <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
-                  onClick={() => requireAuth(() => router.push(`/messages?seller=${company.id}`))}
+                  onClick={() => requireAuth(() => openChat({ router, companyId: company.id, title: company.name }))}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs flex-1 lg:flex-none"
                   style={{ background:'rgba(45,224,224,0.1)', border:'1px solid rgba(45,224,224,0.25)', color:'#2DE0E0' }}>
                   <MessageCircle size={13} /> Direct Chat
@@ -310,6 +330,21 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
             </div>
           </div>
         </motion.div>
+
+        {/* PROFILE NAVIGATION — in-page anchors to the real sections below */}
+        <nav className="mb-6 flex flex-wrap items-center gap-2" aria-label="Company profile sections">
+          <a href="#about" className="rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:border-accent/40 hover:text-accent">
+            Seller Profile
+          </a>
+          <a href="#products" className="rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:border-accent/40 hover:text-accent">
+            Products &amp; Services
+          </a>
+          {reviewCount > 0 && (
+            <a href="#reviews" className="rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:border-accent/40 hover:text-accent">
+              Reviews
+            </a>
+          )}
+        </nav>
 
         {/* METRICS & PERFORMANCE STATS GRID */}
         <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1 }}
@@ -322,7 +357,7 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
         </motion.div>
 
         {/* ABOUT & SNAPSHOT */}
-        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.15 }}
+        <motion.div id="about" initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.15 }}
           className="grid lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2 rounded-2xl p-5 bg-surface border-border">
             <h2 className="text-text-primary font-bold text-base mb-3 flex items-center gap-2">
@@ -361,8 +396,28 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
                 </span>
                 <span className="text-text-primary/70 font-medium text-right max-w-[55%]">{city}{state ? `, ${state}` : ''}{!city && !state ? 'India' : ''}</span>
               </div>
+              {ownerNames.length > 0 && (
+                <div className="flex items-center justify-between py-1.5 border-b border-border">
+                  <span className="text-text-tertiary flex items-center gap-1.5">
+                    <UserRound size={11} className="text-accent" /> {ownerNames.length > 1 ? 'Owners' : 'Owner'}
+                  </span>
+                  <span className="text-text-primary/70 font-medium text-right max-w-[55%] truncate">{ownerNames.slice(0, 2).join(', ')}</span>
+                </div>
+              )}
+              {(addressLine || primaryLocation?.pincode) && (
+                <div className="flex items-start justify-between gap-3 py-1.5 border-b border-border">
+                  <span className="text-text-tertiary flex items-center gap-1.5 shrink-0">
+                    <MapPin size={11} className="text-accent" /> Address
+                  </span>
+                  <span className="text-text-primary/70 font-medium text-right">
+                    {addressLine}
+                    {addressLine ? <br /> : null}
+                    {[city, state, primaryLocation?.pincode, primaryLocation?.country].filter(Boolean).join(', ')}
+                  </span>
+                </div>
+              )}
               {flagship && (
-                <Link href={`/trading/${flagship.slug || flagship.id}`}
+                <Link href={`/products/${flagship.slug || flagship.id}`}
                   className="flex items-center justify-between py-1.5 group">
                   <span className="text-text-tertiary flex items-center gap-1.5">
                     <ShoppingCart size={11} className="text-accent" /> Flagship Product
@@ -377,7 +432,7 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
         </motion.div>
 
         {/* ALL PRODUCTS BY SELLER */}
-        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }} className="mb-6">
+        <motion.div id="products" initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }} className="mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <h2 className="text-text-primary font-bold text-base flex items-center gap-2">
               <Package size={15} className="text-accent" /> All Products by Seller
@@ -430,7 +485,7 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
                   const price = p.price ?? p.priceSlabs?.[0]?.price
                   return (
                     <div key={p.id} className="rounded-2xl overflow-hidden bg-surface border border-border group flex flex-col">
-                      <Link href={`/trading/${p.slug || p.id}`} className="block relative aspect-square overflow-hidden">
+                      <Link href={`/products/${p.slug || p.id}`} className="block relative aspect-square overflow-hidden">
                         <img src={img} alt={p.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER }} />
@@ -452,16 +507,16 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
                           )}
                         </div>
                         <div className="mt-auto pt-2.5 flex gap-1.5">
-                          <Link href={`/trading/${p.slug || p.id}`}
+                          <Link href={`/products/${p.slug || p.id}`}
                             className="flex-1 h-7 rounded-lg text-[10px] font-semibold flex items-center justify-center bg-surface border border-border text-text-secondary hover:bg-surface-secondary transition-all">
                             View
                           </Link>
-                          <button onClick={() => requireAuth(() => router.push(`/messages?seller=${company.id}`))}
+                          <button onClick={() => requireAuth(() => openChat({ router, companyId: company.id, productId: p.id, title: p.name }))}
                             className="flex-1 h-7 rounded-lg text-[10px] font-semibold flex items-center justify-center"
                             style={{ background:'rgba(45,224,224,0.1)', border:'1px solid rgba(45,224,224,0.25)', color:'#2DE0E0' }}>
                             Chat
                           </button>
-                          <Link href={`/trading/${p.slug || p.id}`}
+                          <Link href={`/products/${p.slug || p.id}`}
                             className="flex-1 h-7 rounded-lg text-[10px] font-bold flex items-center justify-center text-white"
                             style={{ background:'linear-gradient(135deg,#FF4D00,#FF7A3D)' }}>
                             Buy
@@ -484,6 +539,116 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
           )}
         </motion.div>
 
+        {/* SERVICES BY SELLER (C-01 P1 F-4) — REAL ProfessionalServices of this company only */}
+        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.22 }} className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-text-primary font-bold text-base flex items-center gap-2">
+              <Briefcase size={15} className="text-accent" /> Services by Seller
+              <span className="text-text-tertiary text-xs font-normal">({servicesTotal})</span>
+            </h2>
+            {(company as any).professionalType && (
+              <Link href={`/tradeserv/p/${company.slug}`}
+                className="text-xs font-semibold flex items-center gap-1 text-accent">
+                Professional Profile <ChevronRight size={12} />
+              </Link>
+            )}
+          </div>
+
+          {allServices.length === 0 ? (
+            <div className="text-center py-16 rounded-2xl bg-surface border-border">
+              <Briefcase size={44} className="mx-auto mb-3 text-text-primary/15" />
+              <p className="text-text-tertiary text-sm">No services listed yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {allServices.map((s: any) => {
+                const serviceName = s.catalogItem?.name || s.name
+                const taxonomy = s.catalogSubcategory?.name || s.catalogCategory?.name || s.category || ''
+                return (
+                  <Link key={s.id} href={`/tradeserv/p/${company.slug}`}
+                    className="flex items-start justify-between rounded-lg border border-border bg-surface p-4 hover:border-accent/40 transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-text-primary">{serviceName}</p>
+                      {s.description && <p className="mt-0.5 text-xs text-text-tertiary line-clamp-2">{s.description}</p>}
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        {taxonomy && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface border border-border text-text-secondary">{taxonomy}</span>
+                        )}
+                        {s.deliveryDays != null && (
+                          <span className="text-[10px] text-text-tertiary">Delivery: {s.deliveryDays} days</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0 ml-3 text-right">
+                      {(s.priceMin != null || s.priceMax != null) ? (
+                        <span className="text-sm font-semibold text-accent">
+                          ₹{s.priceMin != null ? s.priceMin.toLocaleString('en-IN') : ''}{s.priceMax != null ? ` - ₹${s.priceMax.toLocaleString('en-IN')}` : ''}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-text-tertiary">Price on Request</span>
+                      )}
+                      {s.pricingType && (
+                        <p className="text-[10px] text-text-tertiary mt-0.5">{s.pricingType.replace(/_/g, ' ').toLowerCase()}</p>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* REVIEWS (reference IA §2) — REAL approved reviews only; reviewer identity is
+            not exposed by the public API, so rows show rating/text/date/verified flag.
+            The section is omitted entirely when no real reviews exist. */}
+        {reviewRows.length > 0 && (
+          <motion.div id="reviews" initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.23 }} className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-text-primary font-bold text-base flex items-center gap-2">
+                <Star size={15} className="text-accent" /> Reviews &amp; Ratings
+                <span className="text-text-tertiary text-xs font-normal">({reviewCount})</span>
+              </h2>
+              {avgRating > 0 && (
+                <span className="flex items-center gap-1 text-xs font-semibold text-text-secondary">
+                  <Star size={12} className="text-accent fill-current" /> {avgRating.toFixed(1)}/5
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {reviewRows.map((r: any) => {
+                const text = r.comment || r.review
+                return (
+                  <div key={r.id} className="rounded-2xl border border-border bg-surface p-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <span className="flex items-center gap-1" aria-label={`${r.rating} out of 5`}>
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <Star key={i} size={12} className={i <= (r.rating || 0) ? 'text-accent fill-current' : 'text-text-tertiary/30'} />
+                        ))}
+                      </span>
+                      <span className="flex items-center gap-2 text-[10px] text-text-tertiary">
+                        {r.isVerifiedPurchase && (
+                          <span className="inline-flex items-center gap-1 text-status-success">
+                            <CheckCircle2 size={11} /> Verified Purchase
+                          </span>
+                        )}
+                        {r.createdAt ? <span>{new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span> : null}
+                      </span>
+                    </div>
+                    {r.title ? <p className="mt-2 text-sm font-semibold text-text-primary">{r.title}</p> : null}
+                    {text ? <p className="mt-1 text-xs leading-relaxed text-text-primary/60">{text}</p> : null}
+                    {r.helpfulCount > 0 && (
+                      <p className="mt-2 inline-flex items-center gap-1 text-[10px] text-text-tertiary">
+                        <ThumbsUp size={10} /> {r.helpfulCount} found this helpful
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+
         {/* RELATED & SIMILAR SUPPLIERS */}
         {similar.length > 0 && (
           <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.25 }}>
@@ -491,7 +656,10 @@ router.push(`/buyer/rfq/new?source=COMPANY&sourceId=${company.id}`))
               <h2 className="text-text-primary font-bold text-base flex items-center gap-2">
                 <Building2 size={15} className="text-accent" /> Related & Similar Suppliers
               </h2>
-              <Link href={`/companies?category=${categories[0] || ''}`}
+              {/* Real destination only: the directory's category filter consumes a
+                  Category SLUG (a name never filtered), and the directory now seeds that
+                  filter from the URL. No category slug in the data → plain directory. */}
+              <Link href={categorySlug ? `/companies?category=${categorySlug}` : '/companies'}
                 className="text-xs font-semibold flex items-center gap-1 text-accent">
                 View More <ChevronRight size={12} />
               </Link>

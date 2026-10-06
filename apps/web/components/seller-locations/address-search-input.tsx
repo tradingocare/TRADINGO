@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback } from 'react';
 import { Search } from 'lucide-react';
@@ -51,7 +51,7 @@ export function AddressSearchInput({ onSelectLocation, disabled }: AddressSearch
 
   return (
     <div className="relative space-y-1">
-      <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+      <label className="block text-sm font-medium text-text-primary">
         Search Location
       </label>
       <div className="relative">
@@ -67,16 +67,16 @@ export function AddressSearchInput({ onSelectLocation, disabled }: AddressSearch
           onBlur={() => setTimeout(() => setShowResults(false), 200)}
           placeholder="Search city, pincode, or address..."
           disabled={disabled}
-          className="w-full rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface px-9 py-2 text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary dark:placeholder:text-dark-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark disabled:opacity-50"
+          className="w-full rounded-lg border border-surface-border border-border bg-surface px-9 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark disabled:opacity-50"
         />
         {searching ? (
           <LoadingSpinner size="sm" color="muted" className="absolute left-2.5 top-1/2 -translate-y-1/2" />
         ) : (
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary dark:text-dark-text-tertiary" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
         )}
       </div>
       {showResults && results.length > 0 && (
-        <div className="absolute z-20 w-full mt-1 rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-20 w-full mt-1 rounded-lg border border-surface-border border-border bg-surface shadow-lg max-h-48 overflow-y-auto">
           {results.map((result, index) => (
             <button
               key={index}
@@ -86,10 +86,10 @@ export function AddressSearchInput({ onSelectLocation, disabled }: AddressSearch
                 setQuery(result.displayName.split(',')[0]);
                 setShowResults(false);
               }}
-              className="w-full text-left px-3 py-2 text-sm text-text-primary dark:text-dark-text-primary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary border-b border-surface-border dark:border-dark-border last:border-0"
+              className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-surface-secondary border-b border-surface-border border-border last:border-0"
             >
               <span className="line-clamp-2">{result.displayName}</span>
-              <span className="text-xs text-text-tertiary dark:text-dark-text-tertiary mt-0.5">
+              <span className="text-xs text-text-tertiary mt-0.5">
                 {result.lat}, {result.lon}
               </span>
             </button>

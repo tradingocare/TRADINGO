@@ -27,6 +27,16 @@ const COMPANY_INDEX = 'companies';
 export class CompaniesService {
   private readonly logger = new Logger(CompaniesService.name);
 
+  /**
+   * C-01 P1 F-3: visibility relation for public product counts — identical
+   * boundary to the public Company→Products read path (getProducts): ACTIVE
+   * and not soft-deleted. DRAFT/REJECTED/INACTIVE/OUT_OF_STOCK/DISCONTINUED
+   * and deleted products are never counted publicly.
+   */
+  private readonly visibleProductCount = {
+    select: { products: { where: { status: 'ACTIVE' as const, deletedAt: null } } },
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly searchService: SearchService,
@@ -78,7 +88,7 @@ export class CompaniesService {
             : undefined,
         },
         include: {
-          owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+          owners: { include: { user: { select: { id: true, name: true } } } },
           locations: true,
           categories: { include: { category: true } },
         },
@@ -151,7 +161,7 @@ export class CompaniesService {
         take: limit + 1,
         orderBy: { createdAt: 'desc' },
         include: {
-          owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+          owners: { include: { user: { select: { id: true, name: true } } } },
           locations: { where: { deletedAt: null }, take: 1 },
           categories: { include: { category: true } },
           _count: { select: { locations: true, verifications: true } },
@@ -219,7 +229,7 @@ export class CompaniesService {
       take: limit,
       include: {
         locations: { where: { deletedAt: null }, take: 1 },
-        _count: { select: { products: true } },
+        _count: this.visibleProductCount, // C-01 F-3: ACTIVE, not deleted
       },
     })
 
@@ -325,9 +335,12 @@ export class CompaniesService {
     if (!company) throw new NotFoundException('Company not found')
 
     const skip = (page - 1) * limit
+    // C-01 T-2: soft-deleted products are excluded — visibility now identical
+    // for rows and count (ACTIVE + not deleted).
+    const visibleProducts = { companyId: company.id, status: 'ACTIVE' as const, deletedAt: null }
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
-        where: { companyId: company.id, status: 'ACTIVE' },
+        where: visibleProducts,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -336,11 +349,66 @@ export class CompaniesService {
           media: { where: { type: 'IMAGE' }, take: 3, orderBy: { sortOrder: 'asc' } },
         },
       }),
-      this.prisma.product.count({ where: { companyId: company.id, status: 'ACTIVE' } }),
+      this.prisma.product.count({ where: visibleProducts }),
     ])
 
     return {
       products,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit), hasNext: page * limit < total },
+    }
+  }
+
+  // ── Company Services (C-01 P1 F-4) ──
+  /**
+   * REAL ProfessionalServices belonging to the company ONLY (hard companyId
+   * equality). Mirrors the public Company→Products read path:
+   * - service must be active (isActive)
+   * - provider company must be an APPROVED professional (same gate as the
+   *   TradeServ public detail — PENDING_REVIEW/REJECTED/SUSPENDED expose
+   *   nothing)
+   * - company must not be deleted or INACTIVE (T-1 parity)
+   * - honest empty result when the company has no visible services
+   * Canonical CatalogItem/Subcategory/Category names are included where
+   * populated, with the legacy `category` string as fallback (P0-2 read-path
+   * compatibility — write path untouched; no backfill).
+   * No catalog masters are returned as services and no cross-company
+   * records are possible (single-equality companyId filter).
+   */
+  async getServices(slug: string, page: number, limit: number) {
+    const company = await this.prisma.company.findFirst({
+      where: { slug, deletedAt: null, status: { not: 'INACTIVE' } },
+      select: { id: true, professionalStatus: true },
+    })
+    if (!company) throw new NotFoundException('Company not found')
+
+    if (company.professionalStatus !== 'APPROVED') {
+      // Not an approved professional: honest empty — never 500, never other
+      // companies' services.
+      return {
+        services: [],
+        pagination: { total: 0, page, limit, pages: 0, hasNext: false },
+      }
+    }
+
+    const skip = (page - 1) * limit
+    const where = { companyId: company.id, isActive: true }
+    const [services, total] = await Promise.all([
+      this.prisma.professionalService.findMany({
+        where,
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+        include: {
+          catalogItem: { select: { id: true, name: true, slug: true } },
+          catalogCategory: { select: { id: true, name: true, slug: true } },
+          catalogSubcategory: { select: { id: true, name: true, slug: true } },
+        },
+      }),
+      this.prisma.professionalService.count({ where }),
+    ])
+
+    return {
+      services,
       pagination: { total, page, limit, pages: Math.ceil(total / limit), hasNext: page * limit < total },
     }
   }
@@ -403,7 +471,7 @@ export class CompaniesService {
       take,
       include: {
         locations: { where: { deletedAt: null }, take: 1 },
-        _count: { select: { products: true } },
+        _count: this.visibleProductCount, // C-01 F-3: ACTIVE, not deleted
       },
     })
 
@@ -428,7 +496,7 @@ export class CompaniesService {
     const company = await this.prisma.company.findFirst({
       where: { id, deletedAt: null },
       include: {
-        owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+        owners: { include: { user: { select: { id: true, name: true } } } },
         locations: { where: { deletedAt: null } },
         categories: { include: { category: true } },
         _count: { select: { locations: true, verifications: true } },
@@ -444,7 +512,7 @@ export class CompaniesService {
       include: {
         company: {
           include: {
-            owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+            owners: { include: { user: { select: { id: true, name: true } } } },
             locations: { where: { deletedAt: null } },
             categories: { include: { category: true } },
             certificationDocs: true,
@@ -459,13 +527,21 @@ export class CompaniesService {
 
   async findBySlug(slug: string) {
     const company = await this.prisma.company.findFirst({
-      where: { slug, deletedAt: null },
+      // C-01 T-1: INACTIVE companies are not publicly exposed on the profile
+      // page (same visibility rule as the directory). Deleted excluded as before.
+      where: { slug, deletedAt: null, status: { not: 'INACTIVE' } },
       include: {
-        owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+        owners: { include: { user: { select: { id: true, name: true } } } },
         locations: { where: { deletedAt: null } },
         categories: { include: { category: true } },
         certificationDocs: true,
-        _count: { select: { locations: true, verifications: true, products: true } },
+        _count: {
+          select: {
+            locations: true,
+            verifications: true,
+            products: { where: { status: 'ACTIVE', deletedAt: null } }, // C-01 F-3
+          },
+        },
       },
     });
     if (!company) throw new NotFoundException('Company not found');
@@ -493,7 +569,7 @@ export class CompaniesService {
             : undefined,
         },
         include: {
-          owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+          owners: { include: { user: { select: { id: true, name: true } } } },
           locations: { where: { deletedAt: null } },
           categories: { include: { category: true } },
         },
@@ -624,7 +700,7 @@ export class CompaniesService {
         take: 20,
         orderBy: { trustScore: 'desc' },
         include: {
-          owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+          owners: { include: { user: { select: { id: true, name: true } } } },
           locations: { where: { deletedAt: null }, take: 1 },
           categories: { include: { category: true } },
         },
@@ -638,7 +714,7 @@ export class CompaniesService {
     const companies = await this.prisma.company.findMany({
       where: { id: { in: ids }, deletedAt: null },
       include: {
-        owners: { include: { user: { select: { id: true, email: true, name: true } } } },
+        owners: { include: { user: { select: { id: true, name: true } } } },
         locations: { where: { deletedAt: null }, take: 1 },
         categories: { include: { category: true } },
       },

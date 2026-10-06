@@ -20,7 +20,7 @@ const STATUS_STYLES: Record<string, string> = {
   NEW: 'bg-blue-500/20 text-blue-400', CONTACTED: 'bg-yellow-500/20 text-yellow-400',
   QUALIFIED: 'bg-purple-500/20 text-purple-400', PROPOSAL: 'bg-indigo-500/20 text-indigo-400',
   NEGOTIATION: 'bg-orange-500/20 text-orange-400', WON: 'bg-green-500/20 text-green-400',
-  LOST: 'bg-red-500/20 text-red-400', DISQUALIFIED: 'bg-bg-elevated text-gray-400',
+  LOST: 'bg-red-500/20 text-red-400', DISQUALIFIED: 'bg-bg-elevated text-text-secondary',
 };
 
 export default function SellerCrmPage() {
@@ -64,7 +64,7 @@ export default function SellerCrmPage() {
       </Modal>
 
       <div className="flex items-center gap-4">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" /><Input placeholder="Search leads..." className="pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" /><Input placeholder="Search leads..." className="pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
         <Select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
           <option value="">All Status</option>
           {Object.keys(STATUS_STYLES).map(s => <option key={s} value={s}>{s}</option>)}

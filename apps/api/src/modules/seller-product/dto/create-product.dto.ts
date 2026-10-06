@@ -74,6 +74,20 @@ export class CreateProductDto {
   @IsString()
   industryId?: string;
 
+  // P0-2 canonical taxonomy triple (confirmed via Tick/Change; validated
+  // server-side before persistence — never taken on faith from the client).
+  @IsOptional()
+  @IsString()
+  catalogItemId?: string;
+
+  @IsOptional()
+  @IsString()
+  catalogCategoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  catalogSubcategoryId?: string;
+
   @IsOptional()
   @IsString()
   slug?: string;

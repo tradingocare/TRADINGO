@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -59,7 +59,7 @@ export default function SellerInboxPage() {
           {isLoading ? (
             <div className="flex items-center justify-center py-12"><LoadingSpinner size="lg" /></div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
               <MessageSquare className="h-12 w-12 text-text-tertiary" />
               <h3 className="mt-4 text-lg font-semibold">No conversations</h3>
               <p className="mt-1 text-sm text-text-secondary">Buyers will reach out to you via your products and company profile.</p>
@@ -73,8 +73,8 @@ export default function SellerInboxPage() {
 
                 return (
                   <Link key={conv.id} href={`/seller/inbox/${conv.id}`}
-                    className={`flex items-start gap-4 rounded-xl border p-4 transition-colors hover:border-accent/30 ${isUnread ? 'border-border bg-surface border-l-2 border-l-accent' : 'border-border bg-surface dark:bg-dark-surface dark:border-dark-border'}`}>
-                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${isUnread ? 'bg-accent/20 text-accent' : 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary'}`}>
+                    className={`flex items-start gap-4 rounded-xl border p-4 transition-colors hover:border-accent/30 ${isUnread ? 'border-border bg-surface border-l-2 border-l-accent' : 'border-border bg-surface bg-surface border-border'}`}>
+                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${isUnread ? 'bg-accent/20 text-accent' : 'bg-surface-secondary text-text-secondary bg-surface-secondary'}`}>
                       <MessageSquare className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -96,7 +96,7 @@ export default function SellerInboxPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-surface p-4 dark:bg-dark-surface dark:border-dark-border">
+          <div className="rounded-xl border border-border bg-surface p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-text-primary">Quick Replies</h3>
               <button onClick={() => setShowTemplateForm(!showTemplateForm)} className="text-[#f97316] hover:text-accent-500">
@@ -109,7 +109,7 @@ export default function SellerInboxPage() {
                 className="mb-3 space-y-2">
                 <Input placeholder="Template title" value={tplForm.title} onChange={(e) => setTplForm({ ...tplForm, title: e.target.value })} className="text-xs" />
                 <textarea value={tplForm.content} onChange={(e) => setTplForm({ ...tplForm, content: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-primary dark:bg-dark-surface dark:border-dark-border" rows={3} placeholder="Template content..." />
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-primary" rows={3} placeholder="Template content..." />
                 <Button size="sm" type="submit" disabled={!tplForm.title.trim() || !tplForm.content.trim()}>
                   <Save className="h-3 w-3 mr-1" /> Save
                 </Button>
@@ -121,7 +121,7 @@ export default function SellerInboxPage() {
                 <p className="text-xs text-text-tertiary">No saved templates yet</p>
               ) : (
                 templates.map((tpl: any) => (
-                  <div key={tpl.id} className="cursor-pointer rounded-lg bg-surface-secondary/50 p-2.5 text-xs transition-colors hover:bg-surface-secondary dark:bg-dark-surface-secondary/50 dark:hover:bg-dark-surface-secondary">
+                  <div key={tpl.id} className="cursor-pointer rounded-lg bg-surface-secondary/50 p-2.5 text-xs transition-colors hover:bg-surface-secondary">
                     <p className="font-medium text-text-primary">{tpl.title}</p>
                     <p className="mt-0.5 text-text-tertiary line-clamp-2">{tpl.content}</p>
                   </div>

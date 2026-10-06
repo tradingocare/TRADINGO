@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Send, Building2, User, Mail, Phone, FileText, DollarSign, Calendar, Loader2 } from 'lucide-react';
@@ -203,7 +203,7 @@ function FormField({
           placeholder={placeholder}
           required={required}
           rows={4}
-          className="w-full surface-card px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_12px_rgba(0, 255, 255, 0.06)] resize-none"
+          className="w-full surface-card px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_12px_rgba(0, 255, 0.06)] resize-none"
         />
       ) : (
         <input
@@ -212,7 +212,7 @@ function FormField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           required={required}
-          className="w-full surface-card px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_12px_rgba(0, 255, 255, 0.06)]"
+          className="w-full surface-card px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_12px_rgba(0, 255, 0.06)]"
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
 import { useUsers } from '@/hooks';
@@ -39,8 +39,8 @@ export default function AdminUsersPage() {
       {users.length === 0 ? (
         <EmptyState icon={User} title="No users found" description="Users will appear here once they register on the platform." />
       ) : (
-        <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">
+        <div className="rounded-xl border border-border bg-surface">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary sm:grid">
             <div className="col-span-3">User</div>
             <div className="col-span-3">Email</div>
             <div className="col-span-2">Role</div>
@@ -50,17 +50,17 @@ export default function AdminUsersPage() {
           {users.map((user: UserType) => (
             <div
               key={user.id}
-              className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center dark:border-dark-border"
+              className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center"
             >
               <div className="flex items-center gap-3 sm:col-span-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                   <User className="h-4 w-4" />
                 </div>
-                <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{user.name}</p>
+                <p className="text-sm font-medium text-text-primary">{user.name}</p>
               </div>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-3">{user.email}</p>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-2">{user.role}</p>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-2">{new Date(user.createdAt).toLocaleDateString('en-IN')}</p>
+              <p className="text-sm text-text-secondary sm:col-span-3">{user.email}</p>
+              <p className="text-sm text-text-secondary sm:col-span-2">{user.role}</p>
+              <p className="text-sm text-text-secondary sm:col-span-2">{new Date(user.createdAt).toLocaleDateString('en-IN')}</p>
               <div className="sm:col-span-2">
                 <StatusBadge status={user.isVerified ? 'verified' : 'pending'} />
               </div>

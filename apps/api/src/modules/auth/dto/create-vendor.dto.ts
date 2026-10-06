@@ -78,6 +78,12 @@ export class CreateVendorDto {
   @IsOptional() @IsArray()
   @ApiPropertyOptional({ description: 'Secondary categories' })
   secondaryCategories?: string[];
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Primary canonical category ID from the F-07 cascade picker (authoritative when present; falls back to name resolution when absent)' })
+  primaryCatalogCategoryId?: string;
+  @IsOptional() @IsArray()
+  @ApiPropertyOptional({ description: 'Secondary canonical category IDs from the F-07 cascade picker' })
+  secondaryCatalogCategoryIds?: string[];
   @IsString()
   @ApiProperty({ description: 'Product types' })
   productTypes: string;
@@ -148,9 +154,12 @@ export class CreateVendorDto {
   @ApiPropertyOptional({ description: 'Uploaded company banner URL' })
   bannerUrl?: string;
 
-  @IsString()
-  @ApiProperty({ description: 'Plan ID' })
-  planId: string;
+  // Optional: omitted for TRAD UP seller-first registration, where the free
+  // benefit is fulfilled post-identity via activateFreePlan (never
+  // enrollTrial). The service skips enrollment when absent.
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Plan ID (commercial trial enrollment; omit for TRAD UP)' })
+  planId?: string;
   @IsOptional() @IsString()
   @ApiPropertyOptional({ description: 'Referral code' })
   referralCode?: string;

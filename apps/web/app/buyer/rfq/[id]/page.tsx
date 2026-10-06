@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useParams, useRouter } from 'next/navigation';
 import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
@@ -21,7 +21,7 @@ export default function BuyerRfqDetail() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="RFQ Details" />
-        <div className="flex flex-col items-center justify-center glass-card p-12 ">
+        <div className="flex flex-col items-center justify-center glass-card p-12">
           <AlertCircle className="h-12 w-12 text-red-500" />
           <p className="mt-4 text-lg font-medium text-white">RFQ not found</p>
           <Button variant="outline" className="mt-4" onClick={() => router.push('/buyer/rfq')}>Back to RFQs</Button>
@@ -77,7 +77,7 @@ export default function BuyerRfqDetail() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <div className="glass-card p-5 ">
+          <div className="glass-card p-5">
             <div className="flex items-center gap-2 text-white/60 mb-3">
               <FileText className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Description</span>
@@ -85,7 +85,7 @@ export default function BuyerRfqDetail() {
             <p className="text-sm text-white/80">{rfq.description || 'No description provided.'}</p>
           </div>
 
-          <div className="glass-card p-5 ">
+          <div className="glass-card p-5">
             <div className="flex items-center gap-2 text-white/60 mb-3">
               <Package className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Products</span>
@@ -100,7 +100,7 @@ export default function BuyerRfqDetail() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-text-primary">{item.quantity} {item.unit}</p>
-                      {item.targetPrice && <p className="text-xs text-text-tertiary">₹{item.targetPrice}/{item.unit}</p>}
+                      {item.targetPrice && <p className="text-xs text-text-tertiary">â‚¹{item.targetPrice}/{item.unit}</p>}
                     </div>
                   </div>
                 ))}
@@ -110,7 +110,7 @@ export default function BuyerRfqDetail() {
             )}
           </div>
 
-          <div className="glass-card p-5 ">
+          <div className="glass-card p-5">
             <div className="flex items-center gap-2 text-white/60 mb-3">
               <Store className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Quotes ({rfq.quoteCount ?? 0})</span>
@@ -120,12 +120,12 @@ export default function BuyerRfqDetail() {
         </div>
 
         <div className="space-y-4">
-          <div className="glass-card p-5 ">
+          <div className="glass-card p-5">
             <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">Status</h3>
             <StatusBadge status={rfq.status} className="text-sm" />
           </div>
 
-          <div className="glass-card p-5 ">
+          <div className="glass-card p-5">
             <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">Details</h3>
             <dl className="space-y-3">
               <div><dt className="text-xs text-white/40">Type</dt><dd className="text-sm text-white">{rfq.rfqType || 'PRODUCT'}</dd></div>
@@ -137,7 +137,7 @@ export default function BuyerRfqDetail() {
             </dl>
           </div>
 
-          <div className="glass-card p-5 ">
+          <div className="glass-card p-5">
             <div className="flex items-center gap-2 text-white/60 mb-3">
               <MapPin className="h-4 w-4" />
               <span className="text-xs font-medium uppercase tracking-wider">Delivery</span>
@@ -150,7 +150,7 @@ export default function BuyerRfqDetail() {
           </div>
 
           {rfq.paymentPreference && (
-            <div className="glass-card p-5 ">
+            <div className="glass-card p-5">
               <h3 className="text-xs font-medium uppercase tracking-wider text-white/60 mb-3">Payment</h3>
               <p className="text-sm text-white/80">{rfq.paymentPreference}</p>
             </div>

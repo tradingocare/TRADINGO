@@ -1,82 +1,105 @@
 ﻿'use client'
 
-import { useState, useMemo } from 'react'
-import Link from 'next/link'
-import { Search, Package, ShoppingBag, Users, ChevronRight, ExternalLink, Loader2 } from 'lucide-react'
+import { Suspense, useMemo, useEffect } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { Package, Boxes, ShoppingBag, Loader2 } from 'lucide-react'
 import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth'
 import { PageHeader } from '@/components/shared/page-header'
-import { useCategoryTree } from '@/hooks/use-categories'
-import type { CategoryNode } from '@/lib/api/categories'
-
-interface FlatCategory {
-  id: string
-  slug: string
-  name: string
-  icon: string
-  description: string
-  productCount: number
-  serviceCount: number
-  supplierCount: number
-  subcategories: { name: string; slug: string; productCount: number; serviceCount: number }[]
-}
-
-function flattenTree(nodes: CategoryNode[]): FlatCategory[] {
-  return nodes.map(node => ({
-    id: node.id,
-    slug: node.slug,
-    name: node.name,
-    icon: node.icon || '',
-    description: node.description || '',
-    productCount: node._count.products,
-    serviceCount: node._count.serviceMasters || 0,
-    supplierCount: 0,
-    subcategories: (node.children || []).map(child => ({
-      name: child.name,
-      slug: child.slug,
-      productCount: child._count.products,
-      serviceCount: child._count.serviceMasters || 0,
-    })),
-  }))
-}
-
-function computeTotals(flat: FlatCategory[]) {
-  let subcategories = 0
-  let products = 0
-  let services = 0
-  for (const cat of flat) {
-    subcategories += cat.subcategories.length
-    products += cat.productCount
-    services += cat.serviceCount
-  }
-  return { subcategories, products, services }
-}
+import { useEnrichedCategoryTree } from '@/hooks'
+import { useCategoryMappingResolve } from '@/hooks/use-category-mapping'
+import { selectMappingTarget, selectRelatedTargets, selectOneToManyTargets } from '@/lib/api/category-mapping'
+import { CatalogBrowser } from '@/components/trading/trading-catalog-marketplace'
 
 export default function CategoriesPage() {
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all' | 'product' | 'service'>('all')
-  const { data: tree, isLoading, error } = useCategoryTree()
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+          <Loader2 size={32} className="animate-spin text-accent" />
+        </div>
+      }
+    >
+      <CategoriesBrowser />
+    </Suspense>
+  )
+}
 
-  const flat: FlatCategory[] = useMemo(() => tree ? flattenTree(tree) : [], [tree])
-  const totals = useMemo(() => computeTotals(flat), [flat])
+function CategoriesBrowser() {
+  // Canonical catalog data — the SAME cached bridge-tree response the locked
+  // CatalogBrowser below consumes. Zero new requests from this page.
+  const { data: enriched, isLoading, error } = useEnrichedCategoryTree()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  // Deep link from the /trading category strip: ?category=<legacy-slug>.
+  // Authority is the Phase 2 resolver (never slug equality, never name
+  // similarity). The strip contract is preserved as-is; canonical
+  // ?catalogCategory= URLs skip the resolver entirely.
+  const selectedSlug = searchParams.get('category')
+  const hasCatalogParam = !!searchParams.get('catalogCategory')
+  const shouldResolve = !!selectedSlug && !hasCatalogParam
+  const mappingQuery = useCategoryMappingResolve(shouldResolve ? selectedSlug : null)
+  // EXACT-only selection; RELATED/ONE_TO_MANY/unmapped resolve to null
+  // (clean browser, no fabrication) — see selectMappingTarget.
+  const target = selectMappingTarget(mappingQuery.data)
+  const mappingSettled = !shouldResolve || !mappingQuery.isLoading
 
-  const filtered = useMemo(() => {
-    return flat.filter(cat => {
-      if (filter === 'product' && cat.productCount === 0) return false
-      if (filter === 'service' && cat.serviceCount === 0) return false
-      if (!search.trim()) return true
-      const q = search.toLowerCase()
-      return (
-        cat.name.toLowerCase().includes(q) ||
-        cat.subcategories.some(s => s.name.toLowerCase().includes(q))
-      )
-    })
-  }, [flat, search, filter])
+  const catalogTree = useMemo(() => enriched?.catalogTree ?? [], [enriched])
+  const totals = useMemo(() => {
+    let subcategories = 0
+    let items = 0
+    for (const cat of catalogTree) {
+      subcategories += cat.subcategories.length
+      for (const sub of cat.subcategories) items += sub.itemCount ?? 0
+    }
+    return { categories: catalogTree.length, subcategories, items }
+  }, [catalogTree])
 
-  const tabs = [
-    { key: 'all' as const, label: 'All Categories', count: flat.length },
-    { key: 'product' as const, label: 'Products', count: flat.filter(c => c.productCount > 0).length },
-    { key: 'service' as const, label: 'Services', count: flat.filter(c => c.serviceCount > 0).length },
-  ]
+  // Phase 3N (UX Option A): RELATED targets are suggestion-only. Resolved
+  // with catalog display names from the already-loaded bridge tree (zero new
+  // requests). Shown only when nothing is auto-selected.
+  const relatedSuggestions = useMemo(() => {
+    if (!mappingSettled || target || hasCatalogParam) return []
+    return selectRelatedTargets(mappingQuery.data).map(t => ({
+      ...t,
+      catalogName: catalogTree.find(c => c.slug === t.catalogSlug)?.name ?? t.catalogSlug,
+    }))
+  }, [mappingQuery.data, mappingSettled, target, hasCatalogParam, catalogTree])
+
+  // Phase 3P (UX Option A): ONE_TO_MANY chooser data. Explicit user choice
+  // only — no preselect, no auto-redirect, no primary invention. Empty until
+  // approved rows exist (currently zero in data).
+  const chooserTargets = useMemo(() => {
+    if (!mappingSettled || target || hasCatalogParam) return []
+    return selectOneToManyTargets(mappingQuery.data).map(t => ({
+      ...t,
+      catalogName: catalogTree.find(c => c.slug === t.catalogSlug)?.name ?? t.catalogSlug,
+    }))
+  }, [mappingQuery.data, mappingSettled, target, hasCatalogParam, catalogTree])
+
+  // Gate the browser mount until a resolver-backed selection is reflected in
+  // the URL — otherwise the locked card would mount unselected (it reads the
+  // selection prop at mount time only).
+  const selectionReady =
+    !selectedSlug ||
+    hasCatalogParam ||
+    (mappingSettled && (!target || searchParams.get('catalogCategory') === target.catalogSlug))
+
+  useEffect(() => {
+    if (!selectedSlug) return
+    if (target && searchParams.get('catalogCategory') !== target.catalogSlug) {
+      const sp = new URLSearchParams(searchParams.toString())
+      sp.set('catalogCategory', target.catalogSlug)
+      router.replace(`${pathname}?${sp.toString()}`, { scroll: false })
+    }
+    // The locked card's own category link doubles as a scroll anchor —
+    // no component change required.
+    if (target) {
+      document
+        .querySelector(`a[href="/trading?catalogCategory=${CSS.escape(target.catalogSlug)}"]`)
+        ?.scrollIntoView({ block: 'start' })
+    }
+  }, [selectedSlug, target, searchParams, router, pathname])
 
   if (isLoading) {
     return (
@@ -110,15 +133,16 @@ export default function CategoriesPage() {
           description="Navigate TRADINGO's complete business directory — 160 categories, 1,600 subcategories, a comprehensive product catalog."
         />
 
-        {/* Stats Bar */}
+        {/* Canonical catalog statistics — derived live from the same
+            bridge-tree response the browser below consumes. Catalog-master
+            counts (NOT live marketplace listings). */}
         <section className="-mt-6 pb-8">
           <div className="container-main">
-            <div className="grid gap-4 sm:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-3">
               {[
-                { label: 'Categories', value: flat.length, icon: Package },
-                { label: 'Subcategories', value: totals.subcategories.toLocaleString(), icon: ChevronRight },
-                { label: 'Products', value: totals.products.toLocaleString(), icon: ShoppingBag },
-                { label: 'Services', value: totals.services.toLocaleString(), icon: Users },
+                { label: 'Categories', value: totals.categories.toLocaleString(), icon: Package },
+                { label: 'Subcategories', value: totals.subcategories.toLocaleString(), icon: Boxes },
+                { label: 'Total Catalog Items', value: totals.items.toLocaleString(), icon: ShoppingBag },
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -137,67 +161,84 @@ export default function CategoriesPage() {
           </div>
         </section>
 
-        {/* Search & Filters */}
-        <section className="pb-8">
-          <div className="container-main">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="relative flex-1 max-w-md">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
-                <input
-                  type="text"
-                  placeholder="Search categories or subcategories..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full surface-card py-2.5 pl-10 pr-4 text-sm text-text-primary placeholder-text-tertiary backdrop-blur-xl focus:border-accent/30 focus:outline-none"
-                />
-              </div>
-              <div className="flex gap-1.5 surface-card p-1">
-                {tabs.map((t) => (
+        {/* Phase 3N (UX Option A): RELATED suggestion — explicit user choice
+            only. Never auto-selects, never redirects, never claims equivalence.
+            Navigates solely on click, via the existing canonical mechanism. */}
+        {relatedSuggestions.length > 0 && (
+          <section className="pb-8">
+            <div className="container-main">
+              <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-text-primary">
+                    Related canonical categor{relatedSuggestions.length > 1 ? 'ies' : 'y'}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-text-tertiary">
+                    A narrower, related scope — not equivalent to the selected category.
+                  </p>
+                </div>
+                {relatedSuggestions.map(s => (
                   <button
-                    key={t.key}
-                    onClick={() => setFilter(t.key)}
-                    className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                      filter === t.key
-                        ? 'bg-accent text-btn-primary-text shadow-lg shadow-accent/25'
-                        : 'text-text-tertiary hover:text-text-secondary'
-                    }`}
+                    key={s.catalogSlug}
+                    type="button"
+                    onClick={() => {
+                      const sp = new URLSearchParams(searchParams.toString())
+                      sp.set('catalogCategory', s.catalogSlug)
+                      router.replace(`${pathname}?${sp.toString()}`, { scroll: false })
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-accent/25 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
                   >
-                    {t.label}
-                    <span className="ml-1.5 opacity-60">({t.count})</span>
+                    Explore related category: {s.catalogName} →
                   </button>
                 ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* Results count */}
-        <section className="pb-4">
-          <div className="container-main">
-            <p className="text-sm text-text-tertiary">
-              Showing {filtered.length} of {flat.length} categories
-              {search && (
-                <span>
-                  {' '}matching &ldquo;<span className="text-text-secondary">{search}</span>&rdquo;
-                </span>
-              )}
-            </p>
-          </div>
-        </section>
+        {/* Phase 3P (UX Option A): ONE_TO_MANY chooser. Renders ONLY when
+            approved rows exist (currently zero). No preselected target, no
+            auto-redirect — each button is an explicit user choice into the
+            existing canonical flow. */}
+        {chooserTargets.length > 0 && (
+          <section className="pb-8" aria-label="Choose a related category">
+            <div className="container-main">
+              <div className="rounded-xl border border-border bg-surface px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-text-primary">
+                    Multiple related canonical categories
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-text-tertiary">
+                    Choose one explicitly — nothing is preselected and scopes are not equivalent.
+                  </p>
+                </div>
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {chooserTargets.map(t => (
+                    <button
+                      key={t.catalogSlug}
+                      type="button"
+                      onClick={() => {
+                        const sp = new URLSearchParams(searchParams.toString())
+                        sp.set('catalogCategory', t.catalogSlug)
+                        router.replace(`${pathname}?${sp.toString()}`, { scroll: false })
+                      }}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-accent/25 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
+                    >
+                      {t.catalogName} →
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
-        {/* Categories Grid */}
+        {/* Full catalog browser — relocated from /trading, same component and
+            design. Its subcategory/product links target /trading canonically.
+            Mounts only once selection is decided so a deep-linked card mounts
+            already selected (the locked card reads selection at mount). */}
         <section className="pb-20">
           <div className="container-main">
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((cat) => (
-                <CategoryCard key={cat.id} cat={cat} />
-              ))}
-            </div>
-            {filtered.length === 0 && (
-              <div className="mt-16 text-center">
-                <p className="text-lg text-text-tertiary">No categories match your search.</p>
-              </div>
-            )}
+            {selectionReady && <CatalogBrowser basePath="/trading" />}
           </div>
         </section>
 
@@ -207,93 +248,5 @@ export default function CategoriesPage() {
   )
 }
 
-function CategoryCard({ cat }: { cat: FlatCategory }) {
-  const [expanded, setExpanded] = useState(false)
-  const displaySubs = expanded ? cat.subcategories : cat.subcategories.slice(0, 6)
-  const hasMore = cat.subcategories.length > 6
-
-  return (
-    <div
-      className="group relative flex flex-col overflow-hidden surface-card-lg p-6 transition-all duration-500 hover:border-accent/20"
-      style={{
-        backdropFilter: 'blur(20px)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-      }}
-    >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-        style={{
-          background: 'radial-gradient(600px circle at 50% 50%, rgba(255,77,0,0.06), transparent 40%)',
-        }}
-      />
-
-      <div className="relative z-10 flex flex-1 flex-col">
-        {/* Header */}
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[rgba(255,77,0,0.15)] to-[rgba(255,77,0,0.05)] text-lg"
-            style={{ border: '1px solid rgba(255,77,0,0.1)' }}>
-            {cat.icon}
-          </span>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-base font-black text-text-primary truncate">{cat.name}</h3>
-            <p className="mt-0.5 text-xs text-text-tertiary truncate">{cat.description}</p>
-          </div>
-        </div>
-
-        {/* Counts */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {cat.productCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-[10px] font-semibold text-accent">
-              <Package size={10} /> {cat.productCount.toLocaleString()} Products
-            </span>
-          )}
-          {cat.serviceCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(212,175,55,0.1)] px-2.5 py-0.5 text-[10px] font-semibold text-[#D4AF37]">
-              <Users size={10} /> {cat.serviceCount.toLocaleString()} Services
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-secondary px-2.5 py-0.5 text-[10px] font-semibold text-text-tertiary">
-            <ShoppingBag size={10} /> {cat.supplierCount}+ Suppliers
-          </span>
-        </div>
-
-        {/* Subcategories */}
-        <div className="mt-4 flex-1">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Subcategories</p>
-          <div className="flex flex-wrap gap-1.5">
-            {displaySubs.map((sub) => (
-              <Link
-                key={sub.slug}
-                href={`/trading?category=${cat.slug}&subcategory=${sub.slug}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-text-secondary transition-all hover:border-accent/20 hover:bg-accent/[0.06] hover:text-accent"
-              >
-                {sub.name}
-                {(sub.productCount > 0 || sub.serviceCount > 0) && (
-                  <span className="text-[9px] opacity-50">
-                    ({sub.productCount > 0 ? `${sub.productCount}p` : ''}{sub.productCount > 0 && sub.serviceCount > 0 ? ',' : ''}{sub.serviceCount > 0 ? `${sub.serviceCount}s` : ''})
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
-          {hasMore && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="mt-2 text-[11px] font-semibold text-accent/70 hover:text-accent transition-colors"
-            >
-              {expanded ? `Show less` : `+${cat.subcategories.length - 6} more`}
-            </button>
-          )}
-        </div>
-
-        {/* CTA */}
-        <Link
-          href={`/trading?category=${cat.slug}`}
-          className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-accent/12 bg-gradient-to-r from-[rgba(255,77,0,0.06)] to-[rgba(255,77,0,0.02)] px-4 py-2 text-[11px] font-semibold text-accent/70 transition-all group-hover:from-[rgba(255,77,0,0.1)] group-hover:to-[rgba(255,77,0,0.04)] group-hover:text-accent"
-        >
-          Browse All {cat.name} <ExternalLink size={11} />
-        </Link>
-      </div>
-    </div>
-  )
-}
+/* Legacy grid removed (Phase 1): the locked CatalogBrowser above is now the
+   single category browsing system on this page. */

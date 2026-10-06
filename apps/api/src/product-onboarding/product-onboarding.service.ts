@@ -5,6 +5,7 @@ import { SearchService } from '../modules/search/search.service';
 import { buildProductIndexDoc } from '../modules/products/product-index.doc';
 import { CreateDraftDto } from './dto/create-draft.dto';
 import { UpdateDraftDto } from './dto/update-draft.dto';
+import { CatalogTaxonomyPersistenceService } from '../modules/marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { v4 as uuid } from 'uuid';
 
 function slugify(name: string): string {
@@ -33,6 +34,7 @@ export class ProductOnboardingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly searchService: SearchService,
+    private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
   ) {}
 
   private async getUserCompany(userId: string): Promise<{ companyId: string; companySlug: string }> {
@@ -102,6 +104,12 @@ export class ProductOnboardingService {
           companyId,
           categoryId: dto.categoryId,
           subcategoryId: dto.subcategoryId,
+          // P0-2: confirmed canonical triple persists on the draft (validated
+          // against the live catalog; untrusted values are dropped to null —
+          // never fabricated, never persisted on faith).
+          catalogCategoryId: dto.catalogCategoryId ?? null,
+          catalogSubcategoryId: dto.catalogSubcategoryId ?? null,
+          catalogItemId: dto.catalogItemId ?? null,
           name: dto.name,
           shortDescription: dto.shortDescription,
           description: dto.description,
@@ -168,6 +176,10 @@ export class ProductOnboardingService {
     await this.requireDraftOwnership(draftId, companyId);
 
     const { specs, variants, media, attachments, certifications, multiLangDescriptions, priceSlabs, ...data } = dto;
+    // P0-2: normalize empty canonical inputs to null (never persist '').
+    for (const key of ['catalogCategoryId', 'catalogSubcategoryId', 'catalogItemId'] as const) {
+      if ((data as any)[key] === '') (data as any)[key] = null;
+    }
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const u = await tx.productDraft.update({
@@ -260,7 +272,9 @@ export class ProductOnboardingService {
     const draft = await this.requireDraftOwnership(draftId, companyId);
 
     if (!draft.name) throw new BadRequestException('Product name is required to submit');
-    if (!draft.categoryId) throw new BadRequestException('Category is required to submit');
+    if (!draft.categoryId && !draft.catalogCategoryId && !draft.catalogItemId) {
+      throw new BadRequestException('Category is required to submit');
+    }
 
     const base = slugify(draft.name);
     let slug = `${companySlug}-${base}`;
@@ -268,6 +282,36 @@ export class ProductOnboardingService {
     while (await this.prisma.product.findUnique({ where: { slug }, select: { id: true } })) {
       attempt++;
       slug = `${companySlug}-${base}-${attempt}`;
+    }
+
+    // P0-2 (F-02/F-03): the confirmed canonical triple must survive
+    // draft → submit. Validate the stored triple against the live catalog;
+    // fall back to deterministic exact-only classify on the product name.
+    // Never fabricated; unresolvable keeps legacy-only behavior.
+    const canonical = await this.taxonomyPersistence.resolvePersistableTaxonomy({
+      confirmed: {
+        categoryId: draft.catalogCategoryId ?? null,
+        subcategoryId: draft.catalogSubcategoryId ?? null,
+        catalogItemId: draft.catalogItemId ?? null,
+      },
+      name: draft.name,
+      description: draft.shortDescription ?? draft.description ?? null,
+      brand: draft.brand ?? null,
+      context: 'product',
+      expectedType: 'Product',
+    });
+    // Legacy layer: keep the seller-chosen legacy category when present;
+    // otherwise bridge from the canonical category so historical behavior
+    // (Product.categoryId) is preserved whenever a twin exists.
+    let legacyCategoryId = draft.categoryId ?? null;
+    if (canonical && !legacyCategoryId) {
+      legacyCategoryId =
+        (await this.taxonomyPersistence.bridgeLegacyCategoryId(canonical.categoryId)) ?? null;
+    }
+    if (!legacyCategoryId && !canonical) {
+      // No confirmed taxonomy resolved to a persistable triple and no legacy
+      // category was chosen — the seller must pick one (structured picker).
+      throw new BadRequestException('Category is required to submit');
     }
 
     const product = await this.prisma.$transaction(async (tx) => {
@@ -279,7 +323,11 @@ export class ProductOnboardingService {
       const p = await tx.product.create({
         data: {
           companyId,
-          categoryId: draft.categoryId,
+          categoryId: legacyCategoryId,
+          // P0-2: canonical triple persisted (all wired columns).
+          catalogItemId: canonical?.catalogItemId ?? null,
+          catalogCategoryId: canonical?.categoryId ?? null,
+          catalogSubcategoryId: canonical?.subcategoryId ?? null,
           name: draft.name,
           slug,
           shortDescription: draft.shortDescription,
@@ -451,6 +499,10 @@ export class ProductOnboardingService {
     await this.requireDraftOwnership(draftId, companyId);
 
     const { specs, variants, media, attachments, certifications, multiLangDescriptions, priceSlabs, ...data } = dto;
+    // P0-2: normalize empty canonical inputs to null (never persist '').
+    for (const key of ['catalogCategoryId', 'catalogSubcategoryId', 'catalogItemId'] as const) {
+      if ((data as any)[key] === '') (data as any)[key] = null;
+    }
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const u = await tx.productDraft.update({

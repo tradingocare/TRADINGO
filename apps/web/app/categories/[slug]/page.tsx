@@ -5,50 +5,24 @@ import { notFound } from 'next/navigation';
 import { ChevronRight, Package } from 'lucide-react';
 import { getProducts } from '@/lib/api/products';
 import { getCategory } from '@/lib/api/categories';
+import { getCatalogCategoryBySlug } from '@/lib/api/enterprise-catalog';
 import { buildSelfCanonical, ROBOTS_INDEX_FOLLOW } from '@/lib/seo/seo-policy';
 
 /**
- * PHASE 2-A §6 — category metadata from authoritative SEO fields.
- * CURRENT: title/description built by title-casing the URL slug; no canonical.
- * PROBLEM: ignores the authoritative Category.seoTitle / seoDescription fields.
- * POLICY: where a valid category record exists for the slug AND carries
- *   non-empty seoTitle/seoDescription, use those verbatim (no rewriting);
- *   otherwise keep the exact previous title-cased fallback. Self-canonical
- *   always. Listing behavior, UX, and breadcrumbs are untouched.
- * DOCUMENTED GAP: CatalogCategory.seoTitle/seoDescription has NO public read
- *   path from the web app (enterprise taxonomy-tree endpoint is admin-guarded;
- *   /search/catalog is relevance-ranked, not an exact lookup; the
- *   category-mapping resolver returns IDs only). The legacy Category record
- *   shares this route's slug namespace and the same field semantics, so it is
- *   the authoritative-per-URL fallback. A minimal public
- *   catalog-category-by-slug endpoint is recommended as a Phase 2-B item.
+ * PHASE 2-B §6 — category metadata from the authoritative catalog source.
+ * Lookup chain (first non-empty wins, never breaks the route):
+ *   1. CatalogCategory authority (GET .../taxonomy/categories/slug/:slug):
+ *      seoTitle / seoDescription used verbatim when non-empty.
+ *   2. Legacy Category record (same URL slug namespace): seoTitle /
+ *      seoDescription when non-empty.
+ *   3. Deterministic title-cased fallback (previous behavior, preserved).
+ * Self-canonical always. Listing behavior, UX, and breadcrumbs untouched.
  */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const categoryName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   const canonical = buildSelfCanonical(`https://tradingo.in/categories/${slug}`, {});
-  try {
-    const record = await getCategory(slug).catch(() => null);
-    const seoTitle = record?.seoTitle?.trim();
-    const seoDescription = record?.seoDescription?.trim();
-    if (seoTitle || seoDescription) {
-      return {
-        title: seoTitle || `${categoryName} - Browse Products`,
-        description:
-          seoDescription ||
-          `Explore ${categoryName} products on TRADINGO TEM E-Marketplace. Find quality suppliers and competitive prices.`,
-        openGraph: {
-          title: seoTitle || `${categoryName} | TRADINGO`,
-          description: seoDescription || `Browse ${categoryName} products from verified sellers.`,
-        },
-        robots: ROBOTS_INDEX_FOLLOW,
-        alternates: { canonical },
-      };
-    }
-  } catch {
-    // fall through to the previous title-cased metadata (never break the route)
-  }
-  return {
+  const fallback = {
     title: `${categoryName} - Browse Products`,
     description: `Explore ${categoryName} products on TRADINGO TEM E-Marketplace. Find quality suppliers and competitive prices.`,
     openGraph: {
@@ -58,6 +32,48 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     robots: ROBOTS_INDEX_FOLLOW,
     alternates: { canonical },
   };
+  // Tier 1 — canonical catalog authority.
+  try {
+    const authority = await getCatalogCategoryBySlug(slug).catch(() => null);
+    const seoTitle = authority?.seoTitle?.trim();
+    const seoDescription = authority?.seoDescription?.trim();
+    if (seoTitle || seoDescription) {
+      const displayName = authority?.name?.trim() || categoryName;
+      return {
+        title: seoTitle || `${displayName} - Browse Products`,
+        description: seoDescription || fallback.description,
+        openGraph: {
+          title: seoTitle || `${displayName} | TRADINGO`,
+          description: seoDescription || fallback.openGraph.description,
+        },
+        robots: ROBOTS_INDEX_FOLLOW,
+        alternates: { canonical },
+      };
+    }
+  } catch {
+    // fall through — never break the route on metadata lookup failure
+  }
+  // Tier 2 — legacy record in this route's slug namespace.
+  try {
+    const record = await getCategory(slug).catch(() => null);
+    const seoTitle = record?.seoTitle?.trim();
+    const seoDescription = record?.seoDescription?.trim();
+    if (seoTitle || seoDescription) {
+      return {
+        title: seoTitle || `${categoryName} - Browse Products`,
+        description: seoDescription || fallback.description,
+        openGraph: {
+          title: seoTitle || `${categoryName} | TRADINGO`,
+          description: seoDescription || fallback.openGraph.description,
+        },
+        robots: ROBOTS_INDEX_FOLLOW,
+        alternates: { canonical },
+      };
+    }
+  } catch {
+    // fall through to the previous title-cased metadata
+  }
+  return fallback;
 }
 import type { Product } from '@/lib/api/types';
 import { ProductCard } from '@/components/product/product-card';
@@ -113,6 +129,22 @@ async function CategoryContent({ slug }: { slug: string }) {
     notFound();
   }
 
+  // PHASE 2-B §10 — Category → Subcategory internal links (data-backed only).
+  // Subcategories come from the canonical catalog authority; every chip links
+  // to a real subcategory route. Fail-soft: the strip hides if the authority
+  // lookup fails — the product listing below is unaffected.
+  let subcategoryLinks: Array<{ slug: string; name: string }> = [];
+  try {
+    const authority = await getCatalogCategoryBySlug(slug).catch(() => null);
+    if (authority && Array.isArray(authority.subcategories)) {
+      subcategoryLinks = authority.subcategories
+        .filter((s) => s && s.slug && s.name)
+        .map((s) => ({ slug: s.slug, name: s.name }));
+    }
+  } catch {
+    subcategoryLinks = [];
+  }
+
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -151,6 +183,19 @@ async function CategoryContent({ slug }: { slug: string }) {
                   {total} product{total !== 1 ? 's' : ''} available
                 </p>
               </div>
+              {subcategoryLinks.length > 0 && (
+                <nav aria-label="Subcategories" className="mt-6 flex flex-wrap gap-2">
+                  {subcategoryLinks.map((sub) => (
+                    <Link
+                      key={sub.slug}
+                      href={`/categories/${slug}/${sub.slug}`}
+                      className="rounded-full border border-border bg-surface px-4 py-1.5 text-sm text-text-secondary transition-colors hover:border-accent hover:text-accent"
+                    >
+                      {sub.name}
+                    </Link>
+                  ))}
+                </nav>
+              )}
             </div>
           </section>
 

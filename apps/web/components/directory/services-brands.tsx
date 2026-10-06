@@ -108,7 +108,7 @@ export function ServicesPlaceholder(props: {
       setNotifyEmail={props.setNotifyEmail}
       onNotify={props.onNotify}
       ctas={[
-        { label: 'Become a Service Provider', href: '/register', primary: true },
+        { label: 'Become a Service Provider', href: '/golive', primary: true },
         { label: 'Explore Products', href: '/trading' },
       ]}
     />
@@ -123,8 +123,8 @@ export function BrandsPlaceholder() {
       subtitle="Launching Soon"
       description="Verified manufacturers and trusted brands will appear here when the public Brand API ships."
       ctas={[
-        { label: 'Register Your Brand', href: '/register', primary: true },
-        { label: 'Become a Verified Brand', href: '/register' },
+        { label: 'Register Your Brand', href: '/golive', primary: true },
+        { label: 'Become a Verified Brand', href: '/golive' },
         { label: 'Explore Products', href: '/trading' },
       ]}
     />

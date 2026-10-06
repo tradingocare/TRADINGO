@@ -19,7 +19,11 @@ export function ThemeProvider({ children, defaultTheme = 'dark' }: { children: R
   useEffect(() => {
     setMounted(true);
     const stored = localStorage.getItem('tradingo-theme') as Theme | null;
-    if (stored) {
+    // Allow-list guard (Phase A / ARCH-1): only 'light' | 'dark' are valid;
+    // anything else falls back to the dark default. Mirrors the inline
+    // bootstrap script in app/layout.tsx so hydration cannot reintroduce
+    // an invalid data-theme value.
+    if (stored === 'light' || stored === 'dark') {
       setThemeState(stored);
       document.documentElement.classList.toggle('dark', stored === 'dark');
       document.documentElement.setAttribute('data-theme', stored);
@@ -32,6 +36,7 @@ export function ThemeProvider({ children, defaultTheme = 'dark' }: { children: R
   }, []);
 
   const setTheme = (newTheme: Theme) => {
+    if (newTheme !== 'light' && newTheme !== 'dark') return;
     setThemeState(newTheme);
     localStorage.setItem('tradingo-theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');

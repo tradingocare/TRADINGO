@@ -1,4 +1,5 @@
-import { getAccessToken, setAccessToken, clearTokens } from './auth';
+import { getAccessToken, setAccessToken } from './auth';
+import { clearSession } from './auth/session';
 
 export class ApiError extends Error {
   constructor(
@@ -24,7 +25,13 @@ class ApiClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+    // Same dual-base rule as lib/api/client.ts: server-side rendering uses
+    // INTERNAL_API_URL when present (compose-internal DNS), browsers always
+    // use the public URL. Falls back safely when INTERNAL is unset.
+    this.baseUrl =
+      typeof window === 'undefined' && process.env.INTERNAL_API_URL
+        ? process.env.INTERNAL_API_URL
+        : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
   }
 
   private async refreshAccessToken(): Promise<boolean> {
@@ -99,7 +106,7 @@ class ApiClient {
         }
         response = await fetch(`${this.baseUrl}${endpoint}`, config);
       } else {
-        clearTokens();
+        clearSession();
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
         }

@@ -41,12 +41,12 @@ function HealthGauge({ score, label }: { score: number; label: string }) {
 
 function GradeBadge({ grade }: { grade: string }) {
   const colors: Record<string, string> = { A: 'bg-emerald-500/20 text-emerald-400', 'B': 'bg-blue-500/20 text-blue-400', 'C': 'bg-amber-500/20 text-amber-400', 'D': 'bg-red-500/20 text-red-400' };
-  return <span className={`px-2 py-0.5 rounded text-xs font-bold ${colors[grade] || 'bg-gray-500/20 text-gray-400'}`}>{grade}</span>;
+  return <span className={`px-2 py-0.5 rounded text-xs font-bold ${colors[grade] || 'bg-gray-500/20 text-text-secondary'}`}>{grade}</span>;
 }
 
 function SeverityBadge({ severity }: { severity: string }) {
   const colors: Record<string, string> = { critical: 'bg-red-500/20 text-red-400', high: 'bg-orange-500/20 text-orange-400', medium: 'bg-amber-500/20 text-amber-400', low: 'bg-blue-500/20 text-blue-400' };
-  return <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[severity] || 'bg-gray-500/20 text-gray-400'}`}>{severity}</span>;
+  return <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[severity] || 'bg-gray-500/20 text-text-secondary'}`}>{severity}</span>;
 }
 
 export default function FounderIntelligencePage() {

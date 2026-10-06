@@ -5,7 +5,9 @@
 import {
   TRACKING_PARAMS,
   buildSelfCanonical,
+  eligibilityRobots,
   firstValue,
+  getSubcategoryEligibility,
   hasIndexAffectingParams,
   resolveSearchParams,
   ROBOTS_INDEX_FOLLOW,
@@ -81,6 +83,69 @@ describe('PHASE 2-A — seo-policy helpers', () => {
     it('variant policy is noindex+follow; base policy is index+follow', () => {
       expect(ROBOTS_NOINDEX_FOLLOW).toEqual({ index: false, follow: true });
       expect(ROBOTS_INDEX_FOLLOW).toEqual({ index: true, follow: true });
+    });
+  });
+
+  describe('getSubcategoryEligibility (Phase 2-B §8)', () => {
+    it('INDEX when live products exist', () => {
+      expect(
+        getSubcategoryEligibility({
+          categoryIsActive: true,
+          subcategoryExists: true,
+          activeProductCount: 5,
+          activeCatalogItemCount: 21,
+        }),
+      ).toBe('INDEX');
+    });
+
+    it('HOLD when taxonomy is real but no live products exist', () => {
+      expect(
+        getSubcategoryEligibility({
+          categoryIsActive: true,
+          subcategoryExists: true,
+          activeProductCount: 0,
+          activeCatalogItemCount: 21,
+        }),
+      ).toBe('HOLD');
+    });
+
+    it('NOINDEX when nothing exists (degenerate taxonomy)', () => {
+      expect(
+        getSubcategoryEligibility({
+          categoryIsActive: true,
+          subcategoryExists: true,
+          activeProductCount: 0,
+          activeCatalogItemCount: 0,
+        }),
+      ).toBe('NOINDEX');
+    });
+
+    it('NOINDEX when the category is inactive (listings or not)', () => {
+      expect(
+        getSubcategoryEligibility({
+          categoryIsActive: false,
+          subcategoryExists: true,
+          activeProductCount: 9,
+          activeCatalogItemCount: 21,
+        }),
+      ).toBe('NOINDEX');
+    });
+
+    it('NOINDEX when the subcategory does not exist', () => {
+      expect(
+        getSubcategoryEligibility({
+          categoryIsActive: true,
+          subcategoryExists: false,
+          activeProductCount: 0,
+          activeCatalogItemCount: 0,
+        }),
+      ).toBe('NOINDEX');
+    });
+
+    it('maps INDEX/HOLD to index+follow and NOINDEX to noindex+follow', () => {
+      expect(eligibilityRobots('INDEX')).toEqual({ index: true, follow: true });
+      expect(eligibilityRobots('HOLD')).toEqual({ index: true, follow: true });
+      expect(eligibilityRobots('NOINDEX')).toEqual({ index: false, follow: true });
     });
   });
 
