@@ -72,7 +72,6 @@ async function bootstrap() {
 
 
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
-  const paymentMode = configService.get<string>('PAYMENT_MODE', 'test');
 
   // Sentry flags are resolved once and reused by the initialization block below
   const sentryDsn = configService.get<string>('sentry.dsn', '');
@@ -179,9 +178,8 @@ async function bootstrap() {
     limits: { fileSize: 100 * 1024 * 1024 },
     attachFieldsToBody: 'keyValues',
     onFile: async function (this: any, part: any) {
-      const req: any = this;
-      req.savedUploads = req.savedUploads || [];
-      req.savedUploads.push({
+      this.savedUploads = this.savedUploads || [];
+      this.savedUploads.push({
         fieldname: part.fieldname,
         filename: part.filename,
         encoding: part.encoding,
