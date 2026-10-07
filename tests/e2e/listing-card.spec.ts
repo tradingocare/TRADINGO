@@ -27,9 +27,12 @@ const PRODUCT_SLUG = 'industrial-pcb-board-4-layer';
 const SELLER_COMPANY_SLUG = 'cmp-seller-001';
 
 async function findCard(page: Page, title: string) {
-  const heading = page.locator(`${CARD_ROOT} h3`, { hasText: title }).first();
-  await expect(heading).toBeVisible({ timeout: 20000 });
-  return page.locator(CARD_ROOT).filter({ has: heading }).first();
+  // The product link is the parent of the h3, not a descendant.
+  // Find the product link directly by its slug and title, then get its parent card wrapper.
+  const productLink = page.locator(`${CARD_ROOT} a[href*="/products/${PRODUCT_SLUG}"]`, { hasText: title }).first();
+  await expect(productLink).toBeVisible({ timeout: 20000 });
+  // The card wrapper is the parent of the product link
+  return productLink.locator('..');
 }
 
 test.describe('Product Card #17', () => {
