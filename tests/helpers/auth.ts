@@ -37,6 +37,14 @@ const ROLE_DASHBOARD: Record<string, string> = {
   admin: '/admin/dashboard',
 };
 
+// Proven H1 per role surface (DashboardPageHeader renders a real <h1>).
+// Used as the explicit app-readiness signal in loginAs().
+const ROLE_HEADING: Record<string, string> = {
+  buyer: 'Buyer Dashboard',
+  vendor: 'Seller Dashboard',
+  admin: 'Admin Dashboard',
+};
+
 type InitScriptHandle = { dispose?: () => Promise<void> };
 
 const initScripts = new WeakMap<Page, InitScriptHandle>();
@@ -89,8 +97,16 @@ export async function loginAs(page: Page, user: TestUser): Promise<void> {
   const handle = (await page.addInitScript(script, auth)) as unknown as InitScriptHandle;
   initScripts.set(page, handle);
 
-  await page.goto(ROLE_DASHBOARD[roleKey]);
-  await page.waitForLoadState('load');
+  // Readiness over the browser "load" event: on WebKit the document "load"
+  // event may never fire while subresources are still pending, even though
+  // the dashboard is fully rendered with live API data (proven by CI
+  // artifact: goto/load timeout at the old wait below). DOMContentLoaded
+  // plus the dashboard H1 proves hydration + route guard + correct role
+  // surface without depending on "load".
+  await page.goto(ROLE_DASHBOARD[roleKey], { waitUntil: 'domcontentloaded' });
+  await page
+    .getByRole('heading', { name: ROLE_HEADING[roleKey], level: 1, exact: true })
+    .waitFor({ state: 'visible', timeout: 20000 });
 
   // Fast self-check: the app must see the injected token or the dashboard will
   // bounce us back to /login.
