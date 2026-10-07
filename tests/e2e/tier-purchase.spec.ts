@@ -138,7 +138,7 @@ test.describe('Tier-B/C purchase journeys (browser)', () => {
   test('Tier-B guest CTA carries planId and tier to vendor registration', async ({ page }) => {
     await page.goto('/plans');
     await page.waitForLoadState('load');
-    await expect(page.getByText('Commercial Plans')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'Commercial Plans' })).toBeVisible({ timeout: 20000 });
 
     await page.getByRole('button', { name: /PLAN B/ }).click();
     await expect(page.getByRole('button', { name: /PLAN B/ })).toHaveAttribute('aria-pressed', 'true');
@@ -150,7 +150,7 @@ test.describe('Tier-B/C purchase journeys (browser)', () => {
   test('Tier-C guest CTA carries planId and tier to vendor registration', async ({ page }) => {
     await page.goto('/plans');
     await page.waitForLoadState('load');
-    await expect(page.getByText('Commercial Plans')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'Commercial Plans' })).toBeVisible({ timeout: 20000 });
 
     await page.getByRole('button', { name: /PLAN C/ }).click();
     await expect(page.getByRole('button', { name: /PLAN C/ }).first()).toHaveAttribute('aria-pressed', 'true');
@@ -163,7 +163,7 @@ test.describe('Tier-B/C purchase journeys (browser)', () => {
     await loginWithToken(page, sellerSession);
     await page.goto('/plans');
     await page.waitForLoadState('load');
-    await expect(page.getByText('Commercial Plans')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'Commercial Plans' })).toBeVisible({ timeout: 20000 });
 
     await page.getByRole('button', { name: /PLAN B/ }).click();
     // Exact CTA text: Choose {name} — {₹ annual-tier price}, formatPrice en-IN.
@@ -181,7 +181,7 @@ test.describe('Tier-B/C purchase journeys (browser)', () => {
     await loginWithToken(page, sellerSession);
     await page.goto('/plans');
     await page.waitForLoadState('load');
-    await expect(page.getByText('Commercial Plans')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'Commercial Plans' })).toBeVisible({ timeout: 20000 });
 
     await page.getByRole('button', { name: /PLAN C/ }).click();
     await page.getByRole('button', { name: 'Choose Trade Plus — ₹50,000', exact: true }).click();
