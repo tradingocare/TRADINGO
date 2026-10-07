@@ -19,7 +19,7 @@ import { TrackingEvent } from '@/lib/tracking/events';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   PlusCircle, FileText, BarChart3, Trophy,
-  Package, Store, Users, Eye, Heart, ShoppingCart,
+  Package, Store, Users, Eye, Heart, ShoppingCart, Gift,
 };
 
 const STAT_ICONS = ['Package', 'Store', 'Users', 'ShoppingCart'];
