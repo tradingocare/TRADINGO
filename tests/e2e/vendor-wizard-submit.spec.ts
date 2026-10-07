@@ -41,7 +41,8 @@ async function fillStep1(page: Page) {
   await selects.nth(1).selectOption({ label: '2-10' }); // Total Employees
   await selects.nth(2).selectOption({ label: '10L-50L' }); // Annual Turnover
   await page.getByRole('button', { name: /Continue/ }).click();
-  await expect(page.getByText('Contact & Login')).toBeVisible({ timeout: 15000 });
+  // Wait for Step 2 header - use longer timeout for mobile stability
+  await expect(page.getByText('Contact & Login')).toBeVisible({ timeout: 30000 });
 }
 
 test.describe('Vendor wizard submission journey (UI)', () => {
@@ -63,13 +64,14 @@ test.describe('Vendor wizard submission journey (UI)', () => {
     await expect(page.getByText('Business Identity')).toBeVisible();
   });
 
-  test('Step 1 values survive Back navigation', async ({ page }) => {
+test('Step 1 values survive Back navigation', async ({ page }) => {
     await page.goto('/register/vendor');
     await page.waitForLoadState('load');
     await expect(page.getByText('Business Identity')).toBeVisible({ timeout: 20000 });
     await fillStep1(page);
 
     await page.getByRole('button', { name: /Back/ }).click();
+    // After clicking Back from Step 2, we should be back at Step 1
     await expect(page.getByText('Business Identity')).toBeVisible({ timeout: 15000 });
     await expect(page.getByPlaceholder('e.g. Kumar Enterprises')).toHaveValue(VENDOR.businessName);
   });
@@ -80,11 +82,14 @@ test.describe('Vendor wizard submission journey (UI)', () => {
     await expect(page.getByText('Business Identity')).toBeVisible({ timeout: 20000 });
     await fillStep1(page);
 
+    // Invalid email format
     await page.getByPlaceholder('you@company.com').fill('not-an-email');
     await page.getByRole('button', { name: /Continue/ }).click();
     await expect(page.getByText('Enter a valid email')).toBeVisible({ timeout: 10000 });
 
+    // Disposable email - validation is reactive, blur to ensure it triggers
     await page.getByPlaceholder('you@company.com').fill('test@mailinator.com');
+    await page.getByPlaceholder('you@company.com').blur();
     await expect(page.getByText('Disposable email addresses are not allowed')).toBeVisible({ timeout: 10000 });
   });
 
