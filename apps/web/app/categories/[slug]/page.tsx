@@ -124,7 +124,10 @@ async function CategoryContent({ slug }: { slug: string }) {
   try {
     const result = await getProducts({ category: slug, limit: 50 });
     products = result.data;
-    total = result.total;
+    // The products API returns a cursor envelope { data, meta: { total } } —
+    // the count lives under meta, not top-level. Fall back to the rendered
+    // row count if the envelope ever lacks it.
+    total = (result as unknown as { meta?: { total?: number } }).meta?.total ?? products.length;
   } catch {
     notFound();
   }

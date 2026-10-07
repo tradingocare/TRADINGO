@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @tradingo/api exec prisma generate
+
       - name: Lint API
         run: pnpm --filter @tradingo/api lint
         continue-on-error: false
@@ -141,6 +144,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @tradingo/api exec prisma generate
 
       - name: Build API
         run: pnpm --filter @tradingo/api build
