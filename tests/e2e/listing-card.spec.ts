@@ -46,7 +46,9 @@ test.describe('Product Card #17', () => {
     await expect(page.getByText('1 product available')).toBeVisible({ timeout: 20000 });
 
     const card = await findCard(page, PRODUCT_TITLE);
-    await expect(card.locator(`a[href*="/products/${PRODUCT_SLUG}"]`).first()).toBeVisible();
+    // Target the title link specifically (parent of h3), not the image link
+    const titleLink = card.locator('h3', { hasText: PRODUCT_TITLE }).locator('..');
+    await expect(titleLink).toBeVisible();
     // R1 slab price for the seed product (first slab), never NaN.
     await expect(card.getByText(/₹[1-9][\d,]*(\.\d+)?/).first()).toBeVisible();
     await expect(card.getByText('Test Seller Company').first()).toBeVisible();
@@ -70,7 +72,8 @@ test.describe('Product Card #17', () => {
     await page.waitForLoadState('load');
     const card = await findCard(page, PRODUCT_TITLE);
 
-    await card.locator(`a[href*="/products/${PRODUCT_SLUG}"]`).first().click();
+    // Click the title link (parent of h3) to navigate to product detail
+    await card.locator('h3', { hasText: PRODUCT_TITLE }).locator('..').click();
     await expect(page).toHaveURL(new RegExp(`/products/${PRODUCT_SLUG}`), { timeout: 15000 });
     await expect(page.getByText(PRODUCT_TITLE).first()).toBeVisible({ timeout: 20000 });
 
