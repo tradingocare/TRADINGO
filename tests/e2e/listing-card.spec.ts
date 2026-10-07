@@ -27,12 +27,16 @@ const PRODUCT_SLUG = 'industrial-pcb-board-4-layer';
 const SELLER_COMPANY_SLUG = 'cmp-seller-001';
 
 async function findCard(page: Page, title: string) {
-  // The product link is the parent of the h3, not a descendant.
-  // Find the product link directly by its slug and title, then get its parent card wrapper.
-  const productLink = page.locator(`${CARD_ROOT} a[href*="/products/${PRODUCT_SLUG}"]`, { hasText: title }).first();
-  await expect(productLink).toBeVisible({ timeout: 20000 });
-  // The card wrapper is the parent of the product link
-  return productLink.locator('..');
+  // Product Card #17 renders exactly one root .stacked-card-wrapper per
+  // product and the product title in the card's own h3 (product-card.tsx).
+  // Target the wrapper that owns that h3 using Playwright's filter({ hasText })
+  // which checks the element's text content — avoids the nested-wrapper
+  // Playwright filter({ has }) resolution bug entirely.
+  const card = page.locator(CARD_ROOT).filter({ hasText: title });
+  // Deterministic surface: the E2E seed category renders exactly one
+  // product, so exactly one card matches and no competing match exists.
+  await expect(card).toHaveCount(1);
+  return card;
 }
 
 test.describe('Product Card #17', () => {
