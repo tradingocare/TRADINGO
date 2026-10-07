@@ -45,6 +45,17 @@ const ROLE_HEADING: Record<string, string> = {
   admin: 'Admin Dashboard',
 };
 
+// Proven H1 per role error boundary (app/{buyer,seller,admin}/error.tsx
+// render ErrorState with these exact titles as a real <h1>).
+// Racing against the expected heading lets loginAs() fail FAST when the
+// application is already reporting an error state, instead of burning the
+// full wait on every retry.
+const ROLE_ERROR_HEADING: Record<string, string> = {
+  buyer: 'Buyer dashboard error',
+  vendor: 'Seller dashboard error',
+  admin: 'Admin dashboard error',
+};
+
 type InitScriptHandle = { dispose?: () => Promise<void> };
 
 const initScripts = new WeakMap<Page, InitScriptHandle>();
@@ -100,13 +111,40 @@ export async function loginAs(page: Page, user: TestUser): Promise<void> {
   // Readiness over the browser "load" event: on WebKit the document "load"
   // event may never fire while subresources are still pending, even though
   // the dashboard is fully rendered with live API data (proven by CI
-  // artifact: goto/load timeout at the old wait below). DOMContentLoaded
-  // plus the dashboard H1 proves hydration + route guard + correct role
-  // surface without depending on "load".
+  // artifact: goto/load timeout). DOMContentLoaded plus an explicit
+  // readiness race proves hydration + route guard + correct role surface
+  // without depending on "load". The race also recognizes the known
+  // application error boundary immediately, so a sick backend fails FAST
+  // with its own message instead of burning the full wait on every retry.
+  // An unknown/unready page remains a genuine failure (never silently
+  // accepted).
   await page.goto(ROLE_DASHBOARD[roleKey], { waitUntil: 'domcontentloaded' });
-  await page
-    .getByRole('heading', { name: ROLE_HEADING[roleKey], level: 1, exact: true })
-    .waitFor({ state: 'visible', timeout: 20000 });
+  const readiness = await Promise.race([
+    page
+      .getByRole('heading', { name: ROLE_HEADING[roleKey], level: 1, exact: true })
+      .waitFor({ state: 'visible', timeout: 20000 })
+      .then(
+        () => 'ready' as const,
+        () => 'unknown' as const,
+      ),
+    page
+      .getByRole('heading', { name: ROLE_ERROR_HEADING[roleKey], level: 1, exact: true })
+      .waitFor({ state: 'visible', timeout: 20000 })
+      .then(
+        () => 'errored' as const,
+        () => 'unknown' as const,
+      ),
+  ]);
+  if (readiness === 'errored') {
+    throw new Error(
+      `loginAs(${roleKey}): application reached its dashboard error boundary ("${ROLE_ERROR_HEADING[roleKey]}") instead of the dashboard — failing fast; inspect the page Error ID and server logs, not loginAs.`,
+    );
+  }
+  if (readiness !== 'ready') {
+    throw new Error(
+      `loginAs(${roleKey}): dashboard readiness timeout — neither "${ROLE_HEADING[roleKey]}" nor an error boundary became visible within 20000ms after navigation to ${ROLE_DASHBOARD[roleKey]}`,
+    );
+  }
 
   // Fast self-check: the app must see the injected token or the dashboard will
   // bounce us back to /login.
