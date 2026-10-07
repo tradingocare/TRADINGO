@@ -9,7 +9,10 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
-      className={cn('rounded-md bg-surface-tertiary bg-surface-tertiary', className)}
+      className={cn(
+        'rounded-md bg-surface-tertiary bg-surface-tertiary animate-pulse',
+        className
+      )}
       {...props}
     />
   );
