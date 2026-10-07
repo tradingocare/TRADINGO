@@ -551,11 +551,15 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  private async saveRefreshToken(userId: string, refreshToken: string, sessionId: string, userAgent?: string | null, ipAddress?: string | null) {
+  private async saveRefreshToken(userId: string, refreshToken: string, sessionId: string, userAgent?: string | null, ipAddress?: string | null, tx?: Prisma.TransactionClient) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await this.prisma.session.create({
+    // When the caller just created the user inside a transaction, the row is
+    // invisible outside it until commit — writing the session through the
+    // same client keeps the FK satisfied (P2003 otherwise).
+    const db = tx ?? this.prisma;
+    await db.session.create({
       data: {
         id: sessionId,
         userId,
@@ -814,7 +818,7 @@ export class AuthService {
       });
 
       const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
-      await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
+      await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null, tx);
 
       await this.emailQueue.add(QueueNames.EMAIL, {
         type: EmailJobTypes.SEND_WELCOME_EMAIL,
