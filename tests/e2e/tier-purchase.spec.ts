@@ -51,7 +51,10 @@ function vendorPayload(email: string, pan: string, mobile: string) {
     panHolderName: 'E2E Tier Owner',
     hasGst: false,
     description: 'E2E tier purchase bootstrap',
-    primaryCategory: 'Test Category',
+    // Fail-closed taxonomy resolution on onboarding — this must be a real
+    // category. 'PCB Components' is planted by tests/helpers/e2e-seed.ts in
+    // both the catalog taxonomy and the legacy Category table.
+    primaryCategory: 'PCB Components',
     productTypes: 'Test Products',
     moqRange: '1-100',
     supplyCapacity: '1000 units',

@@ -102,9 +102,12 @@ test.describe('Vendor wizard submission journey (UI)', () => {
     await page.getByPlaceholder('Re-enter password').fill(VENDOR.password);
 
     // The specified gate: without a verified email OTP the wizard must not
-    // advance, and the reason must be stated (no silent block).
+    // advance, and the reason must be stated (no silent block). The step
+    // renders that reason twice (summary <li> + field-level <p>), so the
+    // locator must be narrowed — an unscoped getByText is a strict-mode
+    // violation, not a missing gate.
     await page.getByRole('button', { name: /Continue/ }).click();
-    await expect(page.getByText('Email must be verified')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Email must be verified').first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('Contact & Login')).toBeVisible();
   });
 });
