@@ -71,7 +71,7 @@ test.describe('Registration Flow', () => {
     await context.close();
   });
 
-  test('should show turnstile widget on register form', async ({ browser }) => {
+  test('should show turnstile widget on login form', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.route('**/turnstile/v0/api.js', (route) =>
@@ -80,7 +80,9 @@ test.describe('Registration Flow', () => {
         body: `window.turnstile = { render: (el, opts) => { const f = document.createElement('iframe'); f.src = 'https://challenges.cloudflare.com/turnstile/v0/mock'; f.width = '300'; f.height = '65'; f.style.border = 'none'; el.appendChild(f); return 'mock-widget'; }, remove: () => {}, reset: () => {} };`,
       }),
     );
-    await page.goto('/register');
+    // Turnstile is rendered on the login surface (TurnstileWidget), not on
+    // /register/* — assert the widget integration where it actually lives.
+    await page.goto('/login');
     await page.waitForLoadState('load');
     await page.waitForTimeout(1000);
     const turnstile = page.locator('iframe[src*="challenges.cloudflare"]').first();
