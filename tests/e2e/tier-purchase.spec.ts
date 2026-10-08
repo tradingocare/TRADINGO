@@ -170,10 +170,15 @@ test.describe('Tier-B/C purchase journeys (browser)', () => {
     await page.getByRole('button', { name: 'Choose Trade Smart — ₹18,000', exact: true }).click();
     await expect(page).toHaveURL(/\/subscription\/purchase\?planId=trade_smart&tier=B/, { timeout: 15000 });
 
-    await expect(page.getByText('Confirm & Proceed')).toBeVisible({ timeout: 20000 });
-    await expect(page.getByText(/2 Years/)).toBeVisible();
-    await expect(page.getByText('Total Amount')).toBeVisible();
-    await expect(page.getByText(/₹[\d,]+/).first()).toBeVisible();
+    // Step-1 entry contract: the wizard landed with the URL-hinted plan+tier
+    // preselected. Step-9 content ('Confirm & Proceed', 'Total Amount') is NOT
+    // expected here — it belongs to the final confirmation step after the
+    // gated Company/Billing/Terms/Payment steps.
+    await expect(page.getByRole('heading', { name: 'Choose Your Plan' })).toBeVisible({ timeout: 20000 });
+    // Tier-B context active on Step 1: the per-tier price suffix follows the hint.
+    await expect(page.getByText('/2 years', { exact: true }).first()).toBeVisible();
+    // Correct plan card rendered with its Tier-B price.
+    await expect(page.getByRole('button', { name: /Trade Smart.*₹18,000/ })).toBeVisible();
   });
 
   test('Tier-C seller reaches the purchase page with 3-year context', async ({ page }) => {
@@ -187,8 +192,14 @@ test.describe('Tier-B/C purchase journeys (browser)', () => {
     await page.getByRole('button', { name: 'Choose Trade Plus — ₹50,000', exact: true }).click();
     await expect(page).toHaveURL(/\/subscription\/purchase\?planId=trade_plus&tier=C/, { timeout: 15000 });
 
-    await expect(page.getByText('Confirm & Proceed')).toBeVisible({ timeout: 20000 });
-    await expect(page.getByText(/3 Years/)).toBeVisible();
-    await expect(page.getByText('Total Amount')).toBeVisible();
+    // Step-1 entry contract: the wizard landed with the URL-hinted plan+tier
+    // preselected. Step-9 content ('Confirm & Proceed', 'Total Amount') is NOT
+    // expected here — it belongs to the final confirmation step after the
+    // gated Company/Billing/Terms/Payment steps.
+    await expect(page.getByRole('heading', { name: 'Choose Your Plan' })).toBeVisible({ timeout: 20000 });
+    // Tier-C context active on Step 1: the per-tier price suffix follows the hint.
+    await expect(page.getByText('/3 years', { exact: true }).first()).toBeVisible();
+    // Correct plan card rendered with its Tier-C price.
+    await expect(page.getByRole('button', { name: /Trade Plus.*₹50,000/ })).toBeVisible();
   });
 });
