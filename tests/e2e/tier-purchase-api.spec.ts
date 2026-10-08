@@ -58,10 +58,12 @@ async function postGatewayOrder(dto: Record<string, unknown>) {
     headers: { Authorization: `Bearer ${sellerToken}` },
     data: dto,
   });
-  if (res.status() === 500) {
+  if (res.status() === 503) {
     const text = await res.text().catch(() => '');
-    if (/not initialized/i.test(text)) {
-      test.skip(true, 'Razorpay test credentials not configured in this environment (gateway client uninitialized)');
+    const stableMessage =
+      'Payment gateway temporarily unavailable (Razorpay client not configured). Please try again later.';
+    if (text.includes(stableMessage)) {
+      test.skip(true, 'Razorpay gateway not configured in this environment (explicit 503 contract)');
     }
   }
   return res;
