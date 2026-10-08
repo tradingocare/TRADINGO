@@ -85,12 +85,12 @@ test('Step 1 values survive Back navigation', async ({ page }) => {
     // Invalid email format
     await page.getByPlaceholder('you@company.com').fill('not-an-email');
     await page.getByRole('button', { name: /Continue/ }).click();
-    await expect(page.getByText('Enter a valid email')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Enter a valid email').first()).toBeVisible({ timeout: 10000 });
 
     // Disposable email - validation is reactive, blur to ensure it triggers
     await page.getByPlaceholder('you@company.com').fill('test@mailinator.com');
     await page.getByPlaceholder('you@company.com').blur();
-    await expect(page.getByText('Disposable email addresses are not allowed')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Disposable email addresses are not allowed').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('Step 2 blocks progression until the email is verified', async ({ page }) => {
