@@ -129,12 +129,12 @@ test.describe('Phase C - E2E Verification', () => {
   test('Flow 4: Logout', async ({ page }) => {
     // Login first with the test account
     await page.goto(`${BASE_URL}/login`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     
     await page.fill('input[type="email"], input[name="email"]', testEmail);
     await page.fill('input[type="password"], input[name="password"]', testPassword);
     await page.click('button[type="submit"], button:has-text("Sign in"), button:has-text("Login")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(2000);
     
     // Find and click logout
@@ -146,7 +146,7 @@ test.describe('Phase C - E2E Verification', () => {
       });
       
       await logoutBtn.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       await page.waitForTimeout(1000);
       
       // Check for logout API call
@@ -163,7 +163,7 @@ test.describe('Phase C - E2E Verification', () => {
       
       // Try to access seller dashboard
       await page.goto(`${BASE_URL}/seller/dashboard`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       const dashUrl = page.url();
       console.log('Seller dashboard after logout:', dashUrl);
       
@@ -181,16 +181,16 @@ test.describe('Phase C - E2E Verification', () => {
   test('Flow 6: Seller Score / Go Live', async ({ page }) => {
     // Login with test account
     await page.goto(`${BASE_URL}/login`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.fill('input[type="email"], input[name="email"]', testEmail);
     await page.fill('input[type="password"], input[name="password"]', testPassword);
     await page.click('button[type="submit"], button:has-text("Sign in"), button:has-text("Login")');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(2000);
     
     // Go to seller onboarding
     await page.goto(`${BASE_URL}/seller/onboarding`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(2000);
     
     // Check score display
