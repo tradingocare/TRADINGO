@@ -91,10 +91,14 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
     else if (!/^[a-zA-Z\s]+$/.test(ownerName.trim())) e.ownerName = 'Letters and spaces only'
     if (!designation) e.designation = 'Select designation'
     if (!isMobileValid) e.mobileNumber = 'Enter a valid 10-digit mobile (starts 6-9)'
-    if (email && !isEmailValid) e.email = 'Enter a valid email'
-    if (email && isEmailDisposable) e.email = 'Disposable email addresses are not allowed'
-    if (!isEmailValid || !email) e.email = 'Email is required'
-    if (!emailVerified) e.email = 'Email must be verified'
+    // Mutually exclusive email precedence: each address state reports its
+    // most specific message. Sequential overwrites previously collapsed
+    // these (malformed always ended as "required", disposable as
+    // "must be verified"), making specific messages unreachable.
+    if (!email) e.email = 'Email is required'
+    else if (!isEmailValid) e.email = 'Enter a valid email'
+    else if (isEmailDisposable) e.email = 'Disposable email addresses are not allowed'
+    else if (!emailVerified) e.email = 'Email must be verified'
     if (!isExisting) {
       const pwCheck = validateRegistrationPassword(password)
       if (!password) e.password = 'Minimum 8 characters'
