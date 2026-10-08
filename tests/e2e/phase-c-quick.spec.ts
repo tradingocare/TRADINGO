@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'http://localhost:3012';
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 const API_URL = 'http://localhost:3001/api/v1';
 
 test.describe('Phase C - E2E Verification', () => {
