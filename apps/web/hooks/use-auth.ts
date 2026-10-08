@@ -11,9 +11,9 @@ export function useAuth() {
 
   useEffect(() => {
     if (getAccessToken() && !user) {
-      apiClient.get<{ id: string; email: string; name: string; role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN'; isVerified: boolean; createdAt: string }>('/users/me')
+      apiClient.get<{ data: { id: string; email: string; name: string; role: 'SELLER' | 'BUYER' | 'ADMIN' | 'SUPER_ADMIN'; isVerified: boolean; createdAt: string } }>('/users/me')
         .then((res) => {
-          setAuth(res, getAccessToken()!);
+          setAuth(res.data, getAccessToken()!);
         })
         .catch(() => {
           clearSession();
