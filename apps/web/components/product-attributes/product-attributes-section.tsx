@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -17,17 +17,17 @@ export function ProductAttributesSection({ section, defaultOpen = false }: Produ
   if (section.fields.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-border bg-surface dark:border-dark-border dark:bg-dark-surface">
+    <div className="rounded-xl border border-border bg-surface">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between px-5 py-4 text-left"
       >
         <div>
-          <h3 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
+          <h3 className="text-base font-semibold text-text-primary">
             {section.sectionTitle}
           </h3>
           {section.sectionDescription && (
-            <p className="mt-0.5 text-xs text-text-tertiary dark:text-dark-text-tertiary">
+            <p className="mt-0.5 text-xs text-text-tertiary">
               {section.sectionDescription}
             </p>
           )}

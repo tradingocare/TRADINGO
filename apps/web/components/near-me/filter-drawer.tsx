@@ -55,7 +55,7 @@ export function FilterDrawer({ filters, onChange, onReset }: FilterDrawerProps) 
       <Drawer open={open} onClose={() => setOpen(false)} side="right" title="Filters">
         <div className="space-y-5">
           <div>
-            <Label className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Price Range (₹)</Label>
+            <Label className="text-sm font-medium text-text-primary">Price Range (₹)</Label>
             <div className="mt-1.5 flex items-center gap-2">
               <Input type="number" placeholder="Min" value={filters.minPrice} onChange={(e) => update('minPrice', e.target.value)} className="h-9 text-sm" />
               <span className="text-text-tertiary">-</span>
@@ -64,17 +64,17 @@ export function FilterDrawer({ filters, onChange, onReset }: FilterDrawerProps) 
           </div>
           <Separator />
           <div>
-            <Label className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Min Trust Score</Label>
+            <Label className="text-sm font-medium text-text-primary">Min Trust Score</Label>
             <Input type="number" placeholder="e.g. 50" min={0} max={100} value={filters.minTrustScore} onChange={(e) => update('minTrustScore', e.target.value)} className="mt-1.5 h-9 text-sm" />
           </div>
           <Separator />
           <div>
-            <Label className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Max MOQ</Label>
+            <Label className="text-sm font-medium text-text-primary">Max MOQ</Label>
             <Input type="number" placeholder="e.g. 100" value={filters.maxMoq} onChange={(e) => update('maxMoq', e.target.value)} className="mt-1.5 h-9 text-sm" />
           </div>
           <Separator />
           <div>
-            <Label className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Max Delivery Time</Label>
+            <Label className="text-sm font-medium text-text-primary">Max Delivery Time</Label>
             <Input type="text" placeholder="e.g. 7 days" value={filters.deliveryTime} onChange={(e) => update('deliveryTime', e.target.value)} className="mt-1.5 h-9 text-sm" />
           </div>
           <Separator />

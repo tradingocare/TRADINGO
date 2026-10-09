@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -93,12 +93,12 @@ export default function VerifyMobilePage() {
             <CardTitle>Verify your mobile</CardTitle>
             <CardDescription>
               We&apos;ve sent a 6-digit code to{' '}
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">{MASKED_PHONE}</span>
+              <span className="font-medium text-text-primary">{MASKED_PHONE}</span>
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-6">
-          <div className="flex items-center gap-2 rounded-lg bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-dark-surface-secondary dark:text-dark-text-secondary">
+          <div className="flex items-center gap-2 rounded-lg bg-surface-secondary px-4 py-3 text-sm text-text-secondary">
             <Smartphone className="h-4 w-4" />
             {MASKED_PHONE}
           </div>
@@ -127,7 +127,7 @@ export default function VerifyMobilePage() {
             )}
           </Button>
 
-          <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+          <p className="text-sm text-text-secondary">
             Didn&apos;t receive the code?{' '}
             <button
               type="button"

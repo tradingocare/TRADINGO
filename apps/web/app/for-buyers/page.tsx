@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Shield, FileText, CheckCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -42,9 +42,9 @@ export default function ForBuyersPage() {
                   { value: '15,000+', label: 'Verified Sellers' },
                   { value: '500+', label: 'Cities Served' },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+                  <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm">
                     <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{item.value}</p>
-                    <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">{item.label}</p>
+                    <p className="mt-2 text-sm text-text-secondary">{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -55,7 +55,7 @@ export default function ForBuyersPage() {
 
       <Separator />
 
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="Buyer Features"
@@ -81,7 +81,7 @@ export default function ForBuyersPage() {
 
       <Separator />
 
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <div className="mx-auto max-w-4xl text-center">
@@ -97,12 +97,12 @@ export default function ForBuyersPage() {
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.title} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+                    <div key={item.title} className="rounded-xl border border-border bg-surface p-6 shadow-sm">
                       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">{item.title}</h3>
-                      <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{item.description}</p>
+                      <h3 className="font-semibold text-text-primary">{item.title}</h3>
+                      <p className="mt-1 text-sm text-text-secondary">{item.description}</p>
                     </div>
                   );
                 })}
@@ -116,7 +116,7 @@ export default function ForBuyersPage() {
         title="Start Sourcing on TRADINGO"
         subtitle="Create your free buyer account and access India's largest B2B marketplace."
         primaryLabel="Create Free Account"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         secondaryLabel="Post an RFQ"
         secondaryHref="/rfq"
         variant="accent"

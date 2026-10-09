@@ -5,7 +5,7 @@ import { RateLimits } from '../../common/constants/rate-limits.const';
 import { ConversationService } from './conversation.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CreateConversationDto, AddParticipantDto } from './dto';
+import { CreateConversationDto, AddParticipantDto, OpenConversationDto } from './dto';
 
 @ApiTags('Communication Hub — Conversations')
 @Throttle(RateLimits.WRITE_GENERAL)
@@ -18,6 +18,15 @@ export class ConversationController {
   @ApiOperation({ summary: 'Create a new conversation' })
   create(@CurrentUser('sub') userId: string, @Body() body: CreateConversationDto) {
     return this.service.create({ ...body, createdBy: userId });
+  }
+
+  // P1-02 Part 1 — open-or-create a 1:1 contact conversation with a company.
+  // The client supplies only what it legitimately knows (target company id or
+  // slug, optional product id); participant userIds resolve server-side.
+  @Post('open')
+  @ApiOperation({ summary: 'Open or create a contact conversation with a company' })
+  open(@CurrentUser('sub') userId: string, @Body() body: OpenConversationDto) {
+    return this.service.openOrCreate(userId, body);
   }
 
   @Get()
@@ -74,7 +83,7 @@ export class ConversationController {
 
   @Get(':id/audit-log')
   @ApiOperation({ summary: 'Get conversation audit log' })
-  getAuditLog(@Param('id') id: string) {
-    return this.service.getAuditLog(id);
+  getAuditLog(@CurrentUser('sub') userId: string, @Param('id') id: string) {
+    return this.service.getAuditLog(id, userId);
   }
 }

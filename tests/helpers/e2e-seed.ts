@@ -5,8 +5,14 @@ import {
   StockStatus,
   CompanyStatus,
   GeographicReach,
+  PlanVisibility,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+// Canonical plan seed data shared with MembershipService.seedPlans() (single
+// source of truth — never duplicated here). seed-data.ts is dependency-free
+// by design so this standalone ts-node seed can import it, unlike
+// membership.service.ts (Nest DI graph, unresolvable from tests/).
+import { CORE_PLANS, PLAN_FEATURES } from '../../apps/api/src/modules/membership/seed-data';
 
 const prisma = new PrismaClient();
 
@@ -236,6 +242,59 @@ async function upsertProduct(opts: {
 
   return product;
 }
+/**
+ * Membership plans for the E2E environment. Mirrors the COMMITTED canonical
+ * MembershipService.seedPlans() (plan rows + display features) while sharing
+ * its canonical data (seed-data.ts) with zero duplication.
+ * Every step is existence-guarded exactly like the canonical path: re-runs
+ * never duplicate rows and never overwrite admin edits.
+ * NOTE: the entitlement-matrix keys and v1 version snapshots produced by the
+ * uncommitted P0 plan-program stack (plan-entitlements.ts /
+ * backfillPlanVersions, no schema table for versions yet) are deliberately
+ * NOT written here — they cannot be imported or persisted from a committed
+ * state. Extend this function to cover them once that stack merges; Tier-B/C
+ * purchase, activation and plan listing depend only on the rows below.
+ */
+async function seedMembershipPlans() {
+  let plansCreated = 0;
+  for (const p of CORE_PLANS) {
+    const existing = await prisma.membershipPlan.findUnique({ where: { planId: p.planId } });
+    if (existing) {
+      await prisma.membershipPlan.update({
+        where: { planId: p.planId },
+        data: { visibility: PlanVisibility.PUBLIC },
+      });
+    } else {
+      await prisma.membershipPlan.create({
+        data: {
+          ...p,
+          description: `${p.name} membership plan`,
+          visibility: PlanVisibility.PUBLIC,
+          duration: 12,
+          features: PLAN_FEATURES[p.planId] || [],
+        },
+      });
+      plansCreated++;
+    }
+
+    const featureNames = PLAN_FEATURES[p.planId] || [];
+    if (featureNames.length > 0) {
+      const existingFeatures = await prisma.planFeature.findMany({
+        where: { planId: p.planId },
+        select: { feature: true },
+      });
+      const present = new Set(existingFeatures.map((f) => f.feature));
+      const missing = featureNames.filter((f) => !present.has(f));
+      if (missing.length > 0) {
+        await prisma.planFeature.createMany({
+          data: missing.map((f, i) => ({ planId: p.planId, feature: f, included: true, sortOrder: i })),
+        });
+      }
+    }
+  }
+
+  return { plansCreated };
+}
 
 async function main() {
   console.log('Starting E2E seed...');
@@ -301,6 +360,9 @@ async function main() {
 
   console.log(`Products ready: ${pcb?.slug ?? 'skipped'} / ${solvent?.slug ?? 'skipped'}`);
 
+  const planSeed = await seedMembershipPlans();
+  console.log(`Membership plans ready: ${planSeed.plansCreated} created`);
+
   // ---- E2E seed invariants: fail loudly, never let tests run on bad data ----
   const invariant = async (cond: boolean, reason: string) => {
     if (!cond) throw new Error(`E2E seed invariant failed: ${reason}`);
@@ -326,6 +388,8 @@ async function main() {
   );
   const seedSolvent = await prisma.product.findUnique({ where: { slug: 'industrial-grade-solvent-99-9' } });
   await invariant(!!seedSolvent && seedSolvent.companyId === seedCompany!.id, 'solvent product missing or mis-owned');
+  const seededPlanCount = await prisma.membershipPlan.count({ where: { planId: { in: CORE_PLANS.map((p) => p.planId) } } });
+  await invariant(seededPlanCount === CORE_PLANS.length, 'required membership plans missing');
   console.log('E2E seed invariants verified');
   console.log('E2E seed completed successfully');
 }

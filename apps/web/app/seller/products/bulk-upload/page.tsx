@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, type DragEvent, type ChangeEvent } from 'react';
 import { DashboardPageHeader, StatusBadge } from '@/components/dashboard';
@@ -145,10 +145,10 @@ export default function BulkUploadPage() {
         <Card>
           <CardContent className="flex flex-col items-center py-12">
             <CheckCircle className="h-12 w-12 text-accent-600" />
-            <h3 className="mt-4 text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            <h3 className="mt-4 text-lg font-semibold text-text-primary">
               Upload Complete
             </h3>
-            <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
+            <p className="mt-1 text-sm text-text-secondary">
               {importResult ? `${importResult.imported} products imported` : `${preview.length} products processed.`}
             </p>
             {importResult?.failed ? (
@@ -169,14 +169,14 @@ export default function BulkUploadPage() {
             className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 transition-colors ${
               dragOver
                 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                : 'border-border bg-surface hover:border-primary-400 dark:border-dark-border dark:bg-dark-surface dark:hover:border-primary-500'
+                : 'border-border bg-surface hover:border-primary-400 border-border bg-surface dark:hover:border-primary-500'
             }`}
           >
             <Upload className={`h-10 w-10 ${dragOver ? 'text-primary-600' : 'text-text-tertiary'}`} />
-            <p className="mt-4 text-base font-medium text-text-primary dark:text-dark-text-primary">
+            <p className="mt-4 text-base font-medium text-text-primary">
               Drop your file here or click to browse
             </p>
-            <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
+            <p className="mt-1 text-sm text-text-secondary">
               Supports CSV and Excel files (.xlsx, .xls)
             </p>
           </div>
@@ -195,10 +195,10 @@ export default function BulkUploadPage() {
                   <div className="flex items-center gap-3">
                     <FileSpreadsheet className="h-8 w-8 text-accent-600" />
                     <div>
-                      <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                      <p className="text-sm font-medium text-text-primary">
                         {file.name}
                       </p>
-                      <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      <p className="text-xs text-text-secondary">
                         {(file.size / 1024).toFixed(1)} KB
                       </p>
                     </div>
@@ -216,7 +216,7 @@ export default function BulkUploadPage() {
               <CardContent className="p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
+                    <h3 className="text-base font-semibold text-text-primary">
                       Preview ({preview.length} rows)
                     </h3>
                     {hasErrors && (
@@ -234,11 +234,11 @@ export default function BulkUploadPage() {
                     {preview.map((row) => (
                       <TR key={row.row} className={row.errors.length > 0 ? 'bg-red-50 dark:bg-red-900/10' : ''}>
                         <TD className="text-text-secondary">{row.row}</TD>
-                        <TD className={`font-medium ${!row.name ? 'text-red-600' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                        <TD className={`font-medium ${!row.name ? 'text-red-600' : 'text-text-primary text-text-primary'}`}>
                           {row.name || '(empty)'}
                         </TD>
                         <TD className="text-text-secondary">{row.category}</TD>
-                        <TD className="text-text-primary dark:text-dark-text-primary">₹{row.price}</TD>
+                        <TD className="text-text-primary">â‚¹{row.price}</TD>
                         <TD className="text-text-secondary">{row.stock}</TD>
                         <TD className="text-text-secondary">{row.unit}</TD>
                         <TD>

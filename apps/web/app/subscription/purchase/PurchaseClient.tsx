@@ -90,6 +90,13 @@ function StepProgress({ current, total }: { current: number; total: number }) {
   )
 }
 
+// P2B: validated ?tier= hint so plan CTAs preserve the selected package.
+// Server remains authoritative at order time; unknown values keep 'A'.
+export function resolveTierHint(search: string): 'A' | 'B' | 'C' {
+  const t = (new URLSearchParams(search).get('tier') || '').toUpperCase()
+  return t === 'B' || t === 'C' ? t : 'A'
+}
+
 function StepPlanSelection({ onNext }: { onNext: () => void }) {
   const { plan, tier, setPlan, setTier } = useCheckoutStore()
   const [plans, setPlans] = useState<Plan[]>([])
@@ -101,9 +108,12 @@ function StepPlanSelection({ onNext }: { onNext: () => void }) {
       const list = Array.isArray(d) ? d : []
       setPlans(list)
       if (!plan && list.length > 0) {
-        const fromUrl = new URLSearchParams(window.location.search).get('planId')
+        const params = new URLSearchParams(window.location.search)
+        const fromUrl = params.get('planId')
         const found = fromUrl ? list.find((p: Plan) => p.planId === fromUrl) : list[3]
         setPlan(found || list[0])
+        const hinted = resolveTierHint(window.location.search)
+        if (hinted !== 'A') setTier(hinted)
       }
     }).catch(() => { toast.error('Failed to load plans'); }).finally(() => setLoading(false))
   }, [])
@@ -793,6 +803,29 @@ function StepConfirmation({ onPrev }: { onPrev: () => void }) {
   }, [])
 
   const handleProceed = useCallback(async () => {
+    // P0-2 remediation: free plans (TRAD UP™, total === ₹0) activate directly via
+    // POST /membership/activate-free — NO Razorpay order is created for a ₹0 plan
+    // (the gateway rejects zero-amount orders, which previously dead-ended the flow).
+    if (total === 0) {
+      setPaymentStatus('creating')
+      setLoading(true)
+      setPaymentError(null)
+      try {
+        await api.post('/membership/activate-free', { planId: plan?.planId })
+        setPaymentStatus('success')
+        setOrderCreated('free-activation')
+        setTimeout(() => {
+          router.push(`/subscription/success?plan=${plan?.name || 'Plan'}&invoice=`)
+        }, 1200)
+      } catch (err: any) {
+        setPaymentStatus('failed')
+        setPaymentError(err?.response?.data?.message || 'Free plan activation failed. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     const method = paymentMethod || useCheckoutStore.getState().paymentMethod
     if (method !== 'RAZORPAY') {
       setPaymentStatus('failed')

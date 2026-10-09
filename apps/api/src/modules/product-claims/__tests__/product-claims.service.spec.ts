@@ -3,6 +3,7 @@ import { ProductClaimsService } from '../product-claims.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Role } from '../../../common/enums/role.enum';
+import { CatalogTaxonomyPersistenceService } from '../../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 
 describe('ProductClaimsService', () => {
   let service: ProductClaimsService;
@@ -19,15 +20,23 @@ describe('ProductClaimsService', () => {
     $transaction: jest.fn(),
   };
 
+  const mockTaxonomy = {
+    resolvePersistableTaxonomy: jest.fn().mockResolvedValue(null),
+    bridgeLegacyCategoryId: jest.fn().mockResolvedValue(null),
+    validateConfirmedTriple: jest.fn().mockResolvedValue(null),
+    tripleForCatalogItem: jest.fn().mockResolvedValue(null),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductClaimsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: CatalogTaxonomyPersistenceService, useValue: mockTaxonomy },
       ],
     }).compile();
 
-    service = module.get<ProductClaimsService>(ProductClaimsService);
+    service = module.get(ProductClaimsService);
     jest.clearAllMocks();
   });
 

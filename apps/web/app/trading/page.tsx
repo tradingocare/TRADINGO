@@ -3,21 +3,53 @@ import type { Metadata } from 'next';
 import { CategoryStrip } from '@/components/trading/category-strip';
 import TradingPageShell from '@/components/trading/trading-page-shell';
 import TradingDiscoveryClient from './TradingDiscoveryClient';
+import {
+  buildSelfCanonical,
+  hasIndexAffectingParams,
+  resolveSearchParams,
+  ROBOTS_INDEX_FOLLOW,
+  ROBOTS_NOINDEX_FOLLOW,
+  type SearchParamsLike,
+} from '@/lib/seo/seo-policy';
 
-export const metadata: Metadata = {
-  title: { absolute: 'TRADORS | Global Manufacturers, Suppliers & Distributors Directory' },
-  description:
-    'Find verified manufacturers, suppliers, traders, and distributors worldwide. Explore business profiles, products, capabilities, and locations, compare suppliers, and connect directly with trusted trade partners through TRADORS.',
-  openGraph: {
-    title: 'TRADORS | Global Manufacturers, Suppliers & Distributors Directory',
-    description:
-      'Find verified manufacturers, suppliers, traders, and distributors worldwide. Explore business profiles, products, capabilities, and locations, compare suppliers, and connect directly with trusted trade partners through TRADORS.',
-    type: 'website',
-  },
-  alternates: {
-    canonical: '/trading',
-  },
-};
+const TRADING_DESCRIPTION =
+  'Find verified manufacturers, suppliers, traders, and distributors worldwide. Explore business profiles, products, capabilities, and locations, compare suppliers, and connect directly with trusted trade partners through TRADINGO.';
+
+/**
+ * PHASE 2-A §3 — /trading pagination/filter policy.
+ * CURRENT: static canonical '/trading' covers every variant (?page=2,
+ *   ?category=..., ?q=..., ?sort=...) — paginated/filtered views all point
+ *   canonical at page 1 while remaining indexable.
+ * EXAMINED: the canonical category landings live at /categories/[slug]
+ *   (indexable, real data); /trading filter views (?category=, ?q=, ?sort=,
+ *   ?page=) are navigation conveniences, not canonical resources.
+ * POLICY: bare /trading = index + existing canonical '/trading' (unchanged);
+ *   any filtered/paginated variant = noindex + follow (navigation preserved,
+ *   crawl explosion prevented) + honest self-canonical.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const sp = await resolveSearchParams(searchParams as SearchParamsLike);
+  const isVariant = hasIndexAffectingParams(sp);
+  return {
+    title: { absolute: 'TRADINGO | Global Manufacturers, Suppliers & Distributors Directory' },
+    description: TRADING_DESCRIPTION,
+    openGraph: {
+      title: 'TRADINGO | Global Manufacturers, Suppliers & Distributors Directory',
+      description: TRADING_DESCRIPTION,
+      type: 'website',
+    },
+    robots: isVariant ? ROBOTS_NOINDEX_FOLLOW : ROBOTS_INDEX_FOLLOW,
+    alternates: {
+      canonical: isVariant
+        ? buildSelfCanonical('https://tradingo.in/trading', sp)
+        : '/trading',
+    },
+  };
+}
 
 export default function TradingPage() {
   return (

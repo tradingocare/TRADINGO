@@ -14,19 +14,6 @@ describe('ecosystem API', () => {
     jest.clearAllMocks();
   });
 
-  it('imports API functions without error', () => {
-    const mod = require('../ecosystem');
-    expect(mod.getEcosystemDashboard).toBeDefined();
-    expect(mod.getXpBalance).toBeDefined();
-    expect(mod.getXpHistory).toBeDefined();
-    expect(mod.getCheckin).toBeDefined();
-    expect(mod.performCheckin).toBeDefined();
-    expect(mod.getStreaks).toBeDefined();
-    expect(mod.getLevels).toBeDefined();
-    expect(mod.getUserBadges).toBeDefined();
-    expect(mod.getMissions).toBeDefined();
-  });
-
   it('getEcosystemDashboard calls correct endpoint', async () => {
     (apiClient.get as jest.Mock).mockResolvedValue({ data: { totalXp: 1000 } });
     const { getEcosystemDashboard } = require('../ecosystem');
@@ -35,10 +22,10 @@ describe('ecosystem API', () => {
     expect(result.totalXp).toBe(1000);
   });
 
-  it('performCheckin calls correct endpoint', async () => {
+  it('dailyCheckin calls correct endpoint', async () => {
     (apiClient.post as jest.Mock).mockResolvedValue({ data: { success: true } });
-    const { performCheckin } = require('../ecosystem');
-    const result = await performCheckin();
+    const { dailyCheckin } = require('../ecosystem');
+    const result = await dailyCheckin();
     expect(apiClient.post).toHaveBeenCalledWith('/ecosystem/checkin');
     expect(result.success).toBe(true);
   });

@@ -24,7 +24,10 @@ export function ProfessionalCard(props: ProfessionalCardProps) {
   const slug = src.slug ?? props.slug ?? '';
   const name = src.name ?? props.name ?? '';
   const title = src.title ?? src.description ?? props.title ?? 'Professional';
-  const location = src.location ?? (src.locations?.length ? src.locations[0] : undefined) ?? '';
+  // C-01 P1 P0-1: locations may arrive as city strings (API contract) or,
+  // defensively, as `{city}` objects — never render an object (React #31).
+  const rawLocation = src.location ?? (src.locations?.length ? src.locations[0] : undefined) ?? '';
+  const location = typeof rawLocation === 'string' ? rawLocation : (rawLocation?.city ?? '');
   const verified = src.verified === true || src.verificationLevel !== 'NONE';
   const plan = src.plan ?? 'individual';
   const experience = src.experience ?? '';

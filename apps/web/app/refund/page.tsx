@@ -50,7 +50,7 @@ const refundSections = [
   },
   {
     title: '6. Contact Support',
-    content: 'If you have questions about a refund or need assistance with a dispute, contact our support team at support@tradingo.com or call +91 1800-TRADINGO. Our team is available 24/7 to help resolve your concerns.',
+    content: 'If you have questions about a refund or need assistance with a dispute, contact our support team at tradingocare@tradingo.in or call +91 1800-TRADINGO. Our team is available 24/7 to help resolve your concerns.',
     subsections: [],
   },
 ]

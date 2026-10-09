@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -88,7 +88,7 @@ export function CompletenessGauge({ score, draft }: CompletenessGaugeProps) {
 
   if (!score || !draft) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-border bg-surface p-8 dark:border-dark-border dark:bg-dark-surface">
+      <div className="flex items-center justify-center rounded-xl border border-border bg-surface p-8">
         <p className="text-sm text-text-tertiary">No completeness data available yet. Start filling in your product details.</p>
       </div>
     );
@@ -106,7 +106,7 @@ export function CompletenessGauge({ score, draft }: CompletenessGaugeProps) {
               fill="none"
               stroke="currentColor"
               strokeWidth="8"
-              className="text-surface-tertiary dark:text-dark-surface-tertiary"
+              className="text-surface-tertiary dark:text-surface-tertiary"
             />
             <circle
               cx="60"
@@ -130,18 +130,18 @@ export function CompletenessGauge({ score, draft }: CompletenessGaugeProps) {
         <div className="flex-1 space-y-2">
           {categories.map((cat) => (
             <div key={cat.key} className="flex items-center gap-3">
-              <span className="w-24 text-xs text-text-secondary dark:text-dark-text-secondary">
+              <span className="w-24 text-xs text-text-secondary">
                 {cat.label}
               </span>
               <div className="flex-1">
-                <div className="h-2 overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
+                <div className="h-2 overflow-hidden rounded-full bg-surface-tertiary">
                   <div
                     className={cn('h-full rounded-full transition-all duration-500', getBarColor(cat.value))}
                     style={{ width: `${cat.value}%` }}
                   />
                 </div>
               </div>
-              <span className="w-8 text-right text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
+              <span className="w-8 text-right text-xs font-medium text-text-secondary">
                 {cat.value}%
               </span>
             </div>
@@ -150,13 +150,13 @@ export function CompletenessGauge({ score, draft }: CompletenessGaugeProps) {
       </div>
 
       {nextActions.length > 0 && (
-        <div className="rounded-lg border border-border bg-surface-secondary p-4 dark:border-dark-border dark:bg-dark-surface-secondary">
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary dark:text-dark-text-secondary">
+        <div className="rounded-lg border border-border bg-surface-secondary p-4">
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
             Next Actions
           </h4>
           <ul className="space-y-1.5">
             {nextActions.map((action, idx) => (
-              <li key={action.field} className="flex items-center gap-2 text-sm text-text-primary dark:text-dark-text-primary">
+              <li key={action.field} className="flex items-center gap-2 text-sm text-text-primary">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-500/10 text-xs font-medium text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
                   {idx + 1}
                 </span>

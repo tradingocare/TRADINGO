@@ -18,6 +18,10 @@ export interface ProductDetailViewSeller {
   // Optional — UI hides the slot when the API does not provide it.
   businessType?: string;
   // Seller/Company verification outcome. NOT product verification.
+  // Public seller contact number, ONLY when the API explicitly exposes it
+  // (company.mobile/phone). Never synthesized — absent means the seller
+  // has not shared a phone number and the UI must fall back to Chat/RFQ.
+  phone?: string;
   verified: boolean;
   elite?: boolean;
   gstVerified?: boolean;

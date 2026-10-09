@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -93,8 +93,8 @@ export default function SellerProductClaimsPage() {
       ) : claims.length === 0 ? (
         <EmptyState icon={Package} title="No claims yet" description="Claim a product from the catalog to get started." action={<Button onClick={() => router.push('/seller/products/claim')}><FileText className="mr-2 h-4 w-4" /> New Claim</Button>} />
       ) : (
-        <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">
+        <div className="rounded-xl border border-border bg-surface">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary sm:grid">
             <div className="col-span-3">Claim Name</div>
             <div className="col-span-3">Product Master</div>
             <div className="col-span-2">Status</div>
@@ -102,20 +102,20 @@ export default function SellerProductClaimsPage() {
             <div className="col-span-2">Actions</div>
           </div>
           {claims.map((claim) => (
-            <div key={claim.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center dark:border-dark-border">
+            <div key={claim.id} className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center">
               <div className="flex items-center gap-3 sm:col-span-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                   <FileText className="h-5 w-5" />
                 </div>
-                <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{claim.name}</p>
+                <p className="text-sm font-medium text-text-primary">{claim.name}</p>
               </div>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-3">
-                {claim.productMaster?.name || '—'}
+              <p className="text-sm text-text-secondary sm:col-span-3">
+                {claim.productMaster?.name || 'â€”'}
               </p>
               <div className="sm:col-span-2">
                 <StatusBadge status={claim.status} />
               </div>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-2">
+              <p className="text-sm text-text-secondary sm:col-span-2">
                 {new Date(claim.createdAt).toLocaleDateString('en-IN')}
               </p>
               <div className="flex items-center gap-2 sm:col-span-2">
@@ -130,7 +130,7 @@ export default function SellerProductClaimsPage() {
                   </>
                 )}
                 {(claim.status === 'PENDING') && (
-                  <span className="text-xs text-text-tertiary">—</span>
+                  <span className="text-xs text-text-tertiary">â€”</span>
                 )}
                 {(claim.status === 'PUBLISHED') && (
                   <Button variant="ghost" size="sm" onClick={() => router.push(`/seller/products`)}>

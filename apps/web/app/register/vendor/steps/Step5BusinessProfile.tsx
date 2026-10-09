@@ -7,17 +7,18 @@ import { Select } from '@/components/ui/select'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
 import { lookupPincode } from '@/lib/utils/india-lookup'
+import { RefinedSection } from '@/components/registration/RefinedSection'
 import { CanonicalTaxonomyPicker, EMPTY_CANONICAL_SELECTION, type CanonicalTripleSelection } from '@/components/taxonomy/canonical-taxonomy-picker'
 import type { BusinessProfileForm } from '@/types/vendor-registration'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   backgroundColor: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
-const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }
 
 const LEAD_TIMES = [
   'Same day / Ready stock', '1-3 days', '4-7 days', '1-2 weeks', '2-4 weeks', '4-8 weeks', 'Depends on order size',
@@ -155,6 +156,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
     if (!form.addressLine1) errs.addressLine1 = 'Enter address'
     if (!form.pincode || !/^\d{6}$/.test(form.pincode || '')) errs.pincode = 'Enter valid 6-digit pincode'
     if (!form.city) errs.city = 'Enter city'
+    if (!form.district || !(form.district || '').trim()) errs.district = 'Enter district (auto-filled by pincode lookup or type it manually)'
     if (!form.state) errs.state = 'Select state'
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -183,7 +185,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             maxLength={500}
           />
           <div className="flex justify-end">
-            <span className="text-white/25 text-[10px]">{(form.description || '').length}/500</span>
+            <span className="text-text-muted text-[10px]">{(form.description || '').length}/500</span>
           </div>
         </FormField>
 
@@ -197,7 +199,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             maxLength={100}
           />
           <div className="flex justify-end">
-            <span className="text-white/25 text-[10px]">{(form.tagline || '').length}/100</span>
+            <span className="text-text-muted text-[10px]">{(form.tagline || '').length}/100</span>
           </div>
         </FormField>
 
@@ -224,11 +226,11 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             {(form.secondaryCategories || []).map((cat, index) => (
               <span
                 key={`${cat}-${index}`}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-white/80"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-text-primary"
                 style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)' }}
               >
                 {cat}
-                <button type="button" onClick={() => removeSecondary(index)} className="ml-0.5 text-white/50 hover:text-white" aria-label={`Remove ${cat}`}>
+                <button type="button" onClick={() => removeSecondary(index)} className="ml-0.5 text-text-tertiary hover:text-text-secondary" aria-label={`Remove ${cat}`}>
                   <X size={12} />
                 </button>
               </span>
@@ -253,6 +255,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             </div>
           )}
         </FormField>
+
         <FormField label="Product Types" required error={errors.productTypes}>
           <input
             className={INPUT_CLASS}
@@ -297,8 +300,8 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
         <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/80 text-sm font-medium">Export Capability</p>
-              <p className="text-white/35 text-xs">Can you supply outside India?</p>
+              <p className="text-text-primary text-sm font-medium">Export Capability</p>
+              <p className="text-text-tertiary text-xs">Can you supply outside India?</p>
             </div>
             <button
               type="button"
@@ -333,8 +336,14 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
         </div>
 
         <div className="h-px" style={{ backgroundColor: 'var(--bg-elevated)' }} />
-        <p className="text-text-tertiary text-xs font-semibold uppercase tracking-wider">Business Location</p>
-
+        <RefinedSection
+          title="Business Address"
+          subtitle="Registered business location"
+          helperText="Enter the pincode to auto-fill city, district and state. Fields stay editable for corrections."
+          requiredDone={[form.addressLine1, form.city, form.district, form.state, form.pincode].filter(v => String(v ?? '').trim() !== '').length}
+          requiredTotal={5}
+          validationSummary={[errors.addressLine1, errors.city, errors.district, errors.state, errors.pincode].filter((m): m is string => !!m)}
+        >
         <FormField label="Address Line 1" required error={errors.addressLine1}>
           <input
             className={INPUT_CLASS}
@@ -368,7 +377,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
               maxLength={6}
               inputMode="numeric"
             />
-            <MapPin size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
+            <MapPin size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           </div>
           {pincodeLookup && (
             <p className="text-green-400 text-[10px] flex items-center gap-1">{pincodeLookup}</p>
@@ -386,10 +395,10 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             />
           </FormField>
 
-          <FormField label="District">
+          <FormField label="District" required error={errors.district}>
             <input
               className={INPUT_CLASS}
-              style={inputStyle(false)}
+              style={inputStyle(!!errors.district)}
               value={form.district || ''}
               onChange={e => set('district', e.target.value)}
               placeholder="District"
@@ -405,6 +414,7 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
             ))}
           </Select>
         </FormField>
+        </RefinedSection>
 
         <div className="h-px" style={{ backgroundColor: 'var(--bg-elevated)' }} />
 
@@ -418,9 +428,9 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo preview" className="w-16 h-16 rounded-full object-cover" />
               ) : (
-                <Upload size={20} className="text-white/25" />
+                <Upload size={20} className="text-text-muted" />
               )}
-              <p className="text-white/25 text-[10px]">{logoPreview ? 'Change logo' : 'Upload logo'}</p>
+              <p className="text-text-muted text-[10px]">{logoPreview ? 'Change logo' : 'Upload logo'}</p>
               <input ref={logoRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
             </div>
           </FormField>
@@ -434,9 +444,9 @@ export default function Step5BusinessProfile({ data, onNext, onBack }: Props) {
               {bannerPreview ? (
                 <img src={bannerPreview} alt="Banner preview" className="w-full h-20 rounded-lg object-cover" />
               ) : (
-                <Upload size={20} className="text-white/25" />
+                <Upload size={20} className="text-text-muted" />
               )}
-              <p className="text-white/25 text-[10px]">{bannerPreview ? 'Change banner' : 'Upload banner'}</p>
+              <p className="text-text-muted text-[10px]">{bannerPreview ? 'Change banner' : 'Upload banner'}</p>
               <input ref={bannerRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
             </div>
           </FormField>

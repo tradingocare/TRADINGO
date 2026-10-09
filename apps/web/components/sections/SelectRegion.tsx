@@ -112,7 +112,7 @@ export default function SelectRegion() {
                   </div>
                   <span
                     className={`text-[11px] font-semibold transition-all duration-300 ${
-                      isSelected ? 'text-accent-500' : 'text-gray-400 group-hover:text-primary'
+                      isSelected ? 'text-accent-500' : 'text-text-tertiary group-hover:text-primary'
                     }`}
                   >
                     {country.name}

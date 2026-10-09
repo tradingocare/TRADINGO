@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Select } from '@/components/ui/select'
@@ -50,38 +50,38 @@ export default function AdminPlansPage() {
   const [activeTab, setActiveTab] = useState<string>('plans')
   const [toast, setToast] = useState('')
 
-  // ── Launch Mode ──
+  // â”€â”€ Launch Mode â”€â”€
   const [launchMode, setLaunchMode] = useState(false)
 
-  // ── Feature Matrix ──
+  // â”€â”€ Feature Matrix â”€â”€
   const [editingFeatures, setEditingFeatures] = useState<string | null>(null)
   const [featureForm, setFeatureForm] = useState<{ category: string; feature: string; included: boolean; value: string }[]>([])
 
-  // ── Clone ──
+  // â”€â”€ Clone â”€â”€
   const [cloning, setCloning] = useState<string | null>(null)
   const [cloneForm, setCloneForm] = useState({ newPlanId: '', newName: '' })
 
-  // ── Schedule ──
+  // â”€â”€ Schedule â”€â”€
   const [scheduling, setScheduling] = useState<string | null>(null)
   const [scheduleForm, setScheduleForm] = useState({ scheduledVisibility: '', autoPublishAt: '', autoHideAt: '' })
 
-  // ── Create Form ──
+  // â”€â”€ Create Form â”€â”€
   const [formData, setFormData] = useState({
     planId: '', name: '', description: '', pricePlanA: 0, pricePlanB: 0, pricePlanC: 0,
     duration: 12, sortOrder: 0, visibility: 'DRAFT', isFree: false, badgeText: '',
     features: '',
   })
 
-  // ── Comparison Builder ──
+  // â”€â”€ Comparison Builder â”€â”€
   const [selectedCompare, setSelectedCompare] = useState<string[]>([])
   const [comparison, setComparison] = useState<any>(null)
 
-  // ── Upgrade Simulator ──
+  // â”€â”€ Upgrade Simulator â”€â”€
   const [upgradeFrom, setUpgradeFrom] = useState('')
   const [upgradeTo, setUpgradeTo] = useState('')
   const [upgradeResult, setUpgradeResult] = useState<any>(null)
 
-  // ── Audit ──
+  // â”€â”€ Audit â”€â”€
   const [auditPlanId, setAuditPlanId] = useState('')
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [auditPage, setAuditPage] = useState(1)
@@ -102,7 +102,7 @@ export default function AdminPlansPage() {
 
   useEffect(() => { loadPlans() }, [])
 
-  // ── Launch Mode Toggle ──
+  // â”€â”€ Launch Mode Toggle â”€â”€
   const handleToggleLaunchMode = async () => {
     try {
       const r = await adminSetLaunchMode(!launchMode)
@@ -111,7 +111,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Failed to toggle launch mode') }
   }
 
-  // ── Feature Matrix ──
+  // â”€â”€ Feature Matrix â”€â”€
   const openFeatureEditor = (planId: string) => {
     const plan = plans.find(p => p.planId === planId)
     if (!plan) return
@@ -170,7 +170,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Failed to save features') }
   }
 
-  // ── Clone ──
+  // â”€â”€ Clone â”€â”€
   const handleClone = async (planId: string) => {
     if (!cloneForm.newPlanId || !cloneForm.newName) return
     try {
@@ -182,7 +182,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Clone failed') }
   }
 
-  // ── Schedule ──
+  // â”€â”€ Schedule â”€â”€
   const handleSchedule = async (planId: string) => {
     try {
       const data: any = {}
@@ -205,7 +205,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Processing failed') }
   }
 
-  // ── Create ──
+  // â”€â”€ Create â”€â”€
   const handleCreate = async () => {
     try {
       await adminCreatePlan({
@@ -218,7 +218,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Create failed') }
   }
 
-  // ── Delete ──
+  // â”€â”€ Delete â”€â”€
   const handleDelete = async (planId: string) => {
     if (!confirm(`Delete plan ${planId}?`)) return
     try {
@@ -227,7 +227,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Delete failed') }
   }
 
-  // ── Visibility Toggle ──
+  // â”€â”€ Visibility Toggle â”€â”€
   const handleToggleVisibility = async (planId: string, currentVisibility: string) => {
     const idx = VISIBILITY_OPTIONS.indexOf(currentVisibility)
     const next = VISIBILITY_OPTIONS[(idx + 1) % VISIBILITY_OPTIONS.length]
@@ -237,7 +237,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Visibility update failed') }
   }
 
-  // ── Comparison Builder ──
+  // â”€â”€ Comparison Builder â”€â”€
   const handleCompare = async () => {
     if (selectedCompare.length < 2) return
     try {
@@ -246,7 +246,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Compare failed') }
   }
 
-  // ── Upgrade Simulator ──
+  // â”€â”€ Upgrade Simulator â”€â”€
   const handleSimulateUpgrade = async () => {
     if (!upgradeFrom || !upgradeTo) return
     try {
@@ -255,7 +255,7 @@ export default function AdminPlansPage() {
     } catch { showToast('Simulation failed') }
   }
 
-  // ── Audit ──
+  // â”€â”€ Audit â”€â”€
   const loadAudit = async (planId: string, page = 1) => {
     setAuditPlanId(planId)
     setAuditPage(page)
@@ -287,8 +287,7 @@ export default function AdminPlansPage() {
           <div className="flex gap-3">
             {/* Launch Mode Toggle */}
             <button onClick={handleToggleLaunchMode}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all
-              bg-blue-900/30 border-blue-700 text-blue-400" >
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-blue-900/30 border-blue-700 text-blue-400" >
               {launchMode ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
               Launch Mode {launchMode ? 'ON' : 'OFF'}
             </button>
@@ -308,7 +307,7 @@ export default function AdminPlansPage() {
           ]} value={activeTab} onChange={setActiveTab as (v: string) => void} variant="pills" />
         </div>
 
-        {/* ─── TAB: PLANS ─── */}
+        {/* â”€â”€â”€ TAB: PLANS â”€â”€â”€ */}
         {activeTab === 'plans' && (
           <>
             {showCreateForm && (
@@ -322,11 +321,11 @@ export default function AdminPlansPage() {
                     className="px-4 py-2.5 rounded-xl text-sm bg-surface border-border text-text-primary placeholder-text-tertiary" />
                   <input placeholder="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })}
                     className="px-4 py-2.5 rounded-xl text-sm bg-surface border-border text-text-primary placeholder-text-tertiary" />
-                  <input type="number" placeholder="Price A (₹)" value={formData.pricePlanA} onChange={e => setFormData({ ...formData, pricePlanA: +e.target.value })}
+                  <input type="number" placeholder="Price A (â‚¹)" value={formData.pricePlanA} onChange={e => setFormData({ ...formData, pricePlanA: +e.target.value })}
                     className="px-4 py-2.5 rounded-xl text-sm bg-surface border-border text-text-primary placeholder-text-tertiary" />
-                  <input type="number" placeholder="Price B (₹)" value={formData.pricePlanB} onChange={e => setFormData({ ...formData, pricePlanB: +e.target.value })}
+                  <input type="number" placeholder="Price B (â‚¹)" value={formData.pricePlanB} onChange={e => setFormData({ ...formData, pricePlanB: +e.target.value })}
                     className="px-4 py-2.5 rounded-xl text-sm bg-surface border-border text-text-primary placeholder-text-tertiary" />
-                  <input type="number" placeholder="Price C (₹)" value={formData.pricePlanC} onChange={e => setFormData({ ...formData, pricePlanC: +e.target.value })}
+                  <input type="number" placeholder="Price C (â‚¹)" value={formData.pricePlanC} onChange={e => setFormData({ ...formData, pricePlanC: +e.target.value })}
                     className="px-4 py-2.5 rounded-xl text-sm bg-surface border-border text-text-primary placeholder-text-tertiary" />
                   <input type="number" placeholder="Duration (months)" value={formData.duration} onChange={e => setFormData({ ...formData, duration: +e.target.value })}
                     className="px-4 py-2.5 rounded-xl text-sm bg-surface border-border text-text-primary placeholder-text-tertiary" />
@@ -380,7 +379,7 @@ export default function AdminPlansPage() {
                         {plan.badgeText && <span className="text-accent text-xs">{plan.badgeText}</span>}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-text-tertiary text-sm">₹{plan.pricePlanA.toLocaleString('en-IN')}/yr</span>
+                        <span className="text-text-tertiary text-sm">â‚¹{plan.pricePlanA.toLocaleString('en-IN')}/yr</span>
                         {/* Clone Button */}
                         <button onClick={e => { e.stopPropagation(); setCloning(cloning === plan.planId ? null : plan.planId); setCloneForm({ newPlanId: `${plan.planId}-clone`, newName: `${plan.name} Clone` }) }}
                           className="p-2 rounded-lg hover:bg-surface-hover text-text-tertiary hover:text-text-primary transition-colors" title="Clone plan">
@@ -492,8 +491,8 @@ export default function AdminPlansPage() {
           </>
         )}
 
-        {/* ─── TAB: FEATURE MATRIX EDITOR (modal) ─── */}
-        <Modal open={!!editingFeatures} onClose={() => setEditingFeatures(null)} title={'Feature Matrix — ' + editingFeatures}>
+        {/* â”€â”€â”€ TAB: FEATURE MATRIX EDITOR (modal) â”€â”€â”€ */}
+        <Modal open={!!editingFeatures} onClose={() => setEditingFeatures(null)} title={'Feature Matrix â€” ' + editingFeatures}>
           <div className="space-y-3 mb-6">
             {featureForm.map((f, i) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-surface">
@@ -515,7 +514,7 @@ export default function AdminPlansPage() {
           </div>
         </Modal>
 
-        {/* ─── TAB: COMPARE ─── */}
+        {/* â”€â”€â”€ TAB: COMPARE â”€â”€â”€ */}
         {activeTab === 'compare' && (
           <div>
             <div className="mb-6 p-6 rounded-2xl border-border bg-surface">
@@ -574,7 +573,7 @@ export default function AdminPlansPage() {
           </div>
         )}
 
-        {/* ─── TAB: UPGRADE SIMULATOR ─── */}
+        {/* â”€â”€â”€ TAB: UPGRADE SIMULATOR â”€â”€â”€ */}
         {activeTab === 'upgrade' && (
           <div>
             <div className="mb-6 p-6 rounded-2xl border-border bg-surface">
@@ -607,17 +606,17 @@ export default function AdminPlansPage() {
                     <div>
                       <span className="text-text-tertiary text-xs">From</span>
                       <h3 className="text-text-primary font-bold">{upgradeResult.fromPlan.name}</h3>
-                      <span className="text-text-tertiary text-sm">₹{upgradeResult.fromPlan.pricePlanA.toLocaleString('en-IN')}/yr</span>
+                      <span className="text-text-tertiary text-sm">â‚¹{upgradeResult.fromPlan.pricePlanA.toLocaleString('en-IN')}/yr</span>
                     </div>
                     <ArrowUpDown size={20} className="text-accent" />
                     <div className="text-right">
                       <span className="text-text-tertiary text-xs">To</span>
                       <h3 className="text-text-primary font-bold">{upgradeResult.toPlan.name}</h3>
-                      <span className="text-text-tertiary text-sm">₹{upgradeResult.toPlan.pricePlanA.toLocaleString('en-IN')}/yr</span>
+                      <span className="text-text-tertiary text-sm">â‚¹{upgradeResult.toPlan.pricePlanA.toLocaleString('en-IN')}/yr</span>
                     </div>
                   </div>
                   <div className="mt-2 text-center">
-                    <span className="text-status-success text-sm font-bold">+₹{(upgradeResult.toPlan.pricePlanA - upgradeResult.fromPlan.pricePlanA).toLocaleString('en-IN')}/yr</span>
+                    <span className="text-status-success text-sm font-bold">+â‚¹{(upgradeResult.toPlan.pricePlanA - upgradeResult.fromPlan.pricePlanA).toLocaleString('en-IN')}/yr</span>
                   </div>
                 </div>
 
@@ -641,7 +640,7 @@ export default function AdminPlansPage() {
                       <div className="flex flex-wrap gap-2">
                         {upgradeResult.upgraded.map((u: any, i: number) => (
                           <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] bg-blue-400/10 text-blue-400">
-                            {u.feature}: {u.from} → {u.to}
+                            {u.feature}: {u.from} â†’ {u.to}
                           </span>
                         ))}
                       </div>
@@ -664,7 +663,7 @@ export default function AdminPlansPage() {
           </div>
         )}
 
-        {/* ─── TAB: AUDIT ─── */}
+        {/* â”€â”€â”€ TAB: AUDIT â”€â”€â”€ */}
         {activeTab === 'audit' && (
           <div>
             <div className="mb-6 flex items-center gap-3">

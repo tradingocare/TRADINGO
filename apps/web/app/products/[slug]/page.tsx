@@ -2,14 +2,16 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getProduct, getProductReviews, getProductQuestions, getRelatedProducts } from '@/lib/api/products';
+import { getCompanyProducts, type CompanyProduct } from '@/lib/api/companies';
 import { ProductDetailView } from '@/components/product-detail-view/product-detail-view';
+import { SellerProductsSection } from '@/components/product-detail-view/seller-products';
 import { toProductDetailView } from '@/lib/mappers/product-detail-view';
 import { ProductSkeleton } from '@/components/product/product-skeleton';
 import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 import type { ProductCardData } from '@/types/product-card';
 import type { ProductAttributesDisplay, ProductDetailSpec } from '@/types/product-detail';
 
-function toProductCard(p: Record<string, any>): ProductCardData {
+export function toProductCard(p: Record<string, any>): ProductCardData {
   const images = p.media?.filter((m: any) => m.type === 'IMAGE').map((m: any) => m.url) || [];
   const slab = p.priceSlabs?.[0];
   return {
@@ -47,7 +49,9 @@ function toProductCard(p: Record<string, any>): ProductCardData {
       distanceKm: (p as any).distanceKm,
       isGstRegistered: !!(p.company?.gstNumber || (p as any).gstInvoiceAvailable),
     },
-    moq: p.moq || 0,
+    // R5: default 1 (Product MOQ floor + server-side minimum) instead of 0,
+    // which would present a selectable 0-quantity state the server rejects.
+    moq: p.moq || 1,
     maxOrderQty: p.maxOrderQty,
     deliveryEta: p.deliveryEta,
     freeDeliveryAbove: p.freeDeliveryAbove,
@@ -67,11 +71,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {
       title: product.name,
       description: product.shortDescription || product.description?.slice(0, 160),
+      alternates: {
+        canonical: `https://tradingo.in/products/${slug}`,
+      },
       openGraph: {
         title: product.name,
         description: product.shortDescription || product.description?.slice(0, 160),
         images: product.media?.filter(m => m.type === 'IMAGE').map(m => m.url),
         type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: product.name,
+        description: product.shortDescription || product.description?.slice(0, 160),
+        images: product.media?.filter(m => m.type === 'IMAGE').map(m => m.url),
       },
     };
   } catch {
@@ -97,6 +110,7 @@ async function ProductDetail({ slug }: { slug: string }) {
   let reviews: Awaited<ReturnType<typeof getProductReviews>> | null = null;
   let questions: Awaited<ReturnType<typeof getProductQuestions>> | null = null;
   let related: ProductCardData[] = [];
+  let sellerProducts: CompanyProduct[] = [];
 
   try {
     product = await getProduct(slug);
@@ -116,6 +130,17 @@ async function ProductDetail({ slug }: { slug: string }) {
     const raw = await getRelatedProducts(slug);
     related = Array.isArray(raw) ? raw.map(toProductCard) : [];
   } catch { /* related unavailable */ }
+
+  // Reference §14 — "More Products From This Seller" from the existing PUBLIC
+  // company-products endpoint (same source the company profile already renders).
+  // The current product is excluded so the section never repeats this page.
+  try {
+    const companySlug = (product.company as any)?.slug;
+    if (companySlug) {
+      const res = await getCompanyProducts(companySlug, { page: 1, limit: 8 });
+      sellerProducts = (res?.products ?? []).filter((p: CompanyProduct) => p?.slug && p.slug !== product.slug);
+    }
+  } catch { /* seller products unavailable */ }
 
   const productAttributes = product.productAttributes as ProductAttributesDisplay | undefined;
   const attrSections = productAttributes?.sections || [];
@@ -173,9 +198,23 @@ async function ProductDetail({ slug }: { slug: string }) {
     }));
   }
 
+  // BreadcrumbList JSON-LD — built from the SAME real breadcrumb the visible nav
+  // renders (mapper output), so structured data can never drift from the UI.
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: viewData.breadcrumb.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.label,
+      item: item.href === '/' ? 'https://tradingo.in' : `https://tradingo.in${item.href}`,
+    })),
+  };
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] opacity-15 rounded-full"
@@ -195,6 +234,10 @@ async function ProductDetail({ slug }: { slug: string }) {
           reviews={reviews}
           questions={questions}
           related={related}
+        />
+        <SellerProductsSection
+          products={sellerProducts}
+          sellerName={(product.company as any)?.name}
         />
         <ClaimYourGrowth />
       </div>

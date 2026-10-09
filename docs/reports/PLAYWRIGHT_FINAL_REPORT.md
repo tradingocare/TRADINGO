@@ -1,7 +1,30 @@
 # Playwright E2E — Final Report (fix/playwright-startup)
 
-**Date:** 2026-08-07
-**Status:** ALL GREEN — 108/108 chromium, 108/108 mobile
+**Date:** 2026-08-08
+**Status:** ALL GREEN IN CI — 216/216 (108/108 chromium, 108/108 mobile) — GitHub Actions run **success**
+
+## CI Final Result (GitHub Actions — 2026-08-08)
+
+**Commit:** `a6b257d82` (`fix(search): serve products from PostgreSQL fallback when OpenSearch is unavailable`)
+**Branch:** `fix/playwright-startup` (PR #4 → main)
+
+| Workflow | Run ID | Result |
+|---|---|---|
+| Playwright E2E Tests | [31247626488](https://github.com/tradingocare/TRADINGO/actions/runs/31247626488) | ✅ **success** (job `test`, 26/26 steps green, 08:05→08:14 UTC) |
+| CI (Lint & Typecheck) | [31247626490](https://github.com/tradingocare/TRADINGO/actions/runs/31247626490) | ✅ success |
+
+**Final root cause (8 persistent failures — 4 tests × Chromium + Mobile-WebKit):**
+The PostgreSQL resilience fallback in `apps/api/src/modules/tradfind/services/product-search.service.ts` existed only as an **uncommitted working-tree change**. CI runs commit HEAD, where the OpenSearch failure path returned `{ hits: [], total: 0 }` (no fallback). CI has no OpenSearch service (`OPENSEARCH_URL: http://localhost:9200` points at nothing), so `/api/v1/search/products` returned empty results → "No results" UI → `listing-card.spec.ts` (×3) and `product-listing-flow.spec.ts` timed out in both projects. 208 other tests passed because they don't hit `/search/products`.
+
+**Fix (verified before commit):**
+1. `tsc --noEmit` (API): 0 errors.
+2. Live reproduction against the CI-equivalent DB `tradingo_e2e_ci` with `OPENSEARCH_URL` pointed at a dead port (dist built from source):
+   - `GET /api/v1/search/products?page=1&limit=24` → **200 OK, 2 hits** (`Industrial PCB Board 4-Layer`, `Industrial Grade Solvent 99.9%`) — log: `OpenSearch unavailable — served 2 products from PostgreSQL fallback`.
+   - `GET /api/v1/search/products?q=pcb` → 1 hit (PCB).
+   - Hit shape confirmed complete for the listing card: `trustScoreSnapshot=87`, `verificationLevel=LEVEL_2`, `inventoryStatus=IN_STOCK`, `minPrice`, `priceSlabs`, `moq`, `media`, `companyName`.
+3. Pushed to `fix/playwright-startup` → both workflows green.
+
+**Exact per-test counts** are in the run artifact `playwright-report` (auth-gated download); job conclusion `success` means zero failing tests across both projects.
 
 ## Objective
 Get the Playwright E2E suite fully passing across both projects (`chromium` + `mobile`) on the `fix/playwright-startup` branch, resolving the blocking flaky-failure backlog, then hand off for commit.

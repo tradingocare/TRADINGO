@@ -164,7 +164,7 @@ describe('AuthService', () => {
       },
       companyLocation: { create: jest.fn().mockResolvedValue({}), findFirst: jest.fn().mockResolvedValue(null) },
       category: { findMany: jest.fn().mockResolvedValue([]) },
-      catalogCategory: { count: jest.fn().mockResolvedValue(1) },
+      catalogCategory: { count: jest.fn().mockResolvedValue(1), findUnique: jest.fn() },
       companyCategory: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
       sellerPayoutAccount: { upsert: jest.fn().mockResolvedValue({}) },
       newsletterSubscriber: { upsert: jest.fn().mockResolvedValue({}) },
@@ -392,6 +392,42 @@ describe('AuthService', () => {
       expect(prisma.companyOwner.findFirst).not.toHaveBeenCalled();
     });
 
+    it('allows an RM user to log in through the admin role tab', async () => {
+      redisService.exists.mockResolvedValue(false);
+      prisma.user.findFirst.mockResolvedValue({ ...mockUser, role: 'RM' });
+      prisma.user.update.mockResolvedValue({});
+      prisma.session.create.mockResolvedValue({ id: 'session-1' });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.login({ identifier: 'rm@tradingo.in', password: 'Pass@1234', role: 'admin' });
+
+      expect(result.accessToken).toBe('mock-token');
+    });
+
+    it('still rejects a BUYER using the admin role tab', async () => {
+      redisService.exists.mockResolvedValue(false);
+      prisma.user.findFirst.mockResolvedValue({ ...mockUser, role: 'BUYER' });
+      prisma.session.create.mockResolvedValue({ id: 'session-1' });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await expect(
+        service.login({ identifier: 'buyer@example.com', password: 'Pass@1234', role: 'admin' }),
+      ).rejects.toThrow('This account is not a admin account');
+    });
+
+    it('keeps ADMIN and SUPER_ADMIN working through the admin role tab', async () => {
+      for (const adminRole of ['ADMIN', 'SUPER_ADMIN']) {
+        redisService.exists.mockResolvedValue(false);
+        prisma.user.findFirst.mockResolvedValue({ ...mockUser, role: adminRole });
+        prisma.user.update.mockResolvedValue({});
+        prisma.session.create.mockResolvedValue({ id: 'session-1' });
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+        const result = await service.login({ identifier: 'admin@tradingo.in', password: 'Pass@1234', role: 'admin' });
+        expect(result.accessToken).toBe('mock-token');
+      }
+    });
+
     describe('verifyEmail', () => {
       it('verifies email with valid token', async () => {
         redisService.get.mockResolvedValue('user-1');
@@ -556,8 +592,39 @@ describe('AuthService', () => {
       }));
       expect(emailQueue.add).toHaveBeenCalled();
     });
-  });
 
+    it('completes seller identity without a trial for TRAD UP intent (omitted planId)', async () => {
+      // TRAD UP seller-first: the wizard withholds planId; fulfillment happens
+      // post-identity via activateFreePlan (frontend), never enrollTrial here.
+      mockBuyerUser();
+      const tradUpIntent = { ...vendorDto, planId: undefined };
+
+      const result = await service.vendorOnboarding('user-1', tradUpIntent);
+
+      expect(result.companyId).toBe('company-1');
+      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ role: 'SELLER' }),
+      }));
+      expect(membershipService.enrollTrial).not.toHaveBeenCalled();
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'vendor.capability.activated', expect.objectContaining({ newRole: 'SELLER' }),
+      );
+    });
+
+    it('does not silently trial a forged trad-up planId (enrollTrial failure propagates)', async () => {
+      // A malicious client sending planId trad-up explicitly still flows into
+      // enrollTrial, whose launch-id rejection aborts onboarding — no trial,
+      // no silent success, no identity without fulfillment decision upstream.
+      mockBuyerUser();
+      membershipService.enrollTrial.mockRejectedValueOnce(new Error('Plan is not supported for subscription enrollment'));
+
+      await expect(service.vendorOnboarding('user-1', { ...vendorDto, planId: 'trad-up' }))
+        .rejects.toThrow('Plan is not supported for subscription enrollment');
+
+      expect(membershipService.enrollTrial).toHaveBeenCalledWith('company-1', 'trad-up', prisma);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+  });
 
   describe('vendor Step-5 fail-closed category linking (F-06)', () => {
     function mockBuyerUser() {
@@ -691,6 +758,89 @@ describe('AuthService', () => {
     });
   });
 
+  describe('vendor Step-5 canonical cascade picks (F-07)', () => {
+    function mockBuyerUser() {
+      prisma.user.findFirst.mockResolvedValue({ ...mockUser, id: 'user-1', email: 'vendor@example.com', role: 'BUYER', mobile: null });
+    }
+
+    const cascadeDto = {
+      ...vendorDto,
+      primaryCatalogCategoryId: 'cc-steel',
+      secondaryCatalogCategoryIds: ['cc-paper'],
+    };
+
+    function mockCanonicalBridge() {
+      prisma.catalogCategory.findUnique.mockImplementation(async ({ where }: any) =>
+        where?.id && where.id.startsWith('cc-')
+          ? { id: where.id, isActive: true }
+          : null,
+      );
+      taxonomyPersistenceService.bridgeLegacyCategoryId.mockImplementation(async (id: string) => `legacy-${id}`);
+    }
+
+    it('links bridged legacy IDs for cascade picks without name resolution', async () => {
+      mockBuyerUser();
+      mockCanonicalBridge();
+
+      const result = await service.vendorOnboarding('user-1', cascadeDto);
+
+      expect(catalogClassifyService.resolveCategoryText).not.toHaveBeenCalled();
+      expect(prisma.companyCategory.createMany).toHaveBeenCalledWith({
+        data: [
+          { companyId: 'company-1', categoryId: 'legacy-cc-steel' },
+          { companyId: 'company-1', categoryId: 'legacy-cc-paper' },
+        ],
+        skipDuplicates: true,
+      });
+      expect(result.companyId).toBe('company-1');
+    });
+
+    it('rejects 400 with no write for an unknown canonical ID', async () => {
+      mockBuyerUser();
+      mockCanonicalBridge();
+      prisma.catalogCategory.findUnique.mockResolvedValue(null);
+
+      await expect(service.vendorOnboarding('user-1', cascadeDto)).rejects.toThrow(
+        'Unknown or inactive business category selection',
+      );
+
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects 400 with no write for an inactive canonical ID', async () => {
+      mockBuyerUser();
+      mockCanonicalBridge();
+      prisma.catalogCategory.findUnique.mockResolvedValue({ id: 'cc-steel', isActive: false });
+
+      await expect(service.vendorOnboarding('user-1', cascadeDto)).rejects.toThrow(
+        'Unknown or inactive business category selection',
+      );
+
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects 400 with no write when no legacy twin exists', async () => {
+      mockBuyerUser();
+      mockCanonicalBridge();
+      taxonomyPersistenceService.bridgeLegacyCategoryId.mockResolvedValue(null);
+
+      await expect(service.vendorOnboarding('user-1', cascadeDto)).rejects.toThrow(
+        'cannot be linked yet',
+      );
+
+      expect(prisma.companyCategory.createMany).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the F-06 name path when no cascade IDs are present', async () => {
+      mockBuyerUser();
+
+      await service.vendorOnboarding('user-1', vendorDto);
+
+      expect(catalogClassifyService.resolveCategoryText).toHaveBeenCalledWith('Steel');
+      expect(prisma.companyCategory.createMany).toHaveBeenCalled();
+    });
+  });
 
   describe('registerBuyer', () => {
     it('runs all persisted writes in a single transaction including newsletter', async () => {
@@ -731,6 +881,312 @@ describe('AuthService', () => {
 
       expect(prisma.newsletterSubscriber.upsert).not.toHaveBeenCalled();
       expect(emailQueue.add).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendOtp registration OTP honesty (P2C-R2)', () => {
+    const sesConfigured = () => {
+      const cfg = (service as any).configService;
+      cfg.get.mockImplementation((key: string, def?: unknown) => {
+        const values: Record<string, unknown> = {
+          EMAIL_PROVIDER: 'ses',
+          'aws.accessKeyId': 'test-key',
+          'aws.secretAccessKey': 'test-secret',
+        };
+        return values[key] ?? def;
+      });
+    };
+    const smsOf = () => (service as any).smsService;
+
+    beforeEach(() => {
+      redisService.incr.mockResolvedValue(1);
+      redisService.set.mockResolvedValue(undefined);
+      redisService.del.mockResolvedValue(undefined);
+      redisService.get.mockResolvedValue(null);
+      emailQueue.add.mockResolvedValue({ id: 'job-1' });
+      smsOf().sendOtp.mockResolvedValue({ success: true });
+    });
+
+    it('queues email OTP when the provider is configured (1-3)', async () => {
+      sesConfigured();
+
+      const result = await service.sendOtp('email', 'new@example.com', '1.2.3.4');
+
+      expect(result.success).toBe(true);
+      expect(emailQueue.add).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ template: 'otp-verify', to: 'new@example.com' }),
+      );
+      expect(redisService.set).toHaveBeenCalledWith(
+        'otp:email:new@example.com', expect.stringMatching(/^\d{6}$/), 300,
+      );
+    });
+
+    it('sends mobile OTP when SMS succeeds (1-3)', async () => {
+      const result = await service.sendOtp('mobile', '+919999999999', '1.2.3.4');
+
+      expect(result.success).toBe(true);
+      expect(smsOf().sendOtp).toHaveBeenCalledWith('+919999999999', expect.stringMatching(/^\d{6}$/), 'OTP_VERIFY_MOBILE');
+    });
+
+    it('rejects honestly when email delivery is unavailable (9)', async () => {
+      // Default mock config has no AWS keys → ses unconfigured.
+      const err = await service.sendOtp('email', 'new@example.com', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(emailQueue.add).not.toHaveBeenCalled();
+      // Orphan code that could never arrive is cleaned up.
+      expect(redisService.del).toHaveBeenCalledWith('otp:email:new@example.com');
+    });
+
+    it('rejects honestly when queueing fails (10)', async () => {
+      sesConfigured();
+      emailQueue.add.mockRejectedValueOnce(new Error('Redis down'));
+
+      const err = await service.sendOtp('email', 'new@example.com', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(redisService.del).toHaveBeenCalledWith('otp:email:new@example.com');
+    });
+
+    it('rejects honestly when SMS reports failure (9)', async () => {
+      smsOf().sendOtp.mockResolvedValueOnce({ success: false });
+
+      const err = await service.sendOtp('mobile', '+919999999999', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(redisService.del).toHaveBeenCalledWith('otp:mobile:+919999999999');
+    });
+
+    it('rate-limits honestly instead of fake success (8)', async () => {
+      redisService.incr.mockResolvedValue(11);
+
+      const err = await service.sendOtp('email', 'new@example.com', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(429);
+      expect(err.message).toContain('Too many OTP requests');
+      expect(redisService.set).not.toHaveBeenCalled();
+      expect(emailQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('verifies a valid OTP once, then rejects reuse (3-6)', async () => {
+      redisService.get.mockResolvedValueOnce('123456');
+
+      await expect(service.verifyOtp('email', 'new@example.com', '123456')).resolves.toEqual(
+        expect.objectContaining({ verified: true }),
+      );
+      expect(redisService.del).toHaveBeenCalledWith('otp:email:new@example.com');
+
+      redisService.get.mockResolvedValueOnce(null);
+      await expect(service.verifyOtp('email', 'new@example.com', '123456')).rejects.toThrow(
+        'Invalid or expired OTP',
+      );
+    });
+
+    it('rejects wrong (4) and expired (5) OTPs', async () => {
+      redisService.get.mockResolvedValueOnce('123456');
+      await expect(service.verifyOtp('email', 'new@example.com', '000000')).rejects.toThrow(
+        'Invalid or expired OTP',
+      );
+      redisService.get.mockResolvedValueOnce(null);
+      await expect(service.verifyOtp('email', 'new@example.com', '123456')).rejects.toThrow(
+        'Invalid or expired OTP',
+      );
+    });
+
+    it('resend overwrites the previous code (7)', async () => {
+      sesConfigured();
+
+      await service.sendOtp('email', 'new@example.com', '1.2.3.4');
+      await service.sendOtp('email', 'new@example.com', '1.2.3.4');
+
+      expect(redisService.set).toHaveBeenCalledTimes(2);
+    });
+
+    it('never logs OTP values (12)', async () => {
+      const logger = (service as any).logger;
+      const seen: string[] = [];
+      for (const level of ['warn', 'error', 'log'] as const) {
+        jest.spyOn(logger, level).mockImplementation((...args: unknown[]) => {
+          seen.push(args.map(String).join(' '));
+        });
+      }
+      sesConfigured();
+      redisService.incr.mockResolvedValueOnce(11);
+      await expect(service.sendOtp('email', 'new@example.com', '1.2.3.4')).rejects.toThrow();
+      await service.sendOtp('email', 'ok@example.com', '1.2.3.4').catch(() => {});
+      jest.restoreAllMocks();
+
+      for (const line of seen) expect(line).not.toMatch(/\b\d{6}\b/);
+    });
+
+    it('registration and reset use their canonical mail paths (11)', async () => {
+      sesConfigured();
+      prisma.user.findFirst.mockResolvedValue(null);
+
+      await service.sendOtp('email', 'new@example.com', '1.2.3.4');
+      expect(emailQueue.add).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ type: 'SEND_NOTIFICATION', template: 'otp-verify' }),
+      );
+
+      await service.sendResetOtp('existing@example.com', '1.2.3.4');
+      expect(emailQueue.add).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ type: 'SEND_PASSWORD_RESET', template: 'password-reset' }),
+      );
+    });
+  });
+
+  describe('login/reset OTP honest-failure parity (F-1)', () => {
+    const sesConfigured = () => {
+      const cfg = (service as any).configService;
+      cfg.get.mockImplementation((key: string, def?: unknown) => {
+        const values: Record<string, unknown> = {
+          EMAIL_PROVIDER: 'ses',
+          'aws.accessKeyId': 'test-key',
+          'aws.secretAccessKey': 'test-secret',
+        };
+        return values[key] ?? def;
+      });
+    };
+
+    beforeEach(() => {
+      redisService.incr.mockResolvedValue(1);
+      redisService.set.mockResolvedValue(undefined);
+      redisService.del.mockResolvedValue(undefined);
+      redisService.get.mockResolvedValue(null);
+      redisService.exists.mockResolvedValue(false);
+      emailQueue.add.mockResolvedValue({ id: 'job-1' });
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue(null);
+    });
+
+    it('sendLoginOtp queues when the email provider is deliverable', async () => {
+      sesConfigured();
+
+      const result = await service.sendLoginOtp('user@example.com', '1.2.3.4');
+
+      expect(result.success).toBe(true);
+      expect(emailQueue.add).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ type: 'SEND_NOTIFICATION', template: 'otp-login', to: 'user@example.com' }),
+      );
+      expect(redisService.set).toHaveBeenCalledWith(
+        'login:otp:user@example.com', expect.stringMatching(/^\d{6}$/), 300,
+      );
+    });
+
+    it('sendResetOtp queues when the email provider is deliverable', async () => {
+      sesConfigured();
+
+      const result = await service.sendResetOtp('user@example.com', '1.2.3.4');
+
+      expect(result.success).toBe(true);
+      expect(emailQueue.add).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ type: 'SEND_PASSWORD_RESET', template: 'password-reset', to: 'user@example.com' }),
+      );
+    });
+
+    it('sendLoginOtp rejects honestly (503) when email delivery is unavailable', async () => {
+      // Default mock config has no provider keys → undeliverable.
+      const err = await service.sendLoginOtp('user@example.com', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(emailQueue.add).not.toHaveBeenCalled();
+      // Orphan OTP that could never arrive is cleaned up.
+      expect(redisService.del).toHaveBeenCalledWith('login:otp:user@example.com');
+    });
+
+    it('sendResetOtp rejects honestly (503) when email delivery is unavailable', async () => {
+      const err = await service.sendResetOtp('user@example.com', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(emailQueue.add).not.toHaveBeenCalled();
+      expect(redisService.del).toHaveBeenCalledWith('reset:otp:user@example.com');
+    });
+
+    it('sendLoginOtp rejects honestly (503) when enqueue fails', async () => {
+      sesConfigured();
+      emailQueue.add.mockRejectedValueOnce(new Error('Redis down'));
+
+      const err = await service.sendLoginOtp('user@example.com', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(redisService.del).toHaveBeenCalledWith('login:otp:user@example.com');
+    });
+
+    it('sendResetOtp rejects honestly (503) when enqueue fails', async () => {
+      sesConfigured();
+      emailQueue.add.mockRejectedValueOnce(new Error('Redis down'));
+
+      const err = await service.sendResetOtp('user@example.com', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(redisService.del).toHaveBeenCalledWith('reset:otp:user@example.com');
+    });
+
+    it('sendLoginOtp keeps per-IP throttle behavior unchanged (silent, no OTP stored)', async () => {
+      sesConfigured();
+      redisService.incr.mockResolvedValueOnce(11);
+
+      const result = await service.sendLoginOtp('user@example.com', '1.2.3.4');
+
+      // Throttled requests still return the enumeration-safe generic 200…
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('If account exists, OTP sent');
+      // …but nothing was stored or queued.
+      expect(redisService.set).not.toHaveBeenCalled();
+      expect(emailQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('sendLoginOtp/sendResetOtp keep account enumeration protection intact', async () => {
+      sesConfigured();
+      // Unknown user, locked user, and known user all answer identically.
+      redisService.exists.mockResolvedValueOnce(false);
+      prisma.user.findFirst.mockResolvedValueOnce(null);
+      const a = await service.sendLoginOtp('nobody@example.com', '1.2.3.4');
+
+      redisService.exists.mockResolvedValueOnce(true);
+      const b = await service.sendLoginOtp('locked@example.com', '1.2.3.4');
+
+      prisma.user.findFirst.mockResolvedValueOnce(mockUser);
+      const c = await service.sendLoginOtp('known@example.com', '1.2.3.4');
+
+      expect(a.message).toBe(b.message);
+      expect(b.message).toBe(c.message);
+      expect(a.success).toBe(true);
+    });
+
+    it('phone-identifier OTP paths still route to SMS (unchanged)', async () => {
+      const smsOf = (service as any).smsService;
+      smsOf.sendOtp.mockResolvedValue({ success: true });
+
+      await service.sendLoginOtp('+919999999999', '1.2.3.4');
+      expect(smsOf.sendOtp).toHaveBeenCalledWith('+919999999999', expect.stringMatching(/^\d{6}$/), 'OTP_LOGIN');
+
+      await service.sendResetOtp('+919999999999', '1.2.3.4');
+      expect(smsOf.sendOtp).toHaveBeenCalledWith('+919999999999', expect.stringMatching(/^\d{6}$/), 'OTP_RESET_PASSWORD');
+    });
+
+    it('sendLoginOtp phone path rejects honestly (503) when SMS delivery fails', async () => {
+      const smsOf = (service as any).smsService;
+      smsOf.sendOtp.mockResolvedValueOnce({ success: false });
+
+      const err = await service.sendLoginOtp('+919999999999', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(redisService.del).toHaveBeenCalledWith('login:otp:+919999999999');
+    });
+
+    it('sendResetOtp phone path rejects honestly (503) when SMS delivery fails', async () => {
+      const smsOf = (service as any).smsService;
+      smsOf.sendOtp.mockResolvedValueOnce({ success: false });
+
+      const err = await service.sendResetOtp('+919999999999', '1.2.3.4').catch((e: any) => e);
+      expect(err.status).toBe(503);
+      expect(err.message).toContain('Verification service temporarily unavailable');
+      expect(redisService.del).toHaveBeenCalledWith('reset:otp:+919999999999');
     });
   });
 });

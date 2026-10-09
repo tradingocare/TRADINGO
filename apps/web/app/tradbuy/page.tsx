@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { ShoppingCart, ArrowRight, CheckCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TRADING_FEATURES, TRADING_RFQ_STEPS, FEATURES_BUYER } from '@/data/master-data';
 
 export const metadata: Metadata = {
-  title: 'TRADBUY — Instant Purchase | TRADINGO',
+  title: 'TRADBUY â€” Instant Purchase | TRADINGO',
   description:
     'Buy products instantly at listed prices with secure payment processing and automated order matching on TRADINGO.',
 };
@@ -37,11 +37,11 @@ export default function TradbuyPage() {
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-xl">
                 <ShoppingCart className="h-10 w-10" />
               </div>
-              <h2 className="mt-8 text-3xl font-bold sm:text-4xl dark:text-dark-text-primary">
+              <h2 className="mt-8 text-3xl font-bold sm:text-4xl text-text-primary">
                 Buy Instantly, Trade Confidently
               </h2>
-              <p className="mt-4 text-lg text-text-secondary dark:text-dark-text-secondary">
-                TRADBUY is TRADINGO&apos;s instant purchase engine — the fastest way to buy products on the
+              <p className="mt-4 text-lg text-text-secondary">
+                TRADBUY is TRADINGO&apos;s instant purchase engine â€” the fastest way to buy products on the
                 TEM marketplace. Skip the negotiation, avoid the delays, and purchase directly at listed
                 prices. Every transaction is processed through our secure escrow system, so your funds are
                 always protected until you confirm satisfaction. Whether you need industrial machinery,
@@ -68,7 +68,7 @@ export default function TradbuyPage() {
       <Separator />
 
       {/* How It Works */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="How TRADBUY Works"
@@ -83,12 +83,12 @@ export default function TradbuyPage() {
                       {step.step}
                     </div>
                     {index < steps.length - 1 && (
-                      <div className="mt-2 h-full w-0.5 bg-border dark:bg-dark-border" />
+                      <div className="mt-2 h-full w-0.5 bg-border dark:bg-border" />
                     )}
                   </div>
                   <div className="pb-8">
-                    <h3 className="text-xl font-semibold text-text-primary dark:text-dark-text-primary">{step.title}</h3>
-                    <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">{step.description}</p>
+                    <h3 className="text-xl font-semibold text-text-primary">{step.title}</h3>
+                    <p className="mt-2 text-text-secondary">{step.description}</p>
                   </div>
                 </div>
               </AnimatedSection>
@@ -115,7 +115,7 @@ export default function TradbuyPage() {
       <Separator />
 
       {/* Comparison Section */}
-      <section className="py-20 bg-surface-secondary/50 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <div className="mx-auto max-w-4xl">
@@ -135,7 +135,7 @@ export default function TradbuyPage() {
                     <ul className="space-y-3">
                       {['Instant purchase at fixed prices', 'Escrow-protected payments', 'Auto-matching with sellers', 'Real-time order tracking', 'GOCASH rewards on every purchase', 'Complete in under 2 minutes'].map(
                         (item) => (
-                          <li key={item} className="flex items-start gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                          <li key={item} className="flex items-start gap-2 text-sm text-text-secondary">
                             <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent-500" />
                             {item}
                           </li>
@@ -144,9 +144,9 @@ export default function TradbuyPage() {
                     </ul>
                   </CardContent>
                 </Card>
-                <Card className="border-border dark:border-dark-border">
+                <Card className="border-border">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-text-tertiary dark:text-dark-text-tertiary">
+                    <CardTitle className="flex items-center gap-2 text-text-tertiary">
                       <ArrowRight className="h-5 w-5" />
                       Traditional Buying
                     </CardTitle>
@@ -155,7 +155,7 @@ export default function TradbuyPage() {
                     <ul className="space-y-3">
                       {['Lengthy negotiation process', 'Payment security concerns', 'Manual seller matching', 'Limited order visibility', 'No rewards or incentives', 'Takes days or weeks'].map(
                         (item) => (
-                          <li key={item} className="flex items-start gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                          <li key={item} className="flex items-start gap-2 text-sm text-text-secondary">
                             <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-text-tertiary" />
                             {item}
                           </li>

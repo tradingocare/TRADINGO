@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { DashboardPageHeader, StatCard, StatusBadge, TableSkeleton, StatCardSkeleton } from '@/components/dashboard';
 import { usePayments } from '@/hooks';
@@ -22,10 +22,10 @@ export default function BuyerPaymentsPage() {
     return (
       <div className="space-y-6">
         <DashboardPageHeader title="Payments" description="Payment history" />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load payments</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
+          <p className="mt-4 text-lg font-medium text-text-primary">Failed to load payments</p>
+          <p className="mt-1 text-sm text-text-secondary">{error.message}</p>
         </div>
       </div>
     );
@@ -52,10 +52,10 @@ export default function BuyerPaymentsPage() {
       />
 
       {transactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <CreditCard className="h-12 w-12 text-text-tertiary" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">No payments found</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">Your payment history will appear here after you make your first purchase.</p>
+          <p className="mt-4 text-lg font-medium text-text-primary">No payments found</p>
+          <p className="mt-1 text-sm text-text-secondary">Your payment history will appear here after you make your first purchase.</p>
         </div>
       ) : (
         <>
@@ -64,8 +64,8 @@ export default function BuyerPaymentsPage() {
             <StatCard icon={DollarSign} label="Pending Payments" value={String(pendingCount)} change={pendingCount === 1 ? '1 transaction' : `${pendingCount} transactions`} changeType="neutral" />
           </div>
 
-          <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-            <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">
+          <div className="rounded-xl border border-border bg-surface">
+            <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary sm:grid">
               <div className="col-span-2">Txn ID</div>
               <div className="col-span-3">Type</div>
               <div className="col-span-2">Amount</div>
@@ -75,12 +75,12 @@ export default function BuyerPaymentsPage() {
             {transactions.map((txn: Payment) => (
               <div
                 key={txn.id}
-                className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center dark:border-dark-border"
+                className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center"
               >
-                <p className="text-sm font-mono font-medium text-text-primary dark:text-dark-text-primary sm:col-span-2">{txn.id.slice(0, 12)}...</p>
-                <p className="text-sm text-text-primary dark:text-dark-text-primary sm:col-span-3">{txn.type.replace(/_/g, ' ')}</p>
-                <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary sm:col-span-2">{formatINR(txn.amount)}</p>
-                <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-2">{new Date(txn.createdAt).toLocaleDateString('en-IN')}</p>
+                <p className="text-sm font-mono font-medium text-text-primary sm:col-span-2">{txn.id.slice(0, 12)}...</p>
+                <p className="text-sm text-text-primary sm:col-span-3">{txn.type.replace(/_/g, ' ')}</p>
+                <p className="text-sm font-medium text-text-primary sm:col-span-2">{formatINR(txn.amount)}</p>
+                <p className="text-sm text-text-secondary sm:col-span-2">{new Date(txn.createdAt).toLocaleDateString('en-IN')}</p>
                 <div className="sm:col-span-3">
                   <StatusBadge status={txn.status} />
                 </div>

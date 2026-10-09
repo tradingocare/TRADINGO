@@ -30,6 +30,8 @@ export function CategoryStrip() {
 
   // Remove category param from preserved params if present, to be set explicitly
   baseSearch.delete('category')
+  // A category change drops any stale subcategory context with it
+  baseSearch.delete('subcategory')
   // Reset pagination: a category change must restart discovery at page 1
   baseSearch.delete('page')
 
@@ -150,13 +152,19 @@ export function CategoryStrip() {
         <span className="line-clamp-2 whitespace-normal text-center">All</span>
       </Link>
 
-      {/* Ranked categories horizontal scroll */}
+      {/* Ranked categories horizontal scroll.
+          On /trading a strip click opens category discovery (/categories)
+          with that category selected; elsewhere it filters in place. */}
       {categories.map((cat) => {
         const isActive = cat.slug === activeCategory?.slug
-        const catParams = new URLSearchParams(baseSearch.toString())
-        catParams.set('category', cat.slug)
-        const catParamsStr = catParams.toString() || undefined
-        const catHref = catParamsStr ? `${basePath}?${catParamsStr}` : basePath
+        const catHref = basePath === '/trading'
+          ? `/categories?category=${encodeURIComponent(cat.slug)}`
+          : (() => {
+              const catParams = new URLSearchParams(baseSearch.toString())
+              catParams.set('category', cat.slug)
+              const catParamsStr = catParams.toString() || undefined
+              return catParamsStr ? `${basePath}?${catParamsStr}` : basePath
+            })()
         return (
           <Link
             key={cat.id}

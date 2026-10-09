@@ -8,6 +8,8 @@ import { RfqNumberService, stateToCode } from './rfq-number.service';
 import { RfqAnalyticsService } from './rfq-analytics.service';
 import { RfqType, NotificationType } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
+import { MembershipService } from '../membership/membership.service';
+import { entitlementLimit } from '../membership/plan-entitlements';
 
 const CREDITS_PER_RFQ: Record<RfqType, number> = {
   PRODUCT: 1,
@@ -30,6 +32,7 @@ export class RfqService {
     private readonly rfqNumberService: RfqNumberService,
     private readonly rfqAnalytics: RfqAnalyticsService,
     private readonly notificationService: NotificationService,
+    private readonly membershipService: MembershipService,
   ) {}
 
   async create(companyId: string, dto: CreateRfqDto, userId: string) {
@@ -369,19 +372,51 @@ export class RfqService {
     });
   }
 
+  private monthWindow() {
+    const now = new Date();
+    return {
+      startOfMonth: new Date(now.getFullYear(), now.getMonth(), 1),
+      endOfMonth: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
+    };
+  }
+
   private async enforceBuyerPlanLimit(companyId: string) {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
-      select: { subscriptionPlan: true },
+      select: { subscriptionPlan: true, currentPlanVersionId: true },
     });
 
     if (!company) return;
 
+    // 2B-2B: version-pinned companies enforce their snapshot monthly cap
+    // (matrix: 0/20/30/40/50/unlimited; Start included=false → 0 = block).
+    // Legacy subscribers keep the flat-5 logic below verbatim.
+    if (company.currentPlanVersionId) {
+      const snap = await this.membershipService.getVersionedEntitlements(companyId);
+      if (snap && 'rfq_monthly_limit' in snap) {
+        const limit = entitlementLimit(snap, 'rfq_monthly_limit', FREE_TIER_MONTHLY_LIMIT);
+        if (limit === Infinity) return;
+        if (limit === 0) {
+          throw new ForbiddenException('Your plan does not include RFQ creation. Upgrade to create RFQs.');
+        }
+        const { startOfMonth, endOfMonth } = this.monthWindow();
+        const monthlyCount = await this.prisma.rfq.count({
+          where: {
+            companyId,
+            createdAt: { gte: startOfMonth, lte: endOfMonth },
+            deletedAt: null,
+          },
+        });
+        if (monthlyCount >= limit) {
+          throw new ForbiddenException(`Monthly RFQ limit of ${limit} reached for your plan.`);
+        }
+        return;
+      }
+    }
+
     if (company.subscriptionPlan === 'TRADBUY') return;
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const { startOfMonth, endOfMonth } = this.monthWindow();
 
     const monthlyCount = await this.prisma.rfq.count({
       where: {

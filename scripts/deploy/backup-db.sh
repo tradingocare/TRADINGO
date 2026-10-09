@@ -1,10 +1,14 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
-# ============================================
-# TRADINGO — Database Backup Script
-# Run daily via cron: scripts/deploy/backup-db.sh
-# ============================================
+# ============================================================
+# TRADINGO — Scheduled Database Backup (host cron, daily 02:00)
+# Wave 3B-1: custom-format dump via the shared backup library
+# (temp artifact -> pg_dump exit check -> pg_restore --list
+# validation -> atomic rename). Failures are non-zero, logged,
+# and can never leave a successful-looking artifact behind.
+# Invoked by /etc/cron.d/tradingo-backup (deploy-vps.sh).
+# ============================================================
 
 cd "$(dirname "$0")/../.."
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
@@ -13,7 +17,6 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-.env.production.local}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
-TIMESTAMP=$(date -u '+%Y%m%d-%H%M%S')
 
 # Fail-fast: never operate against the tracked placeholder template.
 if [ "$COMPOSE_ENV_FILE" = ".env.production" ]; then
@@ -28,27 +31,48 @@ if [ ! -f "$COMPOSE_ENV_FILE" ]; then
   exit 1
 fi
 
-mkdir -p "$BACKUP_DIR"
+mkdir -p "$BACKUP_DIR" "$BACKUP_DIR/logs"
 
-echo "[Backup] Starting PostgreSQL backup..."
+. ./scripts/lib/pg-backup.sh
 
-# Backup database
-docker compose --env-file "$COMPOSE_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres \
-  pg_dump -U tradingo tradingo --clean --if-exists \
-  2>/dev/null | gzip > "${BACKUP_DIR}/tradingo-${TIMESTAMP}.sql.gz"
+TS="$(date -u '+%Y%m%d-%H%M%S')"
+LOG="${BACKUP_DIR}/logs/backup-${TS}.log"
+STATUS="${BACKUP_DIR}/logs/backup-status.txt"
 
-# Check backup integrity
-if gzip -t "${BACKUP_DIR}/tradingo-${TIMESTAMP}.sql.gz" 2>/dev/null; then
-  size=$(du -h "${BACKUP_DIR}/tradingo-${TIMESTAMP}.sql.gz" | cut -f1)
-  echo "[Backup] Completed: ${BACKUP_DIR}/tradingo-${TIMESTAMP}.sql.gz (${size})"
+echo "[Backup] Starting PostgreSQL backup ($(date -u '+%Y-%m-%dT%H:%M:%SZ'))"
+
+if tradingo_pg_backup "$BACKUP_DIR" tradingo compose \
+     --compose-file "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" > "$LOG" 2>&1; then
+  result_line="$(grep '^BACKUP_RESULT=' "$LOG" | tail -n 1)"
+  file="$(echo "$result_line" | cut -d' ' -f2 | sed 's/^FILE=//')"
+  size="$(echo "$result_line" | cut -d' ' -f3 | sed 's/^SIZE=//')"
+  entries="$(echo "$result_line" | cut -d' ' -f4 | sed 's/^ENTRIES=//')"
+  {
+    echo "status=OK"
+    echo "timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    echo "file=${file}"
+    echo "size=${size}"
+    echo "entries=${entries}"
+  } > "$STATUS"
+  echo "[Backup] Verified backup complete: ${file} (${size} bytes, ${entries} TOC entries)"
 else
-  echo "[Backup] ERROR: Backup file corrupted!"
-  rm -f "${BACKUP_DIR}/tradingo-${TIMESTAMP}.sql.gz"
-  exit 1
+  rc=$?
+  {
+    echo "status=FAILED"
+    echo "timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    echo "file=-"
+    echo "size=0"
+    echo "entries=0"
+  } > "$STATUS"
+  echo "[Backup] ERROR: backup FAILED — see ${LOG} for details" >&2
+  exit "$rc"
 fi
 
-# Rotate old backups (keep last N days)
-find "$BACKUP_DIR" -name "tradingo-*.sql.gz" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
+# Retention: keep the last RETENTION_DAYS days of local backups.
+# tradingo-*.dump covers both scheduled (tradingo-*) and pre-migration
+# (tradingo-pre-migration-*) artifacts; legacy .sql.gz keeps its own glob.
+find "$BACKUP_DIR" -maxdepth 1 -type f -name "tradingo-*.dump" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
+find "$BACKUP_DIR" -maxdepth 1 -type f -name "tradingo-*.sql.gz" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
 
-echo "[Backup] Retention: keeping backups from last ${RETENTION_DAYS} days"
+echo "[Backup] Retention: keeping backups from the last ${RETENTION_DAYS} days"
 echo "[Backup] Done"

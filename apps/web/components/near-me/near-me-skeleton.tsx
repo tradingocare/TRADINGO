@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -6,7 +6,7 @@ export function NearMeSkeleton() {
   return (
     <div className="space-y-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex gap-4 rounded-xl border border-border bg-surface p-4 dark:border-dark-border dark:bg-dark-surface">
+        <div key={i} className="flex gap-4 rounded-xl border border-border bg-surface p-4">
           <Skeleton className="h-24 w-24 flex-shrink-0 rounded-lg" />
           <div className="flex-1 space-y-2">
             <div className="flex items-start justify-between gap-2">

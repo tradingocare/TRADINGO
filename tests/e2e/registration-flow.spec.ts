@@ -54,8 +54,16 @@ test.describe('Registration Flow', () => {
     const page = await context.newPage();
     const flow = createFlowHelper(page);
     await flow.navigate('/register');
-    const buyerLink = page.locator('a[href*="buyer"], a:has-text("Buyer")').first();
-    const sellerLink = page.locator('a[href*="seller"], a:has-text("Seller")').first();
+    // Canonical route: /register redirects guests to /register/buyer.
+    await expect(page).toHaveURL(/\/register\/buyer/);
+    // Below the xl breakpoint the navbar options live inside the hamburger
+    // menu (the desktop capsule row is intentionally hidden there).
+    const menuButton = page.getByRole('button', { name: 'Open navigation menu' });
+    if (await menuButton.isVisible()) {
+      await menuButton.click();
+    }
+    const buyerLink = page.locator('a[href*="buyer"], a:has-text("Buyer")').filter({ visible: true }).first();
+    const sellerLink = page.locator('a[href*="seller"], a:has-text("Seller")').filter({ visible: true }).first();
     await expect(buyerLink).toBeVisible();
     await expect(sellerLink).toBeVisible();
     await context.close();
@@ -71,7 +79,7 @@ test.describe('Registration Flow', () => {
     await context.close();
   });
 
-  test('should show turnstile widget on register form', async ({ browser }) => {
+  test('should show turnstile widget on login form', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.route('**/turnstile/v0/api.js', (route) =>
@@ -80,7 +88,9 @@ test.describe('Registration Flow', () => {
         body: `window.turnstile = { render: (el, opts) => { const f = document.createElement('iframe'); f.src = 'https://challenges.cloudflare.com/turnstile/v0/mock'; f.width = '300'; f.height = '65'; f.style.border = 'none'; el.appendChild(f); return 'mock-widget'; }, remove: () => {}, reset: () => {} };`,
       }),
     );
-    await page.goto('/register');
+    // Turnstile is rendered on the login surface (TurnstileWidget), not on
+    // /register/* — assert the widget integration where it actually lives.
+    await page.goto('/login');
     await page.waitForLoadState('load');
     await page.waitForTimeout(1000);
     const turnstile = page.locator('iframe[src*="challenges.cloudflare"]').first();

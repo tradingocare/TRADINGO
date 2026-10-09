@@ -244,7 +244,7 @@ export default function TradgoPage() {
         title="Join TRADGO"
         subtitle="Start trading, earn badges, and compete for monthly prizes. Turn every trade into a victory."
         primaryLabel="Get Started Free"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         secondaryLabel="Explore Badges"
         secondaryHref="/tradhexa"
         variant="accent"

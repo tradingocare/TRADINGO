@@ -8,6 +8,7 @@ import { OrderDocumentService } from './order-document.service';
 import { OrderAnalyticsService } from './order-analytics.service';
 import { ChatService } from '../chat/chat.service';
 import { NotificationService } from '../notification/notification.service';
+import { ProductPricingService } from '../products/services/product-pricing.service';
 
 const mockPrisma = () => ({
   company: { findFirst: jest.fn() },
@@ -57,6 +58,7 @@ describe('OrderService', () => {
         { provide: OrderAnalyticsService, useValue: analytics },
         { provide: ChatService, useValue: chatService },
         { provide: NotificationService, useValue: { createWithTemplate: jest.fn().mockResolvedValue(undefined) } },
+        { provide: ProductPricingService, useValue: { resolvePricing: jest.fn() } },
       ],
     }).compile();
 

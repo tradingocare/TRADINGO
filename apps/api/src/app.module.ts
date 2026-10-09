@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard, ThrottlerStorage, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { BullModule } from '@nestjs/bullmq';
 import { logger } from './common/logger';
+import { ProductionConfigValidator } from './common/services/production-config-validator.service';
 
 import {
   appConfig,
@@ -15,6 +16,7 @@ import {
     sentryConfig,
     clickhouseConfig,
     razorpayConfig,
+    malwareConfig,
     validationSchema,
 } from './config/app.config';
 import { sellerConfig } from './config/seller.config';
@@ -102,6 +104,7 @@ import { GocashEcosystemModule } from './modules/gocash-ecosystem/gocash-ecosyst
 import { FounderAiModule } from './modules/founder-ai/founder-ai.module';
 import { TradeservModule } from './modules/tradeserv/tradeserv.module';
 import { MarketplaceCatalogBridgeModule } from './modules/marketplace-catalog-bridge/marketplace-catalog-bridge.module';
+import { CategoryMappingModule } from './modules/category-mapping/category-mapping.module';
 import { TradeTalkModule } from './modules/tradetalk/tradetalk.module';
 import { HomepageModule } from './modules/homepage/homepage.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
@@ -128,6 +131,7 @@ import { ExecutiveIntelligenceModule } from './modules/executive-intelligence/ex
 import { CommissionModule } from './modules/commission/commission.module';
 import { RefundModule } from './modules/refund/refund.module';
 import { PayoutModule } from './modules/payout/payout.module';
+import { RegistrationFormsModule } from './modules/registration-forms/registration-forms.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -146,6 +150,7 @@ import { AppService } from './app.service';
         sentryConfig,
         clickhouseConfig,
         razorpayConfig,
+        malwareConfig,
         sellerConfig,
       ],
     }),
@@ -255,6 +260,7 @@ import { AppService } from './app.service';
     FounderAiModule,
     TradeservModule,
     MarketplaceCatalogBridgeModule,
+    CategoryMappingModule,
     TradeTalkModule,
     EnterpriseCatalogModule,
     AiOrchestratorModule,
@@ -275,6 +281,7 @@ import { AppService } from './app.service';
     CommissionModule,
     RefundModule,
     PayoutModule,
+    RegistrationFormsModule,
     FeatureFlagModule,
     OnboardingModule,
     ProfileCompletionModule,
@@ -285,6 +292,7 @@ import { AppService } from './app.service';
   controllers: [AppController],
   providers: [
     AppService,
+    ProductionConfigValidator,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
@@ -303,3 +311,4 @@ import { AppService } from './app.service';
   ],
 })
 export class AppModule {}
+

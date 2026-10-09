@@ -18,7 +18,7 @@ const SECTION_CONFIG = [
 ] as const
 
 const CHANGE_ICONS = { up: '↑', down: '↓', stable: '→' } as const
-const CHANGE_COLORS = { up: 'text-emerald-400', down: 'text-red-400', stable: 'text-gray-400' } as const
+const CHANGE_COLORS = { up: 'text-emerald-400', down: 'text-red-400', stable: 'text-text-tertiary' } as const
 
 function RankingCard({ title, icon: Icon, entries, color }: {
   title: string
@@ -29,7 +29,7 @@ function RankingCard({ title, icon: Icon, entries, color }: {
   return (
     <div className={`rounded-lg border border-border bg-surface border-l-4 ${color}`}>
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <Icon className="h-4 w-4 text-gray-400" />
+        <Icon className="h-4 w-4 text-text-tertiary" />
         <h3 className="font-semibold text-text-primary">{title}</h3>
         <span className="ml-auto text-xs text-text-secondary">{entries.length} entries</span>
       </div>

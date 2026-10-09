@@ -149,6 +149,61 @@ export class UserVerificationService {
     return this.maskSensitiveFields(verification);
   }
 
+  /**
+   * P0-1: cross-tenant read eliminated. Non-admin callers may only read their
+   * OWN verification (submittedBy/user matches); any other id resolves to 404.
+   * Admins retain full access.
+   */
+  async findAuthorizedById(id: string, userId: string, role: string) {
+    const verification = await this.prisma.userVerification.findUnique({
+      where: { id },
+      include: {
+        documents: true,
+        submitter: { select: { id: true, email: true, name: true } },
+        reviewer: { select: { id: true, email: true, name: true } },
+        user: { select: { id: true, email: true, name: true } },
+      },
+    });
+    if (!verification) throw new NotFoundException('User verification not found');
+
+    if (role !== Role.SUPER_ADMIN && role !== Role.ADMIN && verification.userId !== userId) {
+      throw new NotFoundException('User verification not found');
+    }
+
+    return this.maskSensitiveFields(verification);
+  }
+
+  /**
+   * P0-1: serves a sensitive document to authorized eyes only. ADMIN/SUPER_ADMIN
+   * or the verification's own user pass; all others 403/404.
+   */
+  async getDocumentForAuthorizedAccess(
+    verificationId: string,
+    documentId: string,
+    userId: string,
+    role: string,
+  ): Promise<{ documentUrl: string }> {
+    const verification = await this.prisma.userVerification.findUnique({
+      where: { id: verificationId },
+      select: { userId: true },
+    });
+    if (!verification) throw new NotFoundException('User verification not found');
+
+    if (role !== Role.SUPER_ADMIN && role !== Role.ADMIN && verification.userId !== userId) {
+      throw new NotFoundException('User verification not found');
+    }
+
+    const document = await this.prisma.userVerificationDocument.findUnique({
+      where: { id: documentId },
+      select: { documentUrl: true, verificationId: true },
+    });
+    if (!document || document.verificationId !== verificationId) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return { documentUrl: document.documentUrl };
+  }
+
   async findAll(query: { status?: string; cursor?: string; limit?: number }) {
     const { status, cursor, limit = 20 } = query;
     const where: Prisma.UserVerificationWhereInput = {};
@@ -181,13 +236,29 @@ export class UserVerificationService {
     return this.maskDocumentUrls(data);
   }
 
+  // P0-1: every sensitive identity/bank/compliance document type in the REAL
+  // DocumentType enum is masked. The previous list used non-existent enum
+  // values ('GST_CERTIFICATE'/'BANK_STATEMENT'), so GST/cheque/bank docs were
+  // never masked. Mirrors the company-verification remediation.
+  private static readonly SENSITIVE_DOC_TYPES = new Set([
+    'PAN',
+    'GST',
+    'AADHAAR',
+    'BUSINESS_REGISTRATION',
+    'CANCELLED_CHEQUE',
+    'BANK_VERIFICATION',
+    'LIABILITY_INSURANCE',
+    'PROFESSIONAL_MEMBERSHIP',
+    'CLIENT_REFERENCE',
+    'EXPERIENCE_LETTER',
+  ]);
+
   private maskDocumentUrls(record: any) {
     if (!record?.documents) return record;
-    const SENSITIVE_TYPES = ['PAN', 'AADHAAR', 'BANK_STATEMENT', 'GST_CERTIFICATE'];
     return {
       ...record,
       documents: record.documents.map((doc: any) => {
-        if (SENSITIVE_TYPES.includes(doc.documentType?.toUpperCase())) {
+        if (UserVerificationService.SENSITIVE_DOC_TYPES.has(doc.documentType?.toUpperCase?.() ?? doc.documentType)) {
           return { ...doc, documentUrl: '[MASKED]' };
         }
         return doc;

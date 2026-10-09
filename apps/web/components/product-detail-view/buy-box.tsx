@@ -8,6 +8,7 @@ import {
   IndianRupee,
   MessageCircle,
   Package,
+  Phone,
   RefreshCw,
   Share2,
   Truck,
@@ -31,9 +32,13 @@ interface BuyBoxProps {
   onBuy: () => void;
   onRFQ: () => void;
   onChat: () => void;
+  onCall: () => void;
   onSave: () => void;
   onCompare: () => void;
   onShare: () => void;
+  /** When true, hides the Offer-Price + GOCASH block (the parent surface
+   * already renders price/GOCASH — avoids a duplicate display). */
+  hideOfferBlock?: boolean;
 }
 
 function IconAction({ icon: Icon, label, active, onClick }: {
@@ -87,9 +92,11 @@ export function BuyBox({
   onBuy,
   onRFQ,
   onChat,
+  onCall,
   onSave,
   onCompare,
   onShare,
+  hideOfferBlock = false,
 }: BuyBoxProps) {
   const { stock, moq, leadTime, unit, mrp, seller } = data;
   const maxSlabPrice = priceSlabs.length ? Math.max(...priceSlabs.map((slab) => slab.price)) : price;
@@ -100,6 +107,7 @@ export function BuyBox({
 
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-lg lg:sticky lg:top-28">
+      {!hideOfferBlock && (
       <div className="rounded-xl border border-accent/25 bg-accent/5 p-4">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">Offer Price</p>
         <div className="mt-1">
@@ -109,6 +117,7 @@ export function BuyBox({
           <ProductHeroGocash price={price} goCashEligible={true} />
         </div>
       </div>
+      )}
 
       <div>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">Order Details</p>
@@ -215,11 +224,12 @@ export function BuyBox({
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-2">
         <IconAction icon={Bookmark} label="Save" active={isWishlisted} onClick={onSave} />
         <IconAction icon={ArrowLeftRight} label="Compare" active={isCompared} onClick={onCompare} />
         <IconAction icon={Share2} label="Share" onClick={onShare} />
         <IconAction icon={MessageCircle} label="Chat" onClick={onChat} />
+        <IconAction icon={Phone} label="Call" onClick={onCall} />
       </div>
     </div>
   );

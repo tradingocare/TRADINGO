@@ -88,7 +88,7 @@ export function ExecutiveDashboardView({ data, insights, loading }: Props) {
           <div className="text-[11px] font-medium text-text-tertiary mb-1">Top Cities</div>
           {data.topCities.map((c, i) => (
             <div key={i} className="flex items-center gap-1.5 text-xs text-text-secondary">
-              <MapPin className="h-3 w-3 text-gray-400" />
+              <MapPin className="h-3 w-3 text-text-tertiary" />
               {c.name} ({c.count})
             </div>
           ))}
@@ -97,7 +97,7 @@ export function ExecutiveDashboardView({ data, insights, loading }: Props) {
           <div className="text-[11px] font-medium text-text-tertiary mb-1">Top Industries</div>
           {data.topIndustries.map((ind, i) => (
             <div key={i} className="flex items-center gap-1.5 text-xs text-text-secondary">
-              <Building2 className="h-3 w-3 text-gray-400" />
+              <Building2 className="h-3 w-3 text-text-tertiary" />
               {ind.name} ({ind.count})
             </div>
           ))}

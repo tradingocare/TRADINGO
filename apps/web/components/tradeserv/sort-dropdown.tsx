@@ -22,10 +22,12 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
   const Icon = current.icon;
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-2">
+    <div className="relative min-w-0">
+      {/* P0-3 Step 10 closure: wraps on narrow viewports so the sort tabs
+          never overflow the page (was a fixed 411px row at 375px). */}
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-text-tertiary">Sort:</span>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {SORT_OPTIONS.map((opt) => {
             const OptIcon = opt.icon;
             return (

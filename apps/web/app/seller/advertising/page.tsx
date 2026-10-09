@@ -25,12 +25,12 @@ const AD_TYPE_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  DRAFT: 'bg-bg-elevated text-gray-400',
+  DRAFT: 'bg-bg-elevated text-text-secondary',
   PENDING_REVIEW: 'bg-yellow-500/20 text-yellow-400',
   ACTIVE: 'bg-green-500/20 text-green-400',
   PAUSED: 'bg-blue-500/20 text-blue-400',
   EXPIRED: 'bg-red-500/20 text-red-400',
-  CANCELLED: 'bg-bg-elevated text-gray-400',
+  CANCELLED: 'bg-bg-elevated text-text-secondary',
   REJECTED: 'bg-red-500/20 text-red-400',
   COMPLETED: 'bg-purple-500/20 text-purple-400',
 };

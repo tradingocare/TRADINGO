@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { DashboardPageHeader } from '@/components/dashboard';
@@ -70,7 +70,7 @@ export default function FeedbackDashboardPage() {
       <DashboardPageHeader
         title="Beta Feedback"
         actions={
-          <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text-primary hover:bg-accent dark:border-dark-border dark:bg-dark-surface dark:text-dark-text-primary">
+          <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text-primary hover:bg-accent">
             <Download className="h-4 w-4" /> Export CSV
           </button>
         }
@@ -83,7 +83,7 @@ export default function FeedbackDashboardPage() {
         <StatCard label="NPS Responses" value={String(stats.nps)} icon={Star} />
         <StatCard
           label="NPS Score"
-          value={npsScores.length ? String(npsScore) : '—'}
+          value={npsScores.length ? String(npsScore) : 'â€”'}
           icon={Star}
           changeType={npsScore > 0 ? 'positive' : 'neutral'}
         />
@@ -113,7 +113,7 @@ export default function FeedbackDashboardPage() {
       <Card>
         <CardContent className="pt-6">
           <div className="mb-4 flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Submissions</h3>
+            <h3 className="text-lg font-semibold text-text-primary">Submissions</h3>
             <Select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
@@ -133,10 +133,10 @@ export default function FeedbackDashboardPage() {
           ) : (
             <div className="space-y-2">
               {filtered.map((entry) => (
-                <details key={entry.id} className="rounded-lg border border-border p-3 dark:border-dark-border">
+                <details key={entry.id} className="rounded-lg border border-border p-3">
                   <summary className="flex cursor-pointer items-center gap-3 text-sm">
                     <StatusBadge status={entry.type} />
-                    <span className="flex-1 font-medium text-text-primary dark:text-dark-text-primary">
+                    <span className="flex-1 font-medium text-text-primary">
                       {entry.title || (entry.type === 'NPS' ? `NPS Score: ${entry.score}/10` : '')}
                     </span>
                     {entry.priority && (

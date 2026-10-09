@@ -15,8 +15,16 @@ export class BusinessFlowHelper {
   }
 
   async navigate(path: string): Promise<void> {
-    await this.page.goto(path);
-    await this.page.waitForLoadState('load');
+    // Usable-page readiness instead of the browser "load" event: on WebKit
+    // the document "load" event can stall while subresources are still
+    // pending, even though the application is interactive (uniform 35s
+    // timeouts on mobile while Chromium passes the same flows in seconds).
+    // DOMContentLoaded plus the root-layout landmark proves the navigation
+    // committed and the document is paintable; every caller asserts its own
+    // page-specific content immediately afterwards, so nothing real can be
+    // hidden here. Never wait for "load" in this helper.
+    await this.page.goto(path, { waitUntil: 'domcontentloaded' });
+    await this.page.locator('#main-content').first().waitFor({ state: 'visible', timeout: 20000 });
   }
 
   async fillField(selector: string, value: string): Promise<void> {

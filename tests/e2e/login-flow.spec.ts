@@ -37,10 +37,23 @@ test.describe('Login Flow', () => {
   test('should show error on invalid credentials', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    // Deterministic Turnstile: serve the same proven mock the turnstile test
+    // uses, so the widget does not depend on the live Cloudflare script.
+    await page.route('**/turnstile/v0/api.js', (route) =>
+      route.fulfill({
+        contentType: 'application/javascript',
+        body: `window.turnstile = { render: (el, opts) => { const f = document.createElement('iframe'); f.src = 'https://challenges.cloudflare.com/turnstile/v0/mock'; f.width = '300'; f.height = '65'; f.style.border = 'none'; el.appendChild(f); return 'mock-widget'; }, remove: () => {}, reset: () => {} };`,
+      }),
+    );
     const flow = createFlowHelper(page);
     await flow.navigate('/login');
     await flow.fillField('input[autocomplete="username"]', 'invalid@test.com');
     await flow.fillField('input[autocomplete="current-password"], input[type="password"]', 'wrongpassword');
+    // Readiness: the Turnstile iframe is rendered by a client effect, so its
+    // presence proves hydration completed and the submit handler is attached.
+    // Clicking earlier can dispatch into pre-hydration SSR markup (silent
+    // no-op on slow engines). Same integration signal as the turnstile test.
+    await expect(page.locator('iframe[src*="challenges.cloudflare"]').first()).toBeVisible({ timeout: 10000 });
     await flow.clickButton('Sign In');
     await page.waitForTimeout(2000);
     const errorMsg = page.getByText(/invalid|error|failed|incorrect|not found/i).first();

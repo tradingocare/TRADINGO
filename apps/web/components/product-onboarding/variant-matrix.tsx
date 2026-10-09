@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
@@ -133,10 +133,10 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
         {groups.map((group) => (
           <div
             key={group.customName || group.type}
-            className="rounded-lg border border-border bg-surface p-3 dark:border-dark-border dark:bg-dark-surface"
+            className="rounded-lg border border-border bg-surface p-3"
           >
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
+              <span className="text-xs font-medium text-text-secondary">
                 {groupLabel(group)}
               </span>
               <button
@@ -204,13 +204,13 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
             Add Variant Type
           </Button>
           {showTypeSelector && (
-            <div className="absolute left-0 top-full z-10 mt-1 w-48 rounded-lg border border-border bg-surface p-1 shadow-lg dark:border-dark-border dark:bg-dark-surface">
+            <div className="absolute left-0 top-full z-10 mt-1 w-48 rounded-lg border border-border bg-surface p-1 shadow-lg">
               {VARIANT_TYPE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => addGroup(opt.value as VariantType)}
-                  className="w-full rounded-md px-3 py-1.5 text-left text-sm text-text-primary hover:bg-surface-secondary dark:text-dark-text-primary dark:hover:bg-dark-surface-secondary"
+                  className="w-full rounded-md px-3 py-1.5 text-left text-sm text-text-primary hover:bg-surface-secondary"
                 >
                   {opt.label}
                 </button>
@@ -221,10 +221,10 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
       </div>
 
       {combinations.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-border dark:border-dark-border">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <Table>
             <THead>
-              <TR className="border-b border-border bg-surface-secondary dark:border-dark-border dark:bg-dark-surface-secondary">
+              <TR className="border-b border-border bg-surface-secondary">
                 {groups.map((group) => (
                   <TH
                     key={group.customName || group.type}
@@ -253,7 +253,7 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
                   <TR
                     key={rowKey}
                     className={cn(
-                      'border-b border-border transition-colors last:border-b-0 hover:bg-surface-secondary/50 dark:border-dark-border dark:hover:bg-dark-surface-secondary/50',
+                      'border-b border-border transition-colors last:border-b-0 hover:bg-surface-secondary/50 border-border hover:bg-surface-secondary/50',
                     )}
                   >
                     {groups.map((group) => (
@@ -312,7 +312,7 @@ export function VariantMatrix({ variants, onVariantsChange, basePrice }: Variant
       )}
 
       {groups.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-10 text-center dark:border-dark-border dark:bg-dark-surface-secondary">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-10 text-center">
           <p className="text-sm text-text-tertiary">
             No variant types added yet. Click "Add Variant Type" to create product variations.
           </p>

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -17,38 +17,38 @@ export const metadata: Metadata = {
 
 const rfqFeatures = [
   {
-    icon: '⚡',
+    icon: 'âš¡',
     title: 'Real-Time Quotes',
     description: 'Receive competitive quotes from multiple verified sellers within hours of posting your requirement.',
     href: '/for-buyers',
   },
   {
-    icon: '🛡️',
+    icon: 'ðŸ›¡ï¸',
     title: 'Verified Sellers',
     description: 'All participating sellers are KYC verified with proven track records and ratings.',
     href: '/why-tradingo',
   },
   {
-    icon: '📉',
+    icon: 'ðŸ“‰',
     title: 'Best Price Discovery',
     description: 'Let sellers compete for your business. Get the best market price through competitive bidding.',
     href: '/for-buyers',
     badge: 'Save',
   },
   {
-    icon: '⏰',
+    icon: 'â°',
     title: 'Quick Turnaround',
     description: 'Streamlined process from requirement posting to deal closure in record time.',
     href: '/for-buyers',
   },
   {
-    icon: '💬',
+    icon: 'ðŸ’¬',
     title: 'Direct Negotiation',
     description: 'Chat directly with sellers to negotiate terms, samples, and delivery schedules.',
     href: '/for-buyers',
   },
   {
-    icon: '👥',
+    icon: 'ðŸ‘¥',
     title: 'Pan-India Sellers',
     description: 'Access sellers from 500+ cities. Find local suppliers to optimize your logistics.',
     href: '/trading',
@@ -92,9 +92,9 @@ export default function RFQPage() {
                   { label: 'Compare Offers', desc: 'Review quotes, ratings, and terms side-by-side' },
                   { label: 'Trade Safe', desc: 'Escrow-protected payments for zero-risk transactions' },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+                  <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm">
                     <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">{item.label}</p>
-                    <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">{item.desc}</p>
+                    <p className="mt-2 text-sm text-text-secondary">{item.desc}</p>
                   </div>
                 ))}
               </div>
@@ -105,11 +105,11 @@ export default function RFQPage() {
 
       <Separator />
 
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="RFQ Process Flow"
-            subtitle="From posting to delivery — a seamless five-step process."
+            subtitle="From posting to delivery â€” a seamless five-step process."
           />
           <div className="mx-auto max-w-2xl">
             <Timeline steps={rfqFlow} />
@@ -131,7 +131,7 @@ export default function RFQPage() {
 
       <Separator />
 
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <SectionHeader
             title="RFQ Marketplace Stats"

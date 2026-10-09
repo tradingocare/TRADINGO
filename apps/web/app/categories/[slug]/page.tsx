@@ -4,23 +4,81 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronRight, Package } from 'lucide-react';
 import { getProducts } from '@/lib/api/products';
-import type { Product } from '@/lib/api/types';
-import { ProductCard } from '@/components/product/product-card';
-import { fromBasicProduct } from '@/components/product/card-converters';
-import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
+import { getCategory } from '@/lib/api/categories';
+import { getCatalogCategoryBySlug } from '@/lib/api/enterprise-catalog';
+import { buildSelfCanonical, ROBOTS_INDEX_FOLLOW } from '@/lib/seo/seo-policy';
 
+/**
+ * PHASE 2-B §6 — category metadata from the authoritative catalog source.
+ * Lookup chain (first non-empty wins, never breaks the route):
+ *   1. CatalogCategory authority (GET .../taxonomy/categories/slug/:slug):
+ *      seoTitle / seoDescription used verbatim when non-empty.
+ *   2. Legacy Category record (same URL slug namespace): seoTitle /
+ *      seoDescription when non-empty.
+ *   3. Deterministic title-cased fallback (previous behavior, preserved).
+ * Self-canonical always. Listing behavior, UX, and breadcrumbs untouched.
+ */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const categoryName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  return {
+  const canonical = buildSelfCanonical(`https://tradingo.in/categories/${slug}`, {});
+  const fallback = {
     title: `${categoryName} - Browse Products`,
     description: `Explore ${categoryName} products on TRADINGO TEM E-Marketplace. Find quality suppliers and competitive prices.`,
     openGraph: {
       title: `${categoryName} | TRADINGO`,
       description: `Browse ${categoryName} products from verified sellers.`,
     },
+    robots: ROBOTS_INDEX_FOLLOW,
+    alternates: { canonical },
   };
+  // Tier 1 — canonical catalog authority.
+  try {
+    const authority = await getCatalogCategoryBySlug(slug).catch(() => null);
+    const seoTitle = authority?.seoTitle?.trim();
+    const seoDescription = authority?.seoDescription?.trim();
+    if (seoTitle || seoDescription) {
+      const displayName = authority?.name?.trim() || categoryName;
+      return {
+        title: seoTitle || `${displayName} - Browse Products`,
+        description: seoDescription || fallback.description,
+        openGraph: {
+          title: seoTitle || `${displayName} | TRADINGO`,
+          description: seoDescription || fallback.openGraph.description,
+        },
+        robots: ROBOTS_INDEX_FOLLOW,
+        alternates: { canonical },
+      };
+    }
+  } catch {
+    // fall through — never break the route on metadata lookup failure
+  }
+  // Tier 2 — legacy record in this route's slug namespace.
+  try {
+    const record = await getCategory(slug).catch(() => null);
+    const seoTitle = record?.seoTitle?.trim();
+    const seoDescription = record?.seoDescription?.trim();
+    if (seoTitle || seoDescription) {
+      return {
+        title: seoTitle || `${categoryName} - Browse Products`,
+        description: seoDescription || fallback.description,
+        openGraph: {
+          title: seoTitle || `${categoryName} | TRADINGO`,
+          description: seoDescription || fallback.openGraph.description,
+        },
+        robots: ROBOTS_INDEX_FOLLOW,
+        alternates: { canonical },
+      };
+    }
+  } catch {
+    // fall through to the previous title-cased metadata
+  }
+  return fallback;
 }
+import type { Product } from '@/lib/api/types';
+import { ProductCard } from '@/components/product/product-card';
+import { fromBasicProduct } from '@/components/product/card-converters';
+import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 
 const shimmer = 'relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent'
 
@@ -66,9 +124,28 @@ async function CategoryContent({ slug }: { slug: string }) {
   try {
     const result = await getProducts({ category: slug, limit: 50 });
     products = result.data;
-    total = result.total;
+    // The products API returns a cursor envelope { data, meta: { total } } —
+    // the count lives under meta, not top-level. Fall back to the rendered
+    // row count if the envelope ever lacks it.
+    total = (result as unknown as { meta?: { total?: number } }).meta?.total ?? products.length;
   } catch {
     notFound();
+  }
+
+  // PHASE 2-B §10 — Category → Subcategory internal links (data-backed only).
+  // Subcategories come from the canonical catalog authority; every chip links
+  // to a real subcategory route. Fail-soft: the strip hides if the authority
+  // lookup fails — the product listing below is unaffected.
+  let subcategoryLinks: Array<{ slug: string; name: string }> = [];
+  try {
+    const authority = await getCatalogCategoryBySlug(slug).catch(() => null);
+    if (authority && Array.isArray(authority.subcategories)) {
+      subcategoryLinks = authority.subcategories
+        .filter((s) => s && s.slug && s.name)
+        .map((s) => ({ slug: s.slug, name: s.name }));
+    }
+  } catch {
+    subcategoryLinks = [];
   }
 
   const breadcrumbJsonLd = {
@@ -109,6 +186,19 @@ async function CategoryContent({ slug }: { slug: string }) {
                   {total} product{total !== 1 ? 's' : ''} available
                 </p>
               </div>
+              {subcategoryLinks.length > 0 && (
+                <nav aria-label="Subcategories" className="mt-6 flex flex-wrap gap-2">
+                  {subcategoryLinks.map((sub) => (
+                    <Link
+                      key={sub.slug}
+                      href={`/categories/${slug}/${sub.slug}`}
+                      className="rounded-full border border-border bg-surface px-4 py-1.5 text-sm text-text-secondary transition-colors hover:border-accent hover:text-accent"
+                    >
+                      {sub.name}
+                    </Link>
+                  ))}
+                </nav>
+              )}
             </div>
           </section>
 

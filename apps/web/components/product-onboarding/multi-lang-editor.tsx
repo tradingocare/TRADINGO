@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Plus, X, Languages, Star } from 'lucide-react';
@@ -78,13 +78,13 @@ export function MultiLangEditor({ entries, onChange, primaryName }: MultiLangEdi
               Add Language
             </Button>
             {showSelector && (
-              <div className="absolute right-0 top-full z-10 mt-1 max-h-60 w-44 overflow-y-auto rounded-lg border border-border bg-surface p-1 shadow-lg dark:border-dark-border dark:bg-dark-surface">
+              <div className="absolute right-0 top-full z-10 mt-1 max-h-60 w-44 overflow-y-auto rounded-lg border border-border bg-surface p-1 shadow-lg">
                 {available.map((lang) => (
                   <button
                     key={lang.locale}
                     type="button"
                     onClick={() => addLanguage(lang.locale)}
-                    className="w-full rounded-md px-3 py-1.5 text-left text-sm text-text-primary hover:bg-surface-secondary dark:text-dark-text-primary dark:hover:bg-dark-surface-secondary"
+                    className="w-full rounded-md px-3 py-1.5 text-left text-sm text-text-primary hover:bg-surface-secondary"
                   >
                     {lang.name}
                   </button>
@@ -96,7 +96,7 @@ export function MultiLangEditor({ entries, onChange, primaryName }: MultiLangEdi
       </div>
 
       {entries.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-10 text-center dark:border-dark-border dark:bg-dark-surface-secondary">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-10 text-center">
           <Languages className="mb-2 h-8 w-8 text-text-tertiary" />
           <p className="text-sm text-text-tertiary">
             No languages added yet. Add regional language descriptions to reach more buyers.
@@ -114,12 +114,12 @@ export function MultiLangEditor({ entries, onChange, primaryName }: MultiLangEdi
                 'rounded-xl border p-5 transition-all',
                 entry.isPrimary
                   ? 'border-primary-300 bg-primary-500/5 dark:border-primary-700 dark:bg-primary-500/10'
-                  : 'border-border bg-surface dark:border-dark-border dark:bg-dark-surface',
+                  : 'border-border bg-surface border-border bg-surface',
               )}
             >
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+                  <span className="text-sm font-semibold text-text-primary">
                     {langName}
                   </span>
                   {entry.isPrimary && (
@@ -132,7 +132,7 @@ export function MultiLangEditor({ entries, onChange, primaryName }: MultiLangEdi
                     <button
                       type="button"
                       onClick={() => setPrimary(entry.locale)}
-                      className="rounded px-1.5 py-0.5 text-[10px] text-text-tertiary hover:bg-surface-secondary hover:text-text-primary dark:hover:bg-dark-surface-secondary"
+                      className="rounded px-1.5 py-0.5 text-[10px] text-text-tertiary hover:bg-surface-secondary hover:text-text-primary"
                     >
                       Set as primary
                     </button>

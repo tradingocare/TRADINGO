@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PutObjectCommandInput, GetObjectCommand } from '@aws-sdk/client-s3';
+import { ClamAvService } from '../malware/clamav.service';
 
 interface UploadResult {
   url: string;
@@ -16,7 +17,10 @@ export class StorageService {
   private readonly cloudfrontDomain: string;
   private readonly logger = new Logger(StorageService.name);
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly clamavService: ClamAvService,
+  ) {
     this.s3 = new S3Client({
       region: this.configService.get<string>('aws.region'),
       credentials: {
@@ -43,6 +47,23 @@ export class StorageService {
     mimeType: string,
     isPublic: boolean = false,
   ): Promise<UploadResult> {
+    // Synchronous ClamAV scan BEFORE S3 upload � fail-closed on malware
+    let scanResult;
+    try {
+      scanResult = await this.clamavService.scanBuffer(buffer);
+    } catch (err) {
+      this.logger.error(`Malware scan failed for key ${key}: ${err.message}`);
+      // Fail-closed: reject upload if scan cannot complete
+      throw new InternalServerErrorException('File upload temporarily unavailable � security scan failed');
+    }
+
+    if (!scanResult.clean) {
+      this.logger.warn(`Malware detected in file ${key}: ${scanResult.signatures.join(', ')}`);
+      throw new BadRequestException(
+        `File rejected: malware detected (${scanResult.signatures.join(', ')})`,
+      );
+    }
+
     const command: PutObjectCommandInput = {
       Bucket: this.bucket,
       Key: key,
@@ -77,5 +98,25 @@ export class StorageService {
     });
 
     return getSignedUrl(this.s3, command, { expiresIn });
+  }
+
+  /**
+   * P0-1: extracts the S3 object key from a canonical direct-S3 URL
+   * (https://{bucket}.s3.{region}.amazonaws.com/{key}) so verification
+   * document access can be served through short-lived presigned URLs.
+   * Returns null for any other shape (external/legacy/CDN URLs) — callers
+   * must then fall back to the stored reference for authorized eyes only.
+   */
+  extractKeyFromUrl(url: string): string | null {
+    if (!url || typeof url !== 'string') return null;
+    try {
+      const parsed = new URL(url);
+      const isDirectS3Host = /^([^.]+)\.s3[.-][^.]+\.amazonaws\.com$/.test(parsed.hostname);
+      if (!isDirectS3Host) return null;
+      const key = parsed.pathname.replace(/^\//, '');
+      return key || null;
+    } catch {
+      return null;
+    }
   }
 }

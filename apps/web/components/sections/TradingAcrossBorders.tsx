@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, ChevronRight, ShieldCheck, Handshake, Zap } from 'lucide-react';
 
@@ -50,10 +51,13 @@ export default function TradingAcrossBorders() {
           className="mx-auto max-w-[1600px] text-center"
         >
           <div className="glass-panel-prism px-5 py-6 sm:px-8 sm:py-8 lg:px-12 mb-8">
-            <img
+            <Image
               src="/logo/trdn5.png"
               alt="TRADINGO"
-              className="mx-auto h-20 w-auto opacity-90 sm:h-24 drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+              width={216}
+              height={144}
+              loading="lazy"
+              className="mx-auto opacity-90 drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]"
             />
 
             <div className="relative z-10 mt-5">

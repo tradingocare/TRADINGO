@@ -149,4 +149,98 @@ describe('EmailProcessor', () => {
       expect(result).toBeUndefined();
     });
   });
+
+  describe('resend delivery-error handling (F-3)', () => {
+    const resendSend = (): jest.Mock =>
+      ((Resend as unknown as jest.Mock).mock.results[0].value.emails.send as jest.Mock);
+
+    it('rejects delivery when Resend returns an error object', async () => {
+      processor = await buildProcessor({ EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 're_test_key' });
+      resendSend().mockResolvedValueOnce({ data: null, error: { message: 'Invalid API key', statusCode: 401, name: 'invalid_api_key' } });
+
+      const job = {
+        id: 'job-err',
+        data: { to: 'test@test.com', subject: 'Reset', template: 'password-reset', context: { name: 'Test', otp: '123456' }, type: EmailJobTypes.SEND_PASSWORD_RESET },
+      };
+      await expect(processor.process(job as any)).rejects.toThrow('Resend delivery failed');
+    });
+
+    it('still delivers when Resend returns success (error: null)', async () => {
+      processor = await buildProcessor({ EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 're_test_key' });
+      resendSend().mockResolvedValueOnce({ data: { id: 'email_ok' }, error: null });
+
+      const job = {
+        id: 'job-ok',
+        data: { to: 'test@test.com', subject: 'Hi', template: 'notification', context: { name: 'Test' }, type: EmailJobTypes.SEND_NOTIFICATION },
+      };
+      await expect(processor.process(job as any)).resolves.toBeUndefined();
+    });
+
+    it('propagates thrown provider errors through the job failure path', async () => {
+      processor = await buildProcessor({ EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 're_test_key' });
+      resendSend().mockRejectedValueOnce(new Error('network down'));
+
+      const job = {
+        id: 'job-throw',
+        data: { to: 'test@test.com', subject: 'Hi', template: 'notification', context: { name: 'Test' }, type: EmailJobTypes.SEND_NOTIFICATION },
+      };
+      await expect(processor.process(job as any)).rejects.toThrow('network down');
+    });
+
+    it('keeps SES provider behavior unchanged (send called, no resend branch)', async () => {
+      processor = await buildProcessor({ 'aws.accessKeyId': 'AKIA_TEST', 'aws.secretAccessKey': 'secret' });
+
+      const job = {
+        id: 'job-ses',
+        data: { to: 'test@test.com', subject: 'Hi', template: 'notification', context: { name: 'Test' }, type: EmailJobTypes.SEND_NOTIFICATION },
+      };
+      await expect(processor.process(job as any)).resolves.toBeUndefined();
+      expect(SendEmailCommand).toHaveBeenCalled();
+    });
+  });
+
+  describe('Sentry OTP redaction (F-5)', () => {
+    it('redacts OTP from Sentry extras on email job failure', async () => {
+      const sentrySpy = jest.spyOn(require('@sentry/nestjs'), 'captureException').mockImplementation(() => 'event-id');
+      try {
+        processor = await buildProcessor({ EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 're_test_key' });
+
+        const job = {
+          id: 'job-sentry',
+          data: { to: 'test@test.com', subject: 'Login', template: 'otp-login', context: { name: 'Test', otp: '987654' }, type: EmailJobTypes.SEND_NOTIFICATION },
+        };
+        processor.onFailed(job as any, new Error('Resend delivery failed: internal_server_error'));
+
+        expect(sentrySpy).toHaveBeenCalled();
+        const extra = (sentrySpy.mock.calls[0][1] as any)?.extra;
+        expect(JSON.stringify(extra)).not.toContain('987654');
+        expect(extra?.data?.context?.otp).toBe('[REDACTED]');
+        // Unrelated diagnostic metadata is preserved.
+        expect(extra?.data?.to).toBe('test@test.com');
+        expect(extra?.jobId).toBe('job-sentry');
+      } finally {
+        sentrySpy.mockRestore();
+      }
+    });
+
+    it('redacts verification tokens from Sentry extras', async () => {
+      const sentrySpy = jest.spyOn(require('@sentry/nestjs'), 'captureException').mockImplementation(() => 'event-id');
+      try {
+        processor = await buildProcessor({ EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 're_test_key' });
+
+        const job = {
+          id: 'job-vt',
+          data: { to: 'test@test.com', subject: 'Verify', template: 'welcome', context: { name: 'Test', verificationToken: 'secret-token-abc', verificationUrl: 'http://x/y' }, type: EmailJobTypes.SEND_WELCOME_EMAIL },
+        };
+        processor.onFailed(job as any, new Error('provider down'));
+
+        const extra = (sentrySpy.mock.calls[0][1] as any)?.extra;
+        expect(JSON.stringify(extra)).not.toContain('secret-token-abc');
+        expect(extra?.data?.context?.verificationToken).toBe('[REDACTED]');
+        expect(extra?.data?.context?.name).toBe('Test');
+      } finally {
+        sentrySpy.mockRestore();
+      }
+    });
+  });
 });

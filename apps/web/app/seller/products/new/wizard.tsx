@@ -19,7 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { BrandSelect } from '@/components/enterprise-catalog/brand-select';
-import { CanonicalTaxonomyPicker, EMPTY_CANONICAL_SELECTION, type CanonicalTripleSelection } from '@/components/taxonomy/canonical-taxonomy-picker';
+import { CanonicalTaxonomyPicker, type CanonicalTripleSelection } from '@/components/taxonomy/canonical-taxonomy-picker';
 import { marketplaceCatalogBridgeApi } from '@/lib/api/marketplace-catalog-bridge';
 import { apiClient } from '@/lib/api-client';
 import { WIZARD_STEPS, type ProductDraft, type AttributeTemplate, type ProductCompletenessScore, type ProductDraftSpec, type ProductDraftVariant, type ProductDraftMedia, type ProductDraftAttachment, type ProductDraftCertification, type ProductDraftMultiLangDesc, type ProductDraftPriceSlab, type AttributeTemplateField } from '@/lib/product-onboarding/types';
@@ -65,13 +65,21 @@ export function NewProductWizard() {
   const [formState, setFormState] = useState<FormState>({ values: {}, touched: {}, errors: {} });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
+  // Phase 12 Tick/Change (FD-TAX-02): AI category suggestion rendered for
+  // explicit Confirm — NEVER auto-filled. Dismissal keeps manual selection.
+  // P0-2: the suggestion carries the FULL canonical triple; Confirm
+  // persists all three IDs (never just categoryId).
+  const [categorySuggestion, setCategorySuggestion] = useState<{
+    categoryId: string | null;
+    subcategoryId: string | null;
+    catalogItemId: string | null;
+    label: string;
+    confidence: number;
+    band: 'HIGH' | 'MEDIUM' | 'LOW';
+    reasons: string[];
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [completeness, setCompleteness] = useState<ProductCompletenessScore | null>(null);
-  // F-07: explicit cascade pick (IDs drive the selection; the legacy
-  // categoryId below follows via new-to-old resolve so templates,
-  // validation, and the draft flow keep working unchanged).
-  const [cascadeTriple, setCascadeTriple] = useState<CanonicalTripleSelection>({ ...EMPTY_CANONICAL_SELECTION });
-  const cascadeSeededForRef = useRef<string | null>(null);
   const [specs, setSpecs] = useState<ProductDraftSpec[]>([]);
   const [variants, setVariants] = useState<ProductDraftVariant[]>([]);
   const [media, setMedia] = useState<ProductDraftMedia[]>([]);
@@ -110,44 +118,6 @@ export function NewProductWizard() {
     }
   }, [showToast, router]);
 
-  const handleCascadePick = async (sel: CanonicalTripleSelection) => {
-    // F-07: explicit cascade pick wins; the legacy categoryId (templates,
-    // validation, draft persistence) follows through the bridge so the rest
-    // of the wizard behaves exactly as with a manual legacy pick.
-    setCascadeTriple(sel);
-    if (!sel.categoryId) {
-      handleFieldChange('categoryId', '');
-      return;
-    }
-    try {
-      const resolved = await marketplaceCatalogBridgeApi.batchResolveNewToOld([sel.categoryId]);
-      handleFieldChange('categoryId', resolved?.resolved?.[0]?.targetId || '');
-    } catch {
-      handleFieldChange('categoryId', '');
-    }
-  };
-
-  // Best-effort draft restore: seed the cascade display from a saved legacy
-  // categoryId. Silent no-op when unresolvable — the seller simply re-picks.
-  useEffect(() => {
-    const legacyId = v.categoryId || '';
-    if (!legacyId || cascadeSeededForRef.current === legacyId) return;
-    cascadeSeededForRef.current = legacyId;
-    let cancelled = false;
-    marketplaceCatalogBridgeApi.batchResolveOldToNew([legacyId]).then((res) => {
-      if (cancelled) return;
-      const hit = res?.resolved?.[0];
-      if (hit?.targetId) {
-        setCascadeTriple((prev) => prev.categoryId ? prev : {
-          ...EMPTY_CANONICAL_SELECTION,
-          categoryId: hit.targetId,
-          categoryName: hit.targetName || '',
-        });
-      }
-    }).catch(() => { /* picker starts empty; manual pick still works */ });
-    return () => { cancelled = true; };
-  }, [v.categoryId]);
-
   useEffect(() => {
     (async () => {
       if (draftId) await loadDraft(draftId);
@@ -185,6 +155,48 @@ export function NewProductWizard() {
     return () => window.removeEventListener('wizard-ai-fill', handler)
   }, [draft?.id, v.name, v.shortDescription, v.description])
 
+  useEffect(() => {
+    const suggestHandler = (e: Event) => {
+      const data = (e as CustomEvent).detail as any
+      if (!data || typeof data !== 'object') return
+      // Only render actionable suggestions (IDs present). Anything else
+      // keeps the manual dropdown as the single source of truth.
+      if (!data.categoryId) return
+      const label = [data.categoryName, data.subcategoryName].filter(Boolean).join(' / ') || 'Suggested category'
+      setCategorySuggestion({
+        categoryId: data.categoryId,
+        subcategoryId: data.subcategoryId ?? null,
+        catalogItemId: data.catalogItemId ?? null,
+        label,
+        confidence: typeof data.confidence === 'number' ? data.confidence : 0,
+        band: data.band === 'HIGH' || data.band === 'MEDIUM' ? data.band : 'LOW',
+        reasons: Array.isArray(data.reasons) ? data.reasons.slice(0, 2) : [],
+      })
+    }
+    window.addEventListener('wizard-ai-suggest-category', suggestHandler)
+    return () => window.removeEventListener('wizard-ai-suggest-category', suggestHandler)
+  }, [])
+
+  const handleCascadePick = async (sel: CanonicalTripleSelection) => {
+    // F-07: explicit cascade pick is authoritative — it wins over any AI
+    // suggestion and writes the full canonical triple. The legacy categoryId
+    // (attribute templates + step validation) follows via new-to-old resolve.
+    setCategorySuggestion(null);
+    handleFieldChange('catalogCategoryId', sel.categoryId);
+    handleFieldChange('catalogSubcategoryId', sel.subcategoryId);
+    handleFieldChange('catalogItemId', sel.catalogItemId);
+    if (!sel.categoryId) {
+      handleFieldChange('categoryId', '');
+      return;
+    }
+    try {
+      const resolved = await marketplaceCatalogBridgeApi.batchResolveNewToOld([sel.categoryId]);
+      handleFieldChange('categoryId', resolved?.resolved?.[0]?.targetId || '');
+    } catch {
+      handleFieldChange('categoryId', '');
+    }
+  };
+
   const handleCategoryChange = async (categoryId: string) => {
     try {
       const tpl = await getTemplateForCategory(categoryId);
@@ -203,6 +215,23 @@ export function NewProductWizard() {
       errors: prev.errors,
     }));
     if (key === 'categoryId' && value) handleCategoryChange(value);
+    // P0-3 Step 7 (reclassification): a significant identity change after a
+    // confirmed classification invalidates the canonical triple — the old
+    // taxonomy was derived from the previous name and must never silently
+    // persist as stale lineage. The seller re-classifies from the new
+    // identity (AI Suggest → Confirm, or backend deterministic classify
+    // at submit re-resolves it if left empty).
+    if (
+      (key === 'name' || key === 'shortDescription') &&
+      value &&
+      (formState.values.catalogItemId || formState.values.catalogCategoryId)
+    ) {
+      setFormState((prev) => ({
+        values: { ...prev.values, catalogCategoryId: null, catalogSubcategoryId: null, catalogItemId: null },
+        touched: prev.touched,
+        errors: prev.errors,
+      }));
+    }
     setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
   };
 
@@ -324,9 +353,54 @@ export function NewProductWizard() {
                     </div>
                     <div>
                       <Label>Category *</Label>
+                      {categorySuggestion && categorySuggestion.categoryId !== v.categoryId && (
+                        <div className="mb-2 rounded-lg border border-accent-500/30 bg-accent-500/[0.05] px-3 py-2.5" role="status" aria-label="AI category suggestion">
+                          <p className="text-xs font-medium text-text-primary">
+                            Suggested: {categorySuggestion.label}
+                            <span className="ml-2 text-[10px] text-text-tertiary">
+                              {Math.round(categorySuggestion.confidence * 100)}% · {categorySuggestion.band}
+                            </span>
+                          </p>
+                          {categorySuggestion.reasons.length > 0 && (
+                            <p className="mt-0.5 text-[11px] text-text-tertiary">{categorySuggestion.reasons[0]}</p>
+                          )}
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // P0-2: Confirm persists the FULL canonical triple.
+                                // Never writes canonical IDs into the legacy
+                                // categoryId field (different ID pool — the
+                                // backend bridges the legacy linkage at submit).
+                                handleFieldChange('catalogCategoryId', categorySuggestion.categoryId);
+                                handleFieldChange('catalogSubcategoryId', categorySuggestion.subcategoryId);
+                                handleFieldChange('catalogItemId', categorySuggestion.catalogItemId);
+                                setCategorySuggestion(null);
+                              }}
+                              className="rounded-lg bg-accent-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-accent-500/80"
+                            >
+                              ✓ Use this category
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCategorySuggestion(null)}
+                              className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary"
+                            >
+                              Change manually
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       <CanonicalTaxonomyPicker
                         idPrefix="wizard-category"
-                        value={cascadeTriple}
+                        value={{
+                          categoryId: v.catalogCategoryId || null,
+                          categoryName: '',
+                          subcategoryId: v.catalogSubcategoryId || null,
+                          subcategoryName: '',
+                          catalogItemId: v.catalogItemId || null,
+                          catalogItemName: '',
+                        }}
                         onChange={handleCascadePick}
                       />
                       {errors.categoryId && <p className="mt-1 text-xs text-red-500">{errors.categoryId[0]}</p>}
@@ -371,7 +445,7 @@ export function NewProductWizard() {
                 </CardContent></Card>
 
                 <Card><CardContent className="space-y-4 pt-6">
-                  <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Logistics & Reach</h3>
+                  <h3 className="text-sm font-semibold text-text-primary">Logistics & Reach</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <Label>Geographic Reach</Label>
@@ -413,7 +487,7 @@ export function NewProductWizard() {
             {currentStep === 3 && (
               <div className="space-y-6">
                 <Card><CardContent className="pt-6">
-                  <h3 className="mb-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Product Images & Videos</h3>
+                  <h3 className="mb-4 text-sm font-semibold text-text-primary">Product Images & Videos</h3>
                   <FileUploadZone accept="image/*,video/*" multiple maxFiles={10} maxSize={10} files={media.map(m => new File([], m.url.split('/').pop() || 'file'))} onFilesChange={() => {}} type="media" />
                   {media.length > 0 && (
                     <div className="mt-4 grid grid-cols-4 gap-2">
@@ -428,7 +502,7 @@ export function NewProductWizard() {
                   )}
                 </CardContent></Card>
                 <Card><CardContent className="pt-6">
-                  <h3 className="mb-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Attachments (PDFs, Datasheets, Brochures)</h3>
+                  <h3 className="mb-4 text-sm font-semibold text-text-primary">Attachments (PDFs, Datasheets, Brochures)</h3>
                   <FileUploadZone accept=".pdf,.doc,.docx,.xls,.xlsx" multiple maxFiles={20} maxSize={20} files={[]} onFilesChange={() => {}} type="attachment" />
                   <AttachmentList attachments={attachments} onChange={setAttachments} types={['pdf','brochure','datasheet','msds','other']} />
                 </CardContent></Card>
@@ -453,8 +527,8 @@ export function NewProductWizard() {
 
             {currentStep === 6 && (
               <div className="space-y-6">
-                <Card><CardContent className="pt-6"><h3 className="mb-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Certifications</h3><CertificationEditor certifications={certifications} onChange={setCertifications} /></CardContent></Card>
-                <Card><CardContent className="pt-6"><h3 className="mb-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Multi-Language Descriptions</h3><MultiLangEditor entries={multiLangDesc} onChange={setMultiLangDesc} primaryName={v.name || ''} /></CardContent></Card>
+                <Card><CardContent className="pt-6"><h3 className="mb-4 text-sm font-semibold text-text-primary">Certifications</h3><CertificationEditor certifications={certifications} onChange={setCertifications} /></CardContent></Card>
+                <Card><CardContent className="pt-6"><h3 className="mb-4 text-sm font-semibold text-text-primary">Multi-Language Descriptions</h3><MultiLangEditor entries={multiLangDesc} onChange={setMultiLangDesc} primaryName={v.name || ''} /></CardContent></Card>
                 <WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} />
               </div>
             )}
@@ -462,21 +536,21 @@ export function NewProductWizard() {
             {currentStep === 7 && (
               <div className="space-y-6">
                 <Card><CardContent className="pt-6">
-                  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Completeness Check</h3><div className="flex gap-2"><Button variant="outline" size="sm" onClick={handleRecalculateCompleteness}><Eye className="mr-1.5 h-3.5 w-3.5" /> Refresh</Button><WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} /></div></div>
+                  <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-text-primary">Completeness Check</h3><div className="flex gap-2"><Button variant="outline" size="sm" onClick={handleRecalculateCompleteness}><Eye className="mr-1.5 h-3.5 w-3.5" /> Refresh</Button><WizardCopilot currentStep={currentStep} formValues={v} aiLoading={aiLoading} onGenerate={handleAiGenerate} productId={draftId || undefined} /></div></div>
                   <CompletenessGauge score={completeness} draft={draft} />
                 </CardContent></Card>
 
                 <Card><CardContent className="pt-6">
-                  <h3 className="mb-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Product Summary</h3>
+                  <h3 className="mb-3 text-sm font-semibold text-text-primary">Product Summary</h3>
                   <div className="space-y-2 text-sm">
                     {[{l:'Name',val:v.name},{l:'Category',val:v.categoryId},{l:'Type',val:v.productType},{l:'Specifications',val:`${specs.length} fields`},{l:'Images',val:media.filter(m=>m.type==='IMAGE').length},{l:'Videos',val:media.filter(m=>m.type==='VIDEO').length},{l:'Variants',val:variants.length},{l:'Pricing Slabs',val:priceSlabs.length},{l:'Certifications',val:certifications.length},{l:'Languages',val:multiLangDesc.length>0?`${multiLangDesc.length} languages`:'English only'}].map(({l,val}) => (
-                      <div key={l} className="flex justify-between border-b border-border py-1 dark:border-dark-border last:border-0"><span className="text-text-secondary">{l}</span><span className="font-medium text-text-primary dark:text-dark-text-primary">{String(val ?? '—')}</span></div>
+                      <div key={l} className="flex justify-between border-b border-border py-1 last:border-0"><span className="text-text-secondary">{l}</span><span className="font-medium text-text-primary">{String(val ?? 'â€”')}</span></div>
                     ))}
                   </div>
                 </CardContent></Card>
 
                 <Card><CardContent className="pt-6">
-                  <h3 className="mb-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">AI Quality Assessment</h3>
+                  <h3 className="mb-3 text-sm font-semibold text-text-primary">AI Quality Assessment</h3>
                   <div className="space-y-3">
                     <p className="text-xs text-text-tertiary">Use the AI buttons above to calculate quality score, check for duplicates, generate highlights, or analyze commerce potential.</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -514,15 +588,15 @@ export function NewProductWizard() {
 
         <div className="hidden lg:block">
           <div className="sticky top-24 space-y-4">
-            <Card><CardContent className="pt-6"><h3 className="mb-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Completeness</h3><CompletenessGauge score={completeness} draft={draft} /></CardContent></Card>
+            <Card><CardContent className="pt-6"><h3 className="mb-3 text-sm font-semibold text-text-primary">Completeness</h3><CompletenessGauge score={completeness} draft={draft} /></CardContent></Card>
             <Card><CardContent className="pt-6">
-              <h3 className="mb-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Quick Steps</h3>
+              <h3 className="mb-3 text-sm font-semibold text-text-primary">Quick Steps</h3>
               <ul className="space-y-2">{WIZARD_STEPS.map((s) => {
                 const isActive = s.id === currentStep, isPast = s.id < currentStep;
                 return (
                   <li key={s.id}>
-                    <button onClick={() => handleStepChange(s.id)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${isActive ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/20 dark:text-accent-400' : isPast ? 'text-text-primary hover:bg-surface-secondary dark:text-dark-text-primary dark:hover:bg-dark-surface-secondary' : 'text-text-tertiary'}`}>
-                      {isPast ? <CheckCircle className="h-4 w-4 text-accent-500" /> : <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${isActive ? 'bg-accent-500 text-text-primary' : 'bg-surface-secondary text-text-tertiary dark:bg-dark-surface-secondary'}`}>{s.id}</span>}
+                    <button onClick={() => handleStepChange(s.id)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${isActive ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/20 dark:text-accent-400' : isPast ? 'text-text-primary hover:bg-surface-secondary text-text-primary hover:bg-surface-secondary' : 'text-text-tertiary'}`}>
+                      {isPast ? <CheckCircle className="h-4 w-4 text-accent-500" /> : <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${isActive ? 'bg-accent-500 text-text-primary' : 'bg-surface-secondary text-text-tertiary bg-surface-secondary'}`}>{s.id}</span>}
                       <span className="truncate">{s.title}</span>
                     </button>
                   </li>
@@ -531,8 +605,8 @@ export function NewProductWizard() {
             </CardContent></Card>
             {draft && (
               <Card><CardContent className="pt-6">
-                <h3 className="mb-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Draft Info</h3>
-                <div className="space-y-1 text-xs text-text-secondary dark:text-dark-text-secondary">
+                <h3 className="mb-3 text-sm font-semibold text-text-primary">Draft Info</h3>
+                <div className="space-y-1 text-xs text-text-secondary">
                   <p>ID: {draft.id.slice(0,8)}...</p><p>Status: {draft.status}</p><p>Step: {draft.step}/{draft.totalSteps}</p>
                   <p>Created: {new Date(draft.createdAt).toLocaleDateString('en-IN')}</p>
                   {draft.lastAutoSavedAt && <p>Last auto-save: {new Date(draft.lastAutoSavedAt).toLocaleTimeString('en-IN')}</p>}

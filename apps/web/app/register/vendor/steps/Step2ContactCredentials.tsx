@@ -4,20 +4,20 @@ import { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api/client'
 import type { ContactCredentialsForm } from '@/types/vendor-registration'
 import { isDisposableEmail } from '@/lib/auth/email-security'
+import { validateRegistrationPassword, passwordErrorMessage } from '@/lib/auth/password-policy'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
-import { Select } from '@/components/ui/select'
+import { PromoterDetailsSection } from '@/components/registration/PromoterDetailsSection'
+import { RefinedSection } from '@/components/registration/RefinedSection'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   backgroundColor: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
-const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
-
-const DESIGNATIONS = ['Proprietor', 'Partner', 'Director', 'CEO/MD', 'Manager', 'Authorized Signatory', 'Other']
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }
 
 interface Props {
   data: Partial<ContactCredentialsForm>
@@ -68,14 +68,18 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
   }, [isExisting, existingUser])
 
   const getPasswordStrength = (pw: string): { label: string; color: string; width: string } => {
-    if (pw.length < 8) return { label: 'Weak', color: '#ef4444', width: '25%' }
-    const hasLetters = /[a-zA-Z]/.test(pw)
-    const hasNumbers = /\d/.test(pw)
-    const hasSymbol = /[^a-zA-Z0-9]/.test(pw)
-    const types = [hasLetters, hasNumbers, hasSymbol].filter(Boolean).length
-    if (types === 1) return { label: 'Fair', color: '#f59e0b', width: '50%' }
-    if (pw.length >= 10 && types >= 3) return { label: 'Strong', color: '#22c55e', width: '100%' }
-    return { label: 'Good', color: '#3b82f6', width: '75%' }
+    // Mirrors the backend rule (validateRegistrationPassword): the meter must
+    // not report a backend-rejected password as acceptable (E2E-04).
+    const check = validateRegistrationPassword(pw)
+    if (!pw) return { label: 'Weak', color: '#ef4444', width: '25%' }
+    if (!check.valid) {
+      const passed = 5 - check.missing.length
+      if (passed <= 1) return { label: 'Weak', color: '#ef4444', width: '25%' }
+      if (passed === 2) return { label: 'Fair', color: '#f59e0b', width: '50%' }
+      return { label: 'Good', color: '#3b82f6', width: '75%' }
+    }
+    if (pw.length >= 12) return { label: 'Very Strong', color: '#22c55e', width: '100%' }
+    return { label: 'Strong', color: '#22c55e', width: '100%' }
   }
 
   const strength = getPasswordStrength(password)
@@ -87,12 +91,18 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
     else if (!/^[a-zA-Z\s]+$/.test(ownerName.trim())) e.ownerName = 'Letters and spaces only'
     if (!designation) e.designation = 'Select designation'
     if (!isMobileValid) e.mobileNumber = 'Enter a valid 10-digit mobile (starts 6-9)'
-    if (email && !isEmailValid) e.email = 'Enter a valid email'
-    if (email && isEmailDisposable) e.email = 'Disposable email addresses are not allowed'
-    if (!isEmailValid || !email) e.email = 'Email is required'
-    if (!emailVerified) e.email = 'Email must be verified'
+    // Mutually exclusive email precedence: each address state reports its
+    // most specific message. Sequential overwrites previously collapsed
+    // these (malformed always ended as "required", disposable as
+    // "must be verified"), making specific messages unreachable.
+    if (!email) e.email = 'Email is required'
+    else if (!isEmailValid) e.email = 'Enter a valid email'
+    else if (isEmailDisposable) e.email = 'Disposable email addresses are not allowed'
+    else if (!emailVerified) e.email = 'Email must be verified'
     if (!isExisting) {
-      if (!password || password.length < 8) e.password = 'Minimum 8 characters'
+      const pwCheck = validateRegistrationPassword(password)
+      if (!password) e.password = 'Minimum 8 characters'
+      else if (!pwCheck.valid) e.password = passwordErrorMessage(pwCheck.missing)
       if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
     }
     setErrors(e)
@@ -109,8 +119,15 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
     setEmailOtpError('')
     try {
       await api.post('/auth/send-otp', { type: 'email', value: email })
-    } catch {
-      setEmailOtpError('Failed to send OTP. Please try again.')
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 503) {
+        setEmailOtpError('Email delivery is temporarily unavailable on this server. Please try again later.')
+      } else if (status === 429) {
+        setEmailOtpError('Too many OTP requests. Please wait a minute and try again.')
+      } else {
+        setEmailOtpError('Failed to send OTP. Please try again.')
+      }
     }
   }
 
@@ -136,22 +153,30 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
 
   return (
     <StepCard icon={<span className="text-lg">🔐</span>} title="Contact & Login" subtitle="Your account credentials">
+      <RefinedSection
+        title="Promoter / Owner & Contact"
+        subtitle="Who operates this business and how buyers reach you"
+        helperText="The owner identity is reused across plans and upgrades — it is never re-registered."
+        requiredDone={[ownerName, designation, mobileNumber, email].filter(v => String(v ?? '').trim() !== '').length}
+        requiredTotal={4}
+        validationSummary={Object.values(errors).filter((m): m is string => !!m)}
+      >
       <div className="space-y-5">
-        <FormField label="Owner / Contact Name" required error={touched.ownerName ? errors.ownerName : undefined}>
-          <input className={INPUT_CLASS} style={inputStyle(!!errors.ownerName && touched.ownerName)} placeholder="Full name"
-            value={ownerName} onChange={e => setOwnerName(e.target.value.replace(/[^a-zA-Z\s]/g, ''))} onBlur={() => markTouched('ownerName')} />
-        </FormField>
-
-        <FormField label="Designation" required error={touched.designation ? errors.designation : undefined}>
-          <Select value={designation} onChange={e => { setDesignation(e.target.value); markTouched('designation') }}>
-            <option value="">Select</option>
-            {DESIGNATIONS.map(d => <option key={d} value={d}>{d}</option>)}
-          </Select>
-        </FormField>
+        <PromoterDetailsSection
+          ownerName={ownerName}
+          designation={designation}
+          ownerNameError={errors.ownerName}
+          designationError={errors.designation}
+          touchedOwnerName={!!touched.ownerName}
+          touchedDesignation={!!touched.designation}
+          onOwnerNameChange={setOwnerName}
+          onDesignationChange={(v) => { setDesignation(v); markTouched('designation') }}
+          onBlurField={markTouched}
+        />
 
         <FormField label="Mobile Number" required error={touched.mobileNumber ? errors.mobileNumber : undefined}>
           <div className="flex gap-2">
-            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center px-3 rounded-xl text-text-primary text-sm" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
               +91
             </div>
             <input className={INPUT_CLASS} style={{ ...inputStyle(!!errors.mobileNumber && touched.mobileNumber), flex: 1 }} placeholder="9876543210" maxLength={10}
@@ -162,7 +187,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
 
         <FormField label="Alternate Mobile" error={touched.alternateMobile ? errors.alternateMobile : undefined}>
           <div className="flex gap-2">
-            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>+91</div>
+            <div className="flex items-center px-3 rounded-xl text-text-primary text-sm" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>+91</div>
             <input className={INPUT_CLASS} style={{ ...inputStyle(false), flex: 1 }} placeholder="Optional" maxLength={10}
               value={alternateMobile} onChange={e => setAlternateMobile(e.target.value.replace(/\D/g, '').slice(0, 10))} />
           </div>
@@ -174,7 +199,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
             onBlur={() => markTouched('email')} disabled={emailVerified} readOnly={isExisting} />
           {emailVerified && <p className="text-green-400 text-xs flex items-center gap-1 mt-1">✓ Email Verified</p>}
           {isExisting ? (
-            <p className="text-white/40 text-[10px] mt-1">Using the email of your verified account</p>
+            <p className="text-text-tertiary text-[10px] mt-1">Using the email of your verified account</p>
           ) : (
             <>
               {isEmailValid && isEmailDisposable && <p className="text-red-400 text-[10px] mt-1">Disposable email addresses are not allowed</p>}
@@ -183,16 +208,16 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
               )}
               {showEmailOtp && !emailVerified && (
                 <div className="mt-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
-                  <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to {email}</p>
+                  <p className="text-text-secondary text-xs mb-2">Enter 6-digit OTP sent to {email}</p>
                   <div className="flex gap-2 items-center">
                     <input className={INPUT_CLASS} style={{ ...inputStyle(false), letterSpacing: '0.3em', textAlign: 'center', maxWidth: 160 }} placeholder="000000" maxLength={6}
                       value={emailOtp} onChange={e => { setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setEmailOtpError('') }} />
                     <button type="button" onClick={verifyEmailOtp} className="px-4 py-3 rounded-xl text-xs font-bold hover:opacity-90" style={btnPrimary}>Verify</button>
                   </div>
                   {emailOtpError && <p className="text-red-400 text-[10px] mt-1">{emailOtpError}</p>}
-                  <p className="text-white/30 text-[10px] mt-2">
+                  <p className="text-text-tertiary text-[10px] mt-2">
                     {emailCountdown > 0 ? `Resend OTP in ${emailCountdown}s` : (
-                      <button type="button" onClick={sendEmailOtp} className="underline hover:text-white/60">Resend OTP</button>
+                      <button type="button" onClick={sendEmailOtp} className="underline hover:text-text-secondary">Resend OTP</button>
                     )}
                   </p>
                 </div>
@@ -209,7 +234,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
                   type={showPassword ? 'text' : 'password'} value={password}
                   onChange={e => setPassword(e.target.value)} onBlur={() => markTouched('password')} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs hover:text-white/60">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary text-xs hover:text-text-secondary">
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
               </div>
@@ -237,7 +262,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
         )}
 
         {!isExisting && (
-          <div className="p-3 rounded-xl text-white/50 text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
+          <div className="p-3 rounded-xl text-text-secondary text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
             Your Login ID on TRADINGO will be your PAN Number — entered in Step 3.
           </div>
         )}
@@ -247,6 +272,7 @@ export default function Step2ContactCredentials({ data, onNext, onBack, mode = '
           <button onClick={handleNext} className="flex-1 py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]" style={btnPrimary}>Continue →</button>
         </div>
       </div>
+      </RefinedSection>
     </StepCard>
   )
 }

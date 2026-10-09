@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -92,29 +92,29 @@ export function ClaimProductContent() {
           {results.map((product) => (
             <div
               key={product.id}
-              className="rounded-xl border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md dark:bg-dark-surface dark:border-dark-border"
+              className="rounded-xl border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                 <Package className="h-5 w-5" />
               </div>
-              <h3 className="mt-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+              <h3 className="mt-3 text-sm font-semibold text-text-primary">
                 {product.name}
               </h3>
               {product.category && (
-                <p className="mt-0.5 text-xs text-text-secondary dark:text-dark-text-secondary">
+                <p className="mt-0.5 text-xs text-text-secondary">
                   {product.category.name}
                 </p>
               )}
-              <p className="mt-2 line-clamp-2 text-xs text-text-secondary dark:text-dark-text-secondary">
+              <p className="mt-2 line-clamp-2 text-xs text-text-secondary">
                 {product.shortDescription || product.description || 'No description'}
               </p>
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-text-tertiary dark:text-dark-text-tertiary">
-                  Unit: {product.unit || '—'}
+                <span className="text-xs text-text-tertiary">
+                  Unit: {product.unit || 'â€”'}
                 </span>
                 {(product.priceRangeMin != null || product.priceRangeMax != null) && (
-                  <span className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
-                    {product.currency || 'INR'} {product.priceRangeMin?.toLocaleString('en-IN') ?? '—'} – {product.priceRangeMax?.toLocaleString('en-IN') ?? '—'}
+                  <span className="text-xs font-medium text-text-primary">
+                    {product.currency || 'INR'} {product.priceRangeMin?.toLocaleString('en-IN') ?? 'â€”'} â€“ {product.priceRangeMax?.toLocaleString('en-IN') ?? 'â€”'}
                   </span>
                 )}
               </div>

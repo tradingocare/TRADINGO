@@ -9,14 +9,14 @@ import FormField from '../components/FormField'
 import apiClient from '@/lib/api/client'
 import type { BankDetailsForm } from '@/types/vendor-registration'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   backgroundColor: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
-const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }
 
 interface Props {
   data: Partial<BankDetailsForm>
@@ -41,6 +41,7 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
   const [ifscLoading, setIfscLoading] = useState(false)
   const [ifscError, setIfscError] = useState('')
   const [chequePreview, setChequePreview] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState('')
   const chequeRef = useRef<HTMLInputElement>(null)
 
   const set = useCallback((key: keyof BankDetailsForm, value: unknown) => {
@@ -90,11 +91,17 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
 
   const handleChequeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      set('cancelledChequeImage', file)
-      const url = URL.createObjectURL(file)
-      setChequePreview(url)
-    }
+    if (!file) return
+    setUploadError('')
+    // Same 5MB + image/PDF policy as the PAN/GST document steps — the cheque
+    // must not be the weakest upload surface in the wizard. The backend
+    // re-validates (allowlist + ClamAV); this is early client feedback only.
+    if (file.size > 5 * 1024 * 1024) { setUploadError('Max file size is 5MB'); return }
+    const allowed = ['image/jpeg', 'image/png', 'application/pdf']
+    if (!allowed.includes(file.type)) { setUploadError('JPG, PNG or PDF only'); return }
+    set('cancelledChequeImage', file)
+    const url = URL.createObjectURL(file)
+    setChequePreview(url)
   }
 
   const maskedAccount = (val: string) => {
@@ -142,7 +149,7 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
           style={{ background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.15)' }}
         >
           <Shield size={18} className="text-[#fbbf24] mt-0.5 shrink-0" />
-          <p className="text-white/60 text-xs leading-relaxed">
+          <p className="text-text-secondary text-xs leading-relaxed">
             Your bank account is used for receiving payments via TRADINGO Escrow. 100% secure. ₹0 commission.
           </p>
         </div>
@@ -173,7 +180,7 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
             <button
               type="button"
               onClick={() => setShowAccount(!showAccount)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary transition-colors"
             >
               {showAccount ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -215,7 +222,7 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
                 ...(ifscVerified
                   ? { background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.4)', color: '#4ade80' }
                   : ifscLoading
-                    ? { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.4)' }
+                    ? { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }
                     : { background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24' }),
               }}
             >
@@ -267,22 +274,22 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
                   <div
                     className="w-4 h-4 rounded-full flex items-center justify-center"
                     style={{
-                      border: form.accountType === opt.value ? '2px solid #f59e0b' : '2px solid rgba(255,255,255,0.2)',
+                      border: form.accountType === opt.value ? '2px solid #f59e0b' : '2px solid var(--border-color)',
                     }}
                   >
                     {form.accountType === opt.value && (
                       <div className="w-2 h-2 rounded-full" style={{ background: '#f59e0b' }} />
                     )}
                   </div>
-                  <span className="text-white/80 text-sm font-medium">{opt.label}</span>
+                  <span className="text-text-primary text-sm font-medium">{opt.label}</span>
                 </div>
-                {opt.hint && <p className="text-white/30 text-[10px] ml-6">{opt.hint}</p>}
+                {opt.hint && <p className="text-text-tertiary text-[10px] ml-6">{opt.hint}</p>}
               </button>
             ))}
           </div>
         </FormField>
 
-        <FormField label="Cancelled Cheque" hint="Recommended">
+        <FormField label="Cancelled Cheque" hint="Recommended — JPG, PNG or PDF, max 5MB" error={uploadError || undefined}>
           <div
             onClick={() => chequeRef.current?.click()}
             className="relative flex flex-col items-center justify-center gap-2 rounded-xl p-6 cursor-pointer transition-all duration-200 hover:border-[#f59e0b]/30"
@@ -292,11 +299,11 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
               <img src={chequePreview} alt="Cancelled cheque" className="max-h-24 rounded-lg object-contain" />
             ) : (
               <>
-                <Upload size={20} className="text-white/25" />
-                <p className="text-white/25 text-xs">Upload cancelled cheque image</p>
+                <Upload size={20} className="text-text-muted" />
+                <p className="text-text-tertiary text-xs">Upload cancelled cheque (JPG, PNG or PDF)</p>
               </>
             )}
-            <input ref={chequeRef} type="file" accept="image/*" onChange={handleChequeUpload} className="hidden" />
+            <input ref={chequeRef} type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={handleChequeUpload} className="hidden" />
           </div>
         </FormField>
 
@@ -304,8 +311,8 @@ export default function Step6BankDetails({ data, onNext, onBack }: Props) {
           className="rounded-xl p-4 flex items-start gap-3"
           style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
         >
-          <Shield size={16} className="text-white/20 mt-0.5 shrink-0" />
-          <p className="text-white/35 text-[11px] leading-relaxed">
+          <Shield size={16} className="text-text-muted mt-0.5 shrink-0" />
+          <p className="text-text-tertiary text-[11px] leading-relaxed">
             🔒 Your bank details are encrypted with AES-256. TRADINGO will never share with buyers or third parties.
           </p>
         </div>

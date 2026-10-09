@@ -62,4 +62,70 @@ export class TaxonomyService {
     if (!mapping) throw new NotFoundException('Mapping not found');
     return this.prisma.industryCategoryMapping.delete({ where: { id } });
   }
+
+  // Public catalog category authority (Phase 2-B — SEO foundation).
+  // READ-ONLY single-record lookup by globally-unique slug. Returns ONLY
+  // public-safe fields (no internal/audit data exists on this model beyond
+  // what is selected here). Active-product counts use filtered relation
+  // counts (ACTIVE + not-deleted + live company) in the SAME query — no
+  // extra round-trips, no uncontrolled aggregation. Missing slug →
+  // NotFoundException (callers render 404); inactive records are RETURNED
+  // (callers apply NOINDEX) rather than hidden.
+  async findCategoryBySlug(slug: string) {
+    const clean = String(slug ?? '').trim();
+    if (!clean) throw new NotFoundException('Catalog category not found');
+    const liveProductWhere: any = {
+      status: 'ACTIVE',
+      deletedAt: null,
+      company: { deletedAt: null, status: 'ACTIVE' },
+    };
+    const category = await this.prisma.catalogCategory.findUnique({
+      where: { slug: clean },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        icon: true,
+        seoTitle: true,
+        seoDescription: true,
+        isActive: true,
+        sortOrder: true,
+        updatedAt: true,
+        subcategories: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            seoTitle: true,
+            seoDescription: true,
+            items: {
+              where: { isActive: true },
+              select: { id: true, slug: true, name: true, type: true },
+            },
+            _count: { select: { products: { where: liveProductWhere } } },
+          },
+          orderBy: { name: 'asc' },
+        },
+        _count: { select: { products: { where: liveProductWhere } } },
+      },
+    });
+    if (!category) throw new NotFoundException('Catalog category not found');
+    // Flatten Prisma _count into a stable public contract. Zero code elsewhere
+    // may depend on the raw _count shape.
+    const { _count, subcategories, ...rest } = category;
+    return {
+      ...rest,
+      activeProductCount: _count.products,
+      subcategories: subcategories.map((s: any) => ({
+        id: s.id,
+        slug: s.slug,
+        name: s.name,
+        seoTitle: s.seoTitle,
+        seoDescription: s.seoDescription,
+        activeProductCount: s._count.products,
+        items: s.items,
+      })),
+    };
+  }
 }

@@ -4,6 +4,40 @@ import ProfileClient from './profile-client';
 
 type Props = { params: Promise<{ slug: string }> };
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in';
+
+/**
+ * Per-profile JSON-LD built ONLY from real profile data (ProfessionalSummary).
+ * Optional fields are omitted when absent — nothing is invented
+ * (no ratings without reviews, no fabricated contact/address/claims).
+ */
+function buildProfileJsonLd(profile: NonNullable<Awaited<ReturnType<typeof tradeservApi.getProfessionalSummary>>>) {
+  const ld: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfessionalService',
+    name: profile.name,
+    url: `${SITE_URL}/tradeserv/p/${profile.slug}`,
+  };
+  if (profile.logo) ld.image = profile.logo;
+  if (profile.description) ld.description = profile.description;
+  if (profile.professionalType) ld.knowsAbout = [profile.professionalType];
+  if (profile.locations?.length) {
+    ld.areaServed = profile.locations.map((name) => ({ '@type': 'Place', name }));
+  }
+  if (profile.languages?.length) ld.knowsLanguage = profile.languages;
+  const sameAs = profile.socialLinks ? Object.values(profile.socialLinks).filter(Boolean) : [];
+  if (sameAs.length) ld.sameAs = sameAs;
+  // AggregateRating only from actual review data — never fabricated.
+  if (profile.reviewCount > 0 && profile.averageRating > 0) {
+    ld.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: profile.averageRating,
+      reviewCount: profile.reviewCount,
+    };
+  }
+  return ld;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const profile = await tradeservApi.getProfessionalSummary(slug).catch(() => null);
@@ -44,38 +78,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function Page() {
+export default async function Page({ params }: Props) {
+  const { slug } = await params;
+  // Re-fetch via the same authoritative API used by generateMetadata so the
+  // structured data reflects the real profile (graceful no-JSON-LD fallback).
+  const profile = await tradeservApi.getProfessionalSummary(slug).catch(() => null);
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'ProfessionalService',
-            name: 'TradeServ by TRADINGO',
-            description: 'India\'s AI-Powered Business Services Platform connecting businesses with verified professionals.',
-            url: 'https://tradingo.in/tradeserv',
-            provider: {
-              '@type': 'Organization',
-              name: 'TRADINGO',
-              url: 'https://tradingo.in',
-            },
-            areaServed: { '@type': 'Country', name: 'IN' },
-            hasOfferCatalog: {
-              '@type': 'OfferCatalog',
-              name: 'Professional Services',
-              itemListElement: [
-                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Chartered Accountant' } },
-                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'GST Consultant' } },
-                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Company Secretary' } },
-                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Legal Advisor' } },
-                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Trademark Consultant' } },
-              ],
-            },
-          }),
-        }}
-      />
+      {profile && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildProfileJsonLd(profile)) }}
+        />
+      )}
       <ProfileClient />
     </>
   );

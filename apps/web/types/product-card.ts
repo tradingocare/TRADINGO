@@ -11,6 +11,7 @@ export interface ProductCardSeller {
   isoCertified?: boolean
   yearsActive?: number
   city?: string
+  distanceKm?: number
   avgResponseTime?: string
   logo?: string
   // Vendor business type (Manufacturer / Wholesaler / Trader / ...)
@@ -22,6 +23,8 @@ export interface ProductCardModel {
   id: string
   slug: string
   title: string
+  // Real SKU from product data — hidden in UI when absent. Never synthesized.
+  sku?: string
   // Short positioning line shown under the title (vendor-provided shortDescription).
   // Optional — UI must hide the subtitle slot when absent. Never synthesize.
   description?: string

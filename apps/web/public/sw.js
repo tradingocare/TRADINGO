@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tradingo-v5';
+const CACHE_NAME = 'tradingo-v7';
 const STATIC_ASSETS = [
   '/',
   '/offline',

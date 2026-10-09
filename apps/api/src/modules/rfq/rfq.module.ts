@@ -4,10 +4,11 @@ import { RfqService } from './rfq.service';
 import { RfqNumberService } from './rfq-number.service';
 import { RfqAnalyticsService } from './rfq-analytics.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { MembershipModule } from '../membership/membership.module';
 import { CompanyOwnerGuard } from '../../common/guards/company-owner.guard';
 
 @Module({
-  imports: [AnalyticsModule],
+  imports: [AnalyticsModule, MembershipModule],
   controllers: [RfqController],
   providers: [RfqService, RfqNumberService, RfqAnalyticsService, CompanyOwnerGuard],
   exports: [RfqService, RfqNumberService, RfqAnalyticsService],

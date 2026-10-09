@@ -30,8 +30,9 @@ export default function SellerReviewsPage() {
   });
 
   const reviews = reviewsData?.reviews || [];
-  const avgRating = reviewsData?.average?.toFixed(1) || '0.0';
-  const totalReviews = reviewsData?.total || 0;
+  // P0-3: company reviews API returns { reviews, summary: { average, total } }
+  const avgRating = reviewsData?.summary?.average?.toFixed(1) || '0.0';
+  const totalReviews = reviewsData?.summary?.total || 0;
 
   if (isLoading) return <div className="min-h-screen pt-24 pb-16" style={{ background: 'var(--bg-base)' }}><div className="max-w-6xl mx-auto px-4"><div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-white/40" /></div></div></div>;
 

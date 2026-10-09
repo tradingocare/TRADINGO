@@ -51,6 +51,20 @@ class ProductItemDto {
   @IsString()
   categoryId?: string;
 
+  // P0-3 Step 3: canonical taxonomy triple (Tick/Change-confirmed on the
+  // buyer wizard; server re-validates before persistence — never trusted).
+  @IsOptional()
+  @IsString()
+  catalogCategoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  catalogSubcategoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  catalogItemId?: string;
+
   @IsString()
   productName: string;
 

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -11,7 +11,7 @@ import { FEATURES_SELLER, FEATURES_BUYER, FEATURES_PLATFORM, FEATURES_TRUST } fr
 export const metadata: Metadata = {
   title: 'Powerful Features for Global Trade | TRADINGO',
   description:
-    'Explore TRADINGO platform features — TRADBUY, RFQ, GOCASH, TRADGO, Escrow, Trade Matching, and more for sellers and buyers.',
+    'Explore TRADINGO platform features â€” TRADBUY, RFQ, GOCASH, TRADGO, Escrow, Trade Matching, and more for sellers and buyers.',
 };
 
 const sellerFeatures = FEATURES_SELLER;
@@ -27,10 +27,10 @@ export default function FeaturesPage() {
     <>
       <PageHeader
         title="Powerful Features for Global Trade"
-        description="Everything you need to buy and sell across borders — from AI-powered matching to secure escrow payments."
+        description="Everything you need to buy and sell across borders â€” from AI-powered matching to secure escrow payments."
       />
 
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <SectionHeader
@@ -58,7 +58,7 @@ export default function FeaturesPage() {
 
       <Separator />
 
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <SectionHeader
@@ -89,7 +89,7 @@ export default function FeaturesPage() {
         title="Ready to get started?"
         subtitle="Join thousands of businesses already trading on TRADINGO. Create your free account today."
         primaryLabel="Create Free Account"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         secondaryLabel="Explore Features"
         secondaryHref="/for-sellers"
       />

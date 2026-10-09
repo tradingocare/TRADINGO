@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { MapPin } from 'lucide-react';
@@ -53,7 +53,7 @@ export function GeolocationButton({ onLocationDetected, disabled }: GeolocationB
         type="button"
         onClick={detectLocation}
         disabled={disabled || detecting}
-        className="inline-flex items-center gap-2 rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface px-3 py-2 text-sm font-medium text-text-secondary dark:text-dark-text-secondary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary disabled:opacity-50 transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg border border-surface-border border-border bg-surface px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary disabled:opacity-50 transition-colors"
       >
         {detecting ? (
           <LoadingSpinner size="sm" color="accent" />

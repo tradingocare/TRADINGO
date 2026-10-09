@@ -111,6 +111,27 @@ export interface SubcategoryItemsResponse {
   meta: { total: number; page: number; limit: number; subcategoryId: string; categoryId: string };
 }
 
+export interface CardSubcategoryPreview {
+  subcategoryId: string;
+  products: any[];
+  productTotal: number;
+  services: any[];
+  status: 'ok' | 'error';
+}
+
+export interface CardPreviewResponse {
+  previews: CardSubcategoryPreview[];
+}
+
+/** Pure slice selector: a column consumes only its own subcategory preview. */
+export function selectSubPreview(
+  data: CardPreviewResponse | null | undefined,
+  subcategoryId: string,
+): CardSubcategoryPreview | undefined {
+  if (!data || !Array.isArray(data.previews)) return undefined;
+  return data.previews.find(p => p?.subcategoryId === subcategoryId);
+}
+
 export const marketplaceCatalogBridgeApi = {
   getEnrichedTree: () =>
     apiClient.get<EnrichedCategoryTreeResponse>('/marketplace-catalog-bridge/categories/tree').then(r => r.data),
@@ -124,7 +145,7 @@ export const marketplaceCatalogBridgeApi = {
   getEnrichedProduct: (id: string) =>
     apiClient.get<EnrichedProductResponse>(`/marketplace-catalog-bridge/products/${id}`).then(r => r.data),
 
-  searchEnrichedProducts: (params: { q?: string; categoryId?: string; page?: number; limit?: number }) =>
+  searchEnrichedProducts: (params: { q?: string; categoryId?: string; brand?: string; catalogCategoryId?: string; catalogSubcategoryId?: string; catalogItemId?: string; page?: number; limit?: number }) =>
     apiClient.get<{ data: any[]; meta: { total: number; page: number; limit: number; totalPages: number } }>('/marketplace-catalog-bridge/products/search', { params }).then(r => {
       const response = r.data;
       return {
@@ -154,5 +175,58 @@ export const marketplaceCatalogBridgeApi = {
       '/marketplace-catalog-bridge/unified-search/bulk',
       { params: { queries: queries.join(','), limit } }
     ).then(r => r.data),
+
+  getCardPreviews: (subcategoryIds: string[]) =>
+    apiClient.get<{ previews?: any[] }>('/marketplace-catalog-bridge/products/card-preview', {
+      params: { catalogSubcategoryIds: subcategoryIds.join(',') },
+    }).then(r => {
+      const response = r.data as any;
+      const previews = (response.previews || []).map((pr: any) => ({
+        ...pr,
+        // Same row mapping as searchEnrichedProducts (price/stock derivation).
+        products: (pr.products || []).map((p: any) => ({
+          ...p,
+          price: p.priceSlabs?.[0]?.price || p.minPrice || 0,
+          stock: p.inventory?.availableQuantity || 0,
+        })),
+      }));
+      return { previews } as CardPreviewResponse;
+    }),
+
+  classifyCatalog: (input: ClassifyCatalogInput) =>
+    apiClient.post<ClassifyCatalogResult>('/catalog/classify', input).then(r => r.data),
 };
+
+export interface ClassifyCatalogInput {
+  name: string;
+  description?: string;
+  brand?: string;
+  attributes?: Record<string, string>;
+  imageUrl?: string;
+  context?: 'product' | 'service';
+}
+
+export interface ClassifyAlternative {
+  categoryId: string;
+  subcategoryId: string | null;
+  catalogItemId: string | null;
+  label: string;
+  confidence: number;
+}
+
+export interface ClassifyCatalogResult {
+  categoryId: string | null;
+  subcategoryId: string | null;
+  catalogItemId: string | null;
+  type: 'Product' | 'Service' | null;
+  confidence: number;
+  band: 'HIGH' | 'MEDIUM' | 'LOW';
+  matchType: 'exact' | 'synonym' | 'ai' | 'fallback' | 'unclassified';
+  reasons: string[];
+  alternatives: ClassifyAlternative[];
+  /** Display labels for the primary suggestion (names are display-only). */
+  categoryName?: string | null;
+  subcategoryName?: string | null;
+}
+
 

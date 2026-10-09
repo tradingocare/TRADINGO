@@ -8,12 +8,14 @@ import {
   Package, Shield, ChevronRight, ArrowLeft, Truck, Check, Loader2, AlertCircle,
 } from 'lucide-react'
 import { apiClient } from '@/lib/api/client'
+import { getProductPricing } from '@/lib/api/product-pricing'
+import type { ProductPricingResult } from '@/lib/api/product-pricing'
 import { useAuthStore } from '@/store/auth-store'
 import { toast } from '@/components/ui/use-toast'
 import type { OrderSource, OrderType } from '@prisma/client'
 
 interface ProductBrief {
-  id: string; name: string; slug: string; price: number
+  id: string; name: string; slug: string
   companyId: string; companyName: string; media: { url: string }[]
 }
 
@@ -26,6 +28,11 @@ function CheckoutContent() {
 
   const [step, setStep] = useState<'info' | 'delivery' | 'payment'>('info')
   const [product, setProduct] = useState<ProductBrief | null>(null)
+  // R1: server-authoritative pricing — unit price and subtotal are
+  // always resolved by the pricing endpoint; a client-side price
+  // never exists on this page.
+  const [pricing, setPricing] = useState<ProductPricingResult | null>(null)
+  const [pricingErr, setPricingErr] = useState('')
   const [loading, setLoading] = useState(true)
   const [productErr, setProductErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -45,21 +52,34 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (!productId) { setLoading(false); return }
+    let cancelled = false
     apiClient.get(`/products/lookup/${productId}`)
       .then(r => {
         const d = r.data?.data || r.data
+        if (cancelled) return
         setProduct({
-          id: d.id, name: d.name, slug: d.slug, price: d.price,
+          id: d.id, name: d.name, slug: d.slug,
           companyId: d.companyId, companyName: d.company?.name || '',
           media: d.media || [],
         })
+        // R1: fetch the authoritative price for the requested
+        // quantity. A pricing failure degrades the price display
+        // honestly instead of blocking product information.
+        return getProductPricing(productId, qty).catch(() => null as ProductPricingResult | null)
+      })
+      .then(pricing => {
+        if (cancelled) return
+        if (pricing) setPricing(pricing)
+        else setPricingErr('Live pricing unavailable')
         setLoading(false)
       })
       .catch(() => {
+        if (cancelled) return
         setProductErr('Could not load product details')
         setLoading(false)
       })
-  }, [productId])
+    return () => { cancelled = true }
+  }, [productId, qty])
 
   const update = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -98,6 +118,14 @@ function CheckoutContent() {
     if (!validate()) return
     if (!user?.id) { toast.error('Please login to place an order'); return }
     if (!product) { toast.error('Product information not available'); return }
+    // R1: order and payment amounts are the server-authoritative
+    // pricing result — never a client-computed price.
+    if (!pricing?.purchasable || pricing.unitPrice == null || pricing.subtotal == null) {
+      toast.error(pricing ? pricing.message : 'Live pricing unavailable')
+      return
+    }
+    const unitPrice = Number(pricing.unitPrice)
+    const subtotal = Number(pricing.subtotal)
 
     setSubmitting(true)
     setSubmittingLabel('Creating order...')
@@ -110,10 +138,10 @@ function CheckoutContent() {
         source: 'DIRECT' as OrderSource,
         type: 'PURCHASE' as OrderType,
         sellerCompanyId: product.companyId,
-        subtotal: product.price * qty,
-        totalAmount: product.price * qty,
+        subtotal,
+        totalAmount: subtotal,
         quantity: qty,
-        items: [{ productId: product.id, productName: product.name, quantity: qty, unitPrice: product.price }],
+        items: [{ productId: product.id, productName: product.name, quantity: qty, unitPrice }],
         locations: [{
           type: 'DELIVERY',
           address: form.addressLine,
@@ -130,9 +158,14 @@ function CheckoutContent() {
       const order = orderRes.data?.data || orderRes.data
 
       setSubmittingLabel('Creating payment...')
+      // P0-5 remediation — money unit contract: CreatePaymentOrderDto.amount is
+      // INTEGER PAISE (mirrors CreateBookingPaymentOrderDto; stored verbatim in
+      // Payment.amount and passed to the Razorpay Orders API). The server
+      // subtotal is a rupee value, so exactly ONE rupees -> paise conversion
+      // happens here.
       const paymentPayload = {
         type: 'ORDER_PAYMENT',
-        amount: product.price * qty,
+        amount: Math.round(subtotal * 100),
         orderId: order.id,
         description: `Payment for ${product.name}`,
       }
@@ -182,7 +215,7 @@ function CheckoutContent() {
       toast.error(err?.response?.data?.message || err?.message || 'Failed to place order')
       setSubmitting(false)
     }
-  }, [validate, user, product, qty, form, router])
+  }, [validate, user, product, pricing, qty, form, router])
 
   const inputClasses = (field: string) =>
     `w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary bg-surface outline-none transition-all duration-200 placeholder:text-text-secondary
@@ -234,7 +267,11 @@ function CheckoutContent() {
     )
   }
 
-  const amount = product.price * qty
+  // R1: authoritative server-pricing values (rupee numbers parsed from the
+  // 2dp strings returned by the pricing endpoint). Null when the product is
+  // not purchasable at the requested quantity.
+  const unitPrice = pricing?.purchasable && pricing.unitPrice != null ? Number(pricing.unitPrice) : null
+  const subtotal = pricing?.purchasable && pricing.subtotal != null ? Number(pricing.subtotal) : null
 
   return (
     <div className="min-h-screen pt-24 pb-16 bg-bg-base">
@@ -244,7 +281,7 @@ function CheckoutContent() {
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4">
-        <Link href={product?.slug ? `/trading/${product.slug}` : '/trading'}
+        <Link href={product?.slug ? `/products/${product.slug}` : '/trading'}
           className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-accent transition-colors mb-6">
           <ArrowLeft size={14} /> Back
         </Link>
@@ -378,11 +415,19 @@ function CheckoutContent() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Unit Price</span>
-                  <span className="text-text-primary">₹{(product.price / 100).toFixed(2)}</span>
+                  <span className="text-text-primary">{unitPrice != null ? `₹${unitPrice.toFixed(2)}` : 'Unavailable'}</span>
                 </div>
+                {pricing?.purchasable && pricing.slab && (
+                  <p className="text-text-secondary text-xs">
+                    Volume tier {pricing.slab.minQty}{pricing.slab.maxQty != null ? `–${pricing.slab.maxQty}` : '+'} units
+                  </p>
+                )}
+                {pricingErr && (
+                  <p className="text-status-error text-xs">{pricingErr}</p>
+                )}
                 <div className="border-t border-border pt-1.5 mt-1.5 flex justify-between">
                   <span className="text-text-primary font-semibold">Total</span>
-                  <span className="text-accent font-bold">₹{(amount / 100).toFixed(2)}</span>
+                  <span className="text-accent font-bold">{subtotal != null ? `₹${subtotal.toFixed(2)}` : '—'}</span>
                 </div>
               </div>
             </div>

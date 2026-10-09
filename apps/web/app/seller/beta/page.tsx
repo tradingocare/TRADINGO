@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -106,7 +106,7 @@ export default function BetaProgramPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <AlertTriangle className="mb-4 h-12 w-12 text-red-500" />
-            <p className="text-lg font-medium text-text-primary dark:text-dark-text-primary">{error}</p>
+            <p className="text-lg font-medium text-text-primary">{error}</p>
             <Button onClick={fetchData} className="mt-4">
               Retry
             </Button>
@@ -133,7 +133,7 @@ export default function BetaProgramPage() {
         : npsAverage >= 30
           ? 'text-amber-500'
           : 'text-red-500'
-      : 'text-text-secondary dark:text-dark-text-secondary';
+      : 'text-text-secondary text-text-secondary';
 
   return (
     <div className="space-y-6">
@@ -149,17 +149,17 @@ export default function BetaProgramPage() {
         <CardContent>
           <div className="flex flex-col gap-4">
             <div>
-              <span className="text-sm text-text-secondary dark:text-dark-text-secondary">Current Step</span>
-              <p className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+              <span className="text-sm text-text-secondary">Current Step</span>
+              <p className="text-lg font-semibold text-text-primary">
                 {formatStepName(stepName)}
               </p>
             </div>
             <div>
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-sm text-text-secondary dark:text-dark-text-secondary">Progress</span>
-                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{progress}%</span>
+                <span className="text-sm text-text-secondary">Progress</span>
+                <span className="text-sm font-medium text-text-primary">{progress}%</span>
               </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-tertiary">
                 <div
                   className="h-full rounded-full bg-primary-500 transition-all duration-500"
                   style={{ width: `${progress}%` }}
@@ -189,7 +189,7 @@ export default function BetaProgramPage() {
         <StatCard icon={LifeBuoy} label="Support Tickets" value={String(ticketsCount)} />
         <div
           className={cn(
-            'rounded-xl border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md dark:bg-dark-surface dark:border-dark-border',
+            'rounded-xl border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md bg-surface border-border',
           )}
         >
           <div className="flex items-start justify-between">
@@ -198,7 +198,7 @@ export default function BetaProgramPage() {
             </div>
           </div>
           <p className={cn('mt-4 text-2xl font-bold', npsColor)}>{npsDisplay}</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">NPS Score</p>
+          <p className="mt-1 text-sm text-text-secondary">NPS Score</p>
         </div>
       </div>
 
@@ -243,21 +243,21 @@ export default function BetaProgramPage() {
             {errors.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <CheckCircle className="mb-2 h-8 w-8 text-accent-500" />
-                <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No recent errors</p>
+                <p className="text-sm text-text-secondary">No recent errors</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {errors.slice(0, 5).map((e) => (
                   <div
                     key={e.id}
-                    className="flex items-start gap-3 rounded-lg border border-border bg-surface-secondary/50 p-3 dark:border-dark-border dark:bg-dark-surface-secondary/50"
+                    className="flex items-start gap-3 rounded-lg border border-border bg-surface-secondary/50 p-3"
                   >
                     <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                      <p className="text-sm font-medium text-text-primary">
                         {e.errorType}
                       </p>
-                      <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                      <p className="text-xs text-text-secondary">
                         {e.errorMessage}
                       </p>
                       {e.page && (
@@ -285,7 +285,7 @@ export default function BetaProgramPage() {
             {tickets.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <CheckCircle className="mb-2 h-8 w-8 text-accent-500" />
-                <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No support tickets</p>
+                <p className="text-sm text-text-secondary">No support tickets</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -297,14 +297,14 @@ export default function BetaProgramPage() {
                   return (
                     <div
                       key={t.id}
-                      className="flex items-start gap-3 rounded-lg border border-border bg-surface-secondary/50 p-3 dark:border-dark-border dark:bg-dark-surface-secondary/50"
+                      className="flex items-start gap-3 rounded-lg border border-border bg-surface-secondary/50 p-3"
                     >
                       <StatusIcon className="mt-0.5 h-4 w-4 shrink-0 text-text-secondary" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                        <p className="text-sm font-medium text-text-primary">
                           {t.subject}
                         </p>
-                        <p className="mt-0.5 text-xs text-text-secondary dark:text-dark-text-secondary">
+                        <p className="mt-0.5 text-xs text-text-secondary">
                           {t.description.length > 80
                             ? `${t.description.slice(0, 80)}...`
                             : t.description}

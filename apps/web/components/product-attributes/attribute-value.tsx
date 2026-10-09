@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Copy, Check, ExternalLink, Eye } from 'lucide-react';
@@ -36,7 +36,7 @@ export function AttributeValue({ field, className }: AttributeValueProps) {
     case 'PRICE':
       return (
         <span className={cn('font-medium', className)}>
-          ₹{Number(displayValue).toLocaleString('en-IN')}{unit ? <span className="ml-1 text-text-tertiary text-sm">/{unit}</span> : null}
+          â‚¹{Number(displayValue).toLocaleString('en-IN')}{unit ? <span className="ml-1 text-text-tertiary text-sm">/{unit}</span> : null}
         </span>
       );
 
@@ -152,10 +152,10 @@ function FileValue({ value, label }: { value: any; label: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-secondary px-3 py-2 text-sm hover:bg-surface dark:border-dark-border dark:bg-dark-surface-secondary dark:hover:bg-dark-surface"
+      className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-secondary px-3 py-2 text-sm hover:bg-surface"
     >
       <Eye className="h-4 w-4 text-primary-600" />
-      <span className="text-text-primary dark:text-dark-text-primary">{name}</span>
+      <span className="text-text-primary">{name}</span>
     </a>
   );
 }
@@ -165,7 +165,7 @@ function ImageValue({ value, label }: { value: any; label: string }) {
   const [preview, setPreview] = useState(false);
   return (
     <>
-      <button onClick={() => setPreview(true)} className="group relative h-16 w-16 overflow-hidden rounded-lg border border-border dark:border-dark-border">
+      <button onClick={() => setPreview(true)} className="group relative h-16 w-16 overflow-hidden rounded-lg border border-border">
         <img src={url} alt={label} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
       </button>
       {preview && (
@@ -180,7 +180,7 @@ function ImageValue({ value, label }: { value: any; label: string }) {
 function VideoValue({ value }: { value: any }) {
   const url = typeof value === 'string' ? value : value?.url || '';
   return (
-    <video controls className="max-w-full rounded-lg border border-border dark:border-dark-border" style={{ maxHeight: 240 }}>
+    <video controls className="max-w-full rounded-lg border border-border" style={{ maxHeight: 240 }}>
       <source src={url} />
     </video>
   );
@@ -193,7 +193,7 @@ function LocationValue({ value }: { value: any }) {
   const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
   return (
     <div className="text-sm">
-      {address && <p className="text-text-primary dark:text-dark-text-primary">{address}</p>}
+      {address && <p className="text-text-primary">{address}</p>}
       <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400 text-xs mt-0.5">
         {lat.toFixed(4)}, {lng.toFixed(4)} <ExternalLink className="h-3 w-3" />
       </a>
@@ -206,7 +206,7 @@ function JsonValue({ value }: { value: any }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <div>
-      <pre className={cn('bg-surface-secondary dark:bg-dark-surface-secondary rounded-lg p-3 text-xs overflow-x-auto', !expanded && 'max-h-20')}>
+      <pre className={cn('bg-surface-secondary bg-surface-secondary rounded-lg p-3 text-xs overflow-x-auto', !expanded && 'max-h-20')}>
         {str}
       </pre>
       {str.length > 100 && (

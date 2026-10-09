@@ -4,17 +4,18 @@ import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle2, Mail, Phone, AlertCircle } from 'lucide-react'
 import api from '@/lib/api/client'
 import type { PersonalInfoForm } from '@/types/buyer-registration'
+import { validateRegistrationPassword, passwordErrorMessage } from '@/lib/auth/password-policy'
 import StepCard from '../../vendor/components/StepCard'
 import FormField from '../../vendor/components/FormField'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   background: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
-const btnSecondary = { background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
+const btnSecondary = { background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }
 
 interface Props {
   data: Partial<PersonalInfoForm>
@@ -50,14 +51,18 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
   }, [emailCountdown])
 
   const getPasswordStrength = (pw: string): { label: string; color: string; width: string } => {
-    if (pw.length < 8) return { label: 'Weak', color: '#ef4444', width: '25%' }
-    const hasLetters = /[a-zA-Z]/.test(pw)
-    const hasNumbers = /\d/.test(pw)
-    const hasSymbol = /[^a-zA-Z0-9]/.test(pw)
-    const types = [hasLetters, hasNumbers, hasSymbol].filter(Boolean).length
-    if (types === 1) return { label: 'Fair', color: '#f59e0b', width: '50%' }
-    if (pw.length >= 10 && types >= 3) return { label: 'Strong', color: '#22c55e', width: '100%' }
-    return { label: 'Good', color: '#3b82f6', width: '75%' }
+    // Mirrors the backend rule (validateRegistrationPassword): the meter must
+    // not report a backend-rejected password as acceptable (E2E-04).
+    const check = validateRegistrationPassword(pw)
+    if (!pw) return { label: 'Weak', color: '#ef4444', width: '25%' }
+    if (!check.valid) {
+      const passed = 5 - check.missing.length
+      if (passed <= 1) return { label: 'Weak', color: '#ef4444', width: '25%' }
+      if (passed === 2) return { label: 'Fair', color: '#f59e0b', width: '50%' }
+      return { label: 'Good', color: '#3b82f6', width: '75%' }
+    }
+    if (pw.length >= 12) return { label: 'Very Strong', color: '#22c55e', width: '100%' }
+    return { label: 'Strong', color: '#22c55e', width: '100%' }
   }
 
   const strength = getPasswordStrength(password)
@@ -71,7 +76,11 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
     if (!isEmailValid) e.email = 'Please enter a valid email address'
     if (!emailVerified) e.email = 'Email verification is required'
     if (!isMobileValid) e.mobile = 'Please enter a valid 10-digit mobile number'
-    if (!password || password.length < 8) e.password = 'Password must be at least 8 characters'
+    if (!password) e.password = 'Password must be at least 8 characters'
+    else {
+      const pwCheck = validateRegistrationPassword(password)
+      if (!pwCheck.valid) e.password = passwordErrorMessage(pwCheck.missing)
+    }
     if (!confirmPassword) e.confirmPassword = 'Please confirm your password'
     if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
     setErrors(e)
@@ -88,8 +97,15 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
     setEmailOtpError('')
     try {
       await api.post('/auth/send-otp', { type: 'email', value: email })
-    } catch {
-      setEmailOtpError('Failed to send OTP. Please try again.')
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 503) {
+        setEmailOtpError('Email delivery is temporarily unavailable on this server. Please try again later.')
+      } else if (status === 429) {
+        setEmailOtpError('Too many OTP requests. Please wait a minute and try again.')
+      } else {
+        setEmailOtpError('Failed to send OTP. Please try again.')
+      }
     }
   }
 
@@ -129,7 +145,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
   }
 
   return (
-    <StepCard icon={<CheckCircle2 className="text-white" />} title="Personal Information" subtitle="Create your buyer account with TRADINGO">
+    <StepCard icon={<CheckCircle2 className="text-[#f59e0b]" />} title="Personal Information" subtitle="Create your buyer account with TRADINGO">
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <FormField label="First Name" required error={touched.firstName ? errors.firstName : undefined}>
@@ -158,7 +174,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
 
         <FormField label="Email Address" required error={touched.email ? errors.email : undefined}>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
             <input
               className={INPUT_CLASS} style={{ ...inputStyle(!!errors.email && touched.email), paddingLeft: '40px' }}
               placeholder="you@company.com"
@@ -187,7 +203,7 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
           )}
           {showEmailOtp && !emailVerified && (
             <div className="mt-3 p-3 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
-              <p className="text-white/50 text-xs mb-2">Enter 6-digit OTP sent to {email}</p>
+              <p className="text-text-secondary text-xs mb-2">Enter 6-digit OTP sent to {email}</p>
               <div className="flex gap-2 items-center">
                 <input
                   className={INPUT_CLASS}
@@ -207,9 +223,9 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
                 </button>
               </div>
               {emailOtpError && <p className="text-red-400 text-[10px] mt-1">{emailOtpError}</p>}
-              <p className="text-white/30 text-[10px] mt-2">
+              <p className="text-text-tertiary text-[10px] mt-2">
                 {emailCountdown > 0 ? `Resend OTP in ${emailCountdown}s` : (
-                  <button type="button" onClick={sendEmailOtp} className="underline hover:text-white/60">Resend OTP</button>
+                  <button type="button" onClick={sendEmailOtp} className="underline hover:text-text-secondary/60">Resend OTP</button>
                 )}
               </p>
             </div>
@@ -218,8 +234,8 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
 
         <FormField label="Mobile Number" required error={touched.mobile ? errors.mobile : undefined}>
           <div className="relative">
-            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-            <div className="flex items-center px-3 rounded-xl text-white text-sm" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', marginLeft: '0', marginRight: '8px', height: '42px', width: '60px' }}>
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
+            <div className="flex items-center px-3 rounded-xl text-text-primary text-sm" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', marginLeft: '0', marginRight: '8px', height: '42px', width: '60px' }}>
               +91
             </div>
             <input
@@ -250,14 +266,14 @@ export default function Step1PersonalInfo({ data, onNext }: Props) {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs hover:text-white/60"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary text-xs hover:text-text-secondary/60"
             >
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
           {password.length > 0 && (
             <div className="mt-2">
-              <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--border-light)' }}>
                 <div className="h-full rounded-full transition-all duration-300" style={{ width: strength.width, background: strength.color }} />
               </div>
               <p className="text-[10px] mt-1" style={{ color: strength.color }}>{strength.label}</p>

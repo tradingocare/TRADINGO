@@ -4,7 +4,7 @@ import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
   title: 'Terms of Service | TRADINGO',
-  description: 'TRADINGO Terms of Service govern the use of India\'s first Trusted Electronic Marketplace (TEM). Read about account registration, marketplace rules, fees, and dispute resolution.',
+  description: 'TRADINGO Terms of Service govern the use of India\'s first TRADINGO E-Marketplace (TEM). Read about account registration, marketplace rules, fees, and dispute resolution.',
   openGraph: {
     title: 'Terms of Service | TRADINGO',
     description: 'Review the TRADINGO Terms of Service including marketplace rules, fees, intellectual property, and dispute resolution policies.',
@@ -88,7 +88,7 @@ const termsSections = [
   {
     title: '5. Intellectual Property',
     content:
-      'The TRADINGO platform, including its design, logo, TEM framework, TRADHEXA engines, and all related content, is the intellectual property of TRADINGO Technologies Pvt. Ltd. Users retain ownership of content they post but grant TRADINGO a license to use it for platform operations.',
+      'The TRADINGO platform, including its design, logo, TEM framework, TRADHEXA engines, and all related content, is the intellectual property of Niksa Global Ventures Limited. Users retain ownership of content they post but grant TRADINGO a license to use it for platform operations.',
     subsections: [
       {
         heading: 'Platform IP',
@@ -138,7 +138,7 @@ const termsSections = [
       },
       {
         heading: 'Arbitration',
-        text: 'Any dispute not resolved through mediation shall be resolved by binding arbitration in Mumbai, Maharashtra, in accordance with the Arbitration and Conciliation Act, 1996.',
+        text: 'Any dispute not resolved through mediation shall be resolved by binding arbitration in New Delhi, in accordance with the Arbitration and Conciliation Act, 1996.',
       },
     ],
   },
@@ -164,7 +164,7 @@ const termsSections = [
   {
     title: '9. Governing Law',
     content:
-      'These Terms of Service shall be governed by and construed in accordance with the laws of India. All disputes arising under these terms shall be subject to the exclusive jurisdiction of the courts in Mumbai, Maharashtra.',
+      'These Terms of Service shall be governed by and construed in accordance with the laws of India. All disputes arising under these terms shall be subject to the exclusive jurisdiction of the courts in New Delhi.',
     subsections: [
       {
         heading: 'Applicable Law',
@@ -172,7 +172,7 @@ const termsSections = [
       },
       {
         heading: 'Jurisdiction',
-        text: 'Any legal action or proceeding arising out of or relating to these terms shall be brought exclusively in the courts located in Mumbai, Maharashtra.',
+        text: 'Any legal action or proceeding arising out of or relating to these terms shall be brought exclusively in the courts located in New Delhi.',
       },
       {
         heading: 'Severability',
@@ -193,26 +193,26 @@ export default function TermsPage() {
       <section className="py-12">
         <div className="container-main">
           <div className="mx-auto max-w-3xl">
-            <p className="mb-12 text-sm text-text-secondary dark:text-dark-text-secondary">
+            <p className="mb-12 text-sm text-text-secondary">
               Last updated: June 1, 2025
             </p>
 
             {termsSections.map((section) => (
               <div key={section.title} className="mb-12 last:mb-0">
-                <h2 className="mb-4 text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+                <h2 className="mb-4 text-2xl font-bold text-text-primary">
                   {section.title}
                 </h2>
-                <p className="mb-6 leading-relaxed text-text-secondary dark:text-dark-text-secondary">
+                <p className="mb-6 leading-relaxed text-text-secondary">
                   {section.content}
                 </p>
                 {section.subsections.length > 0 && (
                   <div className="space-y-6">
                     {section.subsections.map((sub) => (
                       <div key={sub.heading}>
-                        <h3 className="mb-2 text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                        <h3 className="mb-2 text-lg font-semibold text-text-primary">
                           {sub.heading}
                         </h3>
-                        <p className="leading-relaxed text-text-secondary dark:text-dark-text-secondary">
+                        <p className="leading-relaxed text-text-secondary">
                           {sub.text}
                         </p>
                       </div>
@@ -222,7 +222,7 @@ export default function TermsPage() {
               </div>
             ))}
 
-            <p className="mt-16 text-sm text-text-secondary/60 dark:text-dark-text-secondary/60">
+            <p className="mt-16 text-sm text-text-secondary/60">
               These Terms of Service were last updated on June 1, 2025. Please review them periodically
               for any changes. Continued use of TRADINGO after updates constitutes acceptance of the
               revised terms.
@@ -235,7 +235,7 @@ export default function TermsPage() {
         title="Ready to Get Started?"
         subtitle="Create your free account and join India's most trusted B2B marketplace."
         primaryLabel="Create Free Account"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         variant="simple"
       />
     </>

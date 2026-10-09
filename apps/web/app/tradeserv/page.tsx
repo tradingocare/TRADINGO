@@ -568,7 +568,7 @@ export default function TradeServPage() {
             <span className="font-semibold text-text-tertiary">TRADINGO</span>
           </p>
           <p className="text-[10px] text-text-tertiary">
-            Part of Niksa Global Ventures Pvt. Ltd.
+            Part of Niksa Global Ventures Limited.
           </p>
         </div>
       </footer>

@@ -15,6 +15,7 @@ import { toast }             from '@/components/ui/use-toast'
 import { useRouter }       from 'next/navigation'
 import api                 from '../../lib/api/client'
 import SellerBadge, { resolveSellerInfo } from '../shared/SellerBadge'
+import { openChat } from '@/lib/messaging/chat-navigation'
 
 const GEO_COLORS: Record<number, string> = {
   1: '#FF4D00', 2: '#FF4D00', 3: '#FF4D00',
@@ -68,7 +69,7 @@ const UnifiedCard = memo(function UnifiedCard({
 
   const isService = item.type === 'service'
   const href      = isService
-    ? `/services/${item.slug}`
+    ? `/tradeserv/p/${item.slug}`
     : `/${detailBasePath || 'products'}/${item.slug}`
 
   return (
@@ -268,8 +269,12 @@ const UnifiedCard = memo(function UnifiedCard({
           </button>
 
           <button
-            onClick={() => requireAuth(() =>
-              router.push(`/messages?seller=${item.seller.id}&entity=${item.id}`))}
+            onClick={() => requireAuth(() => {
+              if (item.type === 'company') {
+                return openChat({ router, companyId: item.id, title: item.name });
+              }
+              openChat({ router, companyId: item.seller?.id || '', productId: item.id, title: item.name });
+            })}
             className="flex items-center justify-center px-3 py-2 rounded-xl text-xs transition-all cursor-pointer bg-surface-secondary border border-border text-text-secondary">
             <MessageCircle size={12} />
           </button>

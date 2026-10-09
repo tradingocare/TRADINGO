@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   MapPin, Building2, Users, Store, Package, DollarSign, Shield,
   ArrowUpRight, Factory, Globe, CheckCircle, BarChart3,
@@ -208,10 +209,13 @@ export default function IndiaHubs() {
               <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-[rgba(212,175,55,0.03)] blur-[60px]" />
             </div>
 
-            <img
+            <Image
               src="/logo/trdn5.png"
               alt="TRADINGO"
-              className="mx-auto h-10 w-auto opacity-50 sm:h-12"
+              width={108}
+              height={72}
+              loading="lazy"
+              className="mx-auto opacity-50"
             />
 
             <div className="relative z-10 mt-4">
@@ -343,8 +347,8 @@ export default function IndiaHubs() {
               <div className="absolute -bottom-32 -right-32 h-64 w-64 rounded-full bg-[rgba(59,130,246,0.04)] blur-[80px]" />
             </div>
             <div className="relative z-10 flex flex-col items-center px-6 py-8 sm:px-10 sm:py-12 lg:px-14 lg:py-14 text-center">
-              <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy"
-                className="mx-auto h-10 w-auto opacity-40 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy"
+                className="mx-auto opacity-40" />
               <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.25)] bg-[rgba(212,175,55,0.08)] px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
                 <Layers className="h-3.5 w-3.5" />
                 TRADINGO Ecosystem

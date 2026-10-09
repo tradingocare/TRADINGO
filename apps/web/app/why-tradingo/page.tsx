@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import type { ComponentType } from 'react';
 import { Shield, Zap, Award, Globe, Headphones, Cpu, Brain, MapPin, CheckCircle2, XCircle, BarChart3, DollarSign, Clock } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
@@ -10,7 +10,7 @@ import { WHY_DIFFERENTIATORS, WHY_COMPARISON } from '@/data/master-data';
 
 export const metadata: Metadata = {
   title: 'Why TRADINGO | India\'s First TEM E-Marketplace',
-  description: 'Discover why thousands of Indian businesses choose TRADINGO for B2B trade — verified suppliers, escrow protection, AI-powered matching, and pan-India logistics.',
+  description: 'Discover why thousands of Indian businesses choose TRADINGO for B2B trade â€” verified suppliers, escrow protection, AI-powered matching, and pan-India logistics.',
 };
 
 const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
@@ -54,16 +54,16 @@ export default function WhyTradingoPage() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                           <item.icon className="h-7 w-7" />
                         </div>
-                        <h2 className="mt-4 text-2xl font-bold text-text-primary dark:text-dark-text-primary">{item.title}</h2>
-                      <p className="mt-3 text-text-secondary dark:text-dark-text-secondary leading-relaxed">{item.description}</p>
+                        <h2 className="mt-4 text-2xl font-bold text-text-primary">{item.title}</h2>
+                      <p className="mt-3 text-text-secondary leading-relaxed">{item.description}</p>
                     </div>
                   </div>
                   <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
-                    <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+                    <div className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-sm">
                       {item.details.map((detail) => (
                         <div key={detail} className="flex items-start gap-3">
                           <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-500" />
-                          <span className="text-text-secondary dark:text-dark-text-secondary">{detail}</span>
+                          <span className="text-text-secondary">{detail}</span>
                         </div>
                       ))}
                     </div>
@@ -78,18 +78,18 @@ export default function WhyTradingoPage() {
       <Separator />
 
       {/* Comparison Table */}
-      <section className="py-20 dark:bg-dark-surface-secondary/50">
+      <section className="py-20 bg-surface-secondary/50">
         <div className="container-main">
           <AnimatedSection>
             <SectionHeader
               title="TRADINGO vs Traditional Trading"
               subtitle="See how TRADINGO compares to traditional B2B trading methods."
             />
-            <div className="overflow-x-auto rounded-xl border border-border dark:border-dark-border">
+            <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-border bg-surface-secondary dark:bg-dark-surface-secondary dark:border-dark-border">
-                    <th className="px-6 py-4 text-sm font-semibold text-text-primary dark:text-dark-text-primary">Aspect</th>
+                  <tr className="border-b border-border bg-surface-secondary">
+                    <th className="px-6 py-4 text-sm font-semibold text-text-primary">Aspect</th>
                     <th className="px-6 py-4 text-sm font-semibold text-red-600 dark:text-red-400">
                       <div className="flex items-center gap-2">
                         <XCircle className="h-4 w-4" />
@@ -108,9 +108,9 @@ export default function WhyTradingoPage() {
                   {comparisonData.map((row, i) => (
                     <tr
                       key={row.aspect}
-                      className={i % 2 === 0 ? 'bg-surface dark:bg-dark-surface' : 'bg-surface-secondary/50 dark:bg-dark-surface-secondary/50'}
+                      className={i % 2 === 0 ? 'bg-surface bg-surface' : 'bg-surface-secondary/50 bg-surface-secondary/50'}
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-text-primary dark:text-dark-text-primary">{row.aspect}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-text-primary">{row.aspect}</td>
                       <td className="px-6 py-4 text-sm text-red-600/80 dark:text-red-400/80">{row.traditional}</td>
                       <td className="px-6 py-4 text-sm text-green-600/80 dark:text-green-400/80">{row.tradingo}</td>
                     </tr>
@@ -144,12 +144,12 @@ export default function WhyTradingoPage() {
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:bg-dark-surface dark:border-dark-border">
+                    <div key={item.label} className="rounded-xl border border-border bg-surface p-6 shadow-sm">
                       <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent-50 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">{item.label}</h3>
-                      <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{item.desc}</p>
+                      <h3 className="font-semibold text-text-primary">{item.label}</h3>
+                      <p className="mt-1 text-sm text-text-secondary">{item.desc}</p>
                     </div>
                   );
                 })}
@@ -164,7 +164,7 @@ export default function WhyTradingoPage() {
         title="Start Trading"
         subtitle="Join India's most trusted B2B marketplace. Create your free account and experience the TRADINGO difference."
         primaryLabel="Create Free Account"
-        primaryHref="/register"
+        primaryHref="/register/buyer"
         secondaryLabel="Learn More"
         secondaryHref="/about-tradingo"
         variant="accent"

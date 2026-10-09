@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { Tabs } from '@/components/ui/tabs';
@@ -46,13 +46,13 @@ function ListCard({ title, items }: { title: string; items: Record<string, numbe
       </CardHeader>
       <CardContent>
         {entries.length === 0 ? (
-          <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No data</p>
+          <p className="text-sm text-text-secondary">No data</p>
         ) : (
           <div className="space-y-2">
             {entries.map(([key, value]) => (
               <div key={key} className="flex items-center justify-between">
-                <span className="text-sm text-text-primary dark:text-dark-text-primary">{key}</span>
-                <span className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">{value}</span>
+                <span className="text-sm text-text-primary">{key}</span>
+                <span className="text-sm font-medium text-text-secondary">{value}</span>
               </div>
             ))}
           </div>
@@ -70,15 +70,15 @@ function DailyTrendCard({ title, data }: { title: string; data: { date: string; 
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No data</p>
+          <p className="text-sm text-text-secondary">No data</p>
         ) : (
           <div className="max-h-64 space-y-1 overflow-y-auto">
             {data.map((entry) => (
               <div key={entry.date} className="flex items-center justify-between py-1">
-                <span className="text-sm text-text-primary dark:text-dark-text-primary">
+                <span className="text-sm text-text-primary">
                   {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
-                <span className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">{entry.count}</span>
+                <span className="text-sm font-medium text-text-secondary">{entry.count}</span>
               </div>
             ))}
           </div>
@@ -196,15 +196,15 @@ function SearchSection() {
           </CardHeader>
           <CardContent>
             {data.topQueries.length === 0 ? (
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No data</p>
+              <p className="text-sm text-text-secondary">No data</p>
             ) : (
               <div className="space-y-2">
                 {data.topQueries.slice(0, 10).map((q, i) => (
                   <div key={q.query} className="flex items-center justify-between py-1">
-                    <span className="text-sm text-text-primary dark:text-dark-text-primary">
+                    <span className="text-sm text-text-primary">
                       {i + 1}. {q.query}
                     </span>
-                    <span className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">{q.count}</span>
+                    <span className="text-sm font-medium text-text-secondary">{q.count}</span>
                   </div>
                 ))}
               </div>
@@ -246,16 +246,16 @@ function ConversionSection() {
   if (!data) return null;
 
   const conversionRates: [string, number][] = [
-    ['Signup → Company', data.signupToCompanyRate],
-    ['Company → Product', data.companyToProductRate],
-    ['Product → First Order', data.productToFirstOrderRate],
-    ['First → Repeat Order', data.firstToRepeatOrderRate],
+    ['Signup â†’ Company', data.signupToCompanyRate],
+    ['Company â†’ Product', data.companyToProductRate],
+    ['Product â†’ First Order', data.productToFirstOrderRate],
+    ['First â†’ Repeat Order', data.firstToRepeatOrderRate],
   ];
 
   const avgDays: [string, number][] = [
-    ['Signup → Company', data.avgDaysSignupToCompany],
-    ['Company → Product', data.avgDaysCompanyToProduct],
-    ['Product → First Order', data.avgDaysProductToFirstOrder],
+    ['Signup â†’ Company', data.avgDaysSignupToCompany],
+    ['Company â†’ Product', data.avgDaysCompanyToProduct],
+    ['Product â†’ First Order', data.avgDaysProductToFirstOrder],
   ];
 
   return (
@@ -276,8 +276,8 @@ function ConversionSection() {
             {conversionRates.map(([label, rate]) => (
               <div key={label}>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-text-primary dark:text-dark-text-primary">{label}</span>
-                  <span className="font-medium text-text-secondary dark:text-dark-text-secondary">{rate}%</span>
+                  <span className="text-text-primary">{label}</span>
+                  <span className="font-medium text-text-secondary">{rate}%</span>
                 </div>
                 <Progress value={Math.min(rate, 100)} size="lg" variant="info" className="mt-1" />
               </div>
@@ -291,8 +291,8 @@ function ConversionSection() {
           <CardContent className="space-y-3">
             {avgDays.map(([label, days]) => (
               <div key={label} className="flex items-center justify-between">
-                <span className="text-sm text-text-primary dark:text-dark-text-primary">{label}</span>
-                <span className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">{days.toFixed(1)} days</span>
+                <span className="text-sm text-text-primary">{label}</span>
+                <span className="text-sm font-medium text-text-secondary">{days.toFixed(1)} days</span>
               </div>
             ))}
           </CardContent>

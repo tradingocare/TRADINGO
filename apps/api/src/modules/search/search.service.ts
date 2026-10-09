@@ -18,6 +18,8 @@ export interface SearchResult<T> {
   total: number;
   page: number;
   limit: number;
+  degraded?: boolean;
+  error?: string;
 }
 
 @Injectable()
@@ -33,9 +35,19 @@ export class SearchService {
         password: this.configService.get<string>('opensearch.password')!,
       },
       ssl: { rejectUnauthorized: this.configService.get<boolean>('opensearch.rejectUnauthorized', true) },
-      maxRetries: 0,
-      requestTimeout: 3000,
+      maxRetries: 1,
+      requestTimeout: 30000,
     });
+  }
+
+  async ping(): Promise<boolean> {
+    try {
+      const result = await this.client.ping();
+      const r: any = result;
+      return r === true || r === 'pong' || r?.body === true;
+    } catch {
+      return false;
+    }
   }
 
   async indexDocument(index: string, id: string, body: Record<string, unknown>): Promise<void> {
@@ -116,10 +128,10 @@ export class SearchService {
       const totalInfo = response.body.hits.total;
       const total = typeof totalInfo === 'number' ? totalInfo : (totalInfo?.value ?? 0);
 
-      return { hits, total, page, limit };
+      return { hits, total, page, limit, degraded: false };
     } catch (err) {
       this.logger.warn(`OpenSearch search failed for index=${index}: ${(err as Error).message}`);
-      return { hits: [], total: 0, page, limit };
+      return { hits: [], total: 0, page, limit, degraded: true, error: (err as Error).message || 'unknown' };
     }
   }
 

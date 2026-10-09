@@ -136,7 +136,7 @@ export class AuthService {
       const roleMap: Record<string,string[]> = {
         buyer:  ['buyer', 'VIEWER', 'SELLER', 'BUYER'],
         vendor: ['vendor','seller','MANAGER','SELLER'],
-        admin:  ['admin','super_admin','rm','SUPER_ADMIN','ADMIN'],
+        admin:  ['admin','super_admin','rm','RM','SUPER_ADMIN','ADMIN'],
       };
       if (!roleMap[dto.role]?.includes(user.role as string))
         throw new UnauthorizedException('This account is not a ' + dto.role + ' account');
@@ -551,11 +551,15 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  private async saveRefreshToken(userId: string, refreshToken: string, sessionId: string, userAgent?: string | null, ipAddress?: string | null) {
+  private async saveRefreshToken(userId: string, refreshToken: string, sessionId: string, userAgent?: string | null, ipAddress?: string | null, tx?: Prisma.TransactionClient) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await this.prisma.session.create({
+    // When the caller just created the user inside a transaction, the row is
+    // invisible outside it until commit — writing the session through the
+    // same client keeps the FK satisfied (P2003 otherwise).
+    const db = tx ?? this.prisma;
+    await db.session.create({
       data: {
         id: sessionId,
         userId,
@@ -592,15 +596,35 @@ export class AuthService {
     await this.redisService.set(`login:otp:${identifier}`, otp, 300);
     const isPhone = /^\+?[1-9]\d{9,14}$/.test(identifier);
     if (isPhone) {
-      await this.smsService.sendOtp(identifier, otp, 'OTP_LOGIN');
+      // P2C-R2 parity: an undeliverable SMS must not claim "OTP sent" —
+      // delete the stored code and surface the honest 503.
+      const smsResult = await this.smsService.sendOtp(identifier, otp, 'OTP_LOGIN');
+      if (!smsResult.success) {
+        await this.redisService.del(`login:otp:${identifier}`);
+        this.logger.warn(`Login OTP SMS not delivered to ${this.maskIdentifier(identifier)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     } else {
-      await this.emailQueue.add(QueueNames.EMAIL, {
-        type: EmailJobTypes.SEND_NOTIFICATION,
-        to: identifier,
-        subject: 'Your Login OTP',
-        template: 'otp-login',
-        context: { name: user?.name || identifier, otp },
-      }).catch((err) => this.logger.warn(`Failed to queue login OTP email: ${(err as Error).message}`));
+      // P2C-R2 parity: never claim delivery when no provider can deliver and
+      // never swallow enqueue failures — same honest 503 as sendOtp().
+      if (!this.isEmailDeliverable()) {
+        await this.redisService.del(`login:otp:${identifier}`);
+        this.logger.warn(`Email delivery unavailable — login OTP not queued for ${this.maskIdentifier(identifier)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      try {
+        await this.emailQueue.add(QueueNames.EMAIL, {
+          type: EmailJobTypes.SEND_NOTIFICATION,
+          to: identifier,
+          subject: 'Your Login OTP',
+          template: 'otp-login',
+          context: { name: user?.name || identifier, otp },
+        });
+      } catch (err) {
+        await this.redisService.del(`login:otp:${identifier}`);
+        this.logger.warn(`Failed to queue login OTP email: ${(err as Error).message}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     }
     return { success: true, message: 'If account exists, OTP sent', expiresIn: 300 };
   }
@@ -652,15 +676,35 @@ export class AuthService {
     await this.redisService.set(`reset:otp:${identifier}`, otp, 300);
     const isPhone = /^\+?[1-9]\d{9,14}$/.test(identifier);
     if (isPhone) {
-      await this.smsService.sendOtp(identifier, otp, 'OTP_RESET_PASSWORD');
+      // P2C-R2 parity: an undeliverable SMS must not claim "OTP sent" —
+      // delete the stored code and surface the honest 503.
+      const smsResult = await this.smsService.sendOtp(identifier, otp, 'OTP_RESET_PASSWORD');
+      if (!smsResult.success) {
+        await this.redisService.del(`reset:otp:${identifier}`);
+        this.logger.warn(`Reset OTP SMS not delivered to ${this.maskIdentifier(identifier)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     } else {
-      await this.emailQueue.add(QueueNames.EMAIL, {
-        type: EmailJobTypes.SEND_PASSWORD_RESET,
-        to: identifier,
-        subject: 'Password Reset OTP',
-        template: 'password-reset',
-        context: { name: user?.name || identifier, otp },
-      }).catch((err) => this.logger.warn(`Failed to queue password reset OTP email: ${(err as Error).message}`));
+      // P2C-R2 parity: never claim delivery when no provider can deliver and
+      // never swallow enqueue failures — same honest 503 as sendOtp().
+      if (!this.isEmailDeliverable()) {
+        await this.redisService.del(`reset:otp:${identifier}`);
+        this.logger.warn(`Email delivery unavailable — reset OTP not queued for ${this.maskIdentifier(identifier)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      try {
+        await this.emailQueue.add(QueueNames.EMAIL, {
+          type: EmailJobTypes.SEND_PASSWORD_RESET,
+          to: identifier,
+          subject: 'Password Reset OTP',
+          template: 'password-reset',
+          context: { name: user?.name || identifier, otp },
+        });
+      } catch (err) {
+        await this.redisService.del(`reset:otp:${identifier}`);
+        this.logger.warn(`Failed to queue password reset OTP email: ${(err as Error).message}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     }
     return { success: true, message: 'If account exists, reset OTP sent', expiresIn: 300 };
   }
@@ -749,7 +793,11 @@ export class AuthService {
         throw new ConflictException('Email already registered');
       }
 
-      const existingPan = await tx.company.findFirst({ where: { panNumber: dto.panNumber } });
+      // ONE PAN = ONE TRADINGO identity (lifetime): case-insensitive match so a
+      // case variant can never mint a second identity for the same PAN. The DTO
+      // regex already enforces canonical uppercase; the insensitive match is
+      // defense-in-depth for legacy rows.
+      const existingPan = await tx.company.findFirst({ where: { panNumber: { equals: dto.panNumber.trim().toUpperCase(), mode: 'insensitive' } } });
       if (existingPan) {
         throw new ConflictException('PAN number already registered');
       }
@@ -770,7 +818,7 @@ export class AuthService {
       });
 
       const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
-      await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
+      await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null, tx);
 
       await this.emailQueue.add(QueueNames.EMAIL, {
         type: EmailJobTypes.SEND_WELCOME_EMAIL,
@@ -836,8 +884,9 @@ export class AuthService {
         slug,
         businessType,
         companyStructure,
-        panNumber: dto.panNumber,
-        gstNumber: dto.gstNumber || null,
+        // Canonical uppercase identity anchors (ONE PAN = ONE identity, lifetime).
+        panNumber: dto.panNumber.trim().toUpperCase(),
+        gstNumber: dto.gstNumber ? dto.gstNumber.trim().toUpperCase() : null,
         website: dto.website || null,
         email: dto.email,
         mobile: dto.mobileNumber,
@@ -916,8 +965,14 @@ export class AuthService {
         // or missing businessType is replaced by the vendor form's normalized value.
         businessType: company.businessType === 'PROFESSIONAL' ? company.businessType : businessType,
         companyStructure,
-        panNumber: company.panNumber || dto.panNumber,
-        gstNumber: company.gstNumber || dto.gstNumber || null,
+        // Canonical uppercase identity anchors — first declaration wins, never
+        // downgraded to a case variant (ONE PAN = ONE identity, lifetime).
+        panNumber: (company.panNumber || dto.panNumber).trim().toUpperCase(),
+        gstNumber: company.gstNumber
+          ? company.gstNumber.trim().toUpperCase()
+          : dto.gstNumber
+            ? dto.gstNumber.trim().toUpperCase()
+            : null,
         website: company.website || dto.website || null,
         email: company.email || dto.email,
         mobile: company.mobile || dto.mobileNumber,
@@ -993,7 +1048,7 @@ export class AuthService {
     }
 
     if (!ownedCompanies.length) {
-      const existingPan = await this.prisma.company.findFirst({ where: { panNumber: dto.panNumber } });
+      const existingPan = await this.prisma.company.findFirst({ where: { panNumber: { equals: dto.panNumber.trim().toUpperCase(), mode: 'insensitive' } } });
       if (existingPan) {
         throw new ConflictException('PAN number already registered');
       }
@@ -1434,8 +1489,8 @@ export class AuthService {
     const ipCount = await this.redisService.incr(ipKey);
     if (ipCount === 1) await this.redisService.expire(ipKey, 60);
     if (ipCount > 10) {
-      this.logger.warn(`OTP rate limit exceeded for IP: ${ipAddress}`);
-      return { success: true, message: `OTP sent to ${value}`, expiresIn: 300 };
+      this.logger.warn(`OTP rate limit exceeded for IP: ${ipAddress} (recipient ${this.maskIdentifier(value)})`);
+      throw new HttpException('Too many OTP requests. Please try again later.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -1444,17 +1499,56 @@ export class AuthService {
     await this.redisService.set(key, otp, 300); // 5 min expiry
 
     if (type === 'mobile') {
-      await this.smsService.sendOtp(value, otp, 'OTP_VERIFY_MOBILE');
+      const result = await this.smsService.sendOtp(value, otp, 'OTP_VERIFY_MOBILE');
+      if (!result.success) {
+        await this.redisService.del(key);
+        this.logger.warn(`Registration OTP SMS not delivered to ${this.maskIdentifier(value)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     } else {
-      await this.emailQueue.add(QueueNames.EMAIL, {
-        type: EmailJobTypes.SEND_NOTIFICATION,
-        to: value,
-        subject: 'Your Verification OTP',
-        template: 'otp-verify',
-        context: { name: value, otp, type: 'Email' },
-      }).catch((err) => this.logger.warn(`Failed to queue verification OTP email: ${(err as Error).message}`));
+      // P2C-R2: never report delivery success when no provider can deliver.
+      // Mirrors EmailProcessor's configured-provider check (same config keys).
+      if (!this.isEmailDeliverable()) {
+        await this.redisService.del(key);
+        this.logger.warn(`Email delivery unavailable — registration OTP not queued for ${this.maskIdentifier(value)}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      try {
+        await this.emailQueue.add(QueueNames.EMAIL, {
+          type: EmailJobTypes.SEND_NOTIFICATION,
+          to: value,
+          subject: 'Your Verification OTP',
+          template: 'otp-verify',
+          context: { name: value, otp, type: 'Email' },
+        });
+      } catch (err) {
+        await this.redisService.del(key);
+        this.logger.warn(`Failed to queue verification OTP email: ${(err as Error).message}`);
+        throw new HttpException('Verification service temporarily unavailable. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
     }
     return { success: true, message: `OTP sent to ${value}`, expiresIn: 300 };
+  }
+
+  /**
+   * P2C-R2: canonical email-deliverability check. Mirrors EmailProcessor's
+   * provider selection (EMAIL_PROVIDER + aws.* / RESEND_API_KEY) without
+   * duplicating the sending service — auth only needs to know whether
+   * claiming delivery would be honest.
+   */
+  private isEmailDeliverable(): boolean {
+    const provider = this.configService.get<string>('EMAIL_PROVIDER', 'ses');
+    if (provider === 'resend') return !!this.configService.get<string>('RESEND_API_KEY');
+    return !!(this.configService.get<string>('aws.accessKeyId') && this.configService.get<string>('aws.secretAccessKey'));
+  }
+
+  /** Mask identifiers in logs: `a***@example.com`, `******1234`. Never logs OTPs. */
+  private maskIdentifier(value: string): string {
+    if (value.includes('@')) {
+      const [user, domain] = value.split('@');
+      return `${user.slice(0, 1)}***@${domain ?? ''}`;
+    }
+    return `******${value.slice(-4)}`;
   }
 
   async verifyOtp(type: 'mobile' | 'email', value: string, otp: string) {

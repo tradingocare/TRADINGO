@@ -148,7 +148,7 @@ export function SubcategoriesSection() {
         <EmptyNote
           icon={<Layers className="h-6 w-6" />}
           text={query ? `No sub-categories match "${query}".` : 'No sub-categories yet.'}
-          actionHref="/register"
+          actionHref="/golive"
           actionLabel="Register Your Business"
         />
       ) : (

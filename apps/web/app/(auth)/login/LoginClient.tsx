@@ -15,7 +15,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 import apiClient from '@/lib/api/client'
 import { setAccessToken } from '@/lib/auth'
-import { getDashboardForRole, getSellerEntryTarget } from '@/lib/auth/redirects'
+import { getSellerEntryTarget, resolvePostLoginTarget } from '@/lib/auth/redirects'
 import { useAuthStore } from '@/store/auth-store'
 import { toast } from '@/components/ui/use-toast'
 
@@ -32,7 +32,7 @@ const ROLES = [
     dashboard: '/buyer/dashboard',
     loginNote: null,
     features: [
-      'Browse 33,600+ verified products',
+      'Browse verified products',
       'Post RFQs and get instant quotes',
       'Track orders and escrow payments',
       'Earn and redeem GOCASH',
@@ -60,38 +60,7 @@ const ROLES = [
       'GO DIGITAL showcase management',
     ],
   },
-  {
-    key:      'admin',
-    label:    'Admin / RM',
-    fullLabel: 'Admin Access',
-    icon:     Shield,
-    color:    '#9B5DE5',
-    hint:     'Internal team and relationship managers',
-    idLabel:  'Employee Email / Admin ID',
-    idPlaceholder: 'your-email@tradingo.in',
-    dashboard: '/admin/dashboard',
-    loginNote: {
-      text: '🔒 Restricted Access',
-      detail: 'This login is for TRADINGO internal '
-            + 'team members and authorized RMs only.',
-    },
-    features: [
-      'Full marketplace management',
-      'KYC verification and approvals',
-      'Seller and buyer analytics',
-      'Dispute resolution dashboard',
-    ],
-  },
 ]
-
-function resolvePostLoginTarget(userRole: string, requested: string | null) {
-  const dashboard = getDashboardForRole(userRole)
-  if (!requested || !requested.startsWith('/')) return dashboard
-  if (userRole === 'SELLER' && requested.startsWith('/seller/')) return requested
-  if (userRole === 'BUYER' && (requested.startsWith('/buyer/') || requested.startsWith('/register/'))) return requested
-  if ((userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && requested.startsWith('/admin/')) return requested
-  return dashboard
-}
 
 export default function LoginClient() {
   const router       = useRouter()
@@ -119,6 +88,16 @@ export default function LoginClient() {
   const [turnstileToken, setTurnstileToken] = useState('')
 
   const redirectTo = searchParams.get('next') || searchParams.get('redirect') || role.dashboard
+
+  // GoStart Create Account CTA (R3C-R1C): canonical buyer
+  // registration, preserving a validated vendor context. Only
+  // same-app /register/* targets are honored; anything else
+  // (hostile or unrelated) falls back to /register/buyer.
+  const createAccountHref = (() => {
+    const next = searchParams.get('next') || searchParams.get('redirect')
+    if (next && next.startsWith('/register/')) return next
+    return '/register/buyer'
+  })()
 
   useEffect(() => {
     setIdentifier('')
@@ -357,25 +336,6 @@ export default function LoginClient() {
                   </motion.div>
                 ))}
               </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { v:'5L+',   l:'Active Users'   },
-                  { v:'₹0',    l:'Commission'      },
-                  { v:'100%',  l:'Secure Payments' },
-                ].map(s => (
-                  <div key={s.l}
-                    className="text-center py-3 px-2 rounded-2xl bg-surface"
-                    style={{
-                      border:'1px solid var(--border-color)',
-                    }}>
-                    <p className="font-black text-text-primary text-lg leading-none">
-                      {s.v}
-                    </p>
-                    <p className="text-text-tertiary text-[9px] mt-0.5">{s.l}</p>
-                  </div>
-                ))}
-              </div>
             </motion.div>
           </AnimatePresence>
 
@@ -409,7 +369,7 @@ export default function LoginClient() {
             <Image src="/logo/trdn5.png" alt="TRADINGO"
               width={36} height={36} className="object-contain" />
           </Link>
-          <Link href="/register"
+          <Link href={createAccountHref}
             className="text-xs font-bold px-3 py-1.5 rounded-full"
             style={{
               background:'rgba(0, 255, 255, 0.1)',
@@ -425,6 +385,8 @@ export default function LoginClient() {
           <div className="w-full max-w-md">
 
             <div className="flex gap-1.5 p-1.5 rounded-2xl mb-7 bg-surface"
+              role="radiogroup"
+              aria-label="Login account type"
               style={{
                 border:'1px solid var(--border-color)',
               }}>
@@ -434,6 +396,8 @@ export default function LoginClient() {
                 return (
                   <motion.button
                     key={r.key}
+                    role="radio"
+                    aria-checked={active}
                     onClick={() => setActiveRole(i)}
                     whileTap={{ scale:0.96 }}
                     className="flex-1 flex items-center justify-center gap-1.5
@@ -500,22 +464,18 @@ export default function LoginClient() {
                     animate={{ opacity:1, scale:1 }}
                     className="flex items-start gap-3 px-4 py-3 rounded-xl"
                     style={{
-                      background: activeRole === 1
-                        ? 'rgba(242,201,76,0.08)'
-                        : 'rgba(155,93,229,0.08)',
-                      border: activeRole === 1
-                        ? '1px solid rgba(242,201,76,0.2)'
-                        : '1px solid rgba(155,93,229,0.2)',
+                      background: 'rgba(242,201,76,0.08)',
+                      border: '1px solid rgba(242,201,76,0.2)',
                     }}>
                     <Info size={14} className="flex-shrink-0 mt-0.5"
                       style={{
-                        color: activeRole === 1 ? '#F2C94C' : '#9B5DE5',
+                        color: '#F2C94C',
                       }} />
                     <div>
                       <p className="font-bold text-xs"
                         style={{
-                        color: activeRole === 1 ? 'var(--accent)' : '#9B5DE5',
-                      }}>
+                        color: 'var(--accent)',
+                        }}>
                         {role.loginNote.text}
                       </p>
                       <p className="text-white/45 text-[10px] mt-0.5 leading-relaxed">
@@ -546,8 +506,7 @@ export default function LoginClient() {
                   )}
                 </AnimatePresence>
 
-                {activeRole !== 2 && (
-                  <div className="space-y-2.5">
+                <div className="space-y-2.5">
                     <motion.button
                       type="button"
                       onClick={handleGoogleLogin}
@@ -610,7 +569,6 @@ className="w-full flex items-center gap-3 px-4 py-3
                       <div className="flex-1 h-px bg-surface" />
                     </div>
                   </div>
-                )}
 
                 {activeRole === 0 && (
                   <div className="flex gap-1.5">
@@ -877,15 +835,11 @@ className="w-full pl-10 pr-11 py-3.5 rounded-xl
                       style={{
                         background: activeRole === 0
                           ? 'linear-gradient(135deg,#3D8BFF,#2DE0E0)'
-                          : activeRole === 1
-                            ? 'linear-gradient(135deg,#f59e0b,#fbbf24)'
-                            : 'linear-gradient(135deg,#9B5DE5,#7B3FE4)',
+                          : 'linear-gradient(135deg,#f59e0b,#fbbf24)',
                         color:'#fff',
                         boxShadow: activeRole === 0
                           ? '0 8px 24px rgba(61,139,255,0.3)'
-                          : activeRole === 1
-                            ? '0 8px 24px rgba(245, 158, 11, 0.3)'
-                            : '0 8px 24px rgba(155,93,229,0.3)',
+                          : '0 8px 24px rgba(245, 158, 11, 0.3)',
                       }}>
                       {loading
                         ? <><LoadingSpinner size="sm" />
@@ -898,8 +852,7 @@ className="w-full pl-10 pr-11 py-3.5 rounded-xl
                   )}
                 </form>
 
-                {activeRole !== 2 && (
-                  <>
+                <>
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full" style={{ borderTop: '1px solid var(--border-color)' }} />
@@ -924,11 +877,9 @@ className="w-full pl-10 pr-11 py-3.5 rounded-xl
                       </a>
                     </div>
                   </>
-                )}
 
-                {activeRole !== 2 && (
-                  <div className="flex items-center justify-center gap-1
-                                  flex-wrap text-[10px] text-text-tertiary pt-1">
+                <div className="flex items-center justify-center gap-1
+                                flex-wrap text-[10px] text-text-tertiary pt-1">
                     <span>Having trouble?</span>
                     <Link href="/help/login"
                       className="hover:text-white/50 underline transition-colors">
@@ -945,7 +896,6 @@ className="w-full pl-10 pr-11 py-3.5 rounded-xl
                       Contact Support
                     </a>
                   </div>
-                )}
 
               </div>
             </motion.div>

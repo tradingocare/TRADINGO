@@ -112,7 +112,7 @@ export default function SellerBadge({
 
       <div className="flex flex-col min-w-0 flex-1">
         <div className="flex items-center gap-1 flex-wrap">
-          <Building2 size={s.icon} className="text-gray-400 flex-shrink-0" />
+          <Building2 size={s.icon} className="text-text-tertiary flex-shrink-0" />
           <span className={`${s.text} font-bold text-gray-900 truncate ${linkToProfile ? 'group-hover:text-accent-500 transition-colors' : ''}`}>
             {sellerName}
           </span>
@@ -131,15 +131,15 @@ export default function SellerBadge({
         </div>
 
         {(showLocation || (!showLocation && !showStats)) && (seller.city || seller.state) && (
-          <div className={`flex items-center gap-1 ${s.subtext} text-gray-400 mt-0.5`}>
+          <div className={`flex items-center gap-1 ${s.subtext} text-text-tertiary mt-0.5`}>
             <MapPin size={s.icon - 2} className="flex-shrink-0 text-accent-500" />
             <span className="truncate">
               {[seller.city, seller.state].filter(Boolean).join(', ')}
             </span>
             {seller.yearsActive && (
               <>
-                <span className="text-gray-300 mx-0.5">·</span>
-                <span className="text-gray-400 flex-shrink-0">{seller.yearsActive} yrs</span>
+                <span className="text-text-tertiary mx-0.5">·</span>
+                <span className="text-text-tertiary flex-shrink-0">{seller.yearsActive} yrs</span>
               </>
             )}
           </div>
@@ -160,20 +160,20 @@ export default function SellerBadge({
               </span>
             )}
             {seller.ordersFulfilled && seller.ordersFulfilled > 0 && (
-              <span className={`${s.subtext} text-gray-400`}>
+              <span className={`${s.subtext} text-text-tertiary`}>
                 {seller.ordersFulfilled >= 1000
                   ? `${(seller.ordersFulfilled / 1000).toFixed(1)}K`
                   : seller.ordersFulfilled}+ orders
               </span>
             )}
             {seller.trustScore && seller.trustScore >= 60 && (
-              <span className={`${s.subtext} flex items-center gap-0.5 text-gray-400`}>
+              <span className={`${s.subtext} flex items-center gap-0.5 text-text-tertiary`}>
                 <Shield size={s.icon - 3} className="text-green-400" />
                 {seller.trustScore}/100
               </span>
             )}
             {seller.yearsActive && (
-              <span className={`${s.subtext} text-gray-400`}>{seller.yearsActive} yrs active</span>
+              <span className={`${s.subtext} text-text-tertiary`}>{seller.yearsActive} yrs active</span>
             )}
           </div>
         )}
@@ -189,7 +189,7 @@ export default function SellerBadge({
                 }}
               />
             </div>
-            <span className="text-[8px] text-gray-300 flex-shrink-0">{seller.trustScore}/100</span>
+            <span className="text-[8px] text-text-tertiary flex-shrink-0">{seller.trustScore}/100</span>
           </div>
         )}
       </div>

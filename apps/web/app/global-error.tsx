@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ErrorState } from '@/components/shared/error-state';
 
@@ -11,7 +11,7 @@ export default function GlobalError({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-surface text-text-primary antialiased dark:bg-dark-surface dark:text-dark-text-primary">
+      <body className="min-h-screen bg-surface text-text-primary antialiased">
         <ErrorState
           error={error}
           reset={reset}

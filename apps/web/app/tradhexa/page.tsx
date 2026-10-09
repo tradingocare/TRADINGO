@@ -202,9 +202,9 @@ export default function TradhexaPage() {
             </motion.span>
           </Link>
           <div className="mt-3 flex justify-center gap-4 text-xs">
-            <Link href="/register" className="text-text-secondary underline underline-offset-2 hover:text-text-primary">Become a Seller</Link>
+            <Link href="/golive" className="text-text-secondary underline underline-offset-2 hover:text-text-primary">Become a Seller</Link>
             <span className="text-text-tertiary">|</span>
-            <Link href="/register" className="text-text-secondary underline underline-offset-2 hover:text-text-primary">Start Trading</Link>
+            <Link href="/register/buyer" className="text-text-secondary underline underline-offset-2 hover:text-text-primary">Start Trading</Link>
           </div>
         </motion.div>
       </div>

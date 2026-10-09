@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -84,7 +84,7 @@ export default function BetaOnboardingPage() {
         <DashboardPageHeader title="Onboarding Wizard" description="Guided setup for your TRADINGO beta program" />
         <Card>
           <CardContent className="flex items-center justify-center py-16">
-            <div className="flex items-center gap-3 text-text-secondary dark:text-dark-text-secondary">
+            <div className="flex items-center gap-3 text-text-secondary">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
               Loading onboarding status...
             </div>
@@ -100,7 +100,7 @@ export default function BetaOnboardingPage() {
         <DashboardPageHeader title="Onboarding Wizard" description="Guided setup for your TRADINGO beta program" />
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="mb-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">{error}</p>
+            <p className="mb-4 text-lg font-medium text-text-primary">{error}</p>
             <Button onClick={fetchStatus}>Retry</Button>
           </CardContent>
         </Card>
@@ -138,10 +138,10 @@ export default function BetaOnboardingPage() {
         <CardContent>
           <div className="mb-6">
             <div className="mb-1 flex items-center justify-between">
-              <span className="text-sm text-text-secondary dark:text-dark-text-secondary">Progress</span>
-              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{progress}%</span>
+              <span className="text-sm text-text-secondary">Progress</span>
+              <span className="text-sm font-medium text-text-primary">{progress}%</span>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-tertiary">
               <div
                 className="h-full rounded-full bg-primary-500 transition-all duration-500"
                 style={{ width: `${progress}%` }}
@@ -152,10 +152,10 @@ export default function BetaOnboardingPage() {
           {isComplete ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <CheckCircle className="mb-4 h-16 w-16 text-accent-500" />
-              <h3 className="mb-2 text-xl font-bold text-text-primary dark:text-dark-text-primary">
+              <h3 className="mb-2 text-xl font-bold text-text-primary">
                 Onboarding Complete!
               </h3>
-              <p className="mb-6 max-w-md text-text-secondary dark:text-dark-text-secondary">
+              <p className="mb-6 max-w-md text-text-secondary">
                 You've completed all onboarding steps. Your storefront is ready to go live. Start exploring your dashboard
                 to manage products, respond to RFQs, and grow your business.
               </p>
@@ -179,7 +179,7 @@ export default function BetaOnboardingPage() {
                           className={`absolute left-[15px] top-8 w-px ${
                             isStepCompleted
                               ? 'bg-accent-500'
-                              : 'bg-border dark:bg-dark-border'
+                              : 'bg-border dark:bg-border'
                           }`}
                           style={{ height: 'calc(100% + 0.5rem)' }}
                         />
@@ -197,7 +197,7 @@ export default function BetaOnboardingPage() {
                         className={`min-w-0 flex-1 rounded-lg border p-4 ${
                           isCurrent
                             ? 'border-primary-500 bg-primary-50/50 dark:border-primary-500 dark:bg-primary-900/10'
-                            : 'border-border bg-surface dark:border-dark-border dark:bg-dark-surface'
+                            : 'border-border bg-surface border-border bg-surface'
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -225,7 +225,7 @@ export default function BetaOnboardingPage() {
                         </div>
                         <p
                           className={`mt-1 text-sm ${
-                            isPending ? 'text-text-tertiary' : 'text-text-secondary dark:text-dark-text-secondary'
+                            isPending ? 'text-text-tertiary' : 'text-text-secondary text-text-secondary'
                           }`}
                         >
                           {step.description}

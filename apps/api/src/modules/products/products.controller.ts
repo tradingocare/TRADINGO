@@ -17,9 +17,12 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { ModerateReviewDto } from './dto/moderate-review.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ProductPricingService } from './services/product-pricing.service';
+import { ProductPricingQueryDto } from './dto/product-pricing-query.dto';
 
 @ApiTags('Products')
 @Throttle(RateLimits.MARKETPLACE_READ)
@@ -32,6 +35,7 @@ export class ProductsController {
     private readonly qaService: QaService,
     private readonly bestsellerService: BestsellerService,
     private readonly prisma: PrismaService,
+    private readonly productPricingService: ProductPricingService,
   ) {}
 
   private async resolveProductId(slug: string): Promise<string> {
@@ -59,7 +63,7 @@ export class ProductsController {
   @Public()
   async findAll(@Query() query: {
     cursor?: string; limit?: number; search?: string;
-    companyId?: string; categoryId?: string; industryId?: string;
+    companyId?: string; categoryId?: string; category?: string; industryId?: string;
     productType?: string; status?: string; isFeatured?: string;
   }) {
     return this.productsService.findAll({ ...query, status: 'ACTIVE' });
@@ -94,6 +98,40 @@ export class ProductsController {
       data,
       meta: { total, page: p, limit: l, totalPages: Math.ceil(total / l), hasNext: p * l < total, hasPrevious: p > 1 },
     };
+  }
+
+  // P0-3 — moderation discovery queue (admin-only). Placed with the other
+  // static admin routes (before any ':slug' route) so 'admin' is never
+  // interpreted as a product slug.
+  @Get('admin/reviews')
+  @ApiOperation({ summary: 'List reviews for moderation (admin)' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  async adminListReviews(
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    const allowed = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+    const s = allowed.includes(status as (typeof allowed)[number])
+      ? (status as (typeof allowed)[number])
+      : undefined;
+    return this.reviewsService.listReviewsForModeration(s, parseInt(page, 10) || 1, parseInt(limit, 10) || 20);
+  }
+
+  // P0-3 — the single legitimate moderation write-path. PENDING → APPROVED |
+  // REJECTED, ADMIN/SUPER_ADMIN only; terminal states, idempotency and the
+  // self-moderation ban are enforced in ReviewsService.moderateReview.
+  @Patch('admin/reviews/:id/moderate')
+  @ApiOperation({ summary: 'Approve or reject a review (admin)' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  async moderateReview(
+    @Param('id') id: string,
+    @Body() dto: ModerateReviewDto,
+    @CurrentUser('sub') moderatorId: string,
+  ) {
+    return this.reviewsService.moderateReview(id, dto.status, moderatorId);
   }
 
   @Get('companies/:companyId/products')
@@ -163,6 +201,18 @@ export class ProductsController {
   @Public()
   async lookupById(@Param('id') id: string) {
     return this.productsService.findById(id);
+  }
+
+  @Get(':id/pricing')
+  @ApiOperation({ summary: 'Server-authoritative unit price and subtotal for a product at a requested quantity' })
+  @Public()
+  async getProductPricing(
+    @Param('id') id: string,
+    @Query(new ValidationPipe({ transform: true })) query: ProductPricingQueryDto,
+  ) {
+    const result = await this.productPricingService.resolvePricing(id, query.qty);
+    if (result.reason === 'PRODUCT_NOT_FOUND') throw new NotFoundException('Product not found');
+    return result;
   }
 
   @Get(':slug')

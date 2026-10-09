@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TaxService, TaxResult } from './tax.service';
+import {
+  getIndianFinancialYear,
+  formatInvoiceNumber,
+} from './utils/financial-year.util';
 
 export interface GenerateInvoiceParams {
   companyId: string;
@@ -10,7 +15,7 @@ export interface GenerateInvoiceParams {
   planTier: string;
   amount: number;
   discountAmount?: number;
-  gstNumber?: string;
+  gstNumber?: string | null;
   billingName?: string;
   billingAddress?: any;
   isIntraState?: boolean;
@@ -26,32 +31,46 @@ export class InvoiceService {
     private readonly taxService: TaxService,
   ) {}
 
-  async generateInvoiceNumber(): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const prefix = 'TRD-INV';
+  // P0-2: optional transaction client so subscription activation can include the
+  // invoice in the same atomic unit as capture (pattern: enrollTrial / activateSubscription).
+  async generateInvoiceNumber(client?: Prisma.TransactionClient | PrismaService): Promise<string> {
+    const db = client ?? this.prisma;
+    const { startYear, fyLabel } = getIndianFinancialYear();
+    const prefix = 'TRD';
 
-    const seq = await this.prisma.invoiceSequence.upsert({
-      where: { prefix_year: { prefix, year } },
+    const seq = await db.invoiceSequence.upsert({
+      where: { prefix_year: { prefix, year: startYear } },
       update: { lastSeq: { increment: 1 } },
-      create: { prefix, year, lastSeq: 1 },
+      create: { prefix, year: startYear, lastSeq: 1 },
     });
 
-    return `${prefix}-${year}-${String(seq.lastSeq).padStart(6, '0')}`;
+    return formatInvoiceNumber(prefix, fyLabel, seq.lastSeq);
   }
 
-  async createSubscriptionInvoice(params: GenerateInvoiceParams): Promise<any> {
-    const invoiceNumber = await this.generateInvoiceNumber();
+  async createSubscriptionInvoice(params: GenerateInvoiceParams, client?: Prisma.TransactionClient | PrismaService): Promise<any> {
+    const db = client ?? this.prisma;
+    const invoiceNumber = await this.generateInvoiceNumber(client);
     const hsnSac = this.taxService.getHsnSacForPlan(params.planId);
+
+    // P0-5 remediation — Money unit contract:
+    //   params.amount arrives in PAISE (Payment.amount canonical minor units — the
+    //   same convention the booking path uses). Invoice columns are INR RUPEES
+    //   (Decimal(12,2), rendered directly via toFixed(2) on PDF/UI). Exactly ONE
+    //   conversion paise -> rupees happens at this invoice boundary, and EVERY
+    //   monetary operand below (subtotal, discount, GST, total) is rupee-scale —
+    //   previously GST was computed against the un-converted paise amount while the
+    //   subtotal was divided, producing arithmetically meaningless totals.
+    //   Tax rates (CGST 9% / SGST 9% / IGST 18%) are unchanged — unit alignment only.
+    const netPaise = params.amount - (params.discountAmount || 0);
+    const amountInRupees = Math.round(netPaise) / 100;
+
     const tax: TaxResult = this.taxService.calculateGst(
-      params.amount - (params.discountAmount || 0),
+      amountInRupees,
       params.isIntraState !== false,
       params.taxExempt || false,
     );
 
-    const amountInRupees = (params.amount - (params.discountAmount || 0)) / 100;
-
-    const invoice = await this.prisma.invoice.create({
+    const invoice = await db.invoice.create({
       data: {
         invoiceNumber,
         type: 'SUBSCRIPTION',
@@ -62,7 +81,7 @@ export class InvoiceService {
         planTier: params.planTier,
         subtotal: amountInRupees,
         taxAmount: tax.totalTax,
-        discountAmount: params.discountAmount || 0,
+        discountAmount: params.discountAmount ? Math.round(params.discountAmount) / 100 : 0,
         totalAmount: tax.totalTax + amountInRupees,
         currency: 'INR',
         billingName: params.billingName || null,
@@ -79,7 +98,7 @@ export class InvoiceService {
       },
     });
 
-    await this.prisma.invoiceItem.create({
+    await db.invoiceItem.create({
       data: {
         invoiceId: invoice.id,
         description: `${params.planName} - ${params.planTier === 'A' ? 'Annual' : params.planTier === 'B' ? '2 Years' : '3 Years'}`,
@@ -103,11 +122,11 @@ export class InvoiceService {
         breakdowns.push({ invoiceId: invoice.id, taxType: 'IGST' as any, rate: tax.igstRate, amount: tax.igstAmount, sortOrder: 3 });
       }
       if (breakdowns.length > 0) {
-        await this.prisma.taxBreakdown.createMany({ data: breakdowns });
+        await db.taxBreakdown.createMany({ data: breakdowns });
       }
     }
 
-    await this.prisma.invoiceHistory.create({
+    await db.invoiceHistory.create({
       data: {
         invoiceId: invoice.id,
         status: 'GENERATED',

@@ -26,8 +26,14 @@ export class TwilioSmsProvider implements SmsProvider {
 
   async send(phoneNumber: string, message: string): Promise<SmsResult> {
     if (!this.twilioClient) {
-      this.logger.warn(`[Twilio] Not configured — would send to ${phoneNumber}: ${message}`);
-      return { success: true, messageId: `twilio-noop-${Date.now()}`, provider: 'twilio' };
+      // Honesty fix (auth-doc final audit): an unconfigured Twilio provider
+      // must never claim delivery. Return an explicit failure so callers
+      // (SmsService.sendOtp → auth sendOtp/sendLoginOtp/sendResetOtp) surface
+      // the honest 503 "Verification service temporarily unavailable" instead
+      // of a fabricated "OTP sent". The message body is NOT logged here (the
+      // OTP must not leak into noop logs).
+      this.logger.warn('[Twilio] Not configured — SMS delivery unavailable (no send attempted)');
+      return { success: false, provider: 'twilio', error: 'Twilio SMS provider is not configured' };
     }
     try {
       const from = this.configService.get<string>('TWILIO_PHONE_NUMBER');

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import BuyerRegistrationWizard from './BuyerRegistrationWizard'
 
@@ -20,7 +21,7 @@ export default function BuyerRegisterPage() {
         <div className="flex items-center justify-between px-6 py-4"
           style={{ borderBottom: '1px solid var(--border-color)' }}>
           <Link href="/">
-            <img src="/logo/trdn5.png" alt="TRADINGO" className="h-9 w-9 object-contain" />
+            <Image src="/logo/trdn5.png" alt="TRADINGO" width={54} height={36} className="object-contain" />
           </Link>
           <p className="text-text-secondary text-xs">
             Already have an account?{' '}

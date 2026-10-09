@@ -27,7 +27,7 @@ function RankingCard({ community, rank }: { community: Community | RankingCommun
   const isTop3 = rank <= 3;
   return (
     <div className={`flex items-center gap-4 rounded-lg border p-4 transition-colors hover:border-accent/50 ${isTop3 ? 'border-accent/20 bg-accent/5' : 'border-border bg-bg-elevated'}`}>
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold ${rank === 1 ? 'bg-amber-500/20 text-amber-400' : rank === 2 ? 'bg-gray-400/20 text-gray-300' : rank === 3 ? 'bg-orange-600/20 text-orange-400' : 'bg-surface text-text-tertiary'}`}>
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold ${rank === 1 ? 'bg-amber-500/20 text-amber-400' : rank === 2 ? 'bg-gray-400/20 text-text-tertiary' : rank === 3 ? 'bg-orange-600/20 text-orange-400' : 'bg-surface text-text-tertiary'}`}>
         {rank}
       </div>
       <div className="min-w-0 flex-1">

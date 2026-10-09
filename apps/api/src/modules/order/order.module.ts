@@ -7,11 +7,12 @@ import { OrderDocumentService } from './order-document.service';
 import { OrderAnalyticsService } from './order-analytics.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { ChatModule } from '../chat/chat.module';
+import { ProductPricingService } from '../products/services/product-pricing.service';
 
 @Module({
   imports: [ChatModule, AnalyticsModule],
   controllers: [OrderController],
-  providers: [OrderService, OrderNumberService, OrderTimelineService, OrderDocumentService, OrderAnalyticsService],
+  providers: [OrderService, OrderNumberService, OrderTimelineService, OrderDocumentService, OrderAnalyticsService, ProductPricingService],
   exports: [OrderService, OrderAnalyticsService, OrderNumberService],
 })
 export class OrderModule {}

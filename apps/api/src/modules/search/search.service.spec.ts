@@ -2,10 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { SearchService } from './search.service';
 
-const mockClient = {
+const mockClient: any = {
   index: jest.fn(),
   search: jest.fn(),
   delete: jest.fn(),
+  ping: jest.fn(),
 };
 
 jest.mock('@opensearch-project/opensearch', () => ({
@@ -139,6 +140,40 @@ describe('SearchService', () => {
       expect(mockClient.search).toHaveBeenCalledWith(
         expect.objectContaining({ from: 10, size: 10 }),
       );
+    });
+
+    it('should return degraded=true when client throws', async () => {
+      mockClient.search.mockRejectedValue(new Error('ECONNREFUSED'));
+      const result = await service.search('products', 'test');
+      expect(result.degraded).toBe(true);
+      expect(result.hits).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.error).toBe('ECONNREFUSED');
+    });
+
+    it('should return degraded=false when client succeeds', async () => {
+      mockClient.search.mockResolvedValue({
+        body: { hits: { hits: [], total: { value: 0 } } },
+      });
+      const result = await service.search('products', '');
+      expect(result.degraded).toBe(false);
+    });
+  });
+
+  describe('ping', () => {
+    it('should return true when client.ping resolves true', async () => {
+      mockClient.ping.mockResolvedValue(true);
+      await expect(service.ping()).resolves.toBe(true);
+    });
+
+    it('should return true when client.ping resolves with body=true', async () => {
+      mockClient.ping.mockResolvedValue({ body: true });
+      await expect(service.ping()).resolves.toBe(true);
+    });
+
+    it('should return false when client.ping throws', async () => {
+      mockClient.ping.mockRejectedValue(new Error('connection refused'));
+      await expect(service.ping()).resolves.toBe(false);
     });
   });
 

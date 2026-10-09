@@ -1,9 +1,14 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   generateRfqFromText, refineRfq, detectMissingFields, detectDuplicateRfqs,
-  predictCategory, suggestProducts, suggestSuppliers, calculateQualityScore,
+  suggestProducts, suggestSuppliers, calculateQualityScore,
   translateRfq, getAiAssistantData,
 } from '@/lib/api/ai-rfq'
+
+// P0-3 Step 10 (F-15): dead usePredictCategory hook retired — zero call
+// sites (the wizard consumes predictCategory directly via dynamic import
+// in StepRequirement; canonical triple contract lives in the Step-3 suite).
+// The predictCategory API function itself stays exported (live route).
 
 export function useGenerateRfqFromText() {
   return useMutation({ mutationFn: ({ text, language }: { text: string; language?: string }) => generateRfqFromText(text, language) })
@@ -19,10 +24,6 @@ export function useDetectMissingFields() {
 
 export function useDetectDuplicateRfqs() {
   return useMutation({ mutationFn: ({ title, description, productNames }: { title: string; description?: string; productNames?: string[] }) => detectDuplicateRfqs(title, description, productNames) })
-}
-
-export function usePredictCategory() {
-  return useMutation({ mutationFn: ({ productName, description }: { productName: string; description?: string }) => predictCategory(productName, description) })
 }
 
 export function useSuggestProducts() {

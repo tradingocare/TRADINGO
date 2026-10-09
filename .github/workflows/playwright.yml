@@ -125,8 +125,41 @@ jobs:
           cp -r apps/web/public apps/web/.next/standalone/apps/web/public
           ls -la apps/web/.next/standalone/apps/web
 
+      # Playwright browser binaries are large (~300MB: chromium 1228 +
+      # webkit 2311 + ffmpeg 1011 for Playwright 1.61.0) and were
+      # re-downloaded every run. The key pins the exact browser revisions,
+      # so a Playwright upgrade naturally misses the cache and re-downloads.
+      # NOTE: this covers binaries only — OS dependencies are still
+      # installed below on every run (a browser cache must never be taken
+      # to imply system libraries are present).
+      - uses: actions/cache@v4
+        name: Cache Playwright browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-1.61.0-chromium-1228-webkit-2311-ffmpeg-1011
+
       - name: Install Playwright browsers
-        run: pnpm --filter @tradingo/web exec playwright install chromium webkit --with-deps
+        run: pnpm --filter @tradingo/web exec playwright install chromium webkit
+
+      # Split from the old monolithic `install --with-deps`: browser binaries
+      # (served from the cache above when possible) stay separate from OS
+      # dependencies so each can be handled independently. Ubuntu mirrors
+      # stalled 25+ minutes inside dependency downloads on consecutive runs,
+      # so this step retries transient apt/mirror failures a bounded number
+      # of times — exhaustion still fails the job loudly, never silently.
+      - name: Install Playwright OS dependencies
+        run: |
+          for attempt in 1 2 3; do
+            echo "Installing Playwright OS dependencies (attempt ${attempt}/3)..."
+            if pnpm --filter @tradingo/web exec playwright install-deps chromium webkit; then
+              echo "Playwright OS dependencies installed."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/3 failed; retrying in 15s..."
+            sleep 15
+          done
+          echo "Playwright OS dependency installation failed after 3 attempts." >&2
+          exit 1
 
       - name: Start application
         env:

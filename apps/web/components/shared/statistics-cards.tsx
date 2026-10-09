@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,7 @@ export function StatisticsCards({ stats, className }: StatisticsCardsProps) {
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="flex flex-col items-center rounded-2xl border border-border bg-surface-secondary p-8 text-center backdrop-blur-xl transition-all duration-300 hover:border-accent-500/20 hover:shadow-[0_0_30px_-5px_rgba(0, 255, 255, 0.15)]"
+          className="flex flex-col items-center rounded-2xl border border-border bg-surface-secondary p-8 text-center backdrop-blur-xl transition-all duration-300 hover:border-accent-500/20 hover:shadow-[0_0_30px_-5px_rgba(0, 255, 0.15)]"
         >
           <Counter {...stat} />
           <p className="mt-2 text-sm font-medium text-text-secondary">{stat.label}</p>

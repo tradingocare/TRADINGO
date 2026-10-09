@@ -152,6 +152,144 @@ describe('getRouteDecision', () => {
     });
   });
 
+  describe('auth page protection — safe `next` honoring (R2)', () => {
+    it('honors a role-safe next param for logged-in BUYER on /login', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/login', payload, '/buyer/orders');
+      expect(result.redirect).toBe('/buyer/orders');
+    });
+
+    it('honors the vendor-onboarding upgrade target for logged-in BUYER on /login', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/login', payload, '/register/vendor-onboarding');
+      expect(result.redirect).toBe('/register/vendor-onboarding');
+    });
+
+    it('ignores a next param outside the role allowlist (falls back to dashboard)', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/login', payload, '/admin/users');
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('ignores non-relative next params (open-redirect guard)', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/login', payload, 'https://evil.example.com');
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('ignores protocol-relative next params (open-redirect guard)', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/login', payload, '//evil.example.com');
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('does not honor next on /register (signup page has no journey target)', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/register', payload, '/buyer/orders');
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+  });
+
+  describe('social-login callback guard (R2 — R1 regression protection)', () => {
+    it('renders /login for the OAuth bridge even when a stale session exists', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/login', payload, null, true);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('still redirects /login when socialLogin param is absent', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/login', payload, null, false);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('the guard only applies to /login (other auth pages still redirect)', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/register', payload, null, true);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+  });
+
+  describe('seller-entry wizard routing (R2)', () => {
+    it('routes logged-in BUYER from /register/vendor to the vendor-onboarding upgrade wizard', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/register/vendor', payload);
+      expect(result.redirect).toBe('/register/vendor-onboarding');
+    });
+
+    it('routes logged-in VIEWER from /register/vendor to the buyer dashboard', () => {
+      const payload = makePayload({ role: ROLES.VIEWER });
+      const result = getRouteDecision('/register/vendor', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('routes logged-in SELLER from /register/vendor to the seller dashboard', () => {
+      const payload = makePayload({ role: ROLES.SELLER });
+      const result = getRouteDecision('/register/vendor', payload);
+      expect(result.redirect).toBe('/seller/dashboard');
+    });
+
+    it('routes logged-in ADMIN from /register/vendor to the admin dashboard', () => {
+      const payload = makePayload({ role: ROLES.ADMIN });
+      const result = getRouteDecision('/register/vendor', payload);
+      expect(result.redirect).toBe('/admin/dashboard');
+    });
+
+    it('allows guests on /register/vendor (new-user wizard)', () => {
+      const result = getRouteDecision('/register/vendor', null);
+      expect(result.redirect).toBeNull();
+    });
+  });
+
+  describe('buyer-class roles on seller routes (P1 shell guard)', () => {
+    it('routes authenticated BUYER from /seller/* to the buyer dashboard', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/seller/orders', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('routes authenticated VIEWER from /seller/* to the buyer dashboard', () => {
+      const payload = makePayload({ role: ROLES.VIEWER });
+      const result = getRouteDecision('/seller/products', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('preempts the page-level bounce on /seller/onboarding for BUYER', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/seller/onboarding', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('still renders /seller/* for SELLER', () => {
+      const payload = makePayload({ role: ROLES.SELLER });
+      const result = getRouteDecision('/seller/orders', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('still renders /seller/* for MANAGER (seller workspace)', () => {
+      const payload = makePayload({ role: ROLES.MANAGER });
+      const result = getRouteDecision('/seller/products', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('still renders /seller/* for ADMIN (unchanged passthrough)', () => {
+      const payload = makePayload({ role: ROLES.ADMIN });
+      const result = getRouteDecision('/seller/orders', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('still renders /seller/* for SUPER_ADMIN (unchanged passthrough)', () => {
+      const payload = makePayload({ role: ROLES.SUPER_ADMIN });
+      const result = getRouteDecision('/seller/dashboard', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('still sends guests on /seller/* to login with return context', () => {
+      const result = getRouteDecision('/seller/orders', null);
+      expect(result.redirect).toMatch(/^\/login\?next=/);
+    });
+  });
+
   describe('auth pages allowed when not logged in', () => {
     it('allows unauthenticated access to /login', () => {
       const result = getRouteDecision('/login', null);
@@ -171,6 +309,66 @@ describe('getRouteDecision', () => {
     it('allows unauthenticated access to /reset-password', () => {
       const result = getRouteDecision('/reset-password', null);
       expect(result.redirect).toBeNull();
+    });
+  });
+
+  describe('admin login surface (dedicated /admin/login)', () => {
+    it('allows unauthenticated access to /admin/login (the admin sign-in form)', () => {
+      const result = getRouteDecision('/admin/login', null);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('still redirects unauthenticated users from other /admin/* routes to login', () => {
+      const result = getRouteDecision('/admin/users', null);
+      expect(result.redirect).toMatch(/^\/login\?next=%2Fadmin%2Fusers/);
+    });
+
+    it('bounces authenticated BUYER from /admin/login to the buyer dashboard', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('bounces authenticated VIEWER from /admin/login to the buyer dashboard', () => {
+      const payload = makePayload({ role: ROLES.VIEWER });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('bounces authenticated SELLER from /admin/login to the seller dashboard', () => {
+      const payload = makePayload({ role: ROLES.SELLER });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBe('/seller/dashboard');
+    });
+
+    it('renders /admin/login for ADMIN (page-level cookie redirect handles UX)', () => {
+      const payload = makePayload({ role: ROLES.ADMIN });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('renders /admin/login for SUPER_ADMIN (page-level cookie redirect handles UX)', () => {
+      const payload = makePayload({ role: ROLES.SUPER_ADMIN });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBeNull();
+    });
+
+    it('keeps the admin role gate for /admin/dashboard (buyer bounced)', () => {
+      const payload = makePayload({ role: ROLES.BUYER });
+      const result = getRouteDecision('/admin/dashboard', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('keeps the admin role gate for unknown roles (RM is not an admin role)', () => {
+      const payload = makePayload({ role: 'RM' });
+      const result = getRouteDecision('/admin/dashboard', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
+    });
+
+    it('keeps the admin role gate for RM on /admin/login (bounced to buyer dashboard)', () => {
+      const payload = makePayload({ role: 'RM' });
+      const result = getRouteDecision('/admin/login', payload);
+      expect(result.redirect).toBe('/buyer/dashboard');
     });
   });
 });

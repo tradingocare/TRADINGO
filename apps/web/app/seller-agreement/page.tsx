@@ -6,7 +6,7 @@ import { getSellerEntryTarget } from '@/lib/auth/redirects';
 
 export const metadata: Metadata = {
   title: 'Seller Agreement | TRADINGO',
-  description: 'TRADINGO Seller Agreement governing product listings, fees, commissions, payment terms, and order fulfillment for sellers on India\'s first Trusted Electronic Marketplace (TEM).',
+  description: 'TRADINGO Seller Agreement governing product listings, fees, commissions, payment terms, and order fulfillment for sellers on India\'s first TRADINGO E-Marketplace (TEM).',
   openGraph: {
     title: 'Seller Agreement | TRADINGO',
     description: 'Review the TRADINGO Seller Agreement including eligibility, fees, payment terms, and fulfillment obligations.',
@@ -230,13 +230,13 @@ const sections = [
       },
       {
         heading: 'Arbitration',
-        text: 'Disputes not resolved through internal processes shall be settled by binding arbitration in Mumbai, Maharashtra, under the Arbitration and Conciliation Act, 1996.',
+        text: 'Disputes not resolved through internal processes shall be settled by binding arbitration in New Delhi, under the Arbitration and Conciliation Act, 1996.',
       },
     ],
   },
   {
     title: '12. Governing Law',
-    content: 'This agreement shall be governed by the laws of India. Any legal proceedings shall be subject to the exclusive jurisdiction of courts in Mumbai, Maharashtra.',
+    content: 'This agreement shall be governed by the laws of India. Any legal proceedings shall be subject to the exclusive jurisdiction of courts in New Delhi.',
     subsections: [
       {
         heading: 'Applicable Law',
@@ -244,7 +244,7 @@ const sections = [
       },
       {
         heading: 'Jurisdiction',
-        text: 'All disputes arising under this agreement shall be subject to the exclusive jurisdiction of the courts in Mumbai, Maharashtra.',
+        text: 'All disputes arising under this agreement shall be subject to the exclusive jurisdiction of the courts in New Delhi.',
       },
       {
         heading: 'Severability',
@@ -266,7 +266,7 @@ const sections = [
       },
       {
         heading: 'Registered Address',
-        text: 'TRADINGO Technologies Pvt. Ltd., Mumbai, Maharashtra, India.',
+        text: 'Niksa Global Ventures Limited, House No. 194, Block-G, Pocket 6, Sector 16, Rohini, New Delhi - 110089, India.',
       },
     ],
   },

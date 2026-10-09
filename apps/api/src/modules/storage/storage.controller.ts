@@ -1,5 +1,5 @@
 import { Controller, Post, UseGuards, UploadedFiles, UseInterceptors, Body, BadRequestException } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FastifyFilesInterceptor } from '../../common/interceptors/fastify-file.interceptor';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StorageService } from './storage.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -34,6 +34,32 @@ const MAX_FILES = 20;
 
 const SANITIZE_FOLDER_RE = /[^\w\-/]/g;
 
+/**
+ * P0-1: folders that carry SENSITIVE KYC/identity/bank documents.
+ * Uploads into these folders are stored with the S3 'private' ACL —
+ * never public-read — and must be accessed through authorized short-lived
+ * presigned URLs (StorageService.generatePresignedUrl) after an ownership
+ * or admin-role check.
+ *
+ * PUBLIC folders (logos, banners, products/*, catalogs, pricelists,
+ * uploads/defaults, vendor/logo, vendor/banner) intentionally keep
+ * public-read: they feed public marketplace surfaces (ProductCard,
+ * company profiles) and MUST NOT be made private in this remediation.
+ */
+const SENSITIVE_FOLDER_PREFIXES = [
+  'vendor/pan',
+  'vendor/gst',
+  'vendor/cheque',
+  'documents',
+  'kyc',
+];
+
+function isSensitiveFolder(folder: string): boolean {
+  return SENSITIVE_FOLDER_PREFIXES.some(
+    (prefix) => folder === prefix || folder.startsWith(`${prefix}/`),
+  );
+}
+
 @ApiTags('Storage')
 @Controller('upload')
 @UseGuards(JwtAuthGuard)
@@ -60,7 +86,7 @@ export class StorageController {
 
   @Post()
   @ApiOperation({ summary: 'Upload a file' })
-  @UseInterceptors(FilesInterceptor('file', MAX_FILES))
+  @UseInterceptors(FastifyFilesInterceptor('file', MAX_FILES))
   async uploadFile(
     @UploadedFiles() files: Express.Multer.File[],
     @Body('folder') folder: string,
@@ -72,13 +98,15 @@ export class StorageController {
     const safeFolder = folder ? this.sanitizeFolder(folder) : 'uploads';
     const ext = path.extname(file.originalname);
     const key = `${safeFolder}/${userId}/${uuid()}${ext}`;
-    const result = await this.storageService.uploadFile(file.buffer, key, file.mimetype, true);
+    // P0-1: sensitive KYC folders upload as PRIVATE S3 objects (public-read
+    // only for intentionally public marketplace asset folders).
+    const result = await this.storageService.uploadFile(file.buffer, key, file.mimetype, !isSensitiveFolder(safeFolder));
     return { url: result.cdnUrl || result.url, key, originalName: file.originalname, size: file.size, mimeType: file.mimetype };
   }
 
   @Post('multiple')
   @ApiOperation({ summary: 'Upload multiple files' })
-  @UseInterceptors(FilesInterceptor('files', MAX_FILES))
+  @UseInterceptors(FastifyFilesInterceptor('files', MAX_FILES))
   async uploadMultiple(
     @UploadedFiles() files: Express.Multer.File[],
     @Body('folder') folder: string,
@@ -97,7 +125,9 @@ export class StorageController {
       const safeFolder = folder ? this.sanitizeFolder(folder) : 'uploads';
       const ext = path.extname(file.originalname);
       const key = `${safeFolder}/${userId}/${uuid()}${ext}`;
-      const result = await this.storageService.uploadFile(file.buffer, key, file.mimetype, true);
+      // P0-1: sensitive KYC folders upload as PRIVATE S3 objects (public-read
+      // only for intentionally public marketplace asset folders).
+      const result = await this.storageService.uploadFile(file.buffer, key, file.mimetype, !isSensitiveFolder(safeFolder));
       uploaded.push({ url: result.cdnUrl || result.url, key, originalName: file.originalname, size: file.size, mimeType: file.mimetype });
     }
     return { files: uploaded, total: uploaded.length, duplicatesSkipped: files.length - uploaded.length };

@@ -61,7 +61,7 @@ export function ProfileShare({ name, slug }: ProfileShareProps) {
           <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-lg bg-white">
             <div className="text-center">
               <QrCode className="mx-auto h-20 w-20 text-black" />
-              <p className="mt-1 text-[8px] text-gray-500 leading-tight max-w-[100px] mx-auto break-all">{slug}</p>
+              <p className="mt-1 text-[8px] text-text-tertiary leading-tight max-w-[100px] mx-auto break-all">{slug}</p>
             </div>
           </div>
           <p className="mt-2 text-[10px] text-text-tertiary">Scan to view profile</p>

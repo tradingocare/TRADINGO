@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { TrendingUp, Users, ShoppingBag, DollarSign, Loader2 } from 'lucide-react';
@@ -63,7 +63,7 @@ export function LiveStats({ className }: { className?: string }) {
       {STAT_LABELS.map((label, i) => (
         <div
           key={label}
-          className="glass-card-lg p-5 transition-all duration-300 hover:border-accent-500/20 hover:shadow-[0_0_30px_-5px_rgba(0, 255, 255, 0.15)]"
+          className="glass-card-lg p-5 transition-all duration-300 hover:border-accent-500/20 hover:shadow-[0_0_30px_-5px_rgba(0, 255, 0.15)]"
         >
           <div className="flex items-start justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-500/10 text-accent-500">

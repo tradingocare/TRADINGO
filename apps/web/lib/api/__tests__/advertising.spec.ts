@@ -32,7 +32,7 @@ describe('advertising API', () => {
     (apiClient.get as jest.Mock).mockResolvedValue({ data: [] });
     const { getMyAds } = require('../advertising');
     await getMyAds({ page: 1, limit: 10 });
-    expect(apiClient.get).toHaveBeenCalledWith('/advertising/my-ads', { params: { page: 1, limit: 10 } });
+    expect(apiClient.get).toHaveBeenCalledWith('/advertising/my', { params: { page: 1, limit: 10 } });
   });
 
   it('createAd posts to correct endpoint', async () => {

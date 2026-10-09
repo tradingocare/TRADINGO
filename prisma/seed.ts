@@ -1,7 +1,7 @@
 import { PrismaClient, Role, ImportRowStatus, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { INDUSTRY_CATEGORIES } from './seed-data/categories';
-import { generateSlug } from './seed-scripts/slug-generator';
+import { INDUSTRY_CATEGORIES } from './seed-data/categories.ts';
+import { generateSlug } from './seed-scripts/slug-generator.ts';
 
 const prisma = new PrismaClient();
 const BATCH_SIZE = 100;

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { StorageService } from './storage.service';
+import { ClamAvService } from '../malware/clamav.service';
 
 const mockS3Send = jest.fn();
 
@@ -18,6 +19,16 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: jest.fn(() => Promise.resolve('https://presigned.example.com/file.pdf')),
 }));
 
+// Pre-existing drift companion mock: the current StorageService constructor
+// injects ClamAvService for the synchronous fail-closed upload scan (added in
+// an earlier uncommitted hardening pass) — the spec's provider list never had
+// it, breaking DI for the whole suite. Mock it clean-by-default.
+jest.mock('../malware/clamav.service', () => ({
+  ClamAvService: jest.fn().mockImplementation(() => ({
+    scanBuffer: jest.fn().mockResolvedValue({ clean: true, signatures: [] }),
+  })),
+}));
+
 describe('StorageService', () => {
   let service: StorageService;
 
@@ -26,6 +37,7 @@ describe('StorageService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StorageService,
+        ClamAvService,
         {
           provide: ConfigService,
           useValue: {

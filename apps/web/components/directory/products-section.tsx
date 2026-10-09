@@ -44,23 +44,16 @@ const SEARCH_SORT: Record<string, string> = {
 export function ProductsSection() {
   const [tab, setTab] = useState<TabId>('featured')
 
-  const featuredQuery = useInfiniteQuery({
-    queryKey: ['directory-products-featured'],
+  // G4-2: featured and trending request the identical feed
+  // (getDiscoveryFeed(pageParam, 24)) and only filter client-side, so one
+  // shared infinite query serves both tabs — switching tabs never refetches.
+  const feedQuery = useInfiniteQuery({
+    queryKey: ['directory-products-feed'],
     queryFn: ({ pageParam }) => getDiscoveryFeed(pageParam, 24),
     initialPageParam: 1,
     getNextPageParam: last =>
       last?.meta && last.meta.page * last.meta.limit < last.meta.total ? last.meta.page + 1 : undefined,
-    enabled: tab === 'featured',
-    staleTime: 120_000,
-  })
-
-  const trendingQuery = useInfiniteQuery({
-    queryKey: ['directory-products-trending'],
-    queryFn: ({ pageParam }) => getDiscoveryFeed(pageParam, 24),
-    initialPageParam: 1,
-    getNextPageParam: last =>
-      last?.meta && last.meta.page * last.meta.limit < last.meta.total ? last.meta.page + 1 : undefined,
-    enabled: tab === 'trending',
+    enabled: tab === 'featured' || tab === 'trending',
     staleTime: 120_000,
   })
 
@@ -77,13 +70,12 @@ export function ProductsSection() {
   const isSearchTab = tab === 'recent' || tab === 'viewed' || tab === 'rated'
 
   const feed = useMemo(() => {
-    const q = tab === 'featured' ? featuredQuery : trendingQuery
     const out: any[] = []
-    for (const page of q.data?.pages ?? []) {
+    for (const page of feedQuery.data?.pages ?? []) {
       for (const item of page?.items ?? []) out.push(item)
     }
     return out
-  }, [tab, featuredQuery.data, trendingQuery.data])
+  }, [tab, feedQuery.data])
 
   const filteredFeed = useMemo(() => {
     if (tab === 'featured') return feed.filter(i => i.type === 'product' && i.reason === 'Trending Product')
@@ -101,27 +93,20 @@ export function ProductsSection() {
 
   const isLoading = isSearchTab
     ? searchQuery.isLoading
-    : tab === 'featured'
-      ? featuredQuery.isLoading
-      : trendingQuery.isLoading
+    : feedQuery.isLoading
 
   const hasNext = isSearchTab
     ? !!searchQuery.hasNextPage
-    : tab === 'featured'
-      ? !!featuredQuery.hasNextPage
-      : !!trendingQuery.hasNextPage
+    : !!feedQuery.hasNextPage
 
   const isFetchingNext = isSearchTab
     ? searchQuery.isFetchingNextPage
-    : tab === 'featured'
-      ? featuredQuery.isFetchingNextPage
-      : trendingQuery.isFetchingNextPage
+    : feedQuery.isFetchingNextPage
 
   const sentinelRef = useInfiniteScroll(() => {
     if (!hasNext || isFetchingNext) return
     if (isSearchTab) searchQuery.fetchNextPage()
-    else if (tab === 'featured') featuredQuery.fetchNextPage()
-    else trendingQuery.fetchNextPage()
+    else feedQuery.fetchNextPage()
   }, hasNext)
 
   const renderFeedItems = (items: any[]) => (
@@ -163,14 +148,11 @@ export function ProductsSection() {
   const totalCount =
     isSearchTab
       ? searchQuery.data?.pages?.[0]?.total ?? 0
-      : tab === 'featured'
-        ? featuredQuery.data?.pages?.[0]?.meta?.total ?? filteredFeed.length
-        : trendingQuery.data?.pages?.[0]?.meta?.total ?? filteredFeed.length
+      : feedQuery.data?.pages?.[0]?.meta?.total ?? filteredFeed.length
 
   const error =
     isSearchTab ? searchQuery.isError
-      : tab === 'featured' ? featuredQuery.isError
-        : trendingQuery.isError
+      : feedQuery.isError
 
   return (
     <SectionShell>
@@ -207,7 +189,7 @@ export function ProductsSection() {
         <SectionError
           label={`${tab} products`}
           onRetry={() =>
-            isSearchTab ? searchQuery.refetch() : tab === 'featured' ? featuredQuery.refetch() : trendingQuery.refetch()
+            isSearchTab ? searchQuery.refetch() : feedQuery.refetch()
           }
         />
       ) : tab === 'gocash' ? (

@@ -6,6 +6,8 @@ import { ProductStatus, ProductType, MediaType, Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { CreateProductDto, SpecificationDto, PriceSlabDto, MediaDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { MembershipService } from '../membership/membership.service';
+import { entitlementLimit } from '../membership/plan-entitlements';
 import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 
 const PRODUCT_INDEX = 'products';
@@ -30,6 +32,7 @@ export class SellerProductService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly searchService: SearchService,
+    private readonly membershipService: MembershipService,
     private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
   ) {}
 
@@ -86,6 +89,21 @@ export class SellerProductService {
 
     const plan = (company.subscriptionPlan || 'trade_start').toLowerCase();
     const limits = MEMBERSHIP_LIMITS[plan] || MEMBERSHIP_LIMITS.trade_start;
+
+    // 2B-2B: version-pinned companies enforce their snapshot cap
+    // (grandfathered terms); legacy subscribers keep the map above verbatim.
+    if (company.currentPlanVersionId) {
+      const snap = await this.membershipService.getVersionedEntitlements(companyId);
+      if (snap && 'product_listings_limit' in snap) {
+        const legacyMax = limits.maxProducts === -1 ? Infinity : limits.maxProducts;
+        const max = entitlementLimit(snap, 'product_listings_limit', legacyMax);
+        const current = await this.prisma.product.count({
+          where: { companyId, deletedAt: null, status: { not: 'DISCONTINUED' as ProductStatus } },
+        });
+        if (max === Infinity) return { allowed: true, current, max: Infinity };
+        return { allowed: current < max, current, max };
+      }
+    }
 
     const current = await this.prisma.product.count({
       where: { companyId, deletedAt: null, status: { not: 'DISCONTINUED' as ProductStatus } },
@@ -171,6 +189,10 @@ export class SellerProductService {
     const company = await this.resolveCompany(userId);
     const limit = await this.checkMembershipLimit(company.id);
     if (!limit.allowed) throw new BadRequestException(`Membership limit reached: ${limit.max} products`);
+    // 2B-2B: slab-count cap for version-pinned companies (legacy: no-op) — before any write.
+    if (dto.priceSlabs?.length) {
+      await this.membershipService.enforcePriceTierLimit(company.id, dto.priceSlabs.length, 0);
+    }
 
     const slug = dto.slug || slugify(dto.name);
     const existing = await this.prisma.product.findUnique({ where: { slug } });
@@ -311,6 +333,12 @@ export class SellerProductService {
     });
     if (!product) throw new NotFoundException('Product not found');
 
+    // 2B-2B: slab-count cap with grandfathering (existing count honored) — before any write.
+    if (dto.priceSlabs !== undefined && dto.priceSlabs.length) {
+      const existingSlabs = await this.prisma.productPriceSlab.count({ where: { productId } });
+      await this.membershipService.enforcePriceTierLimit(company.id, dto.priceSlabs.length, existingSlabs);
+    }
+
     const updateData: any = { updatedBy: userId };
     const fields = ['name', 'shortDescription', 'description', 'productType', 'brand', 'model', 'sku', 'moq', 'unit', 'categoryId', 'industryId', 'originalPrice', 'videoUrl', 'returnPolicy', 'brandId'];
     const dtoAny = dto as Record<string, unknown>;
@@ -440,6 +468,11 @@ export class SellerProductService {
 
     const limit = await this.checkMembershipLimit(company.id);
     if (!limit.allowed) throw new BadRequestException(`Membership limit reached: ${limit.max} products`);
+    // 2B-2B: a duplicated product is a new product — its copied slabs must
+    // fit the version snapshot cap (legacy subscribers: no-op).
+    if (original.priceSlabs.length) {
+      await this.membershipService.enforcePriceTierLimit(company.id, original.priceSlabs.length, 0);
+    }
 
     // O-3r (REJECT semantics, founder-approved): the full triple below is
     // preserved only when the source lineage is still live. A stale/invalid

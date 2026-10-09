@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -65,7 +65,7 @@ export function ProductLocationTable({
     return (
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-lg bg-surface-secondary dark:bg-dark-surface-secondary animate-pulse" />
+          <div key={i} className="h-16 rounded-lg bg-surface-secondary animate-pulse" />
         ))}
       </div>
     );
@@ -74,11 +74,11 @@ export function ProductLocationTable({
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <MapPin className="h-12 w-12 text-text-tertiary dark:text-dark-text-tertiary mb-4" />
-        <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary mb-1">
+        <MapPin className="h-12 w-12 text-text-tertiary mb-4" />
+        <h3 className="text-lg font-semibold text-text-primary mb-1">
           No products found
         </h3>
-        <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-6 max-w-md">
+        <p className="text-sm text-text-secondary mb-6 max-w-md">
           {searchInput
             ? 'Try a different search term or clear filters.'
             : 'You haven\'t added any products yet. Create a product to set its location.'}
@@ -105,12 +105,12 @@ export function ProductLocationTable({
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Search by name, SKU..."
-            className="w-full rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface pl-9 pr-3 py-2 text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary dark:placeholder:text-dark-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark"
+            className="w-full rounded-lg border border-surface-border border-border bg-surface pl-9 pr-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark"
           />
           <button
             type="button"
             onClick={handleSearch}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary dark:text-dark-text-tertiary hover:text-text-primary dark:hover:text-dark-text-primary"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary"
           >
             <Search className="h-4 w-4" />
           </button>
@@ -124,7 +124,7 @@ export function ProductLocationTable({
               className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                 locationFilter === val
                   ? 'bg-primary/10 text-primary dark:bg-primary-dark/10 dark:text-primary-dark border border-primary/30 dark:border-primary-dark/30'
-                  : 'bg-surface dark:bg-dark-surface text-text-secondary dark:text-dark-text-secondary border border-surface-border dark:border-dark-border hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary'
+                  : 'bg-surface bg-surface text-text-secondary text-text-secondary border border-surface-border border-border hover:bg-surface-secondary hover:bg-surface-secondary'
               }`}
             >
               {val === 'all' ? 'All' : val === 'set' ? 'Set' : 'Missing'}
@@ -133,10 +133,10 @@ export function ProductLocationTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-surface-border dark:border-dark-border">
+      <div className="overflow-x-auto rounded-lg border border-surface-border border-border">
         <Table>
           <THead>
-            <TR className="bg-surface-secondary dark:bg-dark-surface-secondary text-xs font-medium text-text-tertiary dark:text-dark-text-tertiary uppercase tracking-wider">
+            <TR className="bg-surface-secondary text-xs font-medium text-text-tertiary uppercase tracking-wider">
               <TH className="w-10">
                 <Checkbox checked={selectedIds.length === products.length && products.length > 0} onChange={toggleSelectAll} />
               </TH>
@@ -156,7 +156,7 @@ export function ProductLocationTable({
             {products.map((product) => (
               <TR
                 key={product.id}
-                className="bg-surface dark:bg-dark-surface hover:bg-surface-secondary/50 dark:hover:bg-dark-surface-secondary/50 transition-colors"
+                className="bg-surface hover:bg-surface-secondary/50 transition-colors"
               >
                 <TD>
                   <Checkbox checked={selectedIds.includes(product.id)} onChange={() => toggleSelect(product.id)} />
@@ -168,15 +168,15 @@ export function ProductLocationTable({
                   >
                     {product.name}
                   </Link>
-                  <div className="text-xs text-text-tertiary dark:text-dark-text-tertiary mt-0.5">
+                  <div className="text-xs text-text-tertiary mt-0.5">
                     {product.slug}
                   </div>
                 </TD>
                 <TD className="hidden sm:table-cell">
-                  {product.sku || '—'}
+                  {product.sku || 'â€”'}
                 </TD>
                 <TD className="hidden md:table-cell">
-                  {product.category?.name || '—'}
+                  {product.category?.name || 'â€”'}
                 </TD>
                 <TD className="text-center">
                   <LocationStatusBadge
@@ -190,7 +190,7 @@ export function ProductLocationTable({
                       {product.latitude?.toFixed(4)}, {product.longitude?.toFixed(4)}
                     </span>
                   ) : (
-                    <span className="text-text-tertiary dark:text-dark-text-tertiary">—</span>
+                    <span className="text-text-tertiary">â€”</span>
                   )}
                 </TD>
                 <TD className="text-center">
@@ -208,7 +208,7 @@ export function ProductLocationTable({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-text-secondary dark:text-dark-text-secondary">
+      <div className="flex items-center justify-between text-sm text-text-secondary">
         <span>
           Showing {products.length} of {total} products
         </span>
@@ -218,7 +218,7 @@ export function ProductLocationTable({
               type="button"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
-              className="rounded-lg p-1.5 hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary disabled:opacity-30 transition-colors"
+              className="rounded-lg p-1.5 hover:bg-surface-secondary disabled:opacity-30 transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -229,7 +229,7 @@ export function ProductLocationTable({
               type="button"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
-              className="rounded-lg p-1.5 hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary disabled:opacity-30 transition-colors"
+              className="rounded-lg p-1.5 hover:bg-surface-secondary disabled:opacity-30 transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

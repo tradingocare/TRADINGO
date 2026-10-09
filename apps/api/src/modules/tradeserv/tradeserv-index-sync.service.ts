@@ -10,6 +10,7 @@ const TRADESERV_INDEX_ALIAS = 'tradeserv_professionals';
 @Injectable()
 export class TradeservIndexSyncService {
   private readonly logger = new Logger(TradeservIndexSyncService.name);
+  // TradeServ uses a dedicated OpenSearch client to allow independent scaling/timeout of the professional search index (separate alias + index lifecycle from the central SearchService).
   private readonly client: Client;
 
   constructor(
@@ -27,6 +28,16 @@ export class TradeservIndexSyncService {
       maxRetries: 0,
       requestTimeout: 3000,
     });
+  }
+
+  async ping(): Promise<boolean> {
+    try {
+      const result = await this.client.ping();
+      const r: any = result;
+    return r === true || r === 'pong' || r?.body === true;
+    } catch {
+      return false;
+    }
   }
 
   async ensureIndex(): Promise<void> {
@@ -173,6 +184,19 @@ export class TradeservIndexSyncService {
         certifications: company.professionalCertifications.map(c => c.name),
         serviceNames: company.professionalServices.map(s => s.name),
         serviceCategories: company.professionalServices.map(s => s.category).filter(Boolean),
+        // C-01 P1 F-8: canonical taxonomy IDs persisted by P0-2 on each
+        // ProfessionalService. Filtered via the dynamically-mapped `.keyword`
+        // subfield (Step-5 products pattern — no mapping change, no reindex;
+        // docs indexed before this change honestly miss canonical filters).
+        catalogCategoryIds: [...new Set(
+          company.professionalServices.map(s => (s as any).catalogCategoryId).filter(Boolean),
+        )],
+        catalogSubcategoryIds: [...new Set(
+          company.professionalServices.map(s => (s as any).catalogSubcategoryId).filter(Boolean),
+        )],
+        catalogItemIds: [...new Set(
+          company.professionalServices.map(s => (s as any).catalogItemId).filter(Boolean),
+        )],
         createdAt: company.createdAt,
       };
 
@@ -222,6 +246,8 @@ export class TradeservIndexSyncService {
     sort?: string;
     page?: number;
     limit?: number;
+    /** C-01 P1 F-8: controller-resolved canonical company-ID set (validated). */
+    resolvedCompanyIds?: string[];
   }) {
     const page = params.page || 1;
     const size = params.limit || 20;
@@ -248,6 +274,19 @@ export class TradeservIndexSyncService {
     }
     if (params.category) {
       filter.push({ term: { serviceCategories: params.category } });
+    }
+    // C-01 P1 F-8: canonical taxonomy filter (Step-5 semantics). The
+    // controller resolved + validated the submitted canonical IDs against the
+    // live catalog and passed the exact APPROVED company-ID set. `[]` = honest
+    // unsatisfiable (a terms query on an impossible sentinel) — never
+    // unfiltered, never leaking; all other filters stay applied. The index
+    // maps `id` as a native keyword field (exact-ID semantics).
+    if (params.resolvedCompanyIds !== undefined) {
+      if (params.resolvedCompanyIds.length === 0) {
+        filter.push({ terms: { id: ['__canonical_no_match__'] } });
+      } else {
+        filter.push({ terms: { id: params.resolvedCompanyIds } });
+      }
     }
     if (params.city) {
       filter.push({ term: { city: params.city } });
@@ -292,6 +331,13 @@ export class TradeservIndexSyncService {
           sort: sortArr,
           aggs: {
             categories: { terms: { field: 'serviceCategories', size: 20 } },
+            // C-01 P1 F-8: canonical taxonomy facets. Real doc_count from the
+            // same filtered query — options and counts reflect live indexed
+            // professionals, never static lists. `.keyword` subfield = exact
+            // ID semantics (dynamic mapping — same as Step-5 products).
+            catalogCategories: { terms: { field: 'catalogCategoryIds.keyword', size: 30 } },
+            catalogSubcategories: { terms: { field: 'catalogSubcategoryIds.keyword', size: 30 } },
+            catalogItems: { terms: { field: 'catalogItemIds.keyword', size: 40 } },
             cities: { terms: { field: 'city', size: 20 } },
             states: { terms: { field: 'state', size: 20 } },
             verificationLevels: { terms: { field: 'verificationLevel', size: 10 } },
@@ -320,7 +366,72 @@ export class TradeservIndexSyncService {
       const totalInfo = response.body.hits.total;
       const total = typeof totalInfo === 'number' ? totalInfo : (totalInfo?.value ?? 0);
 
+      // F-14 (zero-blind-spot): an EMPTY index must not masquerade as "no
+      // professionals". The professionals index can exist with 0 docs (e.g.
+      // auto-created at boot, never synced). A zero-total result returns
+      // null so the controller falls back to the Prisma APPROVED search —
+      // real, approved professionals stay discoverable; authorization is
+      // unchanged (fallback applies the same APPROVED filter).
+      if (total === 0 && from === 0) {
+        this.logger.warn(
+          `OpenSearch returned 0 professionals for this query — falling back to Prisma (index may be empty/unsynced)`,
+        );
+        return null;
+      }
+
       const aggResult = (response.body.aggregations ?? {}) as Record<string, { buckets: { key: string; doc_count: number; from?: number; to?: number }[] }>;
+
+      // C-01 P1 F-8: enrich canonical facet buckets with display fields
+      // (name/slug/parentId) from the live catalog. The bucket KEY stays the
+      // canonical ID (filter identity); display fields are read-only
+      // decoration resolved server-side — never a second authority.
+      const enrichCanonicalBuckets = async (
+        buckets: { key: string; doc_count: number }[],
+        table: 'catalogCategory' | 'catalogSubcategory' | 'catalogItem',
+      ): Promise<{ key: string; doc_count: number; name?: string; slug?: string; parentId?: string }[]> => {
+        if (!buckets || buckets.length === 0) return [];
+        const ids = buckets.map((b) => b.key);
+        try {
+          let rows: { id: string; name: string; slug: string; parentId?: string }[];
+          if (table === 'catalogItem') {
+            const items = await this.prisma.catalogItem.findMany({
+              where: { id: { in: ids } },
+              select: { id: true, name: true, slug: true, subcategoryId: true },
+            });
+            rows = items.map((i) => ({ id: i.id, name: i.name, slug: i.slug, parentId: i.subcategoryId }));
+          } else if (table === 'catalogSubcategory') {
+            const subs = await this.prisma.catalogSubcategory.findMany({
+              where: { id: { in: ids } },
+              select: { id: true, name: true, slug: true, categoryId: true },
+            });
+            rows = subs.map((s) => ({ id: s.id, name: s.name, slug: s.slug, parentId: s.categoryId }));
+          } else {
+            const cats = await this.prisma.catalogCategory.findMany({
+              where: { id: { in: ids } },
+              select: { id: true, name: true, slug: true },
+            });
+            rows = cats.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
+          }
+          const byId = new Map(rows.map((r) => [r.id, r]));
+          return buckets
+            .map((b) => {
+              const row = byId.get(b.key);
+              // A facet bucket whose canonical row vanished from the catalog
+              // is still a real indexed doc_count — keep the ID, drop display.
+              return { key: b.key, doc_count: b.doc_count, name: row?.name, slug: row?.slug, parentId: row?.parentId };
+            })
+            .sort((a, b) => b.doc_count - a.doc_count);
+        } catch {
+          // Catalog read failure must not break search — return raw buckets.
+          return buckets.map((b) => ({ key: b.key, doc_count: b.doc_count }));
+        }
+      };
+
+      const [catalogCategories, catalogSubcategories, catalogItems] = await Promise.all([
+        enrichCanonicalBuckets(aggResult.catalogCategories?.buckets ?? [], 'catalogCategory'),
+        enrichCanonicalBuckets(aggResult.catalogSubcategories?.buckets ?? [], 'catalogSubcategory'),
+        enrichCanonicalBuckets(aggResult.catalogItems?.buckets ?? [], 'catalogItem'),
+      ]);
 
       return {
         data: hits,
@@ -334,6 +445,9 @@ export class TradeservIndexSyncService {
         },
         aggregations: {
           categories: aggResult.categories?.buckets ?? [],
+          catalogCategories,
+          catalogSubcategories,
+          catalogItems,
           cities: aggResult.cities?.buckets ?? [],
           states: aggResult.states?.buckets ?? [],
           verificationLevels: aggResult.verificationLevels?.buckets ?? [],

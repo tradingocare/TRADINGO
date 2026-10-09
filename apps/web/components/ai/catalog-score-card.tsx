@@ -45,7 +45,7 @@ export function CatalogScoreCard({ score, loading, error, onRecalculate, calcula
 
   if (error || !score) return (
     <div className="rounded-lg border border-border p-4 text-center text-sm text-text-tertiary">
-      <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+      <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-text-tertiary" />
       <p>No quality score available</p>
       {onRecalculate && <button onClick={onRecalculate} disabled={calculating}
         className="mt-2 text-accent-500 hover:text-accent-500/80 text-xs font-medium">{calculating ? 'Calculating...' : 'Calculate Now'}</button>}

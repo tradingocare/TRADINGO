@@ -1,10 +1,42 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { SearchContent } from './search-content';
+import {
+  buildSelfCanonical,
+  hasIndexAffectingParams,
+  resolveSearchParams,
+  ROBOTS_INDEX_FOLLOW,
+  ROBOTS_NOINDEX_FOLLOW,
+  type SearchParamsLike,
+} from '@/lib/seo/seo-policy';
 
-export const metadata: Metadata = {
-  title: 'Search Products & Services — TRADINGO',
-  description: 'Search thousands of B2B products and services from verified Indian suppliers on TRADINGO.',
+const SEARCH_BASE_URL = 'https://tradingo.in/search';
+const SEARCH_TITLE = 'Search Products & Services — TRADINGO';
+const SEARCH_DESCRIPTION =
+  'Search thousands of B2B products and services from verified Indian suppliers on TRADINGO.';
+
+/**
+ * PHASE 2-A §1 — /search indexing policy.
+ * CURRENT: static indexable metadata for every URL incl. /search?q=... permutations.
+ * PROBLEM: uncontrolled indexable query permutations (q/city/sort combos).
+ * POLICY: bare /search = indexable search landing (self-canonical); any
+ *   query-result variant (?q=..., tracking params ignored) = noindex + follow
+ *   (users unaffected; link equity preserved; self-canonical, never fake).
+ * UX/functionality/navigation untouched — metadata only.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}): Promise<Metadata> {
+  const sp = await resolveSearchParams(searchParams as SearchParamsLike);
+  const isQueryVariant = hasIndexAffectingParams(sp);
+  return {
+    title: SEARCH_TITLE,
+    description: SEARCH_DESCRIPTION,
+    robots: isQueryVariant ? ROBOTS_NOINDEX_FOLLOW : ROBOTS_INDEX_FOLLOW,
+    alternates: { canonical: buildSelfCanonical(SEARCH_BASE_URL, sp) },
+  };
 }
 
 export default function SearchPage({ searchParams }: { searchParams: { q?: string } }) {

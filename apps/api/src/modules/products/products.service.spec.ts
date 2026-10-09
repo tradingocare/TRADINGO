@@ -3,6 +3,9 @@ import { ProductsService } from './products.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { ProductAttributeDisplayService } from './services/product-attribute-display.service';
+import { MembershipService } from '../membership/membership.service';
+import { MarketplaceCatalogBridgeService } from '../marketplace-catalog-bridge/marketplace-catalog-bridge.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
@@ -10,6 +13,7 @@ describe('ProductsService', () => {
   let service: ProductsService;
   let prisma: Record<string, any>;
   let searchService: Record<string, jest.Mock>;
+  let membershipService: { enforcePriceTierLimit: jest.Mock; getVersionedEntitlements: jest.Mock };
 
   const mockProduct = {
     id: 'prod-1', companyId: 'comp-1', categoryId: null, industryId: null,
@@ -48,10 +52,16 @@ describe('ProductsService', () => {
       },
       companyOwner: { findUnique: jest.fn() },
       user: { findUnique: jest.fn() },
+      productPriceSlab: { count: jest.fn().mockResolvedValue(0) },
       auditLog: { create: jest.fn() },
       $transaction: jest.fn(),
     };
     prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
+
+    membershipService = {
+      enforcePriceTierLimit: jest.fn().mockResolvedValue(undefined),
+      getVersionedEntitlements: jest.fn().mockResolvedValue(null),
+    };
 
     searchService = {
       indexDocument: jest.fn(),
@@ -66,6 +76,28 @@ describe('ProductsService', () => {
         { provide: SearchService, useValue: searchService },
         { provide: ProductAttributeDisplayService, useValue: { getDisplayAttributes: jest.fn().mockResolvedValue([]), enrichProduct: jest.fn() } },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+        { provide: MembershipService, useValue: membershipService },
+        // Phase 14 identifier contract: passthrough mock (input already canonical here).
+        {
+          provide: MarketplaceCatalogBridgeService,
+          useValue: {
+            resolveLegacyCategorySlugOrId: jest.fn(async (input: string) => ({ id: input })),
+            resolveSubcategoryDisplayName: jest.fn(async (input: string) => input),
+          },
+        },
+        // P0-2: deterministic no-op taxonomy resolution for existing tests —
+        // legacy behavior preserved when nothing canonical resolves.
+        {
+          provide: CatalogTaxonomyPersistenceService,
+          useValue: {
+            resolvePersistableTaxonomy: jest.fn().mockResolvedValue(null),
+            validateConfirmedTriple: jest.fn().mockResolvedValue(null),
+            bridgeLegacyCategoryId: jest.fn().mockResolvedValue(null),
+            // P1 O-1/O-5 mock remedy: expose the real helper (prototype
+            // delegation — zero duplication, always contract-faithful).
+            applyCanonicalTriple: jest.fn(CatalogTaxonomyPersistenceService.prototype.applyCanonicalTriple),
+          },
+        },
       ],
     }).compile();
 
@@ -124,6 +156,20 @@ describe('ProductsService', () => {
       };
       await expect(service.create(dto, 'user-1')).rejects.toThrow(BadRequestException);
     });
+
+    it('should consult the price-tier entitlement when slabs are supplied', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'SUPER_ADMIN' });
+      prisma.company.findFirst.mockResolvedValue(mockCompany);
+      prisma.product.findUnique.mockResolvedValue(null);
+      prisma.product.findFirst.mockResolvedValue(mockProduct);
+      prisma.product.create.mockResolvedValue(mockProduct);
+
+      await service.create(
+        { companyId: 'comp-1', name: 'Slabbed', priceSlabs: [{ minQty: 1, price: 100 }, { minQty: 10, price: 90 }] },
+        'user-1',
+      );
+      expect(membershipService.enforcePriceTierLimit).toHaveBeenCalledWith('comp-1', 2, 0);
+    });
   });
 
   describe('findAll', () => {
@@ -146,6 +192,35 @@ describe('ProductsService', () => {
           where: expect.objectContaining({ companyId: 'comp-1', status: 'ACTIVE' }),
         }),
       );
+    });
+
+    it('should resolve a category slug to its ID before filtering (Phase 14)', async () => {
+      prisma.product.findMany.mockResolvedValue([mockProduct]);
+      prisma.product.count.mockResolvedValue(1);
+      const bridge = (service as any).catalogBridge as {
+        resolveLegacyCategorySlugOrId: jest.Mock;
+      };
+      bridge.resolveLegacyCategorySlugOrId.mockResolvedValueOnce({ id: 'cat-9' });
+
+      await service.findAll({ category: 'steel-metals', status: 'ACTIVE' });
+      expect(bridge.resolveLegacyCategorySlugOrId).toHaveBeenCalledWith('steel-metals');
+      expect(prisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ categoryId: 'cat-9' }),
+        }),
+      );
+    });
+
+    it('should return honest empty when a category slug is unresolvable (Phase 14)', async () => {
+      const bridge = (service as any).catalogBridge as {
+        resolveLegacyCategorySlugOrId: jest.Mock;
+      };
+      bridge.resolveLegacyCategorySlugOrId.mockResolvedValueOnce(null);
+
+      const result = await service.findAll({ category: 'no-such-category', status: 'ACTIVE' });
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
+      expect(prisma.product.findMany).not.toHaveBeenCalled();
     });
   });
 
@@ -190,6 +265,57 @@ describe('ProductsService', () => {
     it('should throw NotFoundException', async () => {
       prisma.product.findFirst.mockResolvedValue(null);
       await expect(service.update('nonexistent', { name: 'Updated' }, 'user-1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('P1 O-1: update with a confirmed triple persists the FULL lineage (never item-only)', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'SUPER_ADMIN' });
+      prisma.product.findFirst.mockResolvedValue(mockProduct);
+      prisma.product.update.mockResolvedValue(mockProduct);
+      (service as any).taxonomyPersistence.validateConfirmedTriple.mockResolvedValue({
+        categoryId: 'cc-1', subcategoryId: 'cs-1', catalogItemId: 'ci-1',
+      });
+
+      await service.update(
+        'prod-1',
+        { catalogItemId: 'ci-1', catalogCategoryId: 'cc-1', catalogSubcategoryId: 'cs-1' },
+        'user-1',
+      );
+
+      const updateCall = prisma.product.update.mock.calls[0][0];
+      expect(updateCall.data.catalogItemId).toBe('ci-1');
+      expect(updateCall.data.catalogCategoryId).toBe('cc-1');
+      expect(updateCall.data.catalogSubcategoryId).toBe('cs-1');
+    });
+
+    it('P1 O-1: update with an explicit all-null triple clears the ENTIRE lineage', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'SUPER_ADMIN' });
+      prisma.product.findFirst.mockResolvedValue(mockProduct);
+      prisma.product.update.mockResolvedValue(mockProduct);
+
+      await service.update(
+        'prod-1',
+        { catalogItemId: null, catalogCategoryId: null, catalogSubcategoryId: null },
+        'user-1',
+      );
+
+      const updateCall = prisma.product.update.mock.calls[0][0];
+      expect(updateCall.data.catalogItemId).toBeNull();
+      expect(updateCall.data.catalogCategoryId).toBeNull();
+      expect(updateCall.data.catalogSubcategoryId).toBeNull();
+    });
+
+    it('should pass the existing slab count to the entitlement check on update', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'SUPER_ADMIN' });
+      prisma.product.findFirst.mockResolvedValue(mockProduct);
+      prisma.productPriceSlab.count.mockResolvedValue(3);
+      prisma.product.update.mockResolvedValue({ ...mockProduct, priceSlabs: [] });
+
+      await service.update(
+        'prod-1',
+        { priceSlabs: [{ minQty: 1, price: 100 }, { minQty: 5, price: 95 }, { minQty: 10, price: 90 }] },
+        'user-1',
+      );
+      expect(membershipService.enforcePriceTierLimit).toHaveBeenCalledWith('comp-1', 3, 3);
     });
   });
 

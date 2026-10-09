@@ -122,6 +122,23 @@ export class UpdateProductDto {
   @ApiPropertyOptional({ description: 'Industry ID' })
   industryId?: string | null;
 
+  // P0-2 canonical taxonomy triple (confirmed via Tick/Change; validated
+  // server-side before persistence — never taken on faith from the client).
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Canonical CatalogItem ID (leaf)' })
+  catalogItemId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Canonical CatalogCategory ID (when item not yet chosen)' })
+  catalogCategoryId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Canonical CatalogSubcategory ID (when item not yet chosen)' })
+  catalogSubcategoryId?: string | null;
+
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'Short description' })

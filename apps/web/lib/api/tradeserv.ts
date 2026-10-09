@@ -199,6 +199,11 @@ export interface TradeservSearchV2Response {
   meta: { total: number; page: number; limit: number; totalPages: number; hasNext: boolean; hasPrevious: boolean };
   aggregations: {
     categories: { key: string; doc_count: number }[];
+    // C-01 P1 F-8: canonical taxonomy facets — key = canonical ID (filter
+    // identity), name/slug/parentId = display enrichment.
+    catalogCategories: { key: string; doc_count: number; name?: string; slug?: string }[];
+    catalogSubcategories: { key: string; doc_count: number; name?: string; slug?: string; parentId?: string }[];
+    catalogItems: { key: string; doc_count: number; name?: string; slug?: string; parentId?: string }[];
     cities: { key: string; doc_count: number }[];
     states: { key: string; doc_count: number }[];
     verificationLevels: { key: string; doc_count: number }[];

@@ -154,9 +154,12 @@ export class CreateVendorDto {
   @ApiPropertyOptional({ description: 'Uploaded company banner URL' })
   bannerUrl?: string;
 
-  @IsString()
-  @ApiProperty({ description: 'Plan ID' })
-  planId: string;
+  // Optional: omitted for TRAD UP seller-first registration, where the free
+  // benefit is fulfilled post-identity via activateFreePlan (never
+  // enrollTrial). The service skips enrollment when absent.
+  @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Plan ID (commercial trial enrollment; omit for TRAD UP)' })
+  planId?: string;
   @IsOptional() @IsString()
   @ApiPropertyOptional({ description: 'Referral code' })
   referralCode?: string;

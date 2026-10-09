@@ -1,7 +1,8 @@
-import helmet from '@fastify/helmet';
+﻿import helmet from '@fastify/helmet';
 import csrf from '@fastify/csrf-protection';
 import cookie from '@fastify/cookie';
 import compress from '@fastify/compress';
+import multipart from '@fastify/multipart';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -11,6 +12,7 @@ import { collectDefaultMetrics, Registry } from 'prom-client';
 import { createServer } from 'http';
 import * as Sentry from '@sentry/nestjs';
 import { AppModule } from './app.module';
+import { ProductionConfigValidator } from './common/services/production-config-validator.service';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
 import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
@@ -26,17 +28,18 @@ import { QueueMetricsService } from './common/services/queue-metrics.service';
 import { RedisService } from './common/services/redis.service';
 import { PrismaService } from './prisma/prisma.service';
 import { logger, createRequestContext } from './common/logger';
+import { registerCsrfPreHandler } from './common/hooks/csrf-prehandler';
 
 async function bootstrap() {
-  // Global process-level error handlers — prevent Node.js crashes on unhandled rejections
+  // Global process-level error handlers â€” prevent Node.js crashes on unhandled rejections
   process.on('unhandledRejection', (reason: unknown) => {
-    logger.error({ err: reason }, 'UNHANDLED PROMISE REJECTION — application will continue, but investigate the cause');
+    logger.error({ err: reason }, 'UNHANDLED PROMISE REJECTION â€” application will continue, but investigate the cause');
     Sentry.captureException(reason instanceof Error ? reason : new Error(String(reason)));
   });
   process.on('uncaughtException', (error: Error) => {
-    logger.error({ err: error }, 'UNCAUGHT EXCEPTION — application may become unstable');
+    logger.error({ err: error }, 'UNCAUGHT EXCEPTION â€” application may become unstable');
     Sentry.captureException(error);
-    // Graceful shutdown — give time for cleanup
+    // Graceful shutdown â€” give time for cleanup
     setTimeout(() => process.exit(1), 3000).unref();
   });
 
@@ -67,91 +70,21 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  const PLACEHOLDER_PATTERNS = ['change-me', 'change_me', 'replace', 'your_', 'your-', 'yours', '<your-', '<secret', 'dummy', 'founder', 'xxxxxx'];
-  const isPlaceholder = (value?: string): boolean => {
-    if (!value) return true;
-    const v = value.toLowerCase();
-    return PLACEHOLDER_PATTERNS.some((p) => v.includes(p));
-  };
-
-  // Validate JWT secrets are not placeholders
-  const jwtSecret = configService.get<string>('jwt.secret', '');
-  const jwtRefreshSecret = configService.get<string>('jwt.refreshSecret', '');
-  if (!jwtSecret || isPlaceholder(jwtSecret) || jwtSecret.length < 32) {
-    throw new Error('JWT_SECRET is invalid, missing, or still a placeholder. Set a strong 64-char random secret in your .env file.');
-  }
-  if (!jwtRefreshSecret || isPlaceholder(jwtRefreshSecret) || jwtRefreshSecret.length < 32) {
-    throw new Error('JWT_REFRESH_SECRET is invalid, missing, or still a placeholder. Set a strong 64-char random secret in your .env file.');
-  }
 
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
-  const paymentMode = configService.get<string>('PAYMENT_MODE', 'test');
 
   // Sentry flags are resolved once and reused by the initialization block below
   const sentryDsn = configService.get<string>('sentry.dsn', '');
   const sentryEnabled = configService.get<boolean>('sentry.enabled', false);
 
-  // Production credential validation
+  // Production credential validation (consolidated)
   if (isProduction) {
-    const errors: string[] = [];
-
-    // AWS credentials (SES + S3) — warn only, not fatal (supports deployments without email)
-    const awsKeyId = process.env.AWS_ACCESS_KEY_ID || '';
-    const awsSecret = process.env.AWS_SECRET_ACCESS_KEY || '';
-    if (!awsKeyId || !awsSecret || isPlaceholder(awsKeyId) || isPlaceholder(awsSecret)) {
-      logger.warn('AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY not set or still placeholders — SES email and S3 backups will fail at runtime');
+    const validator = app.get(ProductionConfigValidator);
+    const result = validator.validate(configService, isProduction);
+    validator.logResult(result);
+    if (result.errors.length > 0) {
+      throw new Error(`Production environment validation failed:\n  ${result.errors.join('\n  ')}`);
     }
-
-    // Razorpay keys — fail-fast when PAYMENT_MODE=live (prevents silent payment failures), lenient warnings in test mode
-    const rpKeyId = configService.get<string>('razorpay.keyId', '');
-    const rpKeySecret = configService.get<string>('razorpay.keySecret', '');
-    const rpWebhookSecret = configService.get<string>('razorpay.webhookSecret', '');
-    if (paymentMode === 'live') {
-      if (!rpKeyId || rpKeyId.startsWith('rzp_test_') || isPlaceholder(rpKeyId) || rpKeyId === 'rzp_live_YOUR_KEY_ID_HERE') {
-        errors.push('RAZORPAY_KEY_ID is missing or still a placeholder. Set a valid LIVE key (rzp_live_*) or use PAYMENT_MODE=test.');
-      }
-      if (!rpKeySecret || isPlaceholder(rpKeySecret) || rpKeySecret === 'rzp_secret_YOUR_KEY_SECRET') {
-        errors.push('RAZORPAY_KEY_SECRET is missing or still a placeholder');
-      }
-      if (!rpWebhookSecret || isPlaceholder(rpWebhookSecret) || rpWebhookSecret === 'rzp_webhook_YOUR_WEBHOOK_SECRET') {
-        errors.push('RAZORPAY_WEBHOOK_SECRET is missing or still a placeholder — live webhooks will be rejected');
-      }
-    } else if (isPlaceholder(rpKeyId) || isPlaceholder(rpKeySecret) || isPlaceholder(rpWebhookSecret)) {
-      logger.warn('RAZORPAY_KEY_ID / KEY_SECRET / WEBHOOK_SECRET are missing or placeholders — payment flows will be unavailable in test mode');
-    }
-
-    // Email from address
-    const emailFrom = configService.get<string>('EMAIL_FROM', '');
-    if (!emailFrom) {
-      errors.push('EMAIL_FROM must be set in production');
-    } else {
-      const fromDomain = emailFrom.split('@')[1]?.toLowerCase() || '';
-      if (!fromDomain || ['example.com', 'tradingotech.com', 'yourdomain.com', 'yourdomain.in', 'localhost'].includes(fromDomain)) {
-        errors.push(`EMAIL_FROM domain "${fromDomain}" is not a verified send domain — create the SES identity for it and use that domain`);
-      }
-    }
-
-    // Sentry — fatal when claimed enabled but DSN is a placeholder (prevents silent report loss)
-    if (sentryEnabled && (!sentryDsn || isPlaceholder(sentryDsn))) {
-      errors.push('SENTRY_ENABLED=true but SENTRY_DSN is missing or a placeholder — set the project DSN or set SENTRY_ENABLED=false');
-    }
-
-    // AI provider keys (warn only) — at least one real configured key required for AI features
-    const aiKeys = ['OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'GEMINI_API_KEY', 'GROQ_API_KEY', 'TAVILY_API_KEY', 'FIRECRAWL_API_KEY'];
-    const hasAiKey = aiKeys.some((k) => process.env[k] && !isPlaceholder(process.env[k]));
-    if (!hasAiKey) {
-      logger.warn('No AI provider keys configured (or all placeholders) — AI features will be unavailable. Set at least one of: ' + aiKeys.join(', '));
-    }
-
-    if (errors.length > 0) {
-      logger.error('Production environment validation failed:');
-      for (const err of errors) {
-        logger.error(`  ✗ ${err}`);
-      }
-      throw new Error(`Production environment validation failed:\n  ${errors.join('\n  ')}`);
-    }
-
-    logger.info(`Production environment validation passed (PAYMENT_MODE=${paymentMode})`);
   }
 
   // Sentry initialization (dsn/enabled resolved during credential validation above)
@@ -203,12 +136,12 @@ async function bootstrap() {
     xssFilter: true,
   });
 
-  // CSRF protection — provides generateCsrf() utility + csrfProtection preHandler
+  // CSRF protection â€” provides generateCsrf() utility + csrfProtection preHandler
   await app.register(cookie, { secret: configService.get<string>('JWT_SECRET', 'change-me-to-a-random-64-char-string') });
   await app.register(csrf, { cookieOpts: { signed: true, path: '/', sameSite: true, httpOnly: true } });
   const fastifyApp: any = app.getHttpAdapter().getInstance();
 
-  // Correlation ID — propagate x-request-id from incoming headers, set response headers
+  // Correlation ID â€” propagate x-request-id from incoming headers, set response headers
   fastifyApp.addHook('onRequest', (request: any, _reply: any, done: () => void) => {
     const incomingId = request.headers['x-request-id'] || request.headers['x-correlation-id'];
     const ctx = createRequestContext(incomingId as string | undefined);
@@ -222,33 +155,39 @@ async function bootstrap() {
     done();
   });
 
-  fastifyApp.addHook('preHandler', (request: any, reply: any, done: (err?: Error) => void) => {
-    if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-      try { reply.generateCsrf?.(); } catch (e) { logger.warn({ err: e }, 'CSRF token generation failed'); }
-      return done();
-    }
-    if (String(request.url).includes('/payments/webhook/')) return done();
-    if (String(request.url).endsWith('/membership/webhook')) return done();
-    if (request.headers?.authorization) return done();
-    // Requests from the configured frontend origin are not cross-site forgeries
-    // (mirrors the CORS allowlist — same-origin proxied traffic in production).
-    const trustedOrigin = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
-    if (request.headers?.origin && request.headers.origin === trustedOrigin) return done();
-    if (typeof fastifyApp.csrfProtection === 'function') {
-      fastifyApp.csrfProtection(request, reply, (err?: any) => {
-        if (err) {
-          logger.warn({ err }, 'CSRF validation failed — request blocked');
-          return done(new Error('CSRF validation failed'));
-        }
-        done();
-      });
-    } else {
-      done();
-    }
-  });
+  // CSRF preHandler (F-6: anonymous CSRF rejection is a 403, not a 500)
+  registerCsrfPreHandler(fastifyApp, configService, logger);
 
   // Response compression (gzip/brotli)
   await app.register(compress, { threshold: 1024 });
+
+  // Multipart parsing — the API runs on the Fastify adapter and every
+  // upload route (catalog-import, storage) previously died with a
+  // Fastify-native HTTP 415 because no multipart parser was registered.
+  // Notes on @fastify/multipart behavior (verified against the installed
+  // v9 source): its preValidation hook consumes the stream and, with
+  // attachFieldsToBody 'keyValues', exposes file bytes as req.body[field]
+  // plus text fields as strings (multer-identical body shape).
+  // - Global fileSize cap is 100 MB (the pre-existing storage allowance;
+  //   catalog keeps its own 50 MB controller check, unchanged).
+  // - onFile stashes filename/mimetype metadata (keyValues keeps only
+  //   the buffer) for the FastifyFileInterceptor layer below.
+  // - Per-route file-count caps live in the interceptor (single: 1,
+  //   multi: MAX_FILES), mirroring multer semantics.
+  await app.register(multipart, {
+    limits: { fileSize: 100 * 1024 * 1024 },
+    attachFieldsToBody: 'keyValues',
+    onFile: async function (this: any, part: any) {
+      this.savedUploads = this.savedUploads || [];
+      this.savedUploads.push({
+        fieldname: part.fieldname,
+        filename: part.filename,
+        encoding: part.encoding,
+        mimetype: part.mimetype,
+      });
+      await part.toBuffer();
+    },
+  });
 
   // Redis Socket.io adapter for horizontal scaling
   const redisIoAdapter = new RedisIoAdapter(app);
@@ -288,7 +227,7 @@ async function bootstrap() {
     }),
   );
 
-  // Prometheus metrics — registry must exist before interceptors
+  // Prometheus metrics â€” registry must exist before interceptors
   const register = new Registry();
   collectDefaultMetrics({ register });
   const prismaService = app.get(PrismaService);
@@ -311,15 +250,15 @@ async function bootstrap() {
   // Swagger (dev only)
   if (configService.get<string>('NODE_ENV') !== 'production') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('Tradingo API — TradHexa Platform')
+      .setTitle('Tradingo API â€” TradHexa Platform')
       .setDescription(`
         Tradingo is the enterprise B2B commerce platform powering TradHexa.
         This API provides access to marketplace, AI, TradeServ, TradeTalk,
         GOCASH wallet, advertising, and platform administration features.
 
         ## Authentication
-        - **JWT Bearer Token** (short-lived, 15 min) — required for most endpoints
-        - **Refresh Token** (long-lived, 7 days) — used via POST /auth/refresh
+        - **JWT Bearer Token** (short-lived, 15 min) â€” required for most endpoints
+        - **Refresh Token** (long-lived, 7 days) â€” used via POST /auth/refresh
 
         ## Response Envelope
         All responses follow: { success, data, meta, timestamp }
@@ -365,7 +304,7 @@ async function bootstrap() {
   });
   metricsServer.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
-      logger.warn('Metrics server port 9100 already in use — skipping internal metrics server');
+      logger.warn('Metrics server port 9100 already in use â€” skipping internal metrics server');
     } else {
       logger.error(`Metrics server error: ${err.message}`);
     }
@@ -379,7 +318,7 @@ async function bootstrap() {
   logger.info(`Swagger docs at http://0.0.0.0:${port}/api/docs`);
   logger.info(`Metrics at http://0.0.0.0:9100/metrics`);
 
-  // Graceful shutdown — enableShutdownHooks() at line 27 handles NestJS lifecycle
+  // Graceful shutdown â€” enableShutdownHooks() at line 27 handles NestJS lifecycle
   // Prisma $disconnect() is called automatically via OnModuleDestroy
   process.on('SIGTERM', async () => {
     logger.info('Received SIGTERM, shutting down gracefully...');
@@ -393,3 +332,5 @@ async function bootstrap() {
   });
 }
 bootstrap();
+
+

@@ -25,11 +25,11 @@ export default function StepCard({ icon, title, subtitle, children }: {
             </div>
           )}
           <div>
-            <h2 className="text-white font-black text-xl">{title}</h2>
-            <p className="text-white/45 text-xs">{subtitle}</p>
+            <h2 className="text-text-primary font-black text-xl">{title}</h2>
+            <p className="text-text-secondary text-xs">{subtitle}</p>
           </div>
         </div>
-        <div className="h-px mt-4" style={{ background: 'rgba(255,255,255,0.07)' }} />
+        <div className="h-px mt-4" style={{ background: 'var(--border-light)' }} />
       </div>
       {children}
     </div>

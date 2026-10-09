@@ -4,7 +4,7 @@ import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
   title: 'Disclaimer | TRADINGO',
-  description: 'TRADINGO Disclaimer outlines limitations of liability, no warranty provisions, and terms governing use of India\'s first Trusted Electronic Marketplace.',
+  description: 'TRADINGO Disclaimer outlines limitations of liability, no warranty provisions, and terms governing use of India\'s first TRADINGO E-Marketplace.',
   openGraph: {
     title: 'Disclaimer | TRADINGO',
     description: 'Read TRADINGO\'s disclaimer regarding platform warranties, third-party content, and limitation of liability.',
@@ -40,7 +40,7 @@ const disclaimerSections = [
   },
   {
     title: 'Limitation of Liability',
-    content: 'To the maximum extent permitted by applicable law, TRADINGO Technologies Pvt. Ltd., its directors, employees, partners, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the platform, any conduct or content of any third party on the platform, or any unauthorized access, use, or alteration of your transmissions or content.',
+    content: 'To the maximum extent permitted by applicable law, Niksa Global Ventures Limited, its directors, employees, partners, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the platform, any conduct or content of any third party on the platform, or any unauthorized access, use, or alteration of your transmissions or content.',
     subsections: [],
   },
   {
