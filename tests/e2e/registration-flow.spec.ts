@@ -54,8 +54,16 @@ test.describe('Registration Flow', () => {
     const page = await context.newPage();
     const flow = createFlowHelper(page);
     await flow.navigate('/register');
-    const buyerLink = page.locator('a[href*="buyer"], a:has-text("Buyer")').first();
-    const sellerLink = page.locator('a[href*="seller"], a:has-text("Seller")').first();
+    // Canonical route: /register redirects guests to /register/buyer.
+    await expect(page).toHaveURL(/\/register\/buyer/);
+    // Below the xl breakpoint the navbar options live inside the hamburger
+    // menu (the desktop capsule row is intentionally hidden there).
+    const menuButton = page.getByRole('button', { name: 'Open navigation menu' });
+    if (await menuButton.isVisible()) {
+      await menuButton.click();
+    }
+    const buyerLink = page.locator('a[href*="buyer"], a:has-text("Buyer")').filter({ visible: true }).first();
+    const sellerLink = page.locator('a[href*="seller"], a:has-text("Seller")').filter({ visible: true }).first();
     await expect(buyerLink).toBeVisible();
     await expect(sellerLink).toBeVisible();
     await context.close();
