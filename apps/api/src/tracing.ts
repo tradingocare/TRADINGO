@@ -24,17 +24,11 @@ export async function bootstrapTracing(): Promise<void> {
   if (!endpoint) return;
 
   try {
-    // @ts-expect-error — optional OTEL packages
     const { NodeSDK } = await import('@opentelemetry/sdk-node');
-    // @ts-expect-error — optional OTEL packages
     const { OTLPTraceExporter } = await import('@opentelemetry/exporter-otlp-proto');
-    // @ts-expect-error — optional OTEL packages
     const { HttpInstrumentation } = await import('@opentelemetry/instrumentation-http');
-    // @ts-expect-error — optional OTEL packages
     const { NestInstrumentation } = await import('@opentelemetry/instrumentation-nestjs-core');
-    // @ts-expect-error — optional OTEL packages
     const { Resource } = await import('@opentelemetry/resources');
-    // @ts-expect-error — optional OTEL packages
     const { SemanticResourceAttributes } = await import('@opentelemetry/semantic-conventions');
 
     const sdk = new NodeSDK({
