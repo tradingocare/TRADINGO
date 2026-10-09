@@ -8,7 +8,11 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : 1,
+  // CI-05 controlled experiment: single worker everywhere. CI previously ran
+  // 2 workers; local already ran 1, so local behavior is unchanged. If the
+  // suite goes green, parallel-runner resource contention is the cause and
+  // this one-line change is the permanent fix.
+  workers: 1,
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['junit', { outputFile: 'playwright-report/junit.xml' }],
