@@ -42,6 +42,11 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      previous-api: ${{ steps.previous.outputs.previous-api }}
+      previous-web: ${{ steps.previous.outputs.previous-web }}
+      api-attempted: ${{ steps.api-attempt.outputs.attempted }}
+      web-attempted: ${{ steps.web-attempt.outputs.attempted }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -94,6 +99,18 @@ jobs:
           sed -i "s|tradingo-production-api:latest|tradingo-production-api:${{ github.sha }}|g" infrastructure/ecs/task-definition.migration.json
           echo "Task definition placeholders substituted"
 
+      - name: Capture pre-deploy task definitions
+        id: previous
+        run: |
+          PREV_API=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} --query 'services[0].taskDefinition' --output text)
+          PREV_WEB=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_WEB }} --query 'services[0].taskDefinition' --output text)
+          for ARN in "$PREV_API" "$PREV_WEB"; do
+            case "$ARN" in arn:aws:ecs:*:task-definition/*) : ;; *) echo "::error::Invalid pre-deploy task definition ARN"; exit 1;; esac
+          done
+          echo "previous-api=$PREV_API" >> $GITHUB_OUTPUT
+          echo "previous-web=$PREV_WEB" >> $GITHUB_OUTPUT
+          echo "Pre-deploy revisions captured (rollback baseline)"
+
       - name: Register migration task definition
         run: |
           aws ecs register-task-definition --cli-input-json file://infrastructure/ecs/task-definition.migration.json
@@ -138,6 +155,7 @@ jobs:
           image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
 
       - name: Deploy API to ECS
+        id: deploy-api
         uses: aws-actions/amazon-ecs-deploy-service-definition@v1
         with:
           task-definition: ${{ steps.render-api.outputs.task-definition }}
@@ -146,7 +164,18 @@ jobs:
           wait-for-service-stability: true
           wait-for-minutes: 10
 
+      - name: Record API update attempt
+        id: api-attempt
+        if: always()
+        run: |
+          if [ "${{ steps.deploy-api.outcome }}" = "skipped" ]; then
+            echo "attempted=false" >> $GITHUB_OUTPUT
+          else
+            echo "attempted=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy Web to ECS
+        id: deploy-web
         uses: aws-actions/amazon-ecs-deploy-service-definition@v1
         with:
           task-definition: ${{ steps.render-web.outputs.task-definition }}
@@ -154,6 +183,16 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
           wait-for-minutes: 10
+
+      - name: Record Web update attempt
+        id: web-attempt
+        if: always()
+        run: |
+          if [ "${{ steps.deploy-web.outcome }}" = "skipped" ]; then
+            echo "attempted=false" >> $GITHUB_OUTPUT
+          else
+            echo "attempted=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Health check - API (via ALB)
         run: |
@@ -178,7 +217,11 @@ jobs:
 
   rollback:
     name: Rollback
-    if: failure()
+    # Runs ONLY when the deploy job actually started and failed. Validation
+    # failures, success, cancellation and skips keep this job skipped.
+    # Restores the pre-deploy revisions captured by the deploy job — never the
+    # live revisions (re-applying those could lock in a bad deployment).
+    if: ${{ needs.deploy.result == 'failure' }}
     needs: [deploy]
     runs-on: ubuntu-latest
     environment: production
@@ -193,28 +236,47 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Rollback API service to previous task definition
+      - name: Verify rollback baseline
+        id: verify-baseline
         run: |
-          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} --query 'services[0].taskDefinition' --output text)
-          echo "Rolling back API to: $PREVIOUS_TASK_DEF"
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_API }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
+          PREV_API='${{ needs.deploy.outputs.previous-api }}'
+          PREV_WEB='${{ needs.deploy.outputs.previous-web }}'
+          API_ATTEMPTED='${{ needs.deploy.outputs.api-attempted }}'
+          WEB_ATTEMPTED='${{ needs.deploy.outputs.web-attempted }}'
+          echo "API update attempted: '$API_ATTEMPTED'"
+          echo "Web update attempted: '$WEB_ATTEMPTED'"
+          if [ "$API_ATTEMPTED" != "true" ] && [ "$WEB_ATTEMPTED" != "true" ]; then
+            echo "::error::No service-update attempt recorded; manual verification required, skipping rollback."
+            exit 1
+          fi
+          for ARN in "$PREV_API" "$PREV_WEB"; do
+            case "$ARN" in arn:aws:ecs:*:task-definition/*) : ;; *) echo "::error::Missing or invalid pre-deploy revision; manual verification required, skipping rollback."; exit 1;; esac
+          done
+          echo "Rollback baseline verified (captured pre-deploy revisions)."
+
+      - name: Rollback API service to previous task definition
+        if: ${{ always() && steps.verify-baseline.outcome == 'success' }}
+        run: |
+          echo "Rolling back API to: ${{ needs.deploy.outputs.previous-api }}"
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_API }} --task-definition ${{ needs.deploy.outputs.previous-api }} --force-new-deployment
 
       - name: Rollback Web service to previous task definition
+        if: ${{ always() && steps.verify-baseline.outcome == 'success' }}
         run: |
-          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_WEB }} --query 'services[0].taskDefinition' --output text)
-          echo "Rolling back Web to: $PREVIOUS_TASK_DEF"
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_WEB }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
+          echo "Rolling back Web to: ${{ needs.deploy.outputs.previous-web }}"
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_WEB }} --task-definition ${{ needs.deploy.outputs.previous-web }} --force-new-deployment
 
       - name: Wait for rollback stability
         run: |
           aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} ${{ env.ECS_SERVICE_WEB }}
 
       - name: Notify Slack rollback
+        if: always()
         uses: slackapi/slack-github-action@v2
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "🔄 Production rollback completed — ${{ github.sha }}"
+              "text": "🔄 Production rollback ${{ job.status }} — ${{ github.sha }}"
             }
