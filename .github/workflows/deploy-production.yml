@@ -98,6 +98,9 @@ jobs:
   deploy:
     name: Deploy to Production VPS
     runs-on: ubuntu-latest
+    # Production environment gate: requires reviewer approval (tradingoindia)
+    # and protected-branch runs. No other change in this workflow.
+    environment: production
     needs: [validate, build-and-push]
     if: needs.validate.outputs.can_deploy == '"'"'true'"'"'
     steps:
