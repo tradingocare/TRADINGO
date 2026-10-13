@@ -258,8 +258,13 @@ registry is involved.
 - The release tracks **`origin/main` only**. The exact SHA is resolved on the VPS
   at deploy time (`git rev-parse origin/main`); operator-supplied branches, tags
   and SHAs are not accepted.
-- There is no push trigger. Every release needs the typed `deploy` confirmation
-  **and** a `production` environment reviewer approval.
+- There is no push trigger. Every release needs the typed `deploy` confirmation.
+  NOTE (verified 2026-10-13): the `production` environment currently has **no
+  required reviewers**, so its gate resolves immediately — effective approval
+  is dispatch permission (write access) plus the typed confirmation. This is
+  NOT two-person review. To restore a reviewer checkpoint, add an eligible
+  reviewer under Settings → Environments → `production` (founder decision;
+  weigh self-review protection for single-account operation).
 
 ### 12.2 Required secrets (production environment, names only)
 
@@ -274,7 +279,7 @@ registry is involved.
 
 Set them under repository Settings → Secrets and variables → Actions →
 **Environment secrets** for the `production` environment (not repository
-secrets), so they are only exposed to runs that passed the approval gate.
+secrets), so they are only exposed to runs using that environment.
 Values are never printed by the workflow; verification steps report
 `configured` / `MISSING` names only.
 

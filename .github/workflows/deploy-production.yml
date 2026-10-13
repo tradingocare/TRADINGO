@@ -6,8 +6,13 @@ name: Deploy Production
 # Design notes (do not weaken without founder approval):
 # - Manual dispatch only, and only from the `main` ref: a dispatch launched
 #   from any other workflow ref fails closed before any secret or SSH use.
-#   Each run requires the typed confirmation below AND the `production`
-#   environment reviewer approval. No push trigger.
+#   Each run requires the typed confirmation below. NOTE (verified 2026-10-13):
+#   the `production` environment currently has NO required reviewers, so its
+#   gate resolves immediately — effective approval is dispatch permission
+#   (write access) plus the typed confirmation. This is NOT two-person review.
+#   To restore a reviewer checkpoint, add an eligible reviewer under Settings
+#   → Environments → production (founder decision; weigh self-review
+#   protection for single-account operation). No push trigger.
 # - The release is pinned to the exact SHA of `origin/main` resolved on the
 #   VPS at deploy time — never an operator-supplied branch, tag, or SHA, and
 #   never "latest whatever happens to be on main at build time".
@@ -104,8 +109,11 @@ jobs:
   deploy:
     name: Deploy to Production VPS
     runs-on: ubuntu-latest
-    # Production environment gate: requires reviewer approval before any
-    # command reaches the VPS. Never remove this gate without founder approval.
+    # Production environment gate: consults the `production` environment before
+    # any command reaches the VPS. NOTE (verified 2026-10-13): no required
+    # reviewers are currently configured there, so it resolves immediately;
+    # see the header note before relying on this as an approval checkpoint.
+    # Never remove this gate without founder approval.
     environment: production
     needs: [validate]
     if: needs.validate.outputs.can_deploy == 'true'
