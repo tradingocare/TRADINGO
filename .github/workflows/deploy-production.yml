@@ -4,10 +4,16 @@ name: Deploy Production
 # Replaces the former echo/template implementation.
 #
 # Design notes (do not weaken without founder approval):
-# - Manual dispatch only. Each run requires the typed confirmation below AND
-#   the `production` environment reviewer approval. No push trigger.
-# - The release is pinned to an exact git SHA (resolved from `ref`), never
-#   "latest whatever happens to be on main at build time".
+# - Manual dispatch only, and only from the `main` ref: a dispatch launched
+#   from any other workflow ref fails closed before any secret or SSH use.
+#   Each run requires the typed confirmation below AND the `production`
+#   environment reviewer approval. No push trigger.
+# - The release is pinned to the exact SHA of `origin/main` resolved on the
+#   VPS at deploy time — never an operator-supplied branch, tag, or SHA, and
+#   never "latest whatever happens to be on main at build time".
+# - Host trust is pinned, not discovered: SSH uses a founder-provisioned
+#   `VPS_KNOWN_HOSTS` secret (verified out-of-band); runtime `ssh-keyscan`
+#   trust-on-first-use is forbidden in this workflow.
 # - Migrations run via the api-migrate compose target BEFORE containers are
 #   recreated. Forward-only (`prisma migrate deploy`); there is no
 #   down-migration path by design.
@@ -48,11 +54,6 @@ on:
         description: 'Type "deploy" to confirm production deployment'
         required: true
         type: string
-      ref:
-        description: 'Git ref to deploy (branch, tag or SHA). Defaults to main.'
-        required: false
-        default: 'main'
-        type: string
 
 jobs:
   validate:
@@ -72,21 +73,29 @@ jobs:
             echo "ERROR: Confirmation must be 'deploy'"
             exit 1
           fi
-          TARGET_REF="${{ github.event.inputs.ref }}"
-          if [ -z "$TARGET_REF" ]; then
-            TARGET_REF="main"
+          # Single-account lockdown: this workflow file must run from `main`.
+          # A dispatch launched from any other ref fails here, before any
+          # secret is touched or any SSH connection is opened.
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "ERROR: production deployment is allowed only from the main branch (this run uses ${{ github.ref }})"
+            exit 1
           fi
-          echo "target_ref=$TARGET_REF" >> $GITHUB_OUTPUT
-          echo "Target ref: $TARGET_REF"
+          # Releases track origin/main only; the exact SHA is resolved on the
+          # VPS at deploy time (see deploy step), never operator-supplied.
+          echo "target_ref=origin/main" >> $GITHUB_OUTPUT
+          echo "Target ref: origin/main"
 
       - name: Validate required secrets
         run: |
           echo "Checking required secrets are configured (names only, values never printed)..."
           echo "VPS_HOST: ${{ secrets.VPS_HOST && 'configured' || 'MISSING' }}"
           echo "VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY && 'configured' || 'MISSING' }}"
+          echo "VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS && 'configured' || 'MISSING' }}"
 
-          if [ -z "${{ secrets.VPS_HOST }}" ] || [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then
-            echo "ERROR: VPS_HOST and VPS_SSH_KEY secrets are required"
+          if [ -z "${{ secrets.VPS_HOST }}" ] || [ -z "${{ secrets.VPS_SSH_KEY }}" ] || [ -z "${{ secrets.VPS_KNOWN_HOSTS }}" ]; then
+            echo "ERROR: VPS_HOST, VPS_SSH_KEY and VPS_KNOWN_HOSTS secrets are required"
+            echo "VPS_KNOWN_HOSTS must hold verified known_hosts line(s) for the VPS (see docs/deployment/VPS-DEPLOYMENT-GUIDE.md section 12)"
             echo "See docs/deployment/PRODUCTION-DEPLOYMENT.md for setup instructions"
             exit 1
           fi
@@ -107,9 +116,22 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Add VPS to known hosts
+      - name: Install pinned VPS host keys
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
-          ssh-keyscan -H -p ${{ secrets.VPS_PORT || '22' }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          # Pinned trust only: host keys come from the founder-provisioned
+          # secret, verified out-of-band. Runtime ssh-keyscan discovery is
+          # forbidden here (TOFU against an unauthenticated network peer).
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          # Fail closed on malformed content: at least one recognizable SSH
+          # public-key line must be present (also matches hashed known_hosts).
+          grep -qE '(ssh-(ed25519|rsa|ecdsa|dss)|sk-ssh-ed25519@|sk-ecdsa-sha2-)' ~/.ssh/known_hosts \
+            || { echo "ERROR: VPS_KNOWN_HOSTS does not contain a recognizable SSH host key"; exit 1; }
+          echo "Pinned VPS host keys installed (StrictHostKeyChecking stays enforced)."
 
       - name: Deploy release to VPS
         env:
