@@ -25,21 +25,38 @@ env:
 jobs:
   validate:
     name: Validate Secrets
+    # AWS path is a dormant fallback until the account is configured. This job
+    # always reports green but records whether the account is configured; the
+    # deploy job below only proceeds when it is. That keeps every CI
+    # completion from failing red while AWS_ACCOUNT_ID is absent, without
+    # retiring the fallback: configuring the secret automatically re-arms ECS
+    # deployment. (A job-level `secrets.*` gate is intentionally NOT used here:
+    # GitHub rejects `secrets` in that position as a workflow file issue. To
+    # retire the AWS path entirely, remove its `workflow_run` trigger instead
+    # — founder decision, after Hostinger proves green.)
+    # NOTE: no `environment:` gate on this job by design — it performs no
+    # privileged action, and gating it would spend a production approval on
+    # every dormant run. The deploy and rollback jobs keep their own
+    # `environment: production` gates.
     runs-on: ubuntu-latest
-    environment: production
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
     steps:
       - name: Check AWS_ACCOUNT_ID is configured
+        id: check
         run: |
           if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
-            echo "::error::AWS_ACCOUNT_ID secret is not configured. Set it in GitHub secrets."
-            exit 1
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "::warning::AWS_ACCOUNT_ID secret is not configured. AWS path dormant; run stays green. Configure the secret to re-arm ECS deployment."
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+            echo "AWS_ACCOUNT_ID is configured: OK"
           fi
-          echo "AWS_ACCOUNT_ID is configured: OK"
 
   deploy:
     name: Build & Deploy
     needs: [validate]
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' }}
+    if: ${{ needs.validate.outputs.configured == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
     environment: production
     outputs:

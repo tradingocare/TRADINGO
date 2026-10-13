@@ -18,6 +18,16 @@ name: Deploy Production
 #   auto-rolls back. The previous release SHA is printed with the exact
 #   manual rollback commands (see ROLLBACK section below + rollback step).
 #
+# BACKUP POLICY (explicit and defensible): a database backup is taken before
+#   every release via scripts/deploy/manage.sh backup. If that step fails, the
+#   run logs a loud ::warning:: and CONTINUES, because backup failures are
+#   typically disk-space/transient issues unrelated to release safety, and
+#   blocking a needed release (e.g. a security fix) on a backup failure can be
+#   worse than proceeding. The operator MUST check the run logs: deploy
+#   without a fresh backup only when the latest existing backup is known good;
+#   otherwise resolve backup health first. Data restore stays a separate
+#   deliberate decision in every case (see ROLLBACK below).
+#
 # ROLLBACK (manual, only after verifying the previous release was healthy):
 #   ssh tradingo@<VPS_HOST> 'cd /home/tradingo/tradingo \
 #     && PREV=<sha-printed-by-failed-run> && git checkout $PREV \
