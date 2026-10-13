@@ -48,7 +48,7 @@ jobs:
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
     needs: [validate]
-    if: needs.validate.outputs.can_deploy == '"'"'true'"'"'
+    if: needs.validate.outputs.can_deploy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
     # and protected-branch runs. No other change in this workflow.
     environment: production
     needs: [validate, build-and-push]
-    if: needs.validate.outputs.can_deploy == '"'"'true'"'"'
+    if: needs.validate.outputs.can_deploy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
