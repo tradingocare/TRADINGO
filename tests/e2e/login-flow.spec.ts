@@ -47,13 +47,21 @@ test.describe('Login Flow', () => {
     );
     const flow = createFlowHelper(page);
     await flow.navigate('/login');
+    // Readiness FIRST: the Turnstile iframe is rendered by a client effect,
+    // so its presence proves hydration completed and the submit handler is
+    // attached. Fills below must land post-hydration — filling earlier can
+    // write into pre-hydration SSR markup whose values React wipes on
+    // hydrate (observed: username empty at submit on slow engines while the
+    // later password fill survived). Same integration signal as the
+    // turnstile test.
+    await expect(page.locator('iframe[src*="challenges.cloudflare"]').first()).toBeVisible({ timeout: 10000 });
     await flow.fillField('input[autocomplete="username"]', 'invalid@test.com');
     await flow.fillField('input[autocomplete="current-password"], input[type="password"]', 'wrongpassword');
-    // Readiness: the Turnstile iframe is rendered by a client effect, so its
-    // presence proves hydration completed and the submit handler is attached.
-    // Clicking earlier can dispatch into pre-hydration SSR markup (silent
-    // no-op on slow engines). Same integration signal as the turnstile test.
-    await expect(page.locator('iframe[src*="challenges.cloudflare"]').first()).toBeVisible({ timeout: 10000 });
+    // Value persistence: fail here with an explicit cause if hydration (or a
+    // pane swap) wiped a fill, instead of burning the response timeout on a
+    // submit that the client will silently skip for empty input.
+    await expect(page.locator('input[autocomplete="username"]').first()).toHaveValue('invalid@test.com', { timeout: 10000 });
+    await expect(page.locator('input[autocomplete="current-password"], input[type="password"]').first()).toHaveValue('wrongpassword', { timeout: 10000 });
     await flow.clickButton('Sign In');
     await page.waitForTimeout(2000);
     const errorMsg = page.getByText(/invalid|error|failed|incorrect|not found/i).first();
