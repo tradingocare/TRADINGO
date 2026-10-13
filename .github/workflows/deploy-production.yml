@@ -70,8 +70,14 @@ jobs:
     steps:
       - name: Check confirmation
         id: confirm
+        # Injection hygiene: operator-influenced contexts enter ONLY as step
+        # environment variables, never as ${{ }} fragments inside shell code.
+        # Quoted shell comparisons below then operate on plain data.
+        env:
+          CONFIRM_INPUT: ${{ github.event.inputs.confirm }}
+          WORKFLOW_REF: ${{ github.ref }}
         run: |
-          if [ "${{ github.event.inputs.confirm }}" = "deploy" ]; then
+          if [ "$CONFIRM_INPUT" = "deploy" ]; then
             echo "valid=true" >> $GITHUB_OUTPUT
           else
             echo "valid=false" >> $GITHUB_OUTPUT
@@ -81,9 +87,9 @@ jobs:
           # Single-account lockdown: this workflow file must run from `main`.
           # A dispatch launched from any other ref fails here, before any
           # secret is touched or any SSH connection is opened.
-          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+          if [ "$WORKFLOW_REF" != "refs/heads/main" ]; then
             echo "valid=false" >> $GITHUB_OUTPUT
-            echo "ERROR: production deployment is allowed only from the main branch (this run uses ${{ github.ref }})"
+            echo "ERROR: production deployment is allowed only from the main branch (this run uses $WORKFLOW_REF)"
             exit 1
           fi
           # Releases track origin/main only; the exact SHA is resolved on the
