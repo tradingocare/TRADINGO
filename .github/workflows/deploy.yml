@@ -25,6 +25,12 @@ env:
 jobs:
   validate:
     name: Validate Secrets
+    # AWS path is a dormant fallback until the account is configured: skip the
+    # whole run (green) instead of failing red on every CI completion while
+    # AWS_ACCOUNT_ID is absent. Configuring the secret automatically re-arms
+    # this workflow. To retire the AWS path entirely, remove its
+    # `workflow_run` trigger instead (founder decision, after Hostinger proves green).
+    if: ${{ secrets.AWS_ACCOUNT_ID != '' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
