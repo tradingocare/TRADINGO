@@ -1,5 +1,36 @@
 name: Deploy Production
 
+# REAL Hostinger VPS deployment (SSH + Docker Compose, built on-host).
+# Replaces the former echo/template implementation.
+#
+# Design notes (do not weaken without founder approval):
+# - Manual dispatch only. Each run requires the typed confirmation below AND
+#   the `production` environment reviewer approval. No push trigger.
+# - The release is pinned to an exact git SHA (resolved from `ref`), never
+#   "latest whatever happens to be on main at build time".
+# - Migrations run via the api-migrate compose target BEFORE containers are
+#   recreated. Forward-only (`prisma migrate deploy`); there is no
+#   down-migration path by design.
+# - Compose project is pinned to `tradingo-prod` (live volumes are
+#   `tradingo-prod_*`; an explicit -p prevents operating on/creating a
+#   parallel stack).
+# - On health-check failure this workflow FAILS LOUDLY and stops. It never
+#   auto-rolls back. The previous release SHA is printed with the exact
+#   manual rollback commands (see ROLLBACK section below + rollback step).
+#
+# ROLLBACK (manual, only after verifying the previous release was healthy):
+#   ssh tradingo@<VPS_HOST> 'cd /home/tradingo/tradingo \
+#     && PREV=<sha-printed-by-failed-run> && git checkout $PREV \
+#     && docker compose -p tradingo-prod --env-file .env.production.local \
+#          -f docker-compose.prod.yml build api web \
+#     && docker compose -p tradingo-prod --env-file .env.production.local \
+#          -f docker-compose.prod.yml up -d api web \
+#     && bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000'
+#   Database restore is a separate, deliberate decision (forward-only
+#   migrations are not reversed automatically):
+#   `bash scripts/deploy/manage.sh restore backups/tradingo-<DATE>.sql.gz`
+#   See docs/deployment/ROLLBACK-PROCEDURE.md for the full procedure.
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,142 +38,137 @@ on:
         description: 'Type "deploy" to confirm production deployment'
         required: true
         type: string
-
-env:
-  REGISTRY: \${{ secrets.DOCKER_REGISTRY }}
-  IMAGE_TAG: \${{ github.sha }}
+      ref:
+        description: 'Git ref to deploy (branch, tag or SHA). Defaults to main.'
+        required: false
+        default: 'main'
+        type: string
 
 jobs:
   validate:
     name: Validate Deployment
     runs-on: ubuntu-latest
     outputs:
-      can_deploy: \${{ steps.confirm.outputs.valid }}
+      can_deploy: ${{ steps.confirm.outputs.valid }}
+      target_ref: ${{ steps.confirm.outputs.target_ref }}
     steps:
       - name: Check confirmation
         id: confirm
         run: |
-          if [ "\${{ github.event.inputs.confirm }}" = "deploy" ]; then
-            echo "valid=true" >> \$GITHUB_OUTPUT
+          if [ "${{ github.event.inputs.confirm }}" = "deploy" ]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
           else
-            echo "valid=false" >> \$GITHUB_OUTPUT
+            echo "valid=false" >> $GITHUB_OUTPUT
             echo "ERROR: Confirmation must be 'deploy'"
             exit 1
           fi
+          TARGET_REF="${{ github.event.inputs.ref }}"
+          if [ -z "$TARGET_REF" ]; then
+            TARGET_REF="main"
+          fi
+          echo "target_ref=$TARGET_REF" >> $GITHUB_OUTPUT
+          echo "Target ref: $TARGET_REF"
 
       - name: Validate required secrets
         run: |
-          echo "Checking required secrets are configured..."
-          echo "DOCKER_REGISTRY: \${{ secrets.DOCKER_REGISTRY && 'configured' || 'MISSING' }}"
-          echo "VPS_HOST: \${{ secrets.VPS_HOST && 'configured' || 'MISSING' }}"
-          echo "VPS_SSH_KEY: \${{ secrets.VPS_SSH_KEY && 'configured' || 'MISSING' }}"
-          
-          if [ -z "\${{ secrets.VPS_HOST }}" ] || [ -z "\${{ secrets.VPS_SSH_KEY }}" ]; then
+          echo "Checking required secrets are configured (names only, values never printed)..."
+          echo "VPS_HOST: ${{ secrets.VPS_HOST && 'configured' || 'MISSING' }}"
+          echo "VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY && 'configured' || 'MISSING' }}"
+
+          if [ -z "${{ secrets.VPS_HOST }}" ] || [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then
             echo "ERROR: VPS_HOST and VPS_SSH_KEY secrets are required"
             echo "See docs/deployment/PRODUCTION-DEPLOYMENT.md for setup instructions"
             exit 1
           fi
           echo "All required secrets configured"
 
-  build-and-push:
-    name: Build & Push Docker Images
-    runs-on: ubuntu-latest
-    needs: [validate]
-    if: needs.validate.outputs.can_deploy == 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Set Docker registry
-        run: |
-          REGISTRY="\${{ secrets.DOCKER_REGISTRY }}"
-          if [ -z "\$REGISTRY" ]; then
-            REGISTRY="docker.io"
-          fi
-          echo "REGISTRY=\$REGISTRY" >> \$GITHUB_ENV
-
-      - name: Login to Docker Registry
-        uses: docker/login-action@v3
-        with:
-          registry: \${{ env.REGISTRY }}
-          username: \${{ secrets.DOCKER_USERNAME }}
-          password: \${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Extract metadata for API
-        uses: docker/metadata-action@v5
-        with:
-          images: \${{ env.REGISTRY}}/\${{ secrets.DOCKER_IMAGE_NAME || 'tradingo-api' }}
-          tags: |
-            type=sha,prefix=
-            type=latest
-
-      - name: Build and push API image
-        run: |
-          echo "Building API image..."
-          echo "NOTE: Add docker/build-push-action steps here after configuring DOCKER_REGISTRY"
-          echo "Image tag: \${{ env.REGISTRY}}/\${{ secrets.DOCKER_IMAGE_NAME || 'tradingo-api' }}:\${{ github.sha }}"
-          echo "::warning::Docker build step requires DOCKER_REGISTRY and image name to be configured"
-
   deploy:
     name: Deploy to Production VPS
     runs-on: ubuntu-latest
-    # Production environment gate: requires reviewer approval (tradingoindia)
-    # and protected-branch runs. No other change in this workflow.
+    # Production environment gate: requires reviewer approval before any
+    # command reaches the VPS. Never remove this gate without founder approval.
     environment: production
-    needs: [validate, build-and-push]
+    needs: [validate]
     if: needs.validate.outputs.can_deploy == 'true'
+    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup SSH Key
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: \${{ secrets.VPS_SSH_KEY }}
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
       - name: Add VPS to known hosts
         run: |
-          ssh-keyscan -H -p \${{ secrets.VPS_PORT || '22' }} \${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -H -p ${{ secrets.VPS_PORT || '22' }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Deploy via Docker Compose
+      - name: Deploy release to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          VPS_USER: ${{ secrets.VPS_USER || 'tradingo' }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR || '/home/tradingo/tradingo' }}
+          TARGET_REF: ${{ needs.validate.outputs.target_ref }}
         run: |
-          echo "=== Production Deployment ==="
-          echo "VPS: \${{ secrets.VPS_HOST }}"
-          echo ""
-          echo "Deployment requires:"
-          echo "1. SSH access to VPS (configured via secrets)"
-          echo "2. docker-compose.prod.yml on VPS at /home/tradingo/tradingo/"
-          echo "3. .env.production.local with production secrets"
-          echo ""
-          echo "Run these commands on the VPS:"
-          echo ""
-          echo "  # Pull latest code"
-          echo "  cd /home/tradingo/tradingo && git pull origin main"
-          echo ""
-          echo "  # Pull latest Docker images (if using registry)"
-          echo "  docker compose --env-file .env.production.local -f docker-compose.prod.yml pull"
-          echo ""
-          echo "  # Rebuild API (to pick up any API changes)"
-          echo "  docker compose --env-file .env.production.local -f docker-compose.prod.yml build api"
-          echo ""
-          echo "  # Restart services"
-          echo "  docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d --force-recreate --no-deps api"
-          echo ""
-          echo "  # Or full restart"
-          echo "  docker compose --env-file .env.production.local -f docker-compose.prod.yml restart"
-          echo ""
-          echo "::warning::This workflow is a template. Full Docker registry integration"
-          echo "requires DOCKER_REGISTRY, DOCKER_USERNAME, DOCKER_PASSWORD secrets."
-          echo "See docs/deployment/PRODUCTION-DEPLOYMENT.md"
+          set -euo pipefail
+          # Fail closed on unexpected ref characters (branch/tag/SHA only).
+          if [[ ! "$TARGET_REF" =~ ^[A-Za-z0-9_./-]+$ ]]; then
+            echo "ERROR: target ref contains unexpected characters: $TARGET_REF"
+            exit 1
+          fi
+          SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -p $VPS_PORT"
+          # Backstop: the whole remote session must finish within 40 minutes.
+          timeout 2400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
+          set -euo pipefail
+          cd "$APP_DIR" || { echo "ERROR: app directory $APP_DIR missing on VPS"; exit 1; }
+          test -f docker-compose.prod.yml || { echo "ERROR: docker-compose.prod.yml missing in $APP_DIR"; exit 1; }
+          test -f .env.production.local || { echo "ERROR: .env.production.local missing in $APP_DIR (tracked placeholder .env.production must never be used)"; exit 1; }
+
+          COMPOSE="docker compose -p tradingo-prod --env-file .env.production.local -f docker-compose.prod.yml"
+
+          echo "=== Fetching release ==="
+          git fetch origin || { echo "ERROR: git fetch failed"; exit 1; }
+          TARGET_SHA="$(git rev-parse "$TARGET_REF")" || { echo "ERROR: unknown ref $TARGET_REF"; exit 1; }
+          PREV_SHA="$(git rev-parse HEAD)"
+          echo "Previous release: $PREV_SHA"
+          echo "Target release:   $TARGET_SHA"
+          if [ "$PREV_SHA" = "$TARGET_SHA" ]; then
+            echo "Target already deployed; refreshing containers to converge state."
+          fi
+          git checkout "$TARGET_SHA" || { echo "ERROR: checkout of $TARGET_SHA failed"; exit 1; }
+
+          echo "=== Pre-deploy database backup (safety net; warn-and-continue) ==="
+          if bash scripts/deploy/manage.sh backup; then
+            echo "Pre-deploy backup complete."
+          else
+            echo "::warning::Pre-deploy backup failed; continuing without a fresh backup. Rollback would reuse the latest existing backup."
+          fi
+
+          echo "=== Building images (api, web) ==="
+          $COMPOSE build --parallel api web || { echo "ERROR: image build failed; previous containers untouched"; exit 1; }
+
+          echo "=== Running migrations (exit-gated; previous containers still live) ==="
+          $COMPOSE run --rm api-migrate || { echo "ERROR: migration failed; previous containers untouched. Resolve before retrying."; exit 1; }
+
+          echo "=== Recreating services ==="
+          $COMPOSE up -d api web || { echo "ERROR: service recreate failed"; exit 1; }
+
+          echo "=== Health checks ==="
+          if bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000; then
+            echo "Health checks passed."
+          else
+            echo "::error::Health checks FAILED. NOT rolling back automatically."
+            echo "If the previous release ($PREV_SHA) was healthy, roll back manually:"
+            echo "  git checkout $PREV_SHA && $COMPOSE build --parallel api web && $COMPOSE up -d api web"
+            echo "  then re-run the smoke test above. See the ROLLBACK header of this workflow file."
+            exit 1
+          fi
+
+          echo "=== Release summary ==="
+          echo "Deployed: $PREV_SHA -> $TARGET_SHA"
+          $COMPOSE ps api web
+          REMOTE_EOF
+
+      - name: Report deployment status
+        if: always()
+        run: |
+          echo "Deployment job status: ${{ job.status }} (target ref: ${{ needs.validate.outputs.target_ref }})"
