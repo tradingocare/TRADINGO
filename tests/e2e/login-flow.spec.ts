@@ -62,8 +62,18 @@ test.describe('Login Flow', () => {
     // submit that the client will silently skip for empty input.
     await expect(page.locator('input[autocomplete="username"]').first()).toHaveValue('invalid@test.com', { timeout: 10000 });
     await expect(page.locator('input[autocomplete="current-password"], input[type="password"]').first()).toHaveValue('wrongpassword', { timeout: 10000 });
+    // Dispatch correlation: the response waiter starts BEFORE the click, so a
+    // silent no-op submit fails here with an explicit cause instead of burning
+    // the error-message timeout plus retries on a doomed assertion. Contract:
+    // unknown identifier -> UnauthorizedException -> HTTP 401 (auth.service).
+    const loginCall = page.waitForResponse(
+      (res) => res.url().includes('/auth/login') && res.request().method() === 'POST',
+      { timeout: 15000 },
+    );
     await flow.clickButton('Sign In');
     await page.waitForTimeout(2000);
+    const loginResp = await loginCall;
+    expect(loginResp.status()).toBe(401);
     const errorMsg = page.getByText(/invalid|error|failed|incorrect|not found/i).first();
     await expect(errorMsg).toBeVisible({ timeout: 10000 });
     await context.close();
