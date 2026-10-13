@@ -7,8 +7,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     await expectPageTitle(page, 'Product Locations');
     await context.close();
@@ -18,8 +17,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const table = page.locator('table').first();
     await expect(table).toBeVisible({ timeout: 10000 });
@@ -30,8 +28,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const badges = page.getByText(/Not Set|Set|Pending Sync/i);
     await expect(badges.first()).toBeVisible({ timeout: 10000 });
@@ -42,8 +39,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const setFilter = page.locator('button:has-text("Set")').first();
     const missingFilter = page.locator('button:has-text("Missing")').first();
@@ -56,8 +52,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const searchInput = page.locator('input[placeholder*="Search"]').filter({ visible: true }).first();
     await expect(searchInput).toBeVisible({ timeout: 10000 });
@@ -68,8 +63,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const countInfo = page.locator('text=Showing').first();
     await expect(countInfo).toBeVisible({ timeout: 10000 });
@@ -80,8 +74,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const editLinks = page.locator('a:has-text("Edit")').first();
     await expect(editLinks).toBeVisible({ timeout: 10000 });
@@ -92,14 +85,12 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const editLink = page.locator('a:has-text("Edit")').first();
     if (await editLink.isVisible()) {
       await editLink.click();
-      await page.waitForLoadState('load');
-      await expect(page).toHaveURL(/\/seller\/products\/.+\/location/);
+      await expect(page).toHaveURL(/\/seller\/products\/.+\/location/, { timeout: 10000 });
     }
     await context.close();
   });
@@ -108,8 +99,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const checkboxes = page.locator('input[type="checkbox"]');
     const count = await checkboxes.count();
@@ -125,8 +115,7 @@ test.describe('Seller Geo-location Management', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products/locations');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products/locations', { waitUntil: 'domcontentloaded' });
 
     const banner = page.locator('text=product without location').first();
     if (await banner.isVisible().catch(() => false)) {

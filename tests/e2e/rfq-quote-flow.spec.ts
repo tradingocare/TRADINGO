@@ -9,7 +9,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/rfq');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -20,7 +20,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/rfq/new');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -31,7 +31,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/rfq/new');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     const formFields = page.locator('input, textarea, select');
     const count = await formFields.count();
     expect(count).toBeGreaterThan(0);
@@ -44,7 +44,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/rfqs');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -55,7 +55,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/rfqs');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -66,7 +66,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/quote/new');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -77,7 +77,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/quote/compare');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -88,7 +88,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/quotes');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
@@ -99,7 +99,7 @@ test.describe('RFQ & Quote Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(BUYER_USER);
     await flow.navigate('/buyer/quotes');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
