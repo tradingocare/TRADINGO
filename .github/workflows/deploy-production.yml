@@ -24,7 +24,11 @@ name: Deploy Production
 #   down-migration path by design.
 # - Compose project is pinned to `tradingo-prod` (live volumes are
 #   `tradingo-prod_*`; an explicit -p prevents operating on/creating a
-#   parallel stack).
+#   parallel stack). Dependency startup is deliberately disabled (`--no-deps`
+#   on migrate-run and recreate): PostgreSQL is managed by a separate compose
+#   project under a fixed container name, so resolving dependencies would
+#   collide instead of help. Dependency health is verified by an explicit
+#   pre-flight step; migration and smoke tests prove connectivity end to end.
 # - On health-check failure this workflow FAILS LOUDLY and stops. It never
 #   auto-rolls back. The previous release SHA is printed with the exact
 #   manual rollback commands (see ROLLBACK section below + rollback step).
@@ -45,7 +49,7 @@ name: Deploy Production
 #     && docker compose -p tradingo-prod --env-file .env.production.local \
 #          -f docker-compose.prod.yml build api web \
 #     && docker compose -p tradingo-prod --env-file .env.production.local \
-#          -f docker-compose.prod.yml up -d api web \
+#          -f docker-compose.prod.yml up -d --no-deps api web \
 #     && bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000'
 #   Database restore is a separate, deliberate decision (forward-only
 #   migrations are not reversed automatically):
@@ -182,6 +186,33 @@ jobs:
           fi
           git checkout "$TARGET_SHA" || { echo "ERROR: checkout of $TARGET_SHA failed"; exit 1; }
 
+          echo "=== Pre-flight: dependency health (fail fast on broken estate) ==="
+          # NOTE: postgres/redis are intentionally NOT started here. PostgreSQL
+          # is managed by a separate compose project and shares a fixed
+          # container name, so dependency startup would collide instead of
+          # help. Every compose invocation below uses --no-deps (matching all
+          # historical successful hand operations); health is verified here,
+          # connectivity is proven by the gated migration run, and end-to-end
+          # readiness by the smoke tests. A missing/unhealthy dependency stops
+          # the rollout before backup, migration, or recreation.
+          for svc in tradingo-postgres tradingo-redis; do
+            if ! docker inspect "$svc" >/dev/null 2>&1; then
+              echo "ERROR: required container $svc is missing. Resolve before deploying."
+              exit 1
+            fi
+            running="$(docker inspect --format '{{.State.Running}}' "$svc")"
+            if [ "$running" != "true" ]; then
+              echo "ERROR: required container $svc is not running. Resolve before deploying."
+              exit 1
+            fi
+            health="$(docker inspect --format '{{.State.Health.Status}}' "$svc" 2>/dev/null || true)"
+            if [ -n "$health" ] && [ "$health" != "healthy" ]; then
+              echo "ERROR: required container $svc reports health '$health'. Resolve before deploying."
+              exit 1
+            fi
+            echo "$svc: running."
+          done
+
           echo "=== Pre-deploy database backup (safety net; warn-and-continue) ==="
           if bash scripts/deploy/manage.sh backup; then
             echo "Pre-deploy backup complete."
@@ -193,10 +224,10 @@ jobs:
           $COMPOSE build --parallel api web || { echo "ERROR: image build failed; previous containers untouched"; exit 1; }
 
           echo "=== Running migrations (exit-gated; previous containers still live) ==="
-          $COMPOSE run --rm api-migrate || { echo "ERROR: migration failed; previous containers untouched. Resolve before retrying."; exit 1; }
+          $COMPOSE run --rm --no-deps api-migrate || { echo "ERROR: migration failed; previous containers untouched. Resolve before retrying."; exit 1; }
 
           echo "=== Recreating services ==="
-          $COMPOSE up -d api web || { echo "ERROR: service recreate failed"; exit 1; }
+          $COMPOSE up -d --no-deps api web || { echo "ERROR: service recreate failed"; exit 1; }
 
           echo "=== Health checks ==="
           if bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000; then
@@ -204,7 +235,7 @@ jobs:
           else
             echo "::error::Health checks FAILED. NOT rolling back automatically."
             echo "If the previous release ($PREV_SHA) was healthy, roll back manually:"
-            echo "  git checkout $PREV_SHA && $COMPOSE build --parallel api web && $COMPOSE up -d api web"
+            echo "  git checkout $PREV_SHA && $COMPOSE build --parallel api web && $COMPOSE up -d --no-deps api web"
             echo "  then re-run the smoke test above. See the ROLLBACK header of this workflow file."
             exit 1
           fi
