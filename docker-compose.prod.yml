@@ -10,6 +10,13 @@ volumes:
 networks:
   tradingo-net:
     driver: bridge
+  # DB lives in another compose project (tradingo-clean) on legacy network
+  # tradingo_tradingo-net. Declared external so recreates converge instead of
+  # dropping the API's database route. Never move postgres or its volume here;
+  # never add a second OpenSearch service (standalone instance preserved).
+  legacy-db:
+    external: true
+    name: tradingo_tradingo-net
 
 services:
   postgres:
@@ -65,6 +72,7 @@ services:
     restart: unless-stopped
     networks:
       - tradingo-net
+      - legacy-db
     ports:
       - "127.0.0.1:3001:3001"
     env_file:
