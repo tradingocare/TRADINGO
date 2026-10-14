@@ -67,6 +67,10 @@ on:
 jobs:
   validate:
     name: Validate Deployment
+    # Environment-scoped secrets (VPS_HOST/VPS_SSH_KEY/VPS_KNOWN_HOSTS) are
+    # visible ONLY to jobs declaring this environment. Without this line the
+    # presence check reads empty values and fails closed (see run 38514946256).
+    environment: production
     runs-on: ubuntu-latest
     outputs:
       can_deploy: ${{ steps.confirm.outputs.valid }}
