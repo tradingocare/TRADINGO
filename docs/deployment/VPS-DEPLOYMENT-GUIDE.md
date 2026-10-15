@@ -304,9 +304,17 @@ host keys once, through a trusted channel:
 
 ### 12.4 Release and rollback behavior
 
-- Order on the VPS: fetch → pin SHA → record previous SHA → pre-deploy DB
-  backup → build `api` + `web` (compose project `tradingo-prod`) → exit-gated
-  `api-migrate` → recreate `api` + `web` → `smoke-test.sh` against localhost.
+- Order on the VPS: fetch → pin SHA → record previous SHA → **untracked-collision
+  preservation gate** (`scripts/deploy/checkout-preservation.sh`, read from the
+  target release) → checkout → pre-deploy DB backup → build `api` + `web`
+  (compose project `tradingo-prod`) → exit-gated `api-migrate` → recreate
+  `api` + `web` → `smoke-test.sh` against localhost.
+- The preservation gate relocates untracked files that collide with new target
+  paths into a unique timestamped recovery directory outside the repository
+  (`<app-dir>-recovery/untracked-<UTC-timestamp>-<PID>/`, mode 700), verifies
+  every copy by hash, and only then clears the sources. Any failure aborts
+  **before checkout** with the working tree untouched. Ignored files that
+  collide (secrets/certificates) abort the run for manual resolution.
 - A failed backup logs a loud warning and continues **only** under the policy
   documented in the workflow header (operator must confirm a known-good backup
   exists). A failed migration or failed smoke test stops the rollout with
