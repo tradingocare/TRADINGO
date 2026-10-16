@@ -6,12 +6,15 @@
 
 tradingo_pg_backup() {
   # usage: tradingo_pg_backup <out_dir> <prefix> <compose|direct> [options]
-  # options: --compose-file F | --env-file E | --min-entries N | --require-mounted | --project-name P
-  # --project-name selects the Compose project explicitly (docker compose -p)
-  # for BOTH the pg_dump and the pg_restore --list validation. Production
-  # callers must pass the live project (tradingo-prod); without it, Compose
-  # resolves container names against the default project and the backup fails
-  # with `service "postgres" is not running`. Direct mode ignores the flag.
+  # options: --compose-file F | --env-file E | --min-entries N | --require-mounted | --db-container C | --expect-volume V
+  # Compose mode addresses the database by EXPLICIT CONTAINER (docker exec),
+  # never by Compose project/service labels: the live container may belong to
+  # a different Compose project than the caller's files (run 38850639427 showed
+  # project-scoped `exec -T postgres` failing while the container was healthy).
+  # --db-container is REQUIRED in compose mode (fail closed, no silent
+  # default). --expect-volume defaults to the verified production data volume;
+  # the container must mount it at /var/lib/postgresql/data or the run aborts.
+  # Direct mode ignores container/volume flags (it uses DATABASE_URL).
   if [ $# -lt 3 ]; then
     echo "[pg-backup] ERROR: usage: tradingo_pg_backup <out_dir> <prefix> <compose|direct> [options]" >&2
     return 1
@@ -22,25 +25,32 @@ tradingo_pg_backup() {
   env_file=".env.production.local"
   min_entries=10
   require_mounted=0
-  project_name=""
+  db_container=""
+  expect_volume="tradingo-prod_postgres_data"
   while [ $# -gt 0 ]; do
     case "$1" in
       --compose-file) compose_file="$2"; shift 2 ;;
       --env-file)     env_file="$2";     shift 2 ;;
       --min-entries)  min_entries="$2";  shift 2 ;;
       --require-mounted) require_mounted=1; shift ;;
-      --project-name) project_name="$2"; shift 2 ;;
+      --db-container) db_container="$2"; shift 2 ;;
+      --expect-volume) expect_volume="$2"; shift 2 ;;
+      --project-name)
+        echo "[pg-backup] ERROR: --project-name was removed; use --db-container (container addressing is project-agnostic)" >&2
+        return 1 ;;
       *) echo "[pg-backup] ERROR: unknown option: $1" >&2; return 1 ;;
     esac
   done
 
-  # Compose base command with explicit project selection when requested.
-  # Word-splitting on $_compose_project is intentional (empty = no flag).
-  if [ -n "$project_name" ]; then
-    _compose_project="-p $project_name"
-  else
-    _compose_project=""
-  fi
+  # Container-name hygiene: must look like a Docker name (never an option or
+  # a shell metacharacter string). The resolved full container ID is used for
+  # all subsequent operations, so names are only a lookup key.
+  valid_name() {
+    case "$1" in
+      ''|-*|*[!A-Za-z0-9_.-]*) return 1 ;;
+      *) return 0 ;;
+    esac
+  }
 
   if [ ! -d "$out_dir" ]; then
     echo "[pg-backup] ERROR: output directory does not exist: $out_dir" >&2
@@ -61,15 +71,52 @@ tradingo_pg_backup() {
   case "$mode" in
     compose)
       [ -f "$env_file" ] || { echo "[pg-backup] ERROR: compose env file not found: $env_file" >&2; return 1; }
+      [ -n "$db_container" ] || { echo "[pg-backup] ERROR: --db-container is required in compose mode" >&2; return 1; }
+      case "$db_container" in
+        ''|-*|*[!A-Za-z0-9_.-]*)
+          echo "[pg-backup] ERROR: invalid container name: '$db_container'" >&2; return 1 ;;
+      esac
       ;;
     direct)
       [ -n "${DATABASE_URL:-}" ] || { echo "[pg-backup] ERROR: DATABASE_URL is not set" >&2; return 1; }
+      if [ -n "$db_container" ] || [ "$expect_volume" != "tradingo-prod_postgres_data" ]; then
+        echo "[pg-backup] ERROR: container/volume flags are compose-mode only" >&2; return 1
+      fi
       ;;
     *)
       echo "[pg-backup] ERROR: unknown mode: $mode (expected compose|direct)" >&2
       return 1
       ;;
   esac
+
+  # Resolve the intended database container ONCE and validate the identity
+  # bundle: exists, running, postgres image family, Compose service label
+  # `postgres`, and the expected data volume mounted at the Postgres data dir.
+  # Prints the full container ID on success. Never logs environment or secrets.
+  # Callers must use the printed ID (not the name) for all subsequent execs so
+  # a name-reuse swap between check and use fails closed instead of hitting a
+  # different container.
+  verify_db_container() {
+    _info="$(docker inspect --format '{{.Id}}|{{.Config.Image}}|{{.State.Running}}' "$db_container" 2>/dev/null)" || {
+      echo "[pg-backup] ERROR: database container '$db_container' not found" >&2; return 1; }
+    _cid="$(printf '%s' "$_info" | cut -d'|' -f1)"
+    _img="$(printf '%s' "$_info" | cut -d'|' -f2)"
+    _run="$(printf '%s' "$_info" | cut -d'|' -f3)"
+    [ -n "$_cid" ] || { echo "[pg-backup] ERROR: empty container ID for '$db_container'" >&2; return 1; }
+    [ "$_run" = "true" ] || { echo "[pg-backup] ERROR: database container '$db_container' is not running" >&2; return 1; }
+    case "$_img" in
+      *postgres*) echo "[pg-backup] container image: $_img" >&2 ;;
+      *) echo "[pg-backup] ERROR: container '$db_container' image '$_img' is not a postgres image" >&2; return 1 ;;
+    esac
+    _labels="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$_cid" 2>/dev/null)" || {
+      echo "[pg-backup] ERROR: cannot read labels of '$db_container'" >&2; return 1; }
+    [ "$_labels" = "postgres" ] || { echo "[pg-backup] ERROR: container '$db_container' service label is '$_labels', not 'postgres'" >&2; return 1; }
+    _mount="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Source}}{{end}}{{end}}' "$_cid" 2>/dev/null)" || {
+      echo "[pg-backup] ERROR: cannot read mounts of '$db_container'" >&2; return 1; }
+    [ "$_mount" = "$expect_volume" ] || { echo "[pg-backup] ERROR: container '$db_container' data volume is '$_mount', expected '$expect_volume'" >&2; return 1; }
+    printf '%s' "$_cid"
+    return 0
+  }
 
   ts="$(date -u '+%Y%m%d-%H%M%S')"
   final="${out_dir}/${prefix}-${ts}.dump"
@@ -79,11 +126,13 @@ tradingo_pg_backup() {
   started=$(date +%s)
 
   # 1. pg_dump into TEMP artifact (custom format, built-in compression —
-  #    no pipe, so the pg_dump exit status cannot be masked).
+  #    no pipe, so the pg_dump exit status cannot be masked). In compose mode
+  #    the container identity is verified FIRST so no tmp artifact is created
+  #    for a wrong/missing database.
   rc=0
   if [ "$mode" = "compose" ]; then
-    # shellcheck disable=SC2086 # $_compose_project is empty or "-p <name>"
-    docker compose $_compose_project --env-file "$env_file" -f "$compose_file" exec -T postgres \
+    db_cid="$(verify_db_container)" || return 1
+    docker exec "$db_cid" \
       pg_dump -U "${POSTGRES_USER:-tradingo}" --format=custom --compress=9 \
       "${POSTGRES_DB:-tradingo}" > "$tmp" 2> "$errf" || rc=$?
   else
@@ -105,11 +154,15 @@ tradingo_pg_backup() {
   fi
 
   # 3. Real archive validation — pg_restore --list parses the actual
-  #    custom-archive TOC (the check gzip -t could never provide).
+  #    custom-archive TOC (the check gzip -t could never provide). The archive
+  #    travels over the exec's stdin (`-i` keeps it open; no TTY is allocated
+  #    so output is never CR-mangled). Identity is re-verified immediately
+  #    before validation so a container swap between dump and validation fails
+  #    closed instead of validating against a different database.
   rc=0
   if [ "$mode" = "compose" ]; then
-    # shellcheck disable=SC2086 # $_compose_project is empty or "-p <name>"
-    docker compose $_compose_project --env-file "$env_file" -f "$compose_file" exec -T postgres \
+    db_cid="$(verify_db_container)" || return 1
+    docker exec -i "$db_cid" \
       pg_restore --list < "$tmp" > "$toc" 2>> "$errf" || rc=$?
   else
     pg_restore --list "$tmp" > "$toc" 2>> "$errf" || rc=$?

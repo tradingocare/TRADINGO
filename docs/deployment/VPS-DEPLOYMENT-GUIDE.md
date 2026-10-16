@@ -318,9 +318,12 @@ host keys once, through a trusted channel:
   (status=OK, recent, non-empty artifact, stored size matching the actual
   artifact). Documented exception only: dispatch with `skip_fresh_backup=true`,
   recorded in the run inputs.
-- Backups always target the explicit production Compose project
-  (`COMPOSE_PROJECT`, default `tradingo-prod`) for both `pg_dump` and archive
-  validation, so container names resolve against the live stack.
+- Backups address the database by verified container ID (`BACKUP_DB_CONTAINER`,
+  default `tradingo-postgres`) for both `pg_dump` and archive validation —
+  never by Compose project/service labels, which may belong to a different
+  Compose project than the caller's files. Identity (running, postgres image,
+  `postgres` service label, expected data volume) is verified before the dump
+  and re-verified before validation.
 - The preservation gate relocates untracked files that collide with new target
   paths into a unique timestamped recovery directory outside the repository
   (`<app-dir>-recovery/untracked-<UTC-timestamp>-<PID>/`, mode 700), verifies
