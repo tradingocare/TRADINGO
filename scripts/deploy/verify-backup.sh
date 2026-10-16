@@ -70,6 +70,14 @@ if ! is_uint "$B_SIZE" || [ "$B_SIZE" -le 0 ]; then
   [ "$ALLOW_STALE_BACKUP" = "true" ] && stale_ok
   fail_closed "backup artifact has invalid size '$B_SIZE'"
 fi
+# Stored size must match the actual artifact: a mismatch means the status
+# file does not describe this artifact (tampering, partial write, or stale
+# status). Integrity failure aborts even under the stale-backup exception,
+# which covers backup *state*, never status corruption.
+ACTUAL_SIZE="$(stat -c%s "$B_FILE" 2>/dev/null || echo -1)"
+if [ "$ACTUAL_SIZE" != "$B_SIZE" ]; then
+  fail_closed "backup size mismatch: status reports $B_SIZE bytes but artifact is $ACTUAL_SIZE bytes"
+fi
 
 echo "Verified backup: $B_FILE (${B_SIZE} bytes, age ${AGE}s)."
 exit 0

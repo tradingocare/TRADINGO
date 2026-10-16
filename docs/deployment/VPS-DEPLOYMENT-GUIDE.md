@@ -315,8 +315,12 @@ host keys once, through a trusted channel:
   Exit code 124 on the deploy step means the SSH backstop fired (remote work
   exceeded 90 minutes), not the job timeout.
 - No migration or service replacement runs without a fresh verified backup
-  (status=OK, recent, non-empty artifact). Documented exception only:
-  dispatch with `skip_fresh_backup=true`, recorded in the run inputs.
+  (status=OK, recent, non-empty artifact, stored size matching the actual
+  artifact). Documented exception only: dispatch with `skip_fresh_backup=true`,
+  recorded in the run inputs.
+- Backups always target the explicit production Compose project
+  (`COMPOSE_PROJECT`, default `tradingo-prod`) for both `pg_dump` and archive
+  validation, so container names resolve against the live stack.
 - The preservation gate relocates untracked files that collide with new target
   paths into a unique timestamped recovery directory outside the repository
   (`<app-dir>-recovery/untracked-<UTC-timestamp>-<PID>/`, mode 700), verifies

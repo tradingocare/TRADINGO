@@ -111,6 +111,48 @@ else
     || report PASS B14 "non-numeric MAX_AGE_SEC fails closed, override cannot mask it"
 fi
 rm -rf "$d"
+# B15: stored size must match the actual artifact (tamper/partial-write detection).
+d=$(mktemp -d); mkfixture "$d" OK 60 1024 yes
+sed -i 's/^size=.*/size=999999/' "$d/backups/logs/backup-status.txt"
+[ "$(run_vb "$d")" -eq 1 ] && report PASS B15 "size mismatch exits 1" || report FAIL B15 "size mismatch accepted"
+if ( cd "$d" && BACKUP_DIR="backups" ALLOW_STALE_BACKUP=true bash "$VB" >/dev/null 2>&1 ); then
+  report FAIL B15b "override masked size mismatch"
+else
+  report PASS B15b "size mismatch fails even with override (integrity, not state)"
+fi
+rm -rf "$d"
+# B16: remote SKIP_FRESH_BACKUP handling — extract the exact workflow block and
+# run it under strict mode with unset/empty/false/true/malformed values.
+SNIP=$(mktemp)
+# The workflow file stores CRLF, but YAML parsers normalize line breaks to LF
+# before the runner executes `run:` blocks; strip CR to test what bash sees.
+sed -n '/BEGIN SKIP_FRESH_BACKUP handling/,/END SKIP_FRESH_BACKUP handling/p' "$WF" | tr -d '\r' > "$SNIP"
+if [ ! -s "$SNIP" ]; then
+  report FAIL B16 "handling markers missing in workflow"
+else
+  # Run the exact extracted block under strict nounset (the production remote
+  # script runs with `set -u`; `bash -u` is NOT a valid invocation flag).
+  RUN_SNIP=$(mktemp)
+  { printf 'set -u\n'; cat "$SNIP"; } > "$RUN_SNIP"
+  run_snip() { # $1 = value to export, or __UNSET__
+    if [ "$1" = "__UNSET__" ]; then env -u SKIP_FRESH_BACKUP bash "$RUN_SNIP" >/dev/null 2>&1
+    else SKIP_FRESH_BACKUP="$1" bash "$RUN_SNIP" >/dev/null 2>&1; fi
+    echo $?
+  }
+  [ "$(run_snip __UNSET__)" -eq 0 ] && report PASS B16a "unset defaults to false, exit 0" || report FAIL B16a "unset failed"
+  [ "$(run_snip '')" -eq 0 ] && report PASS B16b "empty defaults to false, exit 0" || report FAIL B16b "empty failed"
+  [ "$(run_snip false)" -eq 0 ] && report PASS B16c "false accepted, exit 0" || report FAIL B16c "false failed"
+  [ "$(run_snip true)" -eq 0 ] && report PASS B16d "true accepted, exit 0" || report FAIL B16d "true failed"
+  [ "$(run_snip yes)" -ne 0 ] && report PASS B16e "malformed 'yes' rejected" || report FAIL B16e "malformed accepted"
+  [ "$(run_snip TRUE)" -ne 0 ] && report PASS B16f "malformed 'TRUE' rejected" || report FAIL B16f "malformed accepted"
+fi
+rm -f "$SNIP" "$RUN_SNIP"
+# B17: exception value actually crosses into the remote shell (the unbound-variable bug).
+if grep -q "SKIP_FRESH_BACKUP='\$SKIP_FRESH_BACKUP' TARGET_REF=" "$WF"; then
+  report PASS B17 "SKIP_FRESH_BACKUP passed through ssh command line"
+else
+  report FAIL B17 "ssh pass-through missing (unbound-variable regression)"
+fi
 
 echo "---- SUMMARY: PASS=$PASS FAIL=$FAIL ----"
 [ "$FAIL" -eq 0 ]
