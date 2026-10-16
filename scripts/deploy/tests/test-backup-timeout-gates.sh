@@ -96,6 +96,21 @@ rm -rf "$d"
 d=$(mktemp -d); mkfixture "$d" OK 60 1024 no
 [ "$(run_vb "$d")" -eq 1 ] && report PASS B12 "missing artifact exits 1" || report FAIL B12 "missing artifact accepted"
 rm -rf "$d"
+# B13: non-numeric size fails closed (test-command comparison cannot pass garbage).
+d=$(mktemp -d); mkfixture "$d" OK 60 1024 yes
+sed -i 's/^size=.*/size=unknown/' "$d/backups/logs/backup-status.txt"
+[ "$(run_vb "$d")" -eq 1 ] && report PASS B13 "non-numeric size exits 1" || report FAIL B13 "non-numeric size accepted"
+rm -rf "$d"
+# B14: non-numeric MAX_AGE_SEC fails closed even with override (config error, not backup state).
+d=$(mktemp -d); mkfixture "$d" OK 60 1024 yes
+if ( cd "$d" && BACKUP_DIR="backups" MAX_AGE_SEC="soon" bash "$VB" >/dev/null 2>&1 ); then
+  report FAIL B14 "non-numeric MAX_AGE_SEC accepted"
+else
+  ( cd "$d" && BACKUP_DIR="backups" MAX_AGE_SEC="soon" ALLOW_STALE_BACKUP=true bash "$VB" >/dev/null 2>&1 ) \
+    && report FAIL B14 "override masked config error" \
+    || report PASS B14 "non-numeric MAX_AGE_SEC fails closed, override cannot mask it"
+fi
+rm -rf "$d"
 
 echo "---- SUMMARY: PASS=$PASS FAIL=$FAIL ----"
 [ "$FAIL" -eq 0 ]

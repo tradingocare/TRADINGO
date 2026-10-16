@@ -24,6 +24,12 @@ ALLOW_STALE_BACKUP="${ALLOW_STALE_BACKUP:-false}"
 
 STATUS_FILE="${BACKUP_DIR}/logs/backup-status.txt"
 
+is_uint() { case "$1" in ''|*[!0-9]*) return 1;; *) return 0;; esac; }
+
+# Config errors fail unconditionally: the stale-backup exception covers backup
+# state, never a misconfigured gate.
+is_uint "$MAX_AGE_SEC" || { echo "::error::MAX_AGE_SEC is not a non-negative integer: '$MAX_AGE_SEC'"; exit 1; }
+
 stale_ok() {
   echo "::warning::Operator exception: proceeding without a fresh verified backup (ALLOW_STALE_BACKUP=true). Rollback would reuse the latest existing backup, if any."
   exit 0
@@ -60,7 +66,7 @@ if [ -z "$B_FILE" ] || [ "$B_FILE" = "-" ] || [ ! -f "$B_FILE" ]; then
   [ "$ALLOW_STALE_BACKUP" = "true" ] && stale_ok
   fail_closed "backup artifact '$B_FILE' does not exist"
 fi
-if [ -z "$B_SIZE" ] || [ "$B_SIZE" -le 0 ] 2>/dev/null; then
+if ! is_uint "$B_SIZE" || [ "$B_SIZE" -le 0 ]; then
   [ "$ALLOW_STALE_BACKUP" = "true" ] && stale_ok
   fail_closed "backup artifact has invalid size '$B_SIZE'"
 fi
