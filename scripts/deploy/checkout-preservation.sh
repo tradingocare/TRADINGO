@@ -18,6 +18,9 @@
 # release; sources untouched unless verification already passed).
 #
 # Safety properties:
+# - Target-driven detection: every target path (plus ancestors) is checked
+#   directly against the filesystem and the index, so collisions cannot be
+#   missed the way untracked-file enumeration can (index/exclude blind spots).
 # - NUL-delimited path handling throughout (spaces/tabs/newlines safe).
 # - Symlinks are replicated as links, never followed.
 # - Ignored files/descendants colliding with target paths abort the run
@@ -53,30 +56,62 @@ RECOVERY_PARENT="${RECOVERY_PARENT:-${APP_DIR}-recovery}"
   git ls-tree -rz --name-only "$TARGET_SHA" | sort -z > "$TARGET_PATHS" || {
     echo "ERROR: Failed to enumerate target commit paths"; exit 1; }
 
-  # ---- 2. Untracked working-tree entries (NUL-delimited, sorted) ----
-  # NOTE: git ls-files --others lists individual files; untracked dirs appear
-  # as their contained files (with --directory it collapses, so no flag here).
-  UNTRACKED_PATHS="$(mktemp)"
-  git ls-files --others --exclude-standard -z | sort -z > "$UNTRACKED_PATHS" || {
-    echo "ERROR: Failed to enumerate untracked files"; exit 1; }
+  # ---- 2. Index-tracked paths (NUL-delimited, sorted) ----
+  # `git ls-files -s` emits "<mode> <sha> <stage>\t<path>\0"; the path follows
+  # the single TAB separator.
+  INDEX_PATHS="$(mktemp)"
+  git ls-files -s -z | cut -z -d"$(printf '\t')" -f2- | sort -z > "$INDEX_PATHS" || {
+    echo "ERROR: Failed to enumerate index paths"; exit 1; }
 
-  # ---- 3. Ignored files + ignored-directory descendants (fail-closed) ----
-  IGNORED_RAW="$(mktemp)"
-  git ls-files --others --ignored --exclude-standard -z | sort -z > "$IGNORED_RAW" || {
-    echo "ERROR: Failed to enumerate ignored paths"; exit 1; }
-  IGNORED_EXPANDED="$(mktemp)"
-  : > "$IGNORED_EXPANDED"
-  while IFS= read -rd '' ip; do
-    if [ -d "${APP_DIR}/${ip}" ]; then
-      # Ignored directory: expand to descendant files (relative to repo root)
-      ( cd "$APP_DIR" && find "$ip" \( -type f -o -type l \) -print0 2>/dev/null ) >> "$IGNORED_EXPANDED" || true
-    elif [ -e "${APP_DIR}/${ip}" ] || [ -L "${APP_DIR}/${ip}" ]; then
-      printf '%s\0' "$ip" >> "$IGNORED_EXPANDED"
+  # ---- 3. Target-driven collision detection (no untracked enumeration) ----
+  # For every target path plus its ancestors: a worktree entry that exists but
+  # is not in the index collides with checkout. This cannot miss paths the way
+  # untracked-file enumeration can (index/exclude/watcher blind spots), because
+  # the oracle is the filesystem itself plus the index.
+  CANDIDATES="$(mktemp)"
+  : > "$CANDIDATES"
+  while IFS= read -rd '' p; do
+    printf '%s\0' "$p" >> "$CANDIDATES"
+    a="$p"
+    while [[ "$a" == */* ]]; do
+      a="${a%/*}"
+      printf '%s\0' "$a" >> "$CANDIDATES"
+    done
+  done < "$TARGET_PATHS"
+  sort -z -u "$CANDIDATES" -o "$CANDIDATES"
+  NOT_INDEXED="$(mktemp)"
+  comm -z -23 "$CANDIDATES" "$INDEX_PATHS" > "$NOT_INDEXED" || true
+  COLLISION_RAW="$(mktemp)"
+  : > "$COLLISION_RAW"
+  while IFS= read -rd '' c; do
+    if [ -e "${APP_DIR}/${c}" ] || [ -L "${APP_DIR}/${c}" ]; then
+      printf '%s\0' "$c" >> "$COLLISION_RAW"
     fi
-  done < "$IGNORED_RAW"
-  sort -z -u "$IGNORED_EXPANDED" -o "$IGNORED_EXPANDED"
+  done < "$NOT_INDEXED"
+  sort -z -u "$COLLISION_RAW" -o "$COLLISION_RAW"
+  # Prune redundant ancestor directories: a directory that is not itself a
+  # target path is redundant when a colliding descendant is reported
+  # separately, and innocent when empty of conflicts (checkout creates paths
+  # inside it without complaint). Exact target paths that exist as directories
+  # are real dir-vs-file conflicts and are kept.
+  COLLISION_PATHS="$(mktemp)"
+  : > "$COLLISION_PATHS"
+  while IFS= read -rd '' c; do
+    if [ -d "${APP_DIR}/${c}" ] && [ ! -L "${APP_DIR}/${c}" ]; then
+      if tr '\0' '\n' < "$TARGET_PATHS" | grep -qxF "$c"; then
+        printf '%s\0' "$c" >> "$COLLISION_PATHS"
+      fi
+      continue
+    fi
+    printf '%s\0' "$c" >> "$COLLISION_PATHS"
+  done < "$COLLISION_RAW"
+
+  # ---- 4. Ignored-path collisions abort (secrets/certificates) ----
+  # Any collision that git considers ignored could be a secret, certificate,
+  # or dump that must never be relocated silently. Fail closed for manual
+  # resolution instead.
   IGNORED_COLLISIONS="$(mktemp)"
-  comm -z -12 "$IGNORED_EXPANDED" "$TARGET_PATHS" > "$IGNORED_COLLISIONS" || true
+  git check-ignore --stdin -z < "$COLLISION_PATHS" > "$IGNORED_COLLISIONS" 2>/dev/null || true
   if [ -s "$IGNORED_COLLISIONS" ]; then
     echo "ERROR: Ignored files/descendants collide with target commit paths:"
     tr '\0' '\n' < "$IGNORED_COLLISIONS" | sed 's/^/  /'
@@ -85,34 +120,11 @@ RECOVERY_PARENT="${RECOVERY_PARENT:-${APP_DIR}-recovery}"
   fi
   echo "Ignored-path check: clean."
 
-  # ---- 4. Collision set: exact matches + ancestor/descendant conflicts ----
-  # Git checkout fails for (a) exact path matches, (b) untracked DIR blocking a
-  # target path beneath it, (c) untracked FILE blocking a target path beneath it,
-  # (d) untracked path beneath a target FILE's location.
-  COLLISION_PATHS="$(mktemp)"
-  t_joined="$(tr '\0' '\n' < "$TARGET_PATHS")"
-  while IFS= read -rd '' up; do
-    hit=0
-    # (a) exact match
-    if printf '%s\n' "$t_joined" | grep -qxF "$up"; then hit=1; fi
-    # (b)+(c): any target path strictly beneath untracked path (untracked is ancestor)
-    if [ "$hit" -eq 0 ] && printf '%s\n' "$t_joined" | grep -qF "${up}/"; then hit=1; fi
-    # (d): any ancestor of untracked path is a target path (target is ancestor)
-    if [ "$hit" -eq 0 ]; then
-      anc="$up"
-      while [[ "$anc" == */* ]]; do
-        anc="${anc%/*}"
-        if printf '%s\n' "$t_joined" | grep -qxF "$anc"; then hit=1; break; fi
-      done
-    fi
-    if [ "$hit" -eq 1 ]; then printf '%s\0' "$up" >> "$COLLISION_PATHS"; fi
-  done < "$UNTRACKED_PATHS"
-
   COLLISION_COUNT=$(tr -cd '\0' < "$COLLISION_PATHS" | wc -c)
 
   if [ "$COLLISION_COUNT" -eq 0 ]; then
     echo "No untracked collisions with target commit."
-    rm -f "$TARGET_PATHS" "$UNTRACKED_PATHS" "$IGNORED_RAW" "$IGNORED_EXPANDED" "$IGNORED_COLLISIONS" "$COLLISION_PATHS"
+    rm -f "$TARGET_PATHS" "$INDEX_PATHS" "$CANDIDATES" "$NOT_INDEXED" "$COLLISION_RAW" "$IGNORED_COLLISIONS" "$COLLISION_PATHS"
     exit 0
   fi
   echo "Found $COLLISION_COUNT untracked collision(s). Preserving..."
@@ -239,6 +251,6 @@ RECOVERY_PARENT="${RECOVERY_PARENT:-${APP_DIR}-recovery}"
   fi
 
   echo "All manifests verified."
-  rm -f "$TARGET_PATHS" "$UNTRACKED_PATHS" "$IGNORED_RAW" "$IGNORED_EXPANDED" "$IGNORED_COLLISIONS" "$COLLISION_PATHS"
+  rm -f "$TARGET_PATHS" "$INDEX_PATHS" "$CANDIDATES" "$NOT_INDEXED" "$COLLISION_RAW" "$IGNORED_COLLISIONS" "$COLLISION_PATHS"
   exit 0
 )

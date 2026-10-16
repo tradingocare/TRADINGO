@@ -312,9 +312,12 @@ host keys once, through a trusted channel:
 - The preservation gate relocates untracked files that collide with new target
   paths into a unique timestamped recovery directory outside the repository
   (`<app-dir>-recovery/untracked-<UTC-timestamp>-<PID>/`, mode 700), verifies
-  every copy by hash, and only then clears the sources. Any failure aborts
-  **before checkout** with the working tree untouched. Ignored files that
-  collide (secrets/certificates) abort the run for manual resolution.
+  every copy by hash, and only then clears the sources. Detection is
+  target-driven (every target path is checked directly against the filesystem
+  and the index), so collisions cannot be missed the way untracked-file
+  enumeration can. Any failure aborts **before checkout** with the working
+  tree untouched. Ignored files that collide (secrets/certificates) abort
+  the run for manual resolution.
 - A failed backup logs a loud warning and continues **only** under the policy
   documented in the workflow header (operator must confirm a known-good backup
   exists). A failed migration or failed smoke test stops the rollout with
