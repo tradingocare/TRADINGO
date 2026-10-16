@@ -40,15 +40,15 @@ name: Deploy Production
 #   auto-rolls back. The previous release SHA is printed with the exact
 #   manual rollback commands (see ROLLBACK section below + rollback step).
 #
-# BACKUP POLICY (explicit and defensible): a database backup is taken before
-#   every release via scripts/deploy/manage.sh backup. If that step fails, the
-#   run logs a loud ::warning:: and CONTINUES, because backup failures are
-#   typically disk-space/transient issues unrelated to release safety, and
-#   blocking a needed release (e.g. a security fix) on a backup failure can be
-#   worse than proceeding. The operator MUST check the run logs: deploy
-#   without a fresh backup only when the latest existing backup is known good;
-#   otherwise resolve backup health first. Data restore stays a separate
-#   deliberate decision in every case (see ROLLBACK below).
+# BACKUP POLICY (fail-closed): a database backup is attempted before every
+#   release via scripts/deploy/manage.sh backup, then
+#   scripts/deploy/verify-backup.sh requires a FRESH verified backup
+#   (status=OK, recent timestamp, existing non-empty artifact) BEFORE any
+#   migration or service recreation runs. Without one the rollout stops.
+#   Documented exception only: dispatch with skip_fresh_backup=true (recorded
+#   in the run inputs, loud ::warning:: in logs) when a known-good backup
+#   exists or the release cannot wait (e.g. security fix). Data restore stays
+#   a separate deliberate decision in every case (see ROLLBACK below).
 #
 # ROLLBACK (manual, only after verifying the previous release was healthy):
 #   ssh tradingo@<VPS_HOST> 'cd /home/tradingo/tradingo \
@@ -70,6 +70,11 @@ on:
         description: 'Type "deploy" to confirm production deployment'
         required: true
         type: string
+      skip_fresh_backup:
+        description: 'Documented exception only: "true" proceeds without a fresh verified backup'
+        required: false
+        default: false
+        type: boolean
 
 # Serialize production deployments: a second dispatch waits instead of
 # running concurrently against the same VPS working tree. The remote script
@@ -145,10 +150,10 @@ jobs:
     environment: production
     needs: [validate]
     if: needs.validate.outputs.can_deploy == 'true'
-    timeout-minutes: 45
+    timeout-minutes: 100
     steps:
       - name: Setup SSH Key
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
@@ -176,6 +181,9 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER || 'tradingo' }}
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR || '/home/tradingo/tradingo' }}
           TARGET_REF: ${{ needs.validate.outputs.target_ref }}
+          # Documented stale-backup exception (default false). Passed through
+          # as data only; the remote gate decides.
+          SKIP_FRESH_BACKUP: ${{ github.event.inputs.skip_fresh_backup }}
         run: |
           set -euo pipefail
           # Fail closed on unexpected ref characters (branch/tag/SHA only).
@@ -184,8 +192,11 @@ jobs:
             exit 1
           fi
           SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -p $VPS_PORT"
-          # Backstop: the whole remote session must finish within 40 minutes.
-          timeout 2400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
+          # Backstop: the whole remote session must finish within 90 minutes.
+          # Must stay below the job timeout (100 min) with margin for the
+          # status-report step and agent cleanup. Exit 124 means THIS backstop
+          # fired (remote build/export exceeded 90 min), not the job timeout.
+          timeout 5400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
           set -euo pipefail
           cd "$APP_DIR" || { echo "ERROR: app directory $APP_DIR missing on VPS"; exit 1; }
           test -f docker-compose.prod.yml || { echo "ERROR: docker-compose.prod.yml missing in $APP_DIR"; exit 1; }
@@ -241,12 +252,18 @@ jobs:
             echo "$svc: running."
           done
 
-          echo "=== Pre-deploy database backup (safety net; warn-and-continue) ==="
+          echo "=== Pre-deploy database backup (best effort, then verified) ==="
           if bash scripts/deploy/manage.sh backup; then
             echo "Pre-deploy backup complete."
           else
-            echo "::warning::Pre-deploy backup failed; continuing without a fresh backup. Rollback would reuse the latest existing backup."
+            echo "::warning::Pre-deploy backup attempt failed; the verification gate below decides whether to proceed."
           fi
+
+          echo "=== Verifying usable backup (fail-closed gate) ==="
+          # No migration or service replacement without a fresh verified backup,
+          # unless the dispatcher set the documented stale-backup exception
+          # (skip_fresh_backup=true), which is recorded in the run inputs.
+          ALLOW_STALE_BACKUP="$SKIP_FRESH_BACKUP" bash scripts/deploy/verify-backup.sh || { echo "ERROR: no fresh verified backup and no documented exception; resolve backup health before retrying"; exit 1; }
 
           echo "=== Building images (api, web) ==="
           $COMPOSE build --parallel api web || { echo "ERROR: image build failed; previous containers untouched"; exit 1; }
