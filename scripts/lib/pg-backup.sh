@@ -42,15 +42,10 @@ tradingo_pg_backup() {
     esac
   done
 
-  # Container-name hygiene: must look like a Docker name (never an option or
-  # a shell metacharacter string). The resolved full container ID is used for
-  # all subsequent operations, so names are only a lookup key.
-  valid_name() {
-    case "$1" in
-      ''|-*|*[!A-Za-z0-9_.-]*) return 1 ;;
-      *) return 0 ;;
-    esac
-  }
+  # Container-name hygiene is enforced inline where --db-container is
+  # validated (must look like a Docker name, never an option or a shell
+  # metacharacter string). The resolved full container ID is used for all
+  # subsequent operations, so names are only a lookup key.
 
   if [ ! -d "$out_dir" ]; then
     echo "[pg-backup] ERROR: output directory does not exist: $out_dir" >&2
