@@ -214,6 +214,22 @@ else
   ok "C11: container flag in direct mode fails closed"
 fi
 
+# ── C12: simulated rename failure can never produce success ─────────────────
+echo "--- C12: atomic-finalize failure ---"
+setup_mocks; fresh_env
+mv() { echo "mock-mv: refusing rename" >&2; return 1; }
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume tradingo-prod_postgres_data >/tmp/c12.log 2>&1; then
+  bad "C12: rename failure must return non-zero"
+else
+  ok "C12: rename failure returns non-zero"
+fi
+unset -f mv
+grep -q "atomic finalize failed" /tmp/c12.log && ok "C12: clear error reported" || bad "C12: error message missing"
+grep -q "BACKUP_RESULT=OK" /tmp/c12.log && bad "C12: success line emitted after rename failure" || ok "C12: no success line after rename failure"
+n=$(ls /tmp/cbk/testbk-*.dump /tmp/cbk/*.tmp 2>/dev/null | wc -l)
+[ "$n" = "0" ] && ok "C12: no final artifact and no tmp left behind" || bad "C12: artifacts left behind"
+rm -f /tmp/c12.log
+
 echo ""
 echo "=== RESULTS: $PASS passed, $FAIL failed ==="
 [ "$FAIL" -eq 0 ] && echo "ALL TESTS PASSED" || { echo "TESTS FAILED"; exit 1; }
