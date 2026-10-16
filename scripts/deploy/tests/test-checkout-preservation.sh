@@ -293,6 +293,97 @@ t9() { # path traversal: '..' cannot survive in tracked paths
   rm -rf "$d"
 }
 
-t1; t2; t3sp; t3c; t3d; t4; t4b; t5; t6a; t6b; t6c; t7a; t7b; t7c; t8; t9
+count0() { tr -cd '\0' | wc -c; }
+
+# R1–R6: target-driven reconciler regression (detection correctness).
+r1() {
+  local d; d=$(mktemp -d); pushd "$d" >/dev/null
+  git init -q && git config user.email t@t && git config user.name t
+  echo b > b && git add -A && git commit -qm base
+  mkdir -p "sp ace"; printf 'A' > f1; printf 'B' > "sp ace/f 2"; printf 'C' > g3
+  git add -A && git commit -qm t; T=$(git rev-parse HEAD)
+  git reset -q --hard HEAD~1
+  mkdir -p "sp ace"; printf 'u' > f1; printf 'u' > "sp ace/f 2"; printf 'u' > g3
+  out="$(APP_DIR="$d" TARGET_SHA="$T" RECOVERY_PARENT="$d-recovery" bash "$REPO_SCRIPT" 2>&1)"; rc=$?
+  rdir=$(printf '%s' "$out" | sed -n 's/^RECOVERY_DIR=//p' | tail -1)
+  if [ "$rc" -eq 0 ] && [ "$(cat "$rdir/f1")" = "u" ] && [ ! -e "$d/f1" ] \
+     && ( cd "$d" && git checkout -q "$T" ); then
+    report PASS R1 "3 collisions incl. spaced name, no redundant parent dir"
+  else report FAIL R1 "rc=$rc out: $out"; fi
+  popd >/dev/null; rm -rf "$d" "$d-recovery"
+}
+r2() {
+  local d; d=$(mktemp -d); pushd "$d" >/dev/null
+  git init -q && git config user.email t@t && git config user.name t
+  echo b > b && git add -A && git commit -qm base
+  P=$(git rev-parse HEAD)
+  mkdir -p cdir; echo x > cdir/f; echo y > sfile; git add -A && git commit -qm t
+  T=$(git rev-parse HEAD)
+  git checkout -q "$P"
+  echo blk > cdir; mkdir -p sfile; echo in > sfile/inner
+  out="$(APP_DIR="$d" TARGET_SHA="$T" RECOVERY_PARENT="$d-recovery" bash "$REPO_SCRIPT" 2>&1)"; rc=$?
+  if [ "$rc" -eq 0 ] && ( cd "$d" && git checkout -q "$T" ); then
+    report PASS R2 "both file-dir directions detected, checkout succeeds"
+  else report FAIL R2 "rc=$rc out: $out"; fi
+  popd >/dev/null; rm -rf "$d" "$d-recovery"
+}
+r3() {
+  local d; d=$(mktemp -d); pushd "$d" >/dev/null
+  git init -q && git config user.email t@t && git config user.name t
+  echo b > b && git add -A && git commit -qm t
+  T=$(git rev-parse HEAD)
+  echo unrelated > other
+  out="$(APP_DIR="$d" TARGET_SHA="$T" RECOVERY_PARENT="$d-recovery" bash "$REPO_SCRIPT" 2>&1)"; rc=$?
+  if [ "$rc" -eq 0 ] && echo "$out" | grep -q "No untracked collisions"; then
+    report PASS R3 "empty, exit 0"
+  else report FAIL R3 "rc=$rc out: $out"; fi
+  popd >/dev/null; rm -rf "$d" "$d-recovery"
+}
+r4() {
+  local d; d=$(mktemp -d); pushd "$d" >/dev/null
+  WN=$(printf 'a\tb\nc')
+  git init -q && git config user.email t@t && git config user.name t
+  echo b > b && git add -A && git commit -qm base
+  printf t > "$WN" && git add -A && git commit -qm t
+  T=$(git rev-parse HEAD)
+  git reset -q --hard HEAD~1
+  printf u > "$WN"
+  out="$(APP_DIR="$d" TARGET_SHA="$T" RECOVERY_PARENT="$d-recovery" bash "$REPO_SCRIPT" 2>&1)"; rc=$?
+  rdir=$(printf '%s' "$out" | sed -n 's/^RECOVERY_DIR=//p' | tail -1)
+  if [ "$rc" -eq 0 ] && [ -f "$rdir/$WN" ] && [ "$(cat "$rdir/$WN")" = "u" ] \
+     && ( cd "$d" && git checkout -q "$T" ); then
+    report PASS R4 "newline-name collision detected, preserved, checkout succeeds"
+  else report FAIL R4 "rc=$rc out: $out"; fi
+  popd >/dev/null; rm -rf "$d" "$d-recovery"
+}
+r5() {
+  local d; d=$(mktemp -d); pushd "$d" >/dev/null
+  git init -q && git config user.email t@t && git config user.name t
+  echo v1 > tracked && git add -A && git commit -qm t
+  T=$(git rev-parse HEAD)
+  echo v2 > tracked
+  out="$(APP_DIR="$d" TARGET_SHA="$T" RECOVERY_PARENT="$d-recovery" bash "$REPO_SCRIPT" 2>&1)"; rc=$?
+  if [ "$rc" -eq 0 ] && echo "$out" | grep -q "No untracked collisions"; then
+    report PASS R5 "modified tracked file not reported"
+  else report FAIL R5 "rc=$rc out: $out"; fi
+  popd >/dev/null; rm -rf "$d" "$d-recovery"
+}
+r6() {
+  local d; d=$(mktemp -d); pushd "$d" >/dev/null
+  git init -q && git config user.email t@t && git config user.name t
+  echo b > b && git add -A && git commit -qm base
+  echo tk > sec.key && git add -A && git commit -qm t
+  T=$(git rev-parse HEAD)
+  git reset -q --hard HEAD~1
+  echo real > sec.key && echo "sec.key" > .gitignore
+  out="$(APP_DIR="$d" TARGET_SHA="$T" RECOVERY_PARENT="$d-recovery" bash "$REPO_SCRIPT" 2>&1)"; rc=$?
+  if [ "$rc" -ne 0 ] && echo "$out" | grep -q "Ignored files/descendants collide" \
+     && [ "$(cat sec.key)" = "real" ]; then
+    report PASS R6 "ignored collision aborts before checkout, secret untouched"
+  else report FAIL R6 "rc=$rc out: $out"; fi
+  popd >/dev/null; rm -rf "$d" "$d-recovery"
+}
+
+t1; t2; t3sp; t3c; t3d; t4; t4b; t5; t6a; t6b; t6c; t7a; t7b; t7c; t8; t9; r1; r2; r3; r4; r5; r6
 echo "---- SUMMARY: PASS=$PASS FAIL=$FAIL NOTESTED=$NOTESTED ----"
 [ "$FAIL" -eq 0 ]
