@@ -196,8 +196,21 @@ jobs:
           # Must stay below the job timeout (100 min) with margin for the
           # status-report step and agent cleanup. Exit 124 means THIS backstop
           # fired (remote build/export exceeded 90 min), not the job timeout.
-          timeout 5400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
+          timeout 5400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "SKIP_FRESH_BACKUP='$SKIP_FRESH_BACKUP' TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
           set -euo pipefail
+          # BEGIN SKIP_FRESH_BACKUP handling (tested: scripts/deploy/tests/test-backup-timeout-gates.sh)
+          # Default closed when absent/empty; only the explicit dispatch value
+          # "true" enables the documented stale-backup exception. Anything else
+          # aborts: never silently coerce malformed input.
+          # NOTE: this file uses CRLF line endings; avoid `case...in` here
+          # because a trailing CR breaks reserved-word recognition.
+          : "${SKIP_FRESH_BACKUP:=false}"
+          if [ "$SKIP_FRESH_BACKUP" = "true" ] || [ "$SKIP_FRESH_BACKUP" = "false" ]; then
+            :
+          else
+            echo "ERROR: SKIP_FRESH_BACKUP must be 'true' or 'false'"; exit 1
+          fi
+          # END SKIP_FRESH_BACKUP handling
           cd "$APP_DIR" || { echo "ERROR: app directory $APP_DIR missing on VPS"; exit 1; }
           test -f docker-compose.prod.yml || { echo "ERROR: docker-compose.prod.yml missing in $APP_DIR"; exit 1; }
           test -f .env.production.local || { echo "ERROR: .env.production.local missing in $APP_DIR (tracked placeholder .env.production must never be used)"; exit 1; }

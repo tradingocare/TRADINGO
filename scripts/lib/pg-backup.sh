@@ -6,7 +6,12 @@
 
 tradingo_pg_backup() {
   # usage: tradingo_pg_backup <out_dir> <prefix> <compose|direct> [options]
-  # options: --compose-file F | --env-file E | --min-entries N | --require-mounted
+  # options: --compose-file F | --env-file E | --min-entries N | --require-mounted | --project-name P
+  # --project-name selects the Compose project explicitly (docker compose -p)
+  # for BOTH the pg_dump and the pg_restore --list validation. Production
+  # callers must pass the live project (tradingo-prod); without it, Compose
+  # resolves container names against the default project and the backup fails
+  # with `service "postgres" is not running`. Direct mode ignores the flag.
   if [ $# -lt 3 ]; then
     echo "[pg-backup] ERROR: usage: tradingo_pg_backup <out_dir> <prefix> <compose|direct> [options]" >&2
     return 1
@@ -17,15 +22,25 @@ tradingo_pg_backup() {
   env_file=".env.production.local"
   min_entries=10
   require_mounted=0
+  project_name=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --compose-file) compose_file="$2"; shift 2 ;;
       --env-file)     env_file="$2";     shift 2 ;;
       --min-entries)  min_entries="$2";  shift 2 ;;
       --require-mounted) require_mounted=1; shift ;;
+      --project-name) project_name="$2"; shift 2 ;;
       *) echo "[pg-backup] ERROR: unknown option: $1" >&2; return 1 ;;
     esac
   done
+
+  # Compose base command with explicit project selection when requested.
+  # Word-splitting on $_compose_project is intentional (empty = no flag).
+  if [ -n "$project_name" ]; then
+    _compose_project="-p $project_name"
+  else
+    _compose_project=""
+  fi
 
   if [ ! -d "$out_dir" ]; then
     echo "[pg-backup] ERROR: output directory does not exist: $out_dir" >&2
@@ -67,7 +82,8 @@ tradingo_pg_backup() {
   #    no pipe, so the pg_dump exit status cannot be masked).
   rc=0
   if [ "$mode" = "compose" ]; then
-    docker compose --env-file "$env_file" -f "$compose_file" exec -T postgres \
+    # shellcheck disable=SC2086 # $_compose_project is empty or "-p <name>"
+    docker compose $_compose_project --env-file "$env_file" -f "$compose_file" exec -T postgres \
       pg_dump -U "${POSTGRES_USER:-tradingo}" --format=custom --compress=9 \
       "${POSTGRES_DB:-tradingo}" > "$tmp" 2> "$errf" || rc=$?
   else
@@ -92,7 +108,8 @@ tradingo_pg_backup() {
   #    custom-archive TOC (the check gzip -t could never provide).
   rc=0
   if [ "$mode" = "compose" ]; then
-    docker compose --env-file "$env_file" -f "$compose_file" exec -T postgres \
+    # shellcheck disable=SC2086 # $_compose_project is empty or "-p <name>"
+    docker compose $_compose_project --env-file "$env_file" -f "$compose_file" exec -T postgres \
       pg_restore --list < "$tmp" > "$toc" 2>> "$errf" || rc=$?
   else
     pg_restore --list "$tmp" > "$toc" 2>> "$errf" || rc=$?

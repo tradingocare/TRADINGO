@@ -15,6 +15,11 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 # Real secrets live ONLY in the gitignored .env.production.local.
 # The tracked .env.production is a placeholder template and must NEVER be used at runtime.
 COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-.env.production.local}"
+# Explicit production Compose project: container names (notably `postgres`)
+# resolve against this project for both pg_dump and TOC validation.
+# Without it, Compose uses the default project and the backup fails with
+# `service "postgres" is not running`.
+COMPOSE_PROJECT="${COMPOSE_PROJECT:-tradingo-prod}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 
@@ -42,7 +47,8 @@ STATUS="${BACKUP_DIR}/logs/backup-status.txt"
 echo "[Backup] Starting PostgreSQL backup ($(date -u '+%Y-%m-%dT%H:%M:%SZ'))"
 
 if tradingo_pg_backup "$BACKUP_DIR" tradingo compose \
-     --compose-file "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" > "$LOG" 2>&1; then
+     --compose-file "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" \
+     --project-name "$COMPOSE_PROJECT" > "$LOG" 2>&1; then
   result_line="$(grep '^BACKUP_RESULT=' "$LOG" | tail -n 1)"
   file="$(echo "$result_line" | cut -d' ' -f2 | sed 's/^FILE=//')"
   size="$(echo "$result_line" | cut -d' ' -f3 | sed 's/^SIZE=//')"
