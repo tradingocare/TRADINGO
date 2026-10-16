@@ -184,9 +184,16 @@ tradingo_pg_backup() {
     return 1
   }
 
-  # 5. Atomic finalize — final artifact exists ONLY after all checks pass
-  mv "$tmp" "$final"
-  rm -f "$errf" "$toc"
+  # 5. Atomic finalize — final artifact exists ONLY after all checks pass.
+  # Same-directory rename is atomic; a failure here (I/O error, remount,
+  # permission change) must be fatal so no success status can follow a
+  # missing artifact. Callers invoke this function as an if-condition, which
+  # suppresses their `set -e` inside the body, so the guard must be explicit.
+  mv "$tmp" "$final" || {
+    echo "[pg-backup] ERROR: atomic finalize failed — no backup created" >&2
+    rm -f "$tmp" "$errf" "$toc"
+    return 1
+  }
   size=$(wc -c < "$final")
   echo "[pg-backup] OK: ${final} (${size} bytes, ${entries} TOC entries, $(( $(date +%s) - started ))s)"
   echo "BACKUP_RESULT=OK FILE=${final} SIZE=${size} ENTRIES=${entries}"
