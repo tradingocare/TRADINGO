@@ -306,9 +306,17 @@ host keys once, through a trusted channel:
 
 - Order on the VPS: fetch → pin SHA → record previous SHA → **untracked-collision
   preservation gate** (`scripts/deploy/checkout-preservation.sh`, read from the
-  target release) → checkout → pre-deploy DB backup → build `api` + `web`
-  (compose project `tradingo-prod`) → exit-gated `api-migrate` → recreate
-  `api` + `web` → `smoke-test.sh` against localhost.
+  target release) → checkout → pre-deploy DB backup attempt → **backup
+  verification gate** (`scripts/deploy/verify-backup.sh`, fail-closed) →
+  build `api` + `web` (compose project `tradingo-prod`) → exit-gated
+  `api-migrate` → recreate `api` + `web` → `smoke-test.sh` against localhost.
+- Timeouts: the remote SSH session is capped at 90 minutes (`timeout 5400`)
+  inside a 100-minute job, leaving margin for status reporting and cleanup.
+  Exit code 124 on the deploy step means the SSH backstop fired (remote work
+  exceeded 90 minutes), not the job timeout.
+- No migration or service replacement runs without a fresh verified backup
+  (status=OK, recent, non-empty artifact). Documented exception only:
+  dispatch with `skip_fresh_backup=true`, recorded in the run inputs.
 - The preservation gate relocates untracked files that collide with new target
   paths into a unique timestamped recovery directory outside the repository
   (`<app-dir>-recovery/untracked-<UTC-timestamp>-<PID>/`, mode 700), verifies
