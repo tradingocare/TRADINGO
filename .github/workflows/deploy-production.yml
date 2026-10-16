@@ -19,6 +19,13 @@ name: Deploy Production
 # - Host trust is pinned, not discovered: SSH uses a founder-provisioned
 #   `VPS_KNOWN_HOSTS` secret (verified out-of-band); runtime `ssh-keyscan`
 #   trust-on-first-use is forbidden in this workflow.
+# - Before checkout, a preservation gate (`scripts/deploy/checkout-preservation.sh`,
+#   read from the target release itself) relocates untracked files that collide
+#   with new target paths into a unique timestamped recovery directory outside
+#   the repository (`<app-dir>-recovery/untracked-<UTC>-<PID>/`, mode 700),
+#   verifies every copy by hash, and only then clears the sources. Any failure
+#   aborts before checkout with the working tree untouched. Ignored files that
+#   collide (secrets/certificates) abort the run for manual resolution.
 # - Migrations run via the api-migrate compose target BEFORE containers are
 #   recreated. Forward-only (`prisma migrate deploy`); there is no
 #   down-migration path by design.
@@ -63,6 +70,13 @@ on:
         description: 'Type "deploy" to confirm production deployment'
         required: true
         type: string
+
+# Serialize production deployments: a second dispatch waits instead of
+# running concurrently against the same VPS working tree. The remote script
+# additionally holds an advisory mkdir lock as defense in depth.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -188,6 +202,16 @@ jobs:
           if [ "$PREV_SHA" = "$TARGET_SHA" ]; then
             echo "Target already deployed; refreshing containers to converge state."
           fi
+          echo "=== Pre-checkout: untracked collision preservation ==="
+          # Runs the target release's own preservation gate (read from the
+          # fetched commit, not the current checkout) so untracked files that
+          # collide with new target paths are preserved to a unique recovery
+          # directory, verified, and cleared. Aborts before checkout on any
+          # failure. See scripts/deploy/checkout-preservation.sh.
+          PRESERVE_TMP="$(mktemp)"
+          git show "$TARGET_SHA:scripts/deploy/checkout-preservation.sh" > "$PRESERVE_TMP" || { echo "ERROR: cannot read preservation gate from target release $TARGET_SHA"; exit 1; }
+          APP_DIR="$APP_DIR" TARGET_SHA="$TARGET_SHA" bash "$PRESERVE_TMP" || { echo "ERROR: collision preservation failed; checkout aborted"; rm -f "$PRESERVE_TMP"; exit 1; }
+          rm -f "$PRESERVE_TMP"
           git checkout "$TARGET_SHA" || { echo "ERROR: checkout of $TARGET_SHA failed"; exit 1; }
 
           echo "=== Pre-flight: dependency health (fail fast on broken estate) ==="
