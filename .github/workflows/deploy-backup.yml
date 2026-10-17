@@ -170,21 +170,35 @@ jobs:
           if [ "$PREV_SHA" = "$TARGET_SHA" ]; then
             echo "Target already deployed; refreshing containers to converge state."
           fi
-          echo "=== Pre-checkout: untracked collision preservation ==="
-          # Runs the target release's own preservation gate (read from the
-          # target release, not the current checkout) so untracked files that
-          # collide with new target paths are preserved to a unique recovery
-          # directory, verified, and cleared. Aborts before checkout on any
-          # failure. See scripts/deploy/checkout-preservation.sh.
-          PRESERVE_TMP="$(mktemp)"
-          git checkout "$TARGET_SHA" || { echo "ERROR: checkout of $TARGET_SHA failed"; exit 1; }
-          # Execute preservation script with documented interface
-          if ! bash scripts/deploy/checkout-preservation.sh "$APP_DIR" "$TARGET_SHA"; then
-            rm -f "$PRESERVE_TMP"
-            echo "ERROR: preservation script failed"
+
+          echo "=== Pre-checkout: preservation script retrieval ==="
+          # Obtain preservation script from target commit without checking it out.
+          PRESERVE_SCRIPT="$(mktemp /tmp/pres-XXXXXXXXXX)"
+          git cat-file blob "${TARGET_SHA}:scripts/deploy/checkout-preservation.sh" > "$PRESERVE_SCRIPT" || {
+            rm -f "$PRESERVE_SCRIPT"
+            echo "ERROR: could not retrieve preservation script from target SHA"
+            exit 1
+          }
+          chmod +x "$PRESERVE_SCRIPT"
+
+          echo "=== Pre-checkout: executing preservation gate ==="
+          # Run preservation BEFORE checkout. Preserve untracked collisions to recovery dir.
+          if ! bash "$PRESERVE_SCRIPT" "$APP_DIR" "$TARGET_SHA"; then
+            echo "ERROR: preservation gate failed; checkout aborted"
+            rm -f "$PRESERVE_SCRIPT"
             exit 1
           fi
-          rm -f "$PRESERVE_TMP"
+
+          echo "=== Checkout target release ==="
+          git checkout "$TARGET_SHA" || {
+            echo "ERROR: checkout of $TARGET_SHA failed"
+            rm -f "$PRESERVE_SCRIPT"
+            exit 1
+          }
+
+          # Cleanup preservation script after successful checkout.
+          rm -f "$PRESERVE_SCRIPT"
+
           echo "=== Pre-deploy database backup (best effort, then verified) ==="
           if bash scripts/deploy/manage.sh backup; then
             echo "Pre-deploy backup complete."
