@@ -66,9 +66,6 @@ jobs:
     # presence check reads empty values and fails closed (see run 38514946256).
     environment: production
     runs-on: ubuntu-latest
-    outputs:
-      can_deploy: ${{ steps.confirm.outputs.valid }}
-      target_ref: ${{ steps.confirm.outputs.target_ref }}
     steps:
       - name: Check confirmation
         id: confirm
@@ -121,7 +118,7 @@ jobs:
           VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
           VPS_USER: ${{ secrets.VPS_USER || 'tradingo' }}
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR || '/home/tradingo/tradingo' }}
-          TARGET_REF: ${{ needs.validate.outputs.target_ref }}
+          TARGET_REF: ${{ steps.confirm.outputs.target_ref }}
         run: |
           set -euo pipefail
           # Fail closed on unexpected ref characters (branch/tag/SHA only).
@@ -199,4 +196,4 @@ jobs:
       - name: Report backup status
         if: always()
         run: |
-          echo "Backup job status: ${{ job.status }} (target ref: ${{ needs.validate.outputs.target_ref }})"
+          echo "Backup job status: ${{ job.status }} (target ref: ${{ steps.confirm.outputs.target_ref }})"
