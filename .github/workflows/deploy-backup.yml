@@ -38,10 +38,7 @@ name: Deploy Production Backup
 #   scripts/deploy/verify-backup.sh requires a FRESH verified backup
 #   (status=OK, recent timestamp, existing non-empty artifact) BEFORE any
 #   migration or service recreation runs. Without one the rollout stops.
-#   Documented exception only: dispatch with skip_fresh_backup=true (recorded
-#   in the run inputs, loud ::warning:: in logs) when a known-good backup
-#   exists or the release cannot wait (e.g. security fix). Data restore stays
-#   a separate deliberate decision in every case (see ROLLBACK below).
+#   The verification script is always executed. No bypass input exists.
 # - The workflow uses WORKFLOW_REF (set to ${{ github.ref }}) to verify the
 #   dispatch originates from the main ref (refs/heads/main), preventing accidental
 #   dispatches from feature branches or tags.
@@ -53,11 +50,6 @@ on:
         description: 'Type "deploy" to confirm production backup'
         required: true
         type: string
-      skip_fresh_backup:
-        description: 'SKIP FRESH BACKUP (default: false). Only use with explicit approval.'
-        required: false
-        type: boolean
-        default: false
 
 # Serialize production deployments: a second dispatch waits instead of
 # running concurrently against the same VPS working tree. The remote script
@@ -130,7 +122,6 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER || 'tradingo' }}
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR || '/home/tradingo/tradingo' }}
           TARGET_REF: ${{ needs.validate.outputs.target_ref }}
-          SKIP_FRESH_BACKUP: ${{ github.event.inputs.skip_fresh_backup }}
         run: |
           set -euo pipefail
           # Fail closed on unexpected ref characters (branch/tag/SHA only).
@@ -138,22 +129,12 @@ jobs:
             echo "ERROR: target ref contains unexpected characters: $TARGET_REF"
             exit 1
           fi
-          # Validate skip_fresh_backup input
-          if [ "$SKIP_FRESH_BACKUP" = "true" ]; then
-            echo "::warning::SKIP FRESH BACKUP IS ENABLED - This bypasses verify-backup.sh"
-            echo "::warning::Only use with explicit founder approval"
-          elif [ "$SKIP_FRESH_BACKUP" = "false" ]; then
-            echo "Backup bypass is disabled (expected)"
-          else
-            echo "ERROR: skip_fresh_backup must be 'true' or 'false' (got: $SKIP_FRESH_BACKUP)"
-            exit 1
-          fi
           SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -p $VPS_PORT"
           # Backstop: the whole remote session must finish within 50 minutes.
           # Must stay below the job timeout (60 min) with margin for the
           # status-report step and agent cleanup. Exit 124 means THIS backstop
           # fired (remote backup exceeded 50 min), not the job timeout.
-          timeout 3000 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "SKIP_FRESH_BACKUP='$SKIP_FRESH_BACKUP' TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
+          timeout 3000 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
           set -euo pipefail
           cd "$APP_DIR" || { echo "ERROR: app directory $APP_DIR missing on VPS"; exit 1; }
           test -f docker-compose.prod.yml || { echo "ERROR: docker-compose.prod.yml missing in $APP_DIR"; exit 1; }
@@ -203,14 +184,17 @@ jobs:
           if bash scripts/deploy/manage.sh backup; then
             echo "Pre-deploy backup complete."
           else
-            echo "::warning::Pre-deploy backup attempt failed; the verification gate below decides whether to proceed."
+            echo "::error::Pre-deploy backup attempt failed; aborting."
+            exit 1
           fi
 
-          echo "=== Verifying usable backup (fail-closed gate) ==="
-          # No migration or service replacement without a fresh verified backup,
-          # unless the dispatcher set the documented stale-backup exception
-          # (skip_fresh_backup=true), which is recorded in the run inputs.
-          ALLOW_STALE_BACKUP="$SKIP_FRESH_BACKUP" bash scripts/deploy/verify-backup.sh || { echo "ERROR: no fresh verified backup and no documented exception; resolve backup health before retrying"; exit 1; }
+          echo "=== Verifying backup (fail-closed gate) ==="
+          # Always verify backup. No bypass input exists.
+          if ! bash scripts/deploy/verify-backup.sh; then
+            echo "ERROR: backup verification failed; aborting"
+            exit 1
+          fi
+          REMOTE_EOF
 
       - name: Report backup status
         if: always()
