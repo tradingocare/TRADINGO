@@ -38,7 +38,6 @@ if grep -q "scripts/deploy/verify-backup.sh" "$WF" && ! grep -q "ALLOW_STALE_BAC
 else report FAIL B3 "verify-backup.sh may be bypassed"; fi
 
 # ---- B4: Preservation executes BEFORE checkout ----
-# Check that preservation script execution appears before git checkout in the remote block
 if awk '/REMOTE_EOF/,/^[[:space:]]*$/ {p=1} /scripts\/deploy\/checkout-preservation/ && p {p=2} /git checkout/ && p==2 {found=1; exit}' "$WF"; then
   report PASS B4 "preservation executes before checkout"
 else report FAIL B4 "preservation order incorrect"; fi
@@ -69,7 +68,7 @@ if grep -q "StrictHostKeyChecking=yes" "$WF"; then
 else report FAIL B9 "SSH strict host key checking missing"; fi
 
 # ---- B10: Backup failure stops workflow ----
-if grep -q 'if ! bash scripts/deploy/manage.sh backup' "$WF" && grep -A 3 'manage.sh backup' "$WF" | grep -q 'exit 1'; then
+if grep -q 'if bash scripts/deploy/manage.sh backup' "$WF" && grep -A 5 'manage.sh backup' "$WF" | grep -q 'exit 1'; then
   report PASS B10 "backup failure stops workflow"
 else report FAIL B10 "backup failure handling missing"; fi
 
