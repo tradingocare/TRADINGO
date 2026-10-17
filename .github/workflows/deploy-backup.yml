@@ -8,7 +8,7 @@ name: Deploy Production Backup
 # Design notes (do not weaken without founder approval):
 # - Manual dispatch only, and only from the `main` ref: a dispatch launched
 #   from any other workflow ref fails closed before any secret or SSH use.
-#   Each run requires the typed confirmation below. NOTE (verified 2026-10-13):
+#   Each run requires the typed confirmation below. NOTE (verified 2026-10-17):
 #   the `production` environment currently has NO required reviewers, so its
 #   gate resolves immediately — effective approval is dispatch permission
 #   (write access) plus the typed confirmation. This is NOT two-person review.
@@ -53,6 +53,11 @@ on:
         description: 'Type "deploy" to confirm production backup'
         required: true
         type: string
+      skip_fresh_backup:
+        description: 'SKIP FRESH BACKUP (default: false). Only use with explicit approval.'
+        required: false
+        type: boolean
+        default: false
 
 # Serialize production deployments: a second dispatch waits instead of
 # running concurrently against the same VPS working tree. The remote script
@@ -83,10 +88,16 @@ jobs:
           CHECK_VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           CHECK_VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
           GITHUB_REF: ${{ github.ref }}
+          CONFIRM_INPUT: ${{ github.event.inputs.confirm }}
         run: |
           # Enforce dispatch from main ref only
           if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
             echo "ERROR: workflow must be dispatched from main ref (got: ${GITHUB_REF})"
+            exit 1
+          fi
+          # Validate confirmation input equals exactly "deploy"
+          if [ "${CONFIRM_INPUT}" != "deploy" ]; then
+            echo "ERROR: confirmation must be exactly 'deploy' (got: ${CONFIRM_INPUT})"
             exit 1
           fi
           if [ -n "${CHECK_VPS_HOST}" ]; then echo "VPS_HOST: configured"; else echo "VPS_HOST: MISSING"; fi
@@ -98,9 +109,13 @@ jobs:
           fi
           # Set target_ref output for downstream job
           echo "target_ref=refs/heads/main" >> $GITHUB_OUTPUT
-          echo "All required production secrets are present (values never printed)."
+          echo "valid=true" >> $GITHUB_OUTPUT
 
       - name: Verify required secrets presence
+        env:
+          CHECK_VPS_HOST: ${{ secrets.VPS_HOST }}
+          CHECK_VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          CHECK_VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           if [ -z "${CHECK_VPS_HOST}" ] || [ -z "${CHECK_VPS_SSH_KEY}" ] || [ -z "${CHECK_VPS_KNOWN_HOSTS}" ]; then
             echo "ERROR: one or more required production secrets are missing"
@@ -115,11 +130,22 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER || 'tradingo' }}
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR || '/home/tradingo/tradingo' }}
           TARGET_REF: ${{ needs.validate.outputs.target_ref }}
+          SKIP_FRESH_BACKUP: ${{ github.event.inputs.skip_fresh_backup }}
         run: |
           set -euo pipefail
           # Fail closed on unexpected ref characters (branch/tag/SHA only).
           if [[ ! "$TARGET_REF" =~ ^[A-Za-z0-9_./-]+$ ]]; then
             echo "ERROR: target ref contains unexpected characters: $TARGET_REF"
+            exit 1
+          fi
+          # Validate skip_fresh_backup input
+          if [ "$SKIP_FRESH_BACKUP" = "true" ]; then
+            echo "::warning::SKIP FRESH BACKUP IS ENABLED - This bypasses verify-backup.sh"
+            echo "::warning::Only use with explicit founder approval"
+          elif [ "$SKIP_FRESH_BACKUP" = "false" ]; then
+            echo "Backup bypass is disabled (expected)"
+          else
+            echo "ERROR: skip_fresh_backup must be 'true' or 'false' (got: $SKIP_FRESH_BACKUP)"
             exit 1
           fi
           SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -p $VPS_PORT"
@@ -152,6 +178,13 @@ jobs:
           # failure. See scripts/deploy/checkout-preservation.sh.
           PRESERVE_TMP="$(mktemp)"
           git checkout "$TARGET_SHA" || { echo "ERROR: checkout of $TARGET_SHA failed"; exit 1; }
+          # Execute preservation script with documented interface
+          if ! bash scripts/deploy/checkout-preservation.sh "$APP_DIR" "$TARGET_SHA"; then
+            rm -f "$PRESERVE_TMP"
+            echo "ERROR: preservation script failed"
+            exit 1
+          fi
+          rm -f "$PRESERVE_TMP"
           echo "=== Pre-deploy database backup (best effort, then verified) ==="
           if bash scripts/deploy/manage.sh backup; then
             echo "Pre-deploy backup complete."
