@@ -106,7 +106,7 @@ tradingo_pg_backup() {
     _labels="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$_cid" 2>/dev/null)" || {
       echo "[pg-backup] ERROR: cannot read labels of '$db_container'" >&2; return 1; }
     [ "$_labels" = "postgres" ] || { echo "[pg-backup] ERROR: container '$db_container' service label is '$_labels', not 'postgres'" >&2; return 1; }
-    _mount="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Source}}{{end}}{{end}}' "$_cid" 2>/dev/null)" || {
+    _mount="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Name}}{{end}}{{end}}' "$_cid" 2>/dev/null)" || {
       echo "[pg-backup] ERROR: cannot read mounts of '$db_container'" >&2; return 1; }
     [ "$_mount" = "$expect_volume" ] || { echo "[pg-backup] ERROR: container '$db_container' data volume is '$_mount', expected '$expect_volume'" >&2; return 1; }
     printf '%s' "$_cid"
