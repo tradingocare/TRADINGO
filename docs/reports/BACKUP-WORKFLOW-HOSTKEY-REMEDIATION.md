@@ -70,8 +70,43 @@ authenticated, and this change does not authenticate it. Do not dispatch
 `deploy-backup.yml` until the founder has independently authenticated the host key
 fingerprint.
 
+**Status update (2026-10-18): SATISFIED.** The founder authenticated the server's
+ED25519 host-key fingerprint out-of-band via the Hostinger browser console; it matches
+the previously recorded fingerprint exactly. See §8 for the evidence record. The
+workflow has still **not** been dispatched.
+
 ## 7. Approval status
 
 Implemented on dedicated branch `fix/deploy-backup-ssh-bootstrap` off `main`
 (`5bcccebd2`). Not merged, not pushed to `main`, no PR opened, no workflow dispatched,
 no VPS connection. Awaiting founder review.
+
+**Update (2026-10-18):** this section is a pre-merge snapshot. PR #58 was merged to
+`main` as `48af7a4708e60e1e1c578f68fa5ef0c82ad26c9c` (2026-10-18T05:32:59Z).
+
+## 8. Host-key verification evidence (out-of-band) — 2026-10-18
+
+Recorded 2026-10-18T06:08Z (UTC) on founder instruction, from evidence reported by
+the founder in the same working session.
+
+- **Verification channel:** Hostinger VPS browser console (server-side console,
+  accessed through the founder's authenticated Hostinger account session). This
+  channel is independent of the SSH/DNS trust path and is one of the out-of-band
+  verification sources required by §6 and `docs/deployment/VPS-DEPLOYMENT-GUIDE.md`
+  §12.3.
+- **Command run on the server (via the console):**
+  `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`
+- **Console output:**
+  `256 SHA256:9v4/6X4YuDjLU5aCiWts08c4B7a8/13zem/LcDHHZd0 root@srv1889262 (ED25519)`
+  (the `root@srv1889262` suffix is the key comment field, not the SSH login user).
+- **Match:** the founder reports this output matches the previously recorded
+  fingerprint exactly. The earlier record is founder-held and not committed to this
+  repository.
+- **Conclusion:** the independent-authentication requirement in §6 is **satisfied**
+  as of 2026-10-18. Pinned trust and `StrictHostKeyChecking=yes` are unchanged; no
+  bypass was introduced. The workflow was **not** dispatched.
+
+**Audit caveat:** GitHub secret values are write-only and cannot be re-read via API,
+so the equivalence between the console fingerprint and the key material stored in
+`VPS_KNOWN_HOSTS` cannot be mechanically re-derived by this audit; it rests on the
+founder's comparison against the previously recorded value.
