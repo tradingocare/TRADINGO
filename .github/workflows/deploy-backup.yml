@@ -112,6 +112,26 @@ jobs:
             exit 1
           fi
 
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Install pinned VPS host keys
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          # Pinned trust only: host keys come from the founder-provisioned
+          # secret, verified out-of-band. Runtime host-key discovery via network
+          # probing is forbidden here (TOFU against an unauthenticated peer).
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          grep -qE '(ssh-(ed25519|rsa|ecdsa|dss)|sk-ssh-ed25519@|sk-ecdsa-sha2-)' ~/.ssh/known_hosts \
+            || { echo "ERROR: VPS_KNOWN_HOSTS does not contain a recognizable SSH host key"; exit 1; }
+          echo "Pinned VPS host keys installed (StrictHostKeyChecking stays enforced)."
+
       - name: Deploy release to VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -126,6 +146,18 @@ jobs:
             echo "ERROR: target ref contains unexpected characters: $TARGET_REF"
             exit 1
           fi
+          # Non-revealing pre-flight: confirm the pinned known_hosts file has an
+          # entry for the exact configured target (host, or [host]:port when the
+          # port is non-default). ssh-keygen -F output, which echoes the matched
+          # host line, is discarded; only match/no-match is reported, so no key
+          # material or secret value ever reaches the logs.
+          KH_TARGET="$VPS_HOST"
+          if [ "$VPS_PORT" != "22" ]; then KH_TARGET="[$VPS_HOST]:$VPS_PORT"; fi
+          if ! ssh-keygen -F "$KH_TARGET" >/dev/null 2>&1; then
+            echo "ERROR: no pinned known_hosts entry for '$KH_TARGET'; refusing to connect (VPS_KNOWN_HOSTS must cover VPS_HOST/VPS_PORT)"
+            exit 1
+          fi
+          echo "Pinned known_hosts entry present for the configured target; proceeding."
           SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -p $VPS_PORT"
           # Backstop: the whole remote session must finish within 50 minutes.
           # Must stay below the job timeout (60 min) with margin for the

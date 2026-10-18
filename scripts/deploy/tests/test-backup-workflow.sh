@@ -82,6 +82,41 @@ if grep -q 'if ! bash "$PRESERVE_SCRIPT"' "$WF" && grep -A 3 'PRESERVE_SCRIPT' "
   report PASS B12 "preservation failure stops checkout"
 else report FAIL B12 "preservation failure handling missing"; fi
 
+# ---- B13: SSH agent bootstrap present (VPS_SSH_KEY is actually loaded) ----
+if grep -q "webfactory/ssh-agent@v0.10.0" "$WF"; then
+  report PASS B13 "ssh-agent setup present (webfactory/ssh-agent@v0.10.0)"
+else report FAIL B13 "ssh-agent setup missing"; fi
+
+# ---- B14: VPS_KNOWN_HOSTS installed into a known_hosts file ----
+if grep -qF '> ~/.ssh/known_hosts' "$WF"; then
+  report PASS B14 "VPS_KNOWN_HOSTS installed into ~/.ssh/known_hosts"
+else report FAIL B14 "known_hosts install missing"; fi
+
+# ---- B15: SSH strict host key checking retained ----
+if grep -q "StrictHostKeyChecking=yes" "$WF"; then
+  report PASS B15 "StrictHostKeyChecking=yes retained"
+else report FAIL B15 "StrictHostKeyChecking=yes missing"; fi
+
+# ---- B16: no unsafe host-key bypass patterns ----
+if grep -q "StrictHostKeyChecking=no" "$WF" \
+   || grep -q "UserKnownHostsFile=/dev/null" "$WF" \
+   || grep -q "ssh-keyscan" "$WF"; then
+  report FAIL B16 "unsafe host-key bypass pattern present"
+else report PASS B16 "no unsafe host-key bypass patterns"; fi
+
+# ---- B17: non-revealing ssh-keygen -F pre-flight present ----
+if grep -q "ssh-keygen -F" "$WF"; then
+  report PASS B17 "ssh-keygen -F pre-flight present"
+else report FAIL B17 "ssh-keygen -F pre-flight missing"; fi
+
+# ---- B18: existing safety gates unchanged ----
+if grep -q 'CONFIRM_INPUT.*!=.*deploy' "$WF" \
+   && grep -q "GITHUB_REF.*refs/heads/main" "$WF" \
+   && grep -q 'if bash scripts/deploy/manage.sh backup' "$WF" \
+   && grep -q 'if ! bash scripts/deploy/verify-backup.sh' "$WF"; then
+  report PASS B18 "confirmation, main-ref, backup and verify gates intact"
+else report FAIL B18 "one or more safety gates changed"; fi
+
 echo ""
 echo "---- SUMMARY: PASS=$PASS FAIL=$FAIL ----"
 [ "$FAIL" -eq 0 ]
