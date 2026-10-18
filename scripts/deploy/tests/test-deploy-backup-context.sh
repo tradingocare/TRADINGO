@@ -4,7 +4,7 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-WF="${1:-$HERE/../..}"
+WF="${1:-$HERE/../../..}"
 WF="${WF}/.github/workflows/deploy-backup.yml"
 
 PASS=0
@@ -39,13 +39,14 @@ else
   report FAIL C2 "workflow file not found"
 fi
 
-# Test 3: Check that job-level outputs are removed
+# Test 3: Check that no job-level outputs are declared
+# Job-level outputs appear at 4-space indentation under jobs.<job>;
+# step-level outputs appear at 6+ spaces under steps.<id>.
 if [ -f "$WF" ]; then
-  # Check for job-level outputs section
-  if grep -A 5 "^jobs:" "$WF" | grep -q "^    outputs:"; then
+  if grep -qE '^    outputs:' "$WF"; then
     report FAIL C3 "job-level outputs still present (not needed for single job)"
   else
-    report PASS C3 "job-level outputs removed"
+    report PASS C3 "no job-level outputs declaration"
   fi
 else
   report FAIL C3 "workflow file not found"
