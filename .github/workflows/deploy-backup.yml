@@ -17,7 +17,11 @@ name: Deploy Production Backup
 #   protection for single-account operation). No push trigger.
 # - The release is pinned to the exact SHA of `origin/main` resolved on the
 #   VPS at deploy time — never an operator-supplied branch, tag, or SHA, and
-#   never "latest whatever happens to be on main at build time".
+#   never "latest whatever happens to be on main at build time". The remote
+#   script fails closed unless the target ref is exactly `refs/heads/main`,
+#   then explicitly refreshes the `refs/remotes/origin/main` remote-tracking
+#   ref with a forced fetch refspec before resolving the SHA from it, so a
+#   stale/narrowed fetch config can never pin an outdated release.
 # - Host trust is pinned, not discovered: SSH uses a founder-provisioned
 #   `VPS_KNOWN_HOSTS` secret (verified out-of-band); runtime host lookup
 #   detection is forbidden here (TOFU against an unauthenticated network peer).
@@ -172,8 +176,20 @@ jobs:
           COMPOSE="docker compose -p tradingo-prod --env-file .env.production.local -f docker-compose.prod.yml"
 
           echo "=== Fetching release ==="
-          git fetch origin || { echo "ERROR: git fetch failed"; exit 1; }
-          TARGET_SHA="$(git rev-parse "$TARGET_REF")" || { echo "ERROR: unknown ref $TARGET_REF"; exit 1; }
+          # Fail closed unless the requested target is exactly main. No other
+          # branch, tag, or operator-supplied SHA can be deployed. Validated
+          # here (on the VPS) as well as at dispatch time.
+          if [ "$TARGET_REF" != "refs/heads/main" ]; then
+            echo "ERROR: unexpected target ref (expected refs/heads/main): $TARGET_REF"
+            exit 1
+          fi
+          # Explicitly refresh the origin/main remote-tracking ref. A plain
+          # `git fetch origin` may leave refs/remotes/origin/main stale when
+          # the fetch refspec config is narrowed or pruned; the forced
+          # mapping below updates it from origin unconditionally, and the
+          # SHA is then resolved from that refreshed ref only.
+          git fetch origin "+refs/heads/main:refs/remotes/origin/main" || { echo "ERROR: git fetch failed"; exit 1; }
+          TARGET_SHA="$(git rev-parse refs/remotes/origin/main)" || { echo "ERROR: could not resolve refs/remotes/origin/main"; exit 1; }
           PREV_SHA="$(git rev-parse HEAD)"
           echo "Previous release: $PREV_SHA"
           echo "Target release:   $TARGET_SHA"
@@ -193,7 +209,9 @@ jobs:
 
           echo "=== Pre-checkout: executing preservation gate ==="
           # Run preservation BEFORE checkout. Preserve untracked collisions to recovery dir.
-          if ! bash "$PRESERVE_SCRIPT" "$APP_DIR" "$TARGET_SHA"; then
+          # The gate's invocation contract is environment-based (APP_DIR and
+          # TARGET_SHA); positional arguments are not part of its interface.
+          if ! APP_DIR="$APP_DIR" TARGET_SHA="$TARGET_SHA" bash "$PRESERVE_SCRIPT"; then
             echo "ERROR: preservation gate failed; checkout aborted"
             rm -f "$PRESERVE_SCRIPT"
             exit 1

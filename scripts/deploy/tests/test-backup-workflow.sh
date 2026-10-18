@@ -78,7 +78,8 @@ if grep -q 'if ! bash scripts/deploy/verify-backup.sh' "$WF" && grep -A 3 'verif
 else report FAIL B11 "verification failure handling missing"; fi
 
 # ---- B12: Preservation failure stops checkout ----
-if grep -q 'if ! bash "$PRESERVE_SCRIPT"' "$WF" && grep -A 3 'PRESERVE_SCRIPT' "$WF" | grep -q 'exit 1'; then
+if grep -qF 'if ! APP_DIR="$APP_DIR" TARGET_SHA="$TARGET_SHA" bash "$PRESERVE_SCRIPT"' "$WF" \
+   && grep -A 3 'PRESERVE_SCRIPT' "$WF" | grep -q 'exit 1'; then
   report PASS B12 "preservation failure stops checkout"
 else report FAIL B12 "preservation failure handling missing"; fi
 
@@ -116,6 +117,37 @@ if grep -q 'CONFIRM_INPUT.*!=.*deploy' "$WF" \
    && grep -q 'if ! bash scripts/deploy/verify-backup.sh' "$WF"; then
   report PASS B18 "confirmation, main-ref, backup and verify gates intact"
 else report FAIL B18 "one or more safety gates changed"; fi
+
+# ---- B19: explicit origin/main refresh refspec present ----
+if grep -qF 'git fetch origin "+refs/heads/main:refs/remotes/origin/main"' "$WF"; then
+  report PASS B19 "explicit origin/main refresh refspec present"
+else report FAIL B19 "explicit origin/main refresh refspec missing"; fi
+
+# ---- B20: no plain (refspec-less) git fetch origin remains ----
+if grep -q 'git fetch origin ||' "$WF" || grep -qE 'git fetch origin[[:space:]]*$' "$WF"; then
+  report FAIL B20 "plain git fetch origin still present"
+else report PASS B20 "no plain git fetch origin remains"; fi
+
+# ---- B21: fail-closed target-ref validation present ----
+if grep -q '"$TARGET_REF" != "refs/heads/main"' "$WF" \
+   && grep -A 3 '"$TARGET_REF" != "refs/heads/main"' "$WF" | grep -q 'exit 1'; then
+  report PASS B21 "fail-closed target-ref validation present"
+else report FAIL B21 "fail-closed target-ref validation missing"; fi
+
+# ---- B22: target SHA resolved from refreshed origin/main ----
+if grep -q 'git rev-parse refs/remotes/origin/main' "$WF"; then
+  report PASS B22 "target SHA resolved from refs/remotes/origin/main"
+else report FAIL B22 "target SHA not resolved from origin/main"; fi
+
+# ---- B23: preservation invoked via APP_DIR/TARGET_SHA environment contract ----
+if grep -qF 'APP_DIR="$APP_DIR" TARGET_SHA="$TARGET_SHA" bash "$PRESERVE_SCRIPT"' "$WF"; then
+  report PASS B23 "preservation invoked with APP_DIR/TARGET_SHA env contract"
+else report FAIL B23 "preservation env-var invocation missing"; fi
+
+# ---- B24: no positional-argument invocation of the preservation gate ----
+if grep -qF 'bash "$PRESERVE_SCRIPT" "$APP_DIR" "$TARGET_SHA"' "$WF"; then
+  report FAIL B24 "positional-argument preservation invocation still present"
+else report PASS B24 "no positional-argument preservation invocation"; fi
 
 echo ""
 echo "---- SUMMARY: PASS=$PASS FAIL=$FAIL ----"
