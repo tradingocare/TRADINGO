@@ -194,6 +194,64 @@ jobs:
             exit 1
           fi
 
+      # Pre-warm the Next.js image optimizer for the logo variants the E2E
+      # suite renders, so no Playwright test is ever the first client of a
+      # cold /_next/image transform. A client abort during a cold transform
+      # can permanently hang that optimizer key for the server process
+      # lifetime (vercel/next.js#96537, unfixed in Next 16.3.6); runs #149,
+      # #151 and #185 all hung on the w=256 variant of this URL. Widths are
+      # the imageSizes candidates rendered on E2E-visited pages: topbar and
+      # footer height 32 -> 48/96, navbar height 38 -> 64/128, section logo
+      # width 108 -> 128/256; 96/128/256 were observed as requests and
+      # 48/64 appear in rendered srcsets but were never captured as a
+      # request (desktop traces are not retained). Homepage-only renders
+      # (logo widths 216/300) are outside the E2E route scope. Remove this
+      # step once a fixed Next.js release is adopted.
+      - name: Pre-warm Next.js image optimizer (logo variants)
+        run: |
+          set -uo pipefail
+          base="http://localhost:3000"
+          widths=(256 128 96 64 48)
+
+          prewarm_variant() {
+            local w="$1" url attempt rc meta code ctype size
+            url="$base/_next/image?url=%2Flogo%2Ftrdn5.png&w=$w&q=75"
+            for attempt in 1 2; do
+              echo "Pre-warm w=$w (attempt $attempt/2): $url"
+              rc=0
+              meta=$(curl -sS --connect-timeout 5 --max-time 60 \
+                -H 'Accept: image/avif,image/webp,*/*' \
+                -o /dev/null \
+                -w '%{http_code}\n%{content_type}\n%{size_download}' \
+                "$url") || rc=$?
+              code=$(printf '%s\n' "$meta" | sed -n '1p' | tr -d '[:space:]')
+              ctype=$(printf '%s\n' "$meta" | sed -n '2p' | tr '[:upper:]' '[:lower:]' | cut -d';' -f1 | tr -d '[:space:]')
+              size=$(printf '%s\n' "$meta" | sed -n '3p' | tr -d '[:space:]')
+              echo "  curl_exit=$rc http_status='$code' content_type='$ctype' body_bytes='$size'"
+              if [ "$rc" -ne 0 ]; then
+                echo "  rejected: curl exit $rc (transport or incomplete transfer)"
+              elif [ "$code" != "200" ]; then
+                echo "  rejected: HTTP status is not exactly 200"
+              elif [ "$ctype" != "image/avif" ] && [ "$ctype" != "image/webp" ]; then
+                echo "  rejected: Content-Type is not an approved optimized image type"
+              elif ! grep -Eq '^[1-9][0-9]*$' <<<"$size"; then
+                echo "  rejected: body size is not a positive integer"
+              else
+                echo "  pre-warmed OK"
+                return 0
+              fi
+              if [ "$attempt" -eq 1 ]; then
+                sleep 3
+              fi
+            done
+            echo "::error::Image optimizer pre-warm failed for w=$w ($url)"
+            return 1
+          }
+
+          for w in "${widths[@]}"; do
+            prewarm_variant "$w" || exit 1
+          done
+          echo "Image optimizer pre-warm OK (widths: ${widths[*]})"
       - name: Run Playwright tests
         run: pnpm test:e2e
         env:
@@ -212,4 +270,15 @@ jobs:
         with:
           name: playwright-test-results
           path: test-results/
+          retention-days: 30
+
+      - name: Upload server logs on failure
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            /tmp/web.log
+            /tmp/api.log
+          if-no-files-found: warn
           retention-days: 30
