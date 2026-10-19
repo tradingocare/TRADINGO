@@ -47,6 +47,14 @@ name: Deploy Production
 # - On health-check failure this workflow FAILS LOUDLY and stops. It never
 #   auto-rolls back. The previous release SHA is printed with the exact
 #   manual rollback commands (see ROLLBACK section below + rollback step).
+# - Claiming success requires proof (added 2026-10-19 after runs 39214456391
+#   and 39218521897 completed confusingly): after `up`, the RUNNING
+#   containers' image IDs must equal the SHA-tagged images pulled from GHCR
+#   (scripts/deploy/verify-release-images.sh; regression tests in
+#   scripts/deploy/tests/test-release-image-identity.sh), the checkout must
+#   be verified to sit on exactly TARGET_SHA, and the remote script must emit
+#   its terminal marker TRADINGO_DEPLOY_VERIFIED_OK which the runner greps in
+#   the teed remote log. Mutable tags are never accepted as release proof.
 #
 # BACKUP POLICY (fail-closed): a database backup is attempted before every
 #   release via scripts/deploy/manage.sh backup, then
@@ -215,7 +223,9 @@ jobs:
           # Must stay below the job timeout (100 min) with margin for the
           # status-report step and agent cleanup. Exit 124 means THIS backstop
           # fired (remote deploy exceeded 90 min), not the job timeout.
-          timeout 5400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "SKIP_FRESH_BACKUP='$SKIP_FRESH_BACKUP' TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' GHCR_OWNER='$GHCR_OWNER' bash -s" << 'REMOTE_EOF'
+          # The remote log is teed so the terminal marker can be verified
+          # after the pipeline without losing live streaming.
+          timeout 5400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "SKIP_FRESH_BACKUP='$SKIP_FRESH_BACKUP' TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' GHCR_OWNER='$GHCR_OWNER' bash -s" << 'REMOTE_EOF' | tee "$RUNNER_TEMP/deploy-remote.log"
           set -euo pipefail
           # BEGIN SKIP_FRESH_BACKUP handling (tested: scripts/deploy/tests/test-backup-timeout-gates.sh)
           # Default closed when absent/empty; only the explicit dispatch value
@@ -264,6 +274,9 @@ jobs:
           APP_DIR="$APP_DIR" TARGET_SHA="$TARGET_SHA" bash "$PRESERVE_TMP" || { echo "ERROR: collision preservation failed; checkout aborted"; rm -f "$PRESERVE_TMP"; exit 1; }
           rm -f "$PRESERVE_TMP"
           git checkout "$TARGET_SHA" || { echo "ERROR: checkout of $TARGET_SHA failed"; exit 1; }
+          # Fail closed if the working tree did not land on the exact release
+          # commit: everything below must only ever act on TARGET_SHA.
+          [ "$(git rev-parse HEAD)" = "$TARGET_SHA" ] || { echo "ERROR: checkout landed on $(git rev-parse HEAD), expected $TARGET_SHA; refusing to continue"; exit 1; }
 
           echo "=== Pre-flight: dependency health (fail fast on broken estate) ==="
           # NOTE: postgres/redis are intentionally NOT started here. PostgreSQL
@@ -317,6 +330,15 @@ jobs:
           docker tag "$API_MIGRATE_IMAGE" tradingo-prod-api-migrate:latest
           docker tag "$WEB_IMAGE" tradingo-prod-web:latest
           echo "Release images pulled and retagged for $TARGET_SHA."
+          # Record immutable release identities (image ID + registry digest)
+          # in the run log: mutable tags are not proof of release identity.
+          for entry in "api:$API_IMAGE" "api-migrate:$API_MIGRATE_IMAGE" "web:$WEB_IMAGE"; do
+            name="${entry%%:*}"
+            img="${entry#*:}"
+            id="$(docker image inspect --format '{{.Id}}' "$img")"
+            digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$img" 2>/dev/null || echo '<none>')"
+            echo "RELEASE_IMAGE $name tag=$img id=$id digest=$digest"
+          done
 
           echo "=== Pre-deploy database backup (best effort, then verified) ==="
           if bash scripts/deploy/manage.sh backup; then
@@ -344,6 +366,14 @@ jobs:
           echo "=== Recreating services ==="
           $COMPOSE up -d --no-deps api web </dev/null || { echo "ERROR: service recreate failed"; exit 1; }
 
+          echo "=== Verifying running containers are the release images (fail closed) ==="
+          # Regression guard for run 39218521897 ("success" without the
+          # recreate/smoke steps ever running) and 39214456391: the deployment
+          # may only claim the release applied if the RUNNING container image
+          # IDs equal the SHA-tagged release image IDs pulled above.
+          # Regression-test: scripts/deploy/tests/test-release-image-identity.sh
+          bash scripts/deploy/verify-release-images.sh "$TARGET_SHA" "$GHCR_OWNER" || { echo "ERROR: running containers do not match release $TARGET_SHA; deployment NOT applied"; exit 1; }
+
           echo "=== Health checks ==="
           if bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000; then
             echo "Health checks passed."
@@ -359,7 +389,16 @@ jobs:
           echo "=== Release summary ==="
           echo "Deployed: $PREV_SHA -> $TARGET_SHA"
           $COMPOSE ps api web
+          # Terminal marker: the runner-side grep below refuses to report
+          # success unless this line is present, so the remote script cannot
+          # end early (e.g. stdin consumption) and still pass the job.
+          echo "TRADINGO_DEPLOY_VERIFIED_OK target=$TARGET_SHA"
           REMOTE_EOF
+          # A remote run that ended before its terminal marker did not
+          # complete the release (see the marker comment inside the script).
+          # Note: if the SSH pipeline itself fails, `set -e` aborts before
+          # this grep; reaching here means the marker check is authoritative.
+          grep -q 'TRADINGO_DEPLOY_VERIFIED_OK target=' "$RUNNER_TEMP/deploy-remote.log" || { echo "::error::Remote deploy finished without the verified-complete marker; treating the release as NOT deployed"; exit 1; }
 
       - name: Report deployment status
         if: always()
