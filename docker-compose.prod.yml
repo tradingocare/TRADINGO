@@ -108,8 +108,15 @@ services:
       target: migration
     container_name: tradingo-api-migrate
     restart: "no"
+    # The database is managed by the legacy compose project and only the
+    # legacy network carries the `postgres` DNS alias that DATABASE_URL uses
+    # (verified 2026-10-19: migration run 39212010080 could not resolve
+    # `postgres` on tradingo-net alone). Must match the api service, which
+    # joins both networks; without this the migrate container fails its
+    # PostgreSQL readiness wait and aborts the release.
     networks:
       - tradingo-net
+      - legacy-db
     volumes:
       - ./backups:/backups
     env_file:
