@@ -1,7 +1,15 @@
 name: Deploy Production
 
-# REAL Hostinger VPS deployment (SSH + Docker Compose, built on-host).
+# REAL Hostinger VPS deployment (SSH + Docker Compose, images built in CI).
 # Replaces the former echo/template implementation.
+#
+# IMAGE POLICY (2026-10-19): api / api-migrate / web images are built by the
+#   `Build Production Images` workflow (build-images.yml), pushed to GHCR and
+#   tagged with the exact commit SHA. This workflow PULLS the images for
+#   $TARGET_SHA and retags them to the compose-local names instead of
+#   building on-host: the VPS (3.9GB RAM / 1 vCPU) livelocks on the web
+#   build (run 39204845542). A missing image for the target SHA aborts
+#   BEFORE the backup gate, with the previous containers untouched.
 #
 # Design notes (do not weaken without founder approval):
 # - Manual dispatch only, and only from the `main` ref: a dispatch launched
@@ -50,11 +58,19 @@ name: Deploy Production
 #   exists or the release cannot wait (e.g. security fix). Data restore stays
 #   a separate deliberate decision in every case (see ROLLBACK below).
 #
-# ROLLBACK (manual, only after verifying the previous release was healthy):
+# ROLLBACK (manual, only after verifying the previous release was healthy).
+#   Release images live on GHCR tagged by SHA and are pulled anonymously.
+#   Images exist for every main commit built by build-images; for earlier
+#   releases fall back to the preserved rollback images/containers.
 #   ssh tradingo@<VPS_HOST> 'cd /home/tradingo/tradingo \
-#     && PREV=<sha-printed-by-failed-run> && git checkout $PREV \
-#     && docker compose -p tradingo-prod --env-file .env.production.local \
-#          -f docker-compose.prod.yml build api web \
+#     && PREV=<sha-printed-by-failed-run> && REG=ghcr.io/tradingocare \
+#     && docker pull $REG/tradingo-api:$PREV \
+#     && docker pull $REG/tradingo-api-migrate:$PREV \
+#     && docker pull $REG/tradingo-web:$PREV \
+#     && git checkout $PREV \
+#     && docker tag $REG/tradingo-api:$PREV tradingo-prod-api:latest \
+#     && docker tag $REG/tradingo-api-migrate:$PREV tradingo-prod-api-migrate:latest \
+#     && docker tag $REG/tradingo-web:$PREV tradingo-prod-web:latest \
 #     && docker compose -p tradingo-prod --env-file .env.production.local \
 #          -f docker-compose.prod.yml up -d --no-deps api web \
 #     && bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000'
@@ -181,6 +197,9 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER || 'tradingo' }}
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR || '/home/tradingo/tradingo' }}
           TARGET_REF: ${{ needs.validate.outputs.target_ref }}
+          # GHCR namespace holding the CI-built release images (public
+          # packages linked to this public repository; pulls are anonymous).
+          GHCR_OWNER: ${{ github.repository_owner }}
           # Documented stale-backup exception (default false). Passed through
           # as data only; the remote gate decides.
           SKIP_FRESH_BACKUP: ${{ github.event.inputs.skip_fresh_backup }}
@@ -195,8 +214,8 @@ jobs:
           # Backstop: the whole remote session must finish within 90 minutes.
           # Must stay below the job timeout (100 min) with margin for the
           # status-report step and agent cleanup. Exit 124 means THIS backstop
-          # fired (remote build/export exceeded 90 min), not the job timeout.
-          timeout 5400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "SKIP_FRESH_BACKUP='$SKIP_FRESH_BACKUP' TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
+          # fired (remote deploy exceeded 90 min), not the job timeout.
+          timeout 5400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "SKIP_FRESH_BACKUP='$SKIP_FRESH_BACKUP' TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' GHCR_OWNER='$GHCR_OWNER' bash -s" << 'REMOTE_EOF'
           set -euo pipefail
           # BEGIN SKIP_FRESH_BACKUP handling (tested: scripts/deploy/tests/test-backup-timeout-gates.sh)
           # Default closed when absent/empty; only the explicit dispatch value
@@ -216,6 +235,14 @@ jobs:
           test -f .env.production.local || { echo "ERROR: .env.production.local missing in $APP_DIR (tracked placeholder .env.production must never be used)"; exit 1; }
 
           COMPOSE="docker compose -p tradingo-prod --env-file .env.production.local -f docker-compose.prod.yml"
+
+          # CI image namespace: must be a plain lowercase GHCR owner.
+          # repository_owner is lowercase for this repo; normalize defensively.
+          GHCR_OWNER="${GHCR_OWNER,,}"
+          if [[ ! "$GHCR_OWNER" =~ ^[a-z0-9-]+$ ]]; then
+            echo "ERROR: invalid GHCR owner: '$GHCR_OWNER'"
+            exit 1
+          fi
 
           echo "=== Fetching release ==="
           git fetch origin || { echo "ERROR: git fetch failed"; exit 1; }
@@ -265,6 +292,32 @@ jobs:
             echo "$svc: running."
           done
 
+          echo "=== Pulling CI-built release images (pinned to target SHA) ==="
+          # Images are built by the Build Production Images workflow and tagged
+          # with the exact commit SHA. Pulling BEFORE the backup/migration
+          # gates means a missing release aborts with zero mutations.
+          if [[ ! "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: unexpected TARGET_SHA format: $TARGET_SHA"
+            exit 1
+          fi
+          GHCR_BASE="ghcr.io/$GHCR_OWNER"
+          API_IMAGE="$GHCR_BASE/tradingo-api:$TARGET_SHA"
+          API_MIGRATE_IMAGE="$GHCR_BASE/tradingo-api-migrate:$TARGET_SHA"
+          WEB_IMAGE="$GHCR_BASE/tradingo-web:$TARGET_SHA"
+          for img in "$API_IMAGE" "$API_MIGRATE_IMAGE" "$WEB_IMAGE"; do
+            docker pull "$img" || { echo "ERROR: failed to pull $img. Ensure the 'Build Production Images' workflow succeeded for this SHA and the GHCR package is publicly readable."; exit 1; }
+          done
+          # Compose services api/api-migrate/web declare build: contexts, so
+          # they resolve to project-local image names (tradingo-prod-api,
+          # -api-migrate, -web). Retagging converges compose onto the pulled
+          # images WITHOUT touching docker-compose.prod.yml, which must stay
+          # identical to the release SHA being deployed. up -d recreates the
+          # containers because the image ID changed.
+          docker tag "$API_IMAGE" tradingo-prod-api:latest
+          docker tag "$API_MIGRATE_IMAGE" tradingo-prod-api-migrate:latest
+          docker tag "$WEB_IMAGE" tradingo-prod-web:latest
+          echo "Release images pulled and retagged for $TARGET_SHA."
+
           echo "=== Pre-deploy database backup (best effort, then verified) ==="
           if bash scripts/deploy/manage.sh backup; then
             echo "Pre-deploy backup complete."
@@ -278,9 +331,6 @@ jobs:
           # (skip_fresh_backup=true), which is recorded in the run inputs.
           ALLOW_STALE_BACKUP="$SKIP_FRESH_BACKUP" bash scripts/deploy/verify-backup.sh || { echo "ERROR: no fresh verified backup and no documented exception; resolve backup health before retrying"; exit 1; }
 
-          echo "=== Building images (api, web) ==="
-          $COMPOSE build --parallel api web || { echo "ERROR: image build failed; previous containers untouched"; exit 1; }
-
           echo "=== Running migrations (exit-gated; previous containers still live) ==="
           $COMPOSE run --rm --no-deps api-migrate || { echo "ERROR: migration failed; previous containers untouched. Resolve before retrying."; exit 1; }
 
@@ -293,7 +343,8 @@ jobs:
           else
             echo "::error::Health checks FAILED. NOT rolling back automatically."
             echo "If the previous release ($PREV_SHA) was healthy, roll back manually:"
-            echo "  git checkout $PREV_SHA && $COMPOSE build --parallel api web && $COMPOSE up -d --no-deps api web"
+            echo "  docker pull ghcr.io/$GHCR_OWNER/tradingo-api:$PREV_SHA && docker pull ghcr.io/$GHCR_OWNER/tradingo-api-migrate:$PREV_SHA && docker pull ghcr.io/$GHCR_OWNER/tradingo-web:$PREV_SHA"
+            echo "  git checkout $PREV_SHA && docker tag ghcr.io/$GHCR_OWNER/tradingo-api:$PREV_SHA tradingo-prod-api:latest && docker tag ghcr.io/$GHCR_OWNER/tradingo-api-migrate:$PREV_SHA tradingo-prod-api-migrate:latest && docker tag ghcr.io/$GHCR_OWNER/tradingo-web:$PREV_SHA tradingo-prod-web:latest && $COMPOSE up -d --no-deps api web"
             echo "  then re-run the smoke test above. See the ROLLBACK header of this workflow file."
             exit 1
           fi
