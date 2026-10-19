@@ -59,9 +59,11 @@ echo "============================================"
 check "API live"        "$BASE_URL/live"             200
 check "API ready"       "$BASE_URL/ready"            200
 check "API health"      "$BASE_URL/health"           200
-check_json "API live status" "$BASE_URL/live" "status" "ok"
-check_json "API ready status" "$BASE_URL/ready" "status" "ok"
-check_json "API health status" "$BASE_URL/health" "status" "ok"
+# The API wraps every response in the standard envelope
+# {statusCode, message, data, timestamp}, so status lives at data.status.
+check_json "API live status" "$BASE_URL/live" "data.status" "ok"
+check_json "API ready status" "$BASE_URL/ready" "data.status" "ok"
+check_json "API health status" "$BASE_URL/health" "data.status" "ok"
 
 # API endpoints
 check "API root"        "$BASE_URL/api/v1"           200
