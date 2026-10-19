@@ -13,10 +13,15 @@ name: Build Production Images
 #   BEFORE the backup gate, with previous containers untouched.
 # - Build-time NEXT_PUBLIC_* values come from repository variables copied
 #   from the production env file. They are public by design (Next.js inlines
-#   them into the client bundle). The Razorpay key id and the four URL
-#   values are REQUIRED: an empty build arg would override the Dockerfile
-#   defaults and silently ship a broken bundle, so this workflow fails
-#   closed instead.
+#   them into the client bundle). The four URL values are REQUIRED: an empty
+#   build arg would override the Dockerfile defaults and silently ship a
+#   broken bundle, so this workflow fails closed instead.
+#   NEXT_PUBLIC_RAZORPAY_KEY_ID and NEXT_PUBLIC_SENTRY_DSN are deliberately
+#   optional with a loud warning when empty: the production env file had
+#   them EMPTY as of 2026-10-19, so an empty value preserves current
+#   on-host build parity. When payments/monitoring go live, add the values
+#   under Settings -> Secrets and variables -> Actions -> Variables and the
+#   next build will bake them in.
 # - Images are pushed as packages linked to this public repository; the VPS
 #   pulls them anonymously (no registry credentials on the host).
 # - Provenance attestations are disabled so older Docker engines on the VPS
@@ -46,17 +51,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate required build-time variables
+      - name: Validate build-time variables
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
           NEXT_PUBLIC_SOCKET_URL: ${{ vars.NEXT_PUBLIC_SOCKET_URL }}
           NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ vars.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
         run: |
           set -u
           missing=""
-          for name in NEXT_PUBLIC_API_URL NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_URL NEXT_PUBLIC_SOCKET_URL NEXT_PUBLIC_RAZORPAY_KEY_ID; do
+          for name in NEXT_PUBLIC_API_URL NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_URL NEXT_PUBLIC_SOCKET_URL; do
             value="$(printenv "$name" || true)"
             if [ -z "$value" ]; then
               missing="$missing $name"
@@ -69,7 +75,13 @@ jobs:
             echo "Set them under Settings -> Secrets and variables -> Actions -> Variables."
             exit 1
           fi
-          echo "Required build-time variables present."
+          for name in NEXT_PUBLIC_RAZORPAY_KEY_ID NEXT_PUBLIC_SENTRY_DSN; do
+            value="$(printenv "$name" || true)"
+            if [ -z "$value" ]; then
+              echo "::warning::$name is empty; the built bundle matches the current production env file (empty since 2026-10-19). Set the repository variable when payments/monitoring go live."
+            fi
+          done
+          echo "Build-time variables validated."
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
