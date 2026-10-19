@@ -332,10 +332,17 @@ jobs:
           ALLOW_STALE_BACKUP="$SKIP_FRESH_BACKUP" bash scripts/deploy/verify-backup.sh || { echo "ERROR: no fresh verified backup and no documented exception; resolve backup health before retrying"; exit 1; }
 
           echo "=== Running migrations (exit-gated; previous containers still live) ==="
-          $COMPOSE run --rm --no-deps api-migrate || { echo "ERROR: migration failed; previous containers untouched. Resolve before retrying."; exit 1; }
+          # stdin is redirected from /dev/null: this remote script is fed to
+          # `bash -s` over stdin, and `docker compose run` attaches stdin by
+          # default. On 2026-10-19 (run 39214456391) the attached migrate
+          # container consumed the remainder of this script, so the recreate
+          # and smoke-test steps silently never ran while the run still
+          # reported success. Never let a child process read the deploy
+          # script.
+          $COMPOSE run -T --rm --no-deps api-migrate </dev/null || { echo "ERROR: migration failed; previous containers untouched. Resolve before retrying."; exit 1; }
 
           echo "=== Recreating services ==="
-          $COMPOSE up -d --no-deps api web || { echo "ERROR: service recreate failed"; exit 1; }
+          $COMPOSE up -d --no-deps api web </dev/null || { echo "ERROR: service recreate failed"; exit 1; }
 
           echo "=== Health checks ==="
           if bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000; then
