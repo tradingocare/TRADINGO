@@ -55,6 +55,13 @@ name: Deploy Production
 #   be verified to sit on exactly TARGET_SHA, and the remote script must emit
 #   its terminal marker TRADINGO_DEPLOY_VERIFIED_OK which the runner greps in
 #   the teed remote log. Mutable tags are never accepted as release proof.
+# - Readiness gate (added 2026-10-19 after run 39228403830): `up` recreated
+#   tradigo-web and smoke started ~400ms later, before the Next.js server had
+#   bound :3000 ("Ready" logged at +0.8s), so seven UI checks failed with
+#   instant connection-refused (000000) on a healthy release. Smoke tests now
+#   run only after the real web and API endpoints answer HTTP 200
+#   (scripts/deploy/wait-for-ready.sh; bounded 60s web / 30s API, fail closed;
+#   regression tests in scripts/deploy/tests/test-readiness-gate.sh).
 #
 # BACKUP POLICY (fail-closed): a database backup is attempted before every
 #   release via scripts/deploy/manage.sh backup, then
@@ -373,6 +380,18 @@ jobs:
           # IDs equal the SHA-tagged release image IDs pulled above.
           # Regression-test: scripts/deploy/tests/test-release-image-identity.sh
           bash scripts/deploy/verify-release-images.sh "$TARGET_SHA" "$GHCR_OWNER" || { echo "ERROR: running containers do not match release $TARGET_SHA; deployment NOT applied"; exit 1; }
+
+          echo "=== Waiting for endpoint readiness (bounded, fail closed) ==="
+          # Regression guard for run 39228403830: `up` had recreated web and
+          # the smoke test started ~400ms later, before the Next.js server
+          # bound :3000 (server logged "Ready" at +0.8s); seven UI checks
+          # failed with instant connection-refused (000000) on a release that
+          # was actually healthy. The smoke test may only run once the real
+          # endpoints answer: web first, then API /health, each wall-clock
+          # bounded and fail closed. Image identity and backup verification
+          # still run strictly before this gate and are never bypassed.
+          # Regression-test: scripts/deploy/tests/test-readiness-gate.sh
+          bash scripts/deploy/wait-for-ready.sh || { echo "ERROR: services did not become ready; smoke tests not attempted"; exit 1; }
 
           echo "=== Health checks ==="
           if bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000; then
