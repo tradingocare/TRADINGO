@@ -9,7 +9,7 @@ import CompareClient from './compare-client';
  *   detail pages untouched — metadata only). Self-canonical (utility page).
  */
 export const metadata: Metadata = {
-  title: 'Compare Products — TRADINGO',
+  title: 'Compare Products',
   description: 'Compare TRADINGO products side by side on price, seller, trust score, MOQ and delivery.',
   robots: { index: false, follow: true },
   alternates: { canonical: 'https://tradingo.in/compare' },

@@ -16,9 +16,21 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Background Layer ──────────────────────────────────── */
-  --bg-base:       #030630;
-  --bg-elevated:   #0F4C64;
+  /* -- Brand Foundation (Founder Locked) ------------------- */
+  --brand-primary:      #2C1608;
+  --brand-primary-rgb:  44, 22, 8;
+  --brand-surface:      #100C08;
+  --brand-surface-rgb:  16, 12, 8;
+  --brand-on-primary:   #FFFFFF;
+  --brand-on-surface:   #F0F4FF;
+
+  /* -- Background Layer ----------------------------------- */
+  --bg-base:       #2C1608;
+  /* Raised layer MUST differ from --bg-base. HEAD invariant (both themes):
+     --bg-elevated === --surface-solid && --bg-elevated !== --bg-base.
+     Aliasing it to --brand-primary (== --bg-base) made every
+     `bg-bg-elevated` / `bg-surface-secondary` surface blend into the page. */
+  --bg-elevated:   var(--brand-surface);
   --bg-elevated-2: var(--bg-elevated);
   --bg-overlay:    rgba(0, 0, 28, 0.85);
 
@@ -45,11 +57,11 @@
   --accent-yellow: #FBBF24;
 
   /* ── Card Surface ──────────────────────────────────────── */
-  --surface-solid:          #0F4C64;
+  --surface-solid:          var(--brand-surface);
   --surface-solid-secondary: var(--bg-elevated);
   --surface-solid-tertiary:  var(--bg-elevated);
 
-  --card-bg:           #0F4C64;
+  --card-bg:           var(--brand-surface);
   --card-bg-hover:     var(--bg-elevated);
   --card-border:       rgba(255, 255, 255, 0.12);
   --card-border-hover: rgba(255, 255, 255, 0.14);
@@ -68,7 +80,7 @@
   --text-on-accent: #ffffff;
 
   /* ── Glass ──────────────────────────────────────────────── */
-  --glass-bg: #0F4C64;
+  --glass-bg: var(--brand-surface);
   --glass-bg-hover: var(--bg-elevated);
   --glass-border:       rgba(255, 255, 255, 0.12);
   --glass-border-hover: rgba(255, 255, 255, 0.14);
@@ -115,41 +127,42 @@
   --focus-ring-width:   2px;
 
   /* ── Navigation ───────────────────────────────────────── */
-  --nav-bg:          rgba(12, 4, 61, 0.94);
+  --nav-bg:          rgba(var(--brand-primary-rgb), 0.94);
   --nav-text:        #f0f4ff;
   --nav-text-muted:  #a8b4cc;
   --nav-active-bg:   rgba(255, 77, 0, 0.12);
   --nav-active-text: #FF7A33;
   --nav-border:      rgba(255, 255, 255, 0.08);
+  --nav-capsule-fill: var(--brand-primary);
 
   /* ── Sidebar ──────────────────────────────────────────── */
-  --sidebar-bg:          #0F4C64;
+  --sidebar-bg:          var(--brand-primary);
   --sidebar-text:        #a8b4cc;
   --sidebar-active-bg:   rgba(255, 77, 0, 0.10);
   --sidebar-active-text: #FF7A33;
   --sidebar-icon:        #94a3b8;
 
   /* ── Header & Footer ──────────────────────────────────── */
-  --header-bg:   rgba(0, 29, 0, 0.95);
+  --header-bg:   rgba(var(--brand-primary-rgb), 0.95);
   --header-text: #FFFFFF;
-  --footer-bg:   #0F4C64;
+  --footer-bg:   var(--brand-primary);
   --footer-text: #94a3b8;
 
   /* ── Input ────────────────────────────────────────────── */
-  --input-bg:            #0F4C64;
+  --input-bg:            var(--brand-surface);
   --input-border:        rgba(255, 255, 255, 0.14);
-  --input-focus-border:  rgba(0, 180, 255, 0.45);
+  --input-focus-border:  rgba(255, 77, 0, 0.45);
   --input-text:          #f0f4ff;
   --input-placeholder:   #94a3b8;
   --input-disabled-bg:   rgba(255, 255, 255, 0.04);
 
   /* ── Button ───────────────────────────────────────────── */
-  --btn-primary-bg:       linear-gradient(135deg, #ff4d00, #ff7a33);
-  --btn-primary-text:     #ffffff;
-  --btn-primary-hover-bg: linear-gradient(135deg, #ff7a33, #ff4d00);
-  --btn-glass-bg:         #0F4C64;
+  --btn-primary-bg:       var(--brand-primary);
+  --btn-primary-text:     var(--brand-on-primary);
+  --btn-primary-hover-bg: var(--brand-surface);
+  --btn-glass-bg:         var(--brand-surface);
   --btn-glass-text:       #a8b4cc;
-  --btn-glass-hover-bg:   #11084d;
+  --btn-glass-hover-bg:   var(--brand-primary);
   --btn-glass-hover-text: #f0f4ff;
 
   /* ── Gradient ─────────────────────────────────────────── */
@@ -300,9 +313,9 @@ html[data-theme="light"] {
   --input-disabled-bg:   #F3F4F6;
 
   /* ── Button ───────────────────────────────────────────── */
-  --btn-primary-bg:       linear-gradient(135deg, #ff4d00, #ff7a33);
-  --btn-primary-text:     #ffffff;
-  --btn-primary-hover-bg: linear-gradient(135deg, #ff7a33, #ff4d00);
+  --btn-primary-bg:       var(--brand-primary);
+  --btn-primary-text:     var(--brand-on-primary);
+  --btn-primary-hover-bg: var(--brand-surface);
   --btn-glass-bg:         rgba(255, 255, 255, 0.70);
   --btn-glass-text:       #374151;
   --btn-glass-hover-bg:   rgba(255, 255, 255, 0.85);
@@ -366,6 +379,12 @@ html[data-theme="light"] .badge-orange {
 @theme {
   --font-sans:    'Inter', sans-serif;
   --font-display: 'Playfair Display', serif;
+
+  /* -- Brand Foundation ----------------------------------- */
+  --color-brand-primary:    var(--brand-primary);
+  --color-brand-surface:    var(--brand-surface);
+  --color-brand-on-primary: var(--brand-on-primary);
+  --color-brand-on-surface: var(--brand-on-surface);
 
   /* ── Background Layer ────────────────────────────────── */
   --color-bg-base:       var(--bg-base);
@@ -566,7 +585,7 @@ html[data-theme="light"] .badge-orange {
   .glass-card {
     position: relative;
     isolation: isolate;
-    background: var(--bg-elevated);
+    background: var(--surface-solid);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border-radius: 1rem;
@@ -617,7 +636,7 @@ html[data-theme="light"] .badge-orange {
   .glass-card-elevated {
     position: relative;
     isolation: isolate;
-    background: var(--bg-elevated);
+    background: var(--surface-solid);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
     border-radius: 1.25rem;
@@ -696,7 +715,7 @@ html[data-theme="light"] .badge-orange {
   .glass-card-subtle {
     position: relative;
     isolation: isolate;
-    background: var(--bg-elevated);
+    background: var(--surface-solid);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -724,7 +743,7 @@ html[data-theme="light"] .badge-orange {
   }
 
   .glass-card-subtle:hover {
-    background: var(--bg-elevated);
+    background: var(--surface-solid-secondary);
     border-color: var(--glow-border-hover, rgba(255, 255, 255, 0.10));
     box-shadow:
       0 8px 36px rgba(0, 0, 0, 0.55),
@@ -736,7 +755,7 @@ html[data-theme="light"] .badge-orange {
 
   /* ── GLASS INPUT ─────────────────────────────────────────  */
   .glass-input {
-    background: var(--bg-elevated);
+    background: var(--surface-solid);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -787,7 +806,7 @@ html[data-theme="light"] .badge-orange {
     position: relative;
     isolation: isolate;
     border: 1px solid rgba(255, 255, 255, 0.05);
-    background: var(--bg-elevated);
+    background: var(--surface-solid);
     border-radius: 12px;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     --glow-color-active: rgba(255, 255, 255, 0);
@@ -855,12 +874,12 @@ html[data-theme="light"] .badge-orange {
     justify-content: center;
     gap: 0.5rem;
     padding: 0.65rem 1.6rem;
-    background: var(--bg-elevated);
+    background: var(--btn-glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 9999px;
-    color: var(--text-secondary);
+    color: var(--btn-glass-text);
     font-weight: 500;
     font-size: 0.875rem;
     cursor: pointer;
@@ -871,13 +890,13 @@ html[data-theme="light"] .badge-orange {
   }
 
   .btn-glass:hover {
-    background: var(--bg-elevated);
-    border-color: rgba(0, 180, 255, 0.30);
-    color: var(--text-primary);
+    background: var(--btn-glass-hover-bg);
+    border-color: rgba(255, 77, 0, 0.30);
+    color: var(--btn-glass-hover-text);
     transform: translateY(-2px);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.45),
-      0 0 48px -8px rgba(0, 180, 255, 0.14),
+      0 0 48px -8px rgba(255, 77, 0, 0.14),
       inset 0 1px 0 rgba(255, 255, 255, 0.10);
   }
 
@@ -1015,7 +1034,7 @@ html[data-theme="light"] .badge-orange {
   .glass-card-neon {
     position: relative;
     isolation: isolate;
-    background: var(--bg-elevated);
+    background: var(--surface-solid);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     border-radius: 1rem;
@@ -1083,7 +1102,7 @@ html[data-theme="light"] .badge-orange {
   .glass-panel-prism {
     position: relative;
     isolation: isolate;
-    background: var(--bg-elevated-2);
+    background: var(--surface-solid);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
     border-radius: 1.5rem;
@@ -1219,7 +1238,7 @@ html[data-theme="light"] .badge-orange {
 
 /* Base glass utility */
 @utility glass {
-  background-color: var(--bg-elevated);
+  background-color: var(--surface-solid);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -1250,7 +1269,7 @@ html[data-theme="light"] .badge-orange {
 
 /* Premium dark glass card — the standard across all pages */
 @utility card-premium {
-  background: var(--bg-elevated);
+  background: var(--surface-solid);
   border: 1px solid var(--border-color);
   border-radius: 22px;
   transition: all 0.3s ease;
@@ -1747,7 +1766,7 @@ html[data-theme="light"] .badge-orange {
 .compact-stack-card {
   position: relative;
   isolation: isolate;
-  background: var(--bg-elevated);
+  background: var(--surface-solid);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-radius: 1rem;
@@ -1767,7 +1786,7 @@ html[data-theme="light"] .badge-orange {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--bg-elevated);
+  background: var(--surface-solid-secondary);
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: inherit;
   transform: translateY(5px) scale(0.975);
@@ -1783,7 +1802,7 @@ html[data-theme="light"] .badge-orange {
   position: absolute;
   inset: 0;
   z-index: -2;
-  background: var(--bg-elevated);
+  background: var(--surface-solid-tertiary);
   border: 1px solid rgba(255, 255, 255, 0.02);
   border-radius: inherit;
   transform: translateY(10px) scale(0.95);
@@ -1798,18 +1817,18 @@ html[data-theme="light"] .badge-orange {
   border-color: rgba(255, 255, 255, 0.16);
   box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.75),
-    0 0 40px -10px rgba(0, 180, 255, 0.3),
-    0 0 50px -15px rgba(168, 85, 247, 0.25);
+    0 0 40px -10px rgba(255, 77, 0, 0.22),
+    0 0 50px -15px rgba(245, 158, 11, 0.18);
 }
 
 .compact-stack-card:hover::before {
   transform: translateY(3px) scale(0.985);
-  background: var(--bg-elevated);
+  background: var(--surface-solid-secondary);
 }
 
 .compact-stack-card:hover::after {
   transform: translateY(7px) scale(0.97);
-  background: var(--bg-elevated);
+  background: var(--surface-solid-tertiary);
 }
 
 /* Prismatic border glow utility */
@@ -1895,7 +1914,7 @@ html[data-theme="light"] .badge-orange {
   @apply rounded-xl backdrop-blur-xl;
   border: 1px solid transparent;
   background-image:
-    linear-gradient(var(--surface-solid, #0F4C64), var(--surface-solid, #0F4C64)),
+    linear-gradient(var(--surface-solid, #100C08), var(--surface-solid, #100C08)),
     linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07));
   background-clip: padding-box, border-box;
   background-origin: border-box;
@@ -1904,7 +1923,7 @@ html[data-theme="light"] .badge-orange {
 
 .glass-card:hover {
   background-image:
-    linear-gradient(var(--surface-solid, #0F4C64), var(--surface-solid, #0F4C64)),
+    linear-gradient(var(--surface-solid, #100C08), var(--surface-solid, #100C08)),
     linear-gradient(135deg, rgba(0, 180, 255, 0.55), rgba(168, 85, 247, 0.45), rgba(247, 37, 133, 0.40), rgba(255, 170, 0, 0.35), rgba(6, 255, 200, 0.45), rgba(0, 180, 255, 0.55));
   background-size: 100% 100%, 300% 300%;
   animation: prismSpin 6s linear infinite;

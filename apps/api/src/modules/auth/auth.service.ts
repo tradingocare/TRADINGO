@@ -24,6 +24,7 @@ import { CreateVendorDto } from './dto/create-vendor.dto';
 import { CreateBuyerDto } from './dto/create-buyer.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { QueueNames, EmailJobTypes } from '../../jobs/queues';
+import { getPrimaryFrontendOrigin } from '../../common/utils/frontend-origins';
 
 const MAX_LOGIN_ATTEMPTS = 3;
 const LOCK_DURATION_MINUTES = 15;
@@ -72,7 +73,7 @@ export class AuthService {
     const verificationToken = randomBytes(32).toString('hex');
     await this.redisService.set(`verify:email:${verificationToken}`, user.id, 86400);
 
-    const verificationUrl = `${this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000')}/verify-email`;
+    const verificationUrl = `${getPrimaryFrontendOrigin(this.configService.get<string>('FRONTEND_URL'))}/verify-email`;
     await this.emailQueue.add(QueueNames.EMAIL, {
       type: EmailJobTypes.SEND_WELCOME_EMAIL,
       to: user.email,
@@ -379,7 +380,7 @@ export class AuthService {
     const verificationToken = randomBytes(32).toString('hex');
     await this.redisService.set(`verify:email:${verificationToken}`, user.id, 86400);
 
-    const verificationUrl = `${this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000')}/verify-email`;
+    const verificationUrl = `${getPrimaryFrontendOrigin(this.configService.get<string>('FRONTEND_URL'))}/verify-email`;
     await this.emailQueue.add(QueueNames.EMAIL, {
       type: EmailJobTypes.SEND_NOTIFICATION,
       to: user.email,
@@ -748,7 +749,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions);
     await this.saveRefreshToken(user.id, tokens.refreshToken, tokens.sessionId, null, null);
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const frontendUrl = getPrimaryFrontendOrigin(this.configService.get<string>('FRONTEND_URL'));
     const redirectUrl = new URL('/login?socialLogin=true', frontendUrl);
 
     // Set secure HTTP-only cookie for the access token

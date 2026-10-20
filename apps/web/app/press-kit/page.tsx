@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { PRESS_KIT_FACTS, PRESS_BRAND_ASSETS, PRESS_SCREENSHOTS, PRESS_LEADERSHIP, PRESS_MENTIONS } from '@/data/master-data';
 
 export const metadata: Metadata = {
-  title: 'Press Kit | TRADINGO',
+  title: 'Press Kit',
   description:
     'Download TRADINGO brand assets, logos, screenshots, and media resources. For press inquiries and media coverage.',
 };

@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | TRADINGO',
+  title: 'Privacy Policy',
   description: 'TRADINGO Privacy Policy explains how we collect, use, share, and protect your personal and business information on India\'s first TRADINGO E-Marketplace.',
   openGraph: {
     title: 'Privacy Policy | TRADINGO',

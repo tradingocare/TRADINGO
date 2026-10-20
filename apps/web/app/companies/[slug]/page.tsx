@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       }
     }
   } catch (e) { console.error('Failed to fetch company metadata:', e) }
-  return { title: 'Company Profile — TRADINGO' }
+  return { title: 'Company Profile' }
 }
 
 export function generateStaticParams() {

@@ -7,7 +7,6 @@ import { ProductDetailView } from '@/components/product-detail-view/product-deta
 import { SellerProductsSection } from '@/components/product-detail-view/seller-products';
 import { toProductDetailView } from '@/lib/mappers/product-detail-view';
 import { ProductSkeleton } from '@/components/product/product-skeleton';
-import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 import type { ProductCardData } from '@/types/product-card';
 import type { ProductAttributesDisplay, ProductDetailSpec } from '@/types/product-detail';
 
@@ -239,7 +238,6 @@ async function ProductDetail({ slug }: { slug: string }) {
           products={sellerProducts}
           sellerName={(product.company as any)?.name}
         />
-        <ClaimYourGrowth />
       </div>
     </>
   );

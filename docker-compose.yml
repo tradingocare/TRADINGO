@@ -1,49 +1,72 @@
-name: tradingo
+# Worktree Compose project.
+#
+# The project name is deliberately DIFFERENT from the founder stack's project
+# (`tradingo`, D:\tradingo\docker-compose.yml). The founder's containers carry
+# the label com.docker.compose.project=tradingo, so a project-wide command run
+# from this worktree under that name would reconcile — and potentially
+# recreate — the founder's tradingo-web / tradingo-postgres / tradingo-redis /
+# tradingo-clamav. With this project name the two stacks are disjoint.
+name: tradingo-wt
 
 volumes:
-  postgres_data:
-  redis_data:
+  # Worktree-local Redis data. Project-scoped and distinct from the founder
+  # stack's `tradingo_redis_data`; the worktree never mounts founder volumes.
+  redis_wt_data:
+  # Recovered production database volume (PGDATA for the `tradingo_recovered`
+  # database). Pre-existing resource — created outside this compose project,
+  # so it is declared external and must already exist on the host.
+  patha_pgdata:
+    external: true
+    name: tradingo_patha_pgdata_20261011
 
 networks:
-  tradingo-net:
+  # Worktree-only application network. The API and the worktree-local Redis and
+  # ClamAV live here and nowhere else.
+  #
+  # The founder's shared network (`tradingo_tradingo-net`) is deliberately NOT
+  # declared: while the API was attached to it, the founder's database alias
+  # `postgres` resolved from inside the API container and the API also depended
+  # on the founder's Redis and ClamAV instances. Isolating the API here removes
+  # that reachability entirely.
+  tradingo-wt-net:
     driver: bridge
+    name: tradingo-wt-net
+  # Pre-existing external bridge network. The recovered database is reachable
+  # under the `tradingo-patha-pg-20261011` alias that the API's DATABASE_URL
+  # targets.
+  patha-net:
+    external: true
+    name: tradingo-patha-net-20261011
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: tradingo-postgres
-    restart: unless-stopped
-    networks:
-      - tradingo-net
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: tradingo
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret123}
-      POSTGRES_DB: tradingo
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tradingo"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
+  # Service inventory of this worktree project:
+  #   redis-wt   — worktree-local Redis (worktree network only, no host port)
+  #   clamav-wt  — worktree-local ClamAV (worktree network only, no host port)
+  #   patha-pg   — the recovered production database (EXTERNAL network only;
+  #                its container/volume/data are never created or modified here)
+  #   api-wt     — the worktree API (worktree network + recovered-DB network)
+  #
+  # Removed in Phase 01G because each one targeted a founder-owned container:
+  #   postgres     — container_name tradingo-postgres + host port 5432
+  #   api-migrate  — its default DATABASE_URL pointed at the founder's
+  #                  `postgres` service, and it depended on the founder's redis
+  #   web          — container_name tradingo-web + host port 3000
+  #   nginx        — container_name tradingo-nginx + host ports 80/443
+  # The previous `redis` and `clamav` services were renamed to `redis-wt` /
+  # `clamav-wt` because their container names and host ports (6379, 3310)
+  # collided with the founder's running instances.
+  #
+  # Worktree-local Redis. Replaces the previous `redis` service, whose
+  # `container_name: tradingo-redis` and host port 6379 collided exactly with
+  # the founder stack's running `tradingo-redis`. This instance is reachable
+  # only on the worktree network and publishes no host port.
+  redis-wt:
     image: redis:7-alpine
-    container_name: tradingo-redis
     restart: unless-stopped
     networks:
-      - tradingo-net
-    ports:
-      - "6379:6379"
+      - tradingo-wt-net
     volumes:
-      - redis_data:/data
+      - redis_wt_data:/data
     deploy:
       resources:
         limits:
@@ -55,44 +78,98 @@ services:
       timeout: 5s
       retries: 5
 
-  api:
+  # Recovered production database (`tradingo_recovered`).
+  #
+  # Stage 5B containment (founder-approved, 2026-10-11): the recovered
+  # database is attached ONLY to the dedicated recovery network
+  # `tradingo-patha-net-20261011`, whose membership is frozen at pg + api.
+  # It must NOT be attached to the shared `tradingo-net`, because that
+  # network is also used by the founder stack (tradingo-web / postgres /
+  # redis / clamav) — an alias there made the recovered database reachable,
+  # without credentials, from every container on the shared network.
+  patha-pg:
+    image: postgres:16-alpine
+    container_name: tradingo-patha-pg
+    restart: unless-stopped
+    networks:
+      patha-net:
+        aliases:
+          - tradingo-patha-pg-20261011
+    volumes:
+      - patha_pgdata:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Worktree API.
+  #
+  # Network isolation (Phase 01G): the API joins ONLY the worktree network
+  # (`tradingo-wt-net`, with the worktree-local Redis and ClamAV) and the
+  # dedicated recovered-database network (`patha-net`). It is NOT attached to
+  # the founder's shared `tradingo_tradingo-net`, so the founder's `postgres`,
+  # `redis` and `clamav` aliases no longer resolve from inside the container.
+  #
+  # No fixed `container_name` is used: Compose generates the project-scoped
+  # name (tradingo-wt-api-wt-1), so this service can never collide with a
+  # founder container name.
+  api-wt:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: tradingo-api
+    # Pinned to the existing image built from this worktree so that renaming
+    # the service does not silently change the artifact identity (the default
+    # Compose tag would become `tradingo-api-wt` and trigger a fresh build).
+    image: tradingo-api:latest
     restart: unless-stopped
     networks:
-      - tradingo-net
+      tradingo-wt-net:
+        aliases:
+          - tradingo-api-wt
+      patha-net:
+        aliases:
+          - tradingo-api-wt
     ports:
       - "3001:3001"
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: postgresql://tradingo:secret123@postgres:5432/tradingo?schema=public
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://postgres@tradingo-patha-pg-20261011:5432/tradingo_recovered?schema=public
+      REDIS_URL: redis://redis-wt:6379/0
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000,http://localhost:3116}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_BUCKET: ${AWS_BUCKET}
+      # AWS storage is future-only for the current release: the bucket name is
+      # optional (the application default applies) and the service degrades to
+      # "skipped" when S3 is unreachable. It is deliberately NOT set here so no
+      # empty value is injected into the container.
       CLOUDFRONT_DOMAIN: ${CLOUDFRONT_DOMAIN}
-      OPENSEARCH_URL: ${OPENSEARCH_URL}
-      OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME}
+      # OpenSearch is optional infrastructure: when no endpoint is configured the
+      # search/discovery feature is explicitly disabled (no client is created).
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD}
-      CLICKHOUSE_URL: ${CLICKHOUSE_URL}
       SENTRY_DSN: ${SENTRY_DSN}
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
       RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@tradingo.io}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
-      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav-wt}
       CLAMAV_PORT: ${CLAMAV_PORT:-3310}
       CLAMAV_TIMEOUT: ${CLAMAV_TIMEOUT:-30}
+      # Security-critical: the AI provider key vault encrypts credentials with
+      # this value. No default is published - a strong secret must be supplied
+      # (locally via the ignored .env; in production via the secret store).
       AI_VAULT_MASTER_KEY: ${AI_VAULT_MASTER_KEY}
     deploy:
       resources:
@@ -100,9 +177,13 @@ services:
           cpus: '2'
           memory: 1G
     depends_on:
-      postgres:
+      # `postgres` is deliberately NOT a dependency: this API's DATABASE_URL
+      # targets the recovered database on `patha-pg`, not the local
+      # `postgres` service (which is owned by the founder stack). Keeping it
+      # would couple the worktree API to a founder-owned service.
+      redis-wt:
         condition: service_healthy
-      redis:
+      patha-pg:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/live"]
@@ -111,65 +192,19 @@ services:
       retries: 3
       start_period: 40s
 
-  api-migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-      target: migration
-    container_name: tradingo-api-migrate
-    restart: "no"
-    networks:
-      - tradingo-net
-    volumes:
-      - ./backups:/backups
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://tradingo:secret123@postgres:5432/tradingo?schema=public}
-      PRISMA_MIGRATE_DISABLED: "false"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-    container_name: tradingo-web
-    restart: unless-stopped
-    networks:
-      - tradingo-net
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-      NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3001}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      SENTRY_DSN: ${SENTRY_DSN}
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-    depends_on:
-      - api
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  clamav:
+  # Worktree-local ClamAV. Replaces the previous `clamav` service, whose
+  # `container_name: tradingo-clamav` and host port 3310 collided exactly with
+  # the founder stack's running `tradingo-clamav`. This instance is reachable
+  # only on the worktree network and publishes no host port.
+  #
+  # NOTE: on first start this image downloads the ClamAV signature databases
+  # (~170 MB) into its own writable layer. That download is per-container and
+  # does not touch the founder's ClamAV container.
+  clamav-wt:
     image: clamav/clamav
-    container_name: tradingo-clamav
     restart: unless-stopped
     networks:
-      - tradingo-net
-    ports:
-      - "3310:3310"
+      - tradingo-wt-net
     deploy:
       resources:
         limits:
@@ -181,29 +216,4 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: tradingo-nginx
-    restart: unless-stopped
-    networks:
-      - tradingo-net
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./infrastructure/nginx/sites:/etc/nginx/sites:ro
-      - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 256M
-    depends_on:
-      - web
-      - api
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+

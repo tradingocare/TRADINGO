@@ -78,7 +78,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 import type { Product } from '@/lib/api/types';
 import { ProductCard } from '@/components/product/product-card';
 import { fromBasicProduct } from '@/components/product/card-converters';
-import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth';
 
 const shimmer = 'relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent'
 
@@ -173,7 +172,7 @@ async function CategoryContent({ slug }: { slug: string }) {
           <section className="relative overflow-hidden pb-8 pt-24">
             <div className="mx-auto max-w-7xl px-4">
               <nav className="flex items-center gap-2 text-sm text-text-secondary">
-                <Link href="/trading" className="transition-colors hover:text-accent">Products</Link>
+                <Link href="/product" className="transition-colors hover:text-accent">Products</Link>
                 <ChevronRight className="h-4 w-4 text-text-tertiary" />
                 <span className="text-text-primary font-medium">{categoryName}</span>
               </nav>
@@ -214,7 +213,7 @@ async function CategoryContent({ slug }: { slug: string }) {
                     <p className="mt-2 text-text-tertiary">
                       Check back later or browse other categories.
                     </p>
-                    <Link href="/trading">
+                    <Link href="/product">
                       <div
                         className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:brightness-110"
                         style={{
@@ -236,8 +235,6 @@ async function CategoryContent({ slug }: { slug: string }) {
               )}
             </div>
           </section>
-
-          <ClaimYourGrowth />
         </div>
       </div>
     </>

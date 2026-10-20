@@ -1,4 +1,5 @@
 import type { ConfigService } from '@nestjs/config';
+import { getFrontendOrigins, normalizeOrigin } from '../utils/frontend-origins';
 
 /** Minimal logger surface — accepts Nest Logger, pino, or any warn-capable logger. */
 export interface CsrfHookLogger {
@@ -33,8 +34,16 @@ export function registerCsrfPreHandler(
     if (request.headers?.authorization) return done();
     // Requests from the configured frontend origin are not cross-site forgeries
     // (mirrors the CORS allowlist — same-origin proxied traffic in production).
-    const trustedOrigin = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
-    if (request.headers?.origin && request.headers.origin === trustedOrigin) return done();
+    // FRONTEND_URL is a comma-separated allowlist; EVERY listed origin is
+    // trusted, so a single-string comparison would reject valid requests.
+    const trustedOrigins = getFrontendOrigins(configService.get<string>('FRONTEND_URL'));
+    const requestOrigin = request.headers?.origin;
+    if (
+      requestOrigin &&
+      trustedOrigins.includes(normalizeOrigin(String(requestOrigin)))
+    ) {
+      return done();
+    }
     if (typeof fastifyApp.csrfProtection === 'function') {
       // F-6: fail closed with an explicit 403 on ANY CSRF-layer failure.
       // A bare Error passed to done() carries no statusCode, so Fastify's

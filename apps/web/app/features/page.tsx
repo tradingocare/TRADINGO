@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { FEATURES_SELLER, FEATURES_BUYER, FEATURES_PLATFORM, FEATURES_TRUST } from '@/data/master-data';
 
 export const metadata: Metadata = {
-  title: 'Powerful Features for Global Trade | TRADINGO',
+  title: 'Powerful Features for Global Trade',
   description:
     'Explore TRADINGO platform features â€” TRADBUY, RFQ, GOCASH, TRADGO, Escrow, Trade Matching, and more for sellers and buyers.',
 };

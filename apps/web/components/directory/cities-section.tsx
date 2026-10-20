@@ -78,7 +78,7 @@ export function CitiesSection() {
       <DirHeader
         title="Explore by City"
         subtitle="Find local suppliers across India — popular, alphabetical, or near you."
-        viewMoreHref="/trading"
+        viewMoreHref="/product"
         viewMoreLabel="Browse Products"
       />
 
@@ -154,7 +154,7 @@ export function CitiesSection() {
             <EmptyNote
               icon={<MapPin className="h-6 w-6" />}
               text="No suppliers within 25 km yet — expand your search on the products page."
-              actionHref="/trading"
+              actionHref="/product"
               actionLabel="Browse All Products"
             />
           )}

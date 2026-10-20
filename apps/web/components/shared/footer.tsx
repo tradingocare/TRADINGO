@@ -66,7 +66,7 @@ export function Footer() {
   const cardAccents = ['#3D8BFF', '#F97316', '#22C55E', '#D4AF37', '#8B5CF6'];
 
   return (
-    <footer className="relative overflow-hidden border-t border-border" style={{ background: 'var(--bg-base)' }}>
+    <footer className="relative overflow-hidden border-t border-border bg-bg-elevated">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -left-40 top-1/4 h-[400px] w-[400px] rounded-full bg-[rgba(59,130,246,0.025)] blur-[100px]" />
         <div className="absolute -right-40 bottom-1/4 h-[350px] w-[350px] rounded-full bg-[rgba(34,197,94,0.015)] blur-[90px]" />
@@ -78,7 +78,7 @@ export function Footer() {
 
           {/* ─── Card 1: Brand Intro ─── */}
           <div ref={brandRef}
-            className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300">
+            className="group relative overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300">
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
               style={{ background: `radial-gradient(500px circle at 30% 50%, ${cardAccents[0]}18, transparent 50%)` }} />
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
@@ -115,7 +115,7 @@ export function Footer() {
 
           {/* ─── Card 2: For Sellers ─── */}
           <div ref={sellersRef}
-            className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300">
+            className="group relative overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300">
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
               style={{ background: `radial-gradient(500px circle at 30% 50%, ${cardAccents[1]}18, transparent 50%)` }} />
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
@@ -146,7 +146,7 @@ export function Footer() {
 
           {/* ─── Card 3: For Buyers ─── */}
           <div ref={buyersRef}
-            className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300">
+            className="group relative overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300">
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
               style={{ background: `radial-gradient(500px circle at 30% 50%, ${cardAccents[2]}18, transparent 50%)` }} />
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
@@ -177,7 +177,7 @@ export function Footer() {
 
           {/* ─── Card 4: TEM E-Marketplace ─── */}
           <div ref={temRef}
-            className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300">
+            className="group relative overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300">
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
               style={{ background: `radial-gradient(500px circle at 30% 50%, ${cardAccents[3]}18, transparent 50%)` }} />
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
@@ -208,7 +208,7 @@ export function Footer() {
 
           {/* ─── Card 5: Company ─── */}
           <div ref={companyRef}
-            className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300">
+            className="group relative overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300">
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
               style={{ background: `radial-gradient(500px circle at 30% 50%, ${cardAccents[4]}18, transparent 50%)` }} />
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
@@ -250,7 +250,7 @@ export function Footer() {
         {/* ─── Card 6: Newsletter (full width) ─── */}
         <div>
           <div ref={newsletterRef}
-            className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300">
+            className="group relative overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300">
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
               style={{ background: `radial-gradient(600px circle at 30% 50%, ${cardAccents[0]}18, transparent 50%)` }} />
             <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
@@ -291,7 +291,7 @@ export function Footer() {
                     } finally {
                       setSubscribing(false);
                     }
-                  }} className="flex w-full gap-2 sm:w-auto sm:flex-row">
+                  }} className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                     <div className="relative min-w-0 w-full">
                       <input
                         type="email"
@@ -312,15 +312,15 @@ export function Footer() {
                         type="submit"
                         disabled={subscribing}
                         className={[
-                          'group relative overflow-hidden rounded-xl px-5 py-2.5',
-                          'text-sm font-semibold text-white shadow-lg whitespace-nowrap',
+                          'group relative flex-shrink-0 overflow-hidden rounded-xl px-5 py-2.5',
+                          'text-sm font-semibold text-btn-primary-text shadow-lg whitespace-nowrap',
+                          'bg-btn-primary hover:bg-btn-primary-hover',
                           'transition-all duration-300 hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed',
                         ].join(' ')}
-                        style={{ background: `linear-gradient(135deg, ${cardAccents[0]}, #8b5cf6)` }}
                       >
                         <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.12] to-transparent" />
                         <span className="pointer-events-none absolute -inset-full left-0 top-0 block h-full w-1/2 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/[0.1] to-transparent transition-all duration-700 group-hover:left-full" />
-                        <span className="relative z-10 flex items-center gap-2">
+                        <span className="relative z-10 flex items-center justify-center gap-2">
                           {subscribing ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
@@ -348,7 +348,7 @@ export function Footer() {
           <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
           <div className="relative z-10 flex flex-col items-center justify-between gap-3 px-5 py-3 text-sm text-text-tertiary sm:flex-row">
             <p>&copy; {new Date().getFullYear()} TRADINGO. All rights reserved.</p>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
               <Link href="/privacy" className="transition-colors text-text-tertiary hover:text-accent">Privacy</Link>
               <Link href="/terms" className="transition-colors text-text-tertiary hover:text-accent">Terms</Link>
               <Link href="/refund" className="transition-colors text-text-tertiary hover:text-accent">Refund</Link>

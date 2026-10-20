@@ -5,7 +5,7 @@ import EngineDetailPage from '@/components/shared/engine-detail-page';
 const engine = engines.find(e => e.id === 'tradfind')!;
 
 export const metadata: Metadata = {
-  title: 'TRADFIND — Smart Discovery Engine | TRADINGO',
+  title: 'TRADFIND — Smart Discovery Engine',
   description: engine.description,
 };
 

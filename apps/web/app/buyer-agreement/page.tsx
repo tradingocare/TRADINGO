@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
-  title: 'Buyer Agreement | TRADINGO',
+  title: 'Buyer Agreement',
   description: 'TRADINGO Buyer Agreement governing purchasing, payments, returns, refunds, and supplier communications on India\'s first TRADINGO E-Marketplace (TEM).',
   openGraph: {
     title: 'Buyer Agreement | TRADINGO',

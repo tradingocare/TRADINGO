@@ -12,6 +12,7 @@ import {
   getSubcategoryEligibility,
   hasIndexAffectingParams,
   resolveSearchParams,
+  ROBOTS_NOINDEX_FOLLOW,
   type SearchParamsLike,
 } from '@/lib/seo/seo-policy';
 
@@ -71,7 +72,13 @@ export async function generateMetadata({
     sp,
   );
   const resolved = await resolveSubcategory(categorySlug, subSlug).catch(() => null);
-  if (!resolved) return { title: 'Subcategory Not Found' };
+  if (!resolved) {
+    return {
+      title: 'Subcategory Not Found',
+      robots: ROBOTS_NOINDEX_FOLLOW,
+      alternates: { canonical },
+    };
+  }
   const { cat, sub } = resolved;
   const status = getSubcategoryEligibility({
     categoryIsActive: cat.isActive,
@@ -125,24 +132,25 @@ export default async function SubcategoryPage({
   const { slug: categorySlug, subcategory: subSlug } = await params;
   const sp = await resolveSearchParams(searchParams as SearchParamsLike);
   const page = Math.max(Number(Array.isArray(sp.page) ? sp.page[0] : sp.page) || 1, 1);
+  // 404 semantics: the existence check must run before the Suspense boundary —
+  // once a fallback streams, the 200 is committed and notFound() degrades to a
+  // soft-404. The fetch is memoized with generateMetadata (no extra request).
+  const resolved = await resolveSubcategory(categorySlug, subSlug).catch(() => null);
+  if (!resolved) notFound();
   return (
     <Suspense fallback={<SubcategorySkeleton />}>
-      <SubcategoryContent categorySlug={categorySlug} subSlug={subSlug} page={page} />
+      <SubcategoryContent resolved={resolved} page={page} />
     </Suspense>
   );
 }
 
 async function SubcategoryContent({
-  categorySlug,
-  subSlug,
+  resolved,
   page,
 }: {
-  categorySlug: string;
-  subSlug: string;
+  resolved: NonNullable<Awaited<ReturnType<typeof resolveSubcategory>>>;
   page: number;
 }) {
-  const resolved = await resolveSubcategory(categorySlug, subSlug).catch(() => null);
-  if (!resolved) notFound();
   const { cat, sub } = resolved;
 
   const siblings = (cat.subcategories ?? []).filter((s) => s.slug !== sub.slug);
@@ -183,7 +191,7 @@ async function SubcategoryContent({
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Products', item: 'https://tradingo.in/trading' },
+      { '@type': 'ListItem', position: 1, name: 'Products', item: 'https://tradingo.in/product' },
       { '@type': 'ListItem', position: 2, name: cat.name, item: `https://tradingo.in/categories/${cat.slug}` },
       { '@type': 'ListItem', position: 3, name: sub.name },
     ],
@@ -198,7 +206,7 @@ async function SubcategoryContent({
           <section className="relative overflow-hidden pb-8 pt-24">
             <div className="mx-auto max-w-7xl px-4">
               <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
-                <Link href="/trading" className="transition-colors hover:text-accent">Products</Link>
+                <Link href="/product" className="transition-colors hover:text-accent">Products</Link>
                 <ChevronRight className="h-4 w-4 text-text-tertiary" />
                 <Link href={`/categories/${cat.slug}`} className="transition-colors hover:text-accent">
                   {cat.name}

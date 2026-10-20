@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const profile = await tradeservApi.getProfessionalSummary(slug).catch(() => null);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingo.in';
 
-  if (!profile) return { title: 'Profile Not Found — TradeServ | TRADINGO' };
+  if (!profile) return { title: 'Profile Not Found — TradeServ' };
 
   const title = `${profile.name} — ${profile.professionalType || 'Professional'} | TradeServ by TRADINGO`;
   const description = profile.description?.slice(0, 160) || `Verified ${profile.professionalType || 'Professional'} on TradeServ.`;

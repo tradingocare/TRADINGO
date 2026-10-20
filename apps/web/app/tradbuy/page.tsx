@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TRADING_FEATURES, TRADING_RFQ_STEPS, FEATURES_BUYER } from '@/data/master-data';
 
 export const metadata: Metadata = {
-  title: 'TRADBUY â€” Instant Purchase | TRADINGO',
+  title: 'TRADBUY — Instant Purchase',
   description:
     'Buy products instantly at listed prices with secure payment processing and automated order matching on TRADINGO.',
 };
@@ -41,7 +41,7 @@ export default function TradbuyPage() {
                 Buy Instantly, Trade Confidently
               </h2>
               <p className="mt-4 text-lg text-text-secondary">
-                TRADBUY is TRADINGO&apos;s instant purchase engine â€” the fastest way to buy products on the
+                TRADBUY is TRADINGO&apos;s instant purchase engine — the fastest way to buy products on the
                 TEM marketplace. Skip the negotiation, avoid the delays, and purchase directly at listed
                 prices. Every transaction is processed through our secure escrow system, so your funds are
                 always protected until you confirm satisfaction. Whether you need industrial machinery,
@@ -174,7 +174,7 @@ export default function TradbuyPage() {
         title="Start Shopping"
         subtitle="Browse thousands of products and buy instantly with TRADBUY. Your first purchase is protected by our escrow guarantee."
         primaryLabel="Browse Products"
-        primaryHref="/trading"
+        primaryHref="/product"
         secondaryLabel="Learn About RFQ"
         secondaryHref="/rfq"
         variant="accent"

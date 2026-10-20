@@ -48,7 +48,7 @@ function ResultsEmpty({ label }: { label: string }) {
       <p className="mt-1 text-xs text-text-tertiary">
         Try another subcategory, or browse the category cards below.
       </p>
-      <Link href="/trading" className="mt-3 inline-block text-xs font-semibold text-accent hover:underline">
+      <Link href="/product" className="mt-3 inline-block text-xs font-semibold text-accent hover:underline">
         Clear selection
       </Link>
     </div>
@@ -173,7 +173,7 @@ export function CatalogContextPanel() {
 }
 
 /** Category browser piece: "Browse all categories" + tree + cards. */
-export function CatalogBrowser({ basePath = '/trading' }: { basePath?: string }) {
+export function CatalogBrowser({ basePath = '/product' }: { basePath?: string }) {
   const { tree, catalogTree, selectedCategory } = useCatalogSelection()
 
   return (
@@ -225,7 +225,7 @@ export function CatalogBrowser({ basePath = '/trading' }: { basePath?: string })
 }
 
 /** RIGHT rail piece: Popular Products + reset link. */
-export function CatalogPopularRail({ basePath = '/trading' }: { basePath?: string }) {
+export function CatalogPopularRail({ basePath = '/product' }: { basePath?: string }) {
   const { context, label, categorySlug, subcategorySlug } = useCatalogSelection()
 
   return (
@@ -249,7 +249,7 @@ export function CatalogPopularRail({ basePath = '/trading' }: { basePath?: strin
   )
 }
 
-export function TradingCatalogMarketplace({ basePath = '/trading' }: { basePath?: string }) {
+export function TradingCatalogMarketplace({ basePath = '/product' }: { basePath?: string }) {
   return (
     // Wider than the page's max-w-7xl on purpose: the reference composition gives the
     // category cards the available width while the rail keeps its column.

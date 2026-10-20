@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Refund Policy | TRADINGO',
+  title: 'Refund Policy',
   description: 'TRADINGO refund and cancellation policy for membership plans, advertising credits, and platform services.',
   openGraph: {
     title: 'Refund Policy | TRADINGO',

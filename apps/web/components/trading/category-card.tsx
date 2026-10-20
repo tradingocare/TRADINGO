@@ -185,7 +185,7 @@ function SubcategoryEntities({ subcategory, categorySlug, subcategorySlug }: {
       {hiddenProducts > 0 && (
         <li>
           <Link
-            href={marketplaceHref('/trading', { categorySlug, subcategorySlug })}
+            href={marketplaceHref('/product', { categorySlug, subcategorySlug })}
             className="flex items-center gap-1 px-3 py-2 text-[11px] font-semibold text-accent hover:underline"
           >
             +{hiddenProducts} more in {subcategory.name}
@@ -212,7 +212,7 @@ function SubcategoryBlock({ subcategory, categorySlug, defaultOpen }: {
           <Boxes size={13} />
         </span>
         <Link
-          href={marketplaceHref('/trading', { categorySlug, subcategorySlug: subcategory.slug })}
+          href={marketplaceHref('/product', { categorySlug, subcategorySlug: subcategory.slug })}
           className="min-w-0 flex-1 truncate text-[13px] font-bold text-text-primary transition-colors hover:text-accent"
         >
           {subcategory.name}
@@ -244,7 +244,7 @@ export function CategoryCard({
   category,
   isSelected,
   imageUrl,
-  basePath = '/trading',
+  basePath = '/product',
 }: {
   category: CatalogCategoryNode
   isSelected: boolean

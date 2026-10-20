@@ -3,7 +3,6 @@
 import { Suspense, useMemo, useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Package, Boxes, ShoppingBag, Loader2 } from 'lucide-react'
-import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth'
 import { PageHeader } from '@/components/shared/page-header'
 import { useEnrichedCategoryTree } from '@/hooks'
 import { useCategoryMappingResolve } from '@/hooks/use-category-mapping'
@@ -12,15 +11,23 @@ import { CatalogBrowser } from '@/components/trading/trading-catalog-marketplace
 
 export default function CategoriesPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
-          <Loader2 size={32} className="animate-spin text-accent" />
-        </div>
-      }
-    >
-      <CategoriesBrowser />
-    </Suspense>
+    <>
+      <div className="relative z-10">
+        <PageHeader
+          title="Browse All Categories"
+          description="Navigate TRADINGO's complete business directory — 160 categories, 1,600 subcategories, a comprehensive product catalog."
+        />
+      </div>
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+            <Loader2 size={32} className="animate-spin text-accent" />
+          </div>
+        }
+      >
+        <CategoriesBrowser />
+      </Suspense>
+    </>
   )
 }
 
@@ -96,7 +103,7 @@ function CategoriesBrowser() {
     // no component change required.
     if (target) {
       document
-        .querySelector(`a[href="/trading?catalogCategory=${CSS.escape(target.catalogSlug)}"]`)
+        .querySelector(`a[href="/product?catalogCategory=${CSS.escape(target.catalogSlug)}"]`)
         ?.scrollIntoView({ block: 'start' })
     }
   }, [selectedSlug, target, searchParams, router, pathname])
@@ -128,11 +135,6 @@ function CategoriesBrowser() {
         }}
       />
       <div className="relative z-10">
-        <PageHeader
-          title="Browse All Categories"
-          description="Navigate TRADINGO's complete business directory — 160 categories, 1,600 subcategories, a comprehensive product catalog."
-        />
-
         {/* Canonical catalog statistics — derived live from the same
             bridge-tree response the browser below consumes. Catalog-master
             counts (NOT live marketplace listings). */}
@@ -238,11 +240,9 @@ function CategoriesBrowser() {
             already selected (the locked card reads selection at mount). */}
         <section className="pb-20">
           <div className="container-main">
-            {selectionReady && <CatalogBrowser basePath="/trading" />}
+            {selectionReady && <CatalogBrowser basePath="/product" />}
           </div>
         </section>
-
-        <ClaimYourGrowth />
       </div>
     </div>
   )

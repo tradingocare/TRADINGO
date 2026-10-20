@@ -6,7 +6,7 @@ import LoginClient       from './LoginClient'
 import { resolvePostLoginTarget } from '@/lib/auth/redirects'
 
 export const metadata: Metadata = {
-  title: 'Sign In — TRADINGO',
+  title: 'Sign In',
   description:
     'Sign in to TRADINGO — India\'s Smart B2B Marketplace. '
     + 'Access your buyer, seller, or admin dashboard.',

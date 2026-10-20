@@ -4,7 +4,7 @@ import Link from 'next/link'
 import BuyerRegistrationWizard from './BuyerRegistrationWizard'
 
 export const metadata: Metadata = {
-  title: 'Register as Buyer — TRADINGO',
+  title: 'Register as Buyer',
   description: 'Join TRADINGO as a verified buyer. Access 10L+ products from 50K+ sellers. RFQ matching. Best wholesale prices. Zero commission buying.',
 }
 

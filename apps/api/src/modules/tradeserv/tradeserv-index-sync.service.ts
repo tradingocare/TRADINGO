@@ -11,19 +11,25 @@ const TRADESERV_INDEX_ALIAS = 'tradeserv_professionals';
 export class TradeservIndexSyncService {
   private readonly logger = new Logger(TradeservIndexSyncService.name);
   // TradeServ uses a dedicated OpenSearch client to allow independent scaling/timeout of the professional search index (separate alias + index lifecycle from the central SearchService).
-  private readonly client: Client;
+  private readonly client: Client | null;
 
   constructor(
     private readonly searchService: SearchService,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
+    const node = this.configService.get<string>('opensearch.url')?.trim();
+    if (!node) {
+      // Optional infrastructure: without an endpoint the index-sync is disabled
+      // and no client is constructed against a fabricated URL.
+      this.client = null;
+      return;
+    }
+    const username = this.configService.get<string>('opensearch.username')?.trim();
+    const password = this.configService.get<string>('opensearch.password') ?? '';
     this.client = new Client({
-      node: this.configService.get<string>('opensearch.url'),
-      auth: {
-        username: this.configService.get<string>('opensearch.username')!,
-        password: this.configService.get<string>('opensearch.password')!,
-      },
+      node,
+      ...(username ? { auth: { username, password } } : {}),
       ssl: { rejectUnauthorized: this.configService.get<boolean>('opensearch.rejectUnauthorized', true) },
       maxRetries: 0,
       requestTimeout: 3000,
@@ -31,6 +37,7 @@ export class TradeservIndexSyncService {
   }
 
   async ping(): Promise<boolean> {
+    if (!this.client) return false;
     try {
       const result = await this.client.ping();
       const r: any = result;
@@ -129,6 +136,7 @@ export class TradeservIndexSyncService {
   }
 
   private async ensureAlias(): Promise<void> {
+    if (!this.client) return;
     try {
       const response = await this.client.indices.existsAlias({ name: TRADESERV_INDEX_ALIAS });
       if (!(response.body as boolean)) {
@@ -319,6 +327,13 @@ export class TradeservIndexSyncService {
         break;
       default:
         sortArr = [{ _score: { order: 'desc' } }];
+    }
+
+    if (!this.client) {
+      // OpenSearch is not configured: return null so the controller applies the
+      // documented Prisma APPROVED-search fallback.
+      this.logger.warn('Skipping TradeServ OpenSearch search: OpenSearch is not configured');
+      return null;
     }
 
     try {

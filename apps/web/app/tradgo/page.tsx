@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TRADGO_BADGES, TRADGO_PRIZES, TRADGO_RACE_FEATURES } from '@/data/master-data';
 export const metadata: Metadata = {
-  title: 'TRADGO — Trading Races | TRADINGO',
+  title: 'TRADGO — Trading Races',
   description:
     'Turn trading into a sport. Compete, earn badges, and climb the leaderboard on TRADINGO TRADGO.',
 };

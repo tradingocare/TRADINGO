@@ -85,6 +85,10 @@ export class CompanySearchService {
 
     try {
       const openSearchClient = (this.searchService as any).client;
+      if (!openSearchClient) {
+        // OpenSearch is not configured: the feature is disabled.
+        return { hits: [], total: 0, page, limit };
+      }
       const osResponse = await openSearchClient.search({
         index: COMPANIES_INDEX,
         body,

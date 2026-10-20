@@ -86,15 +86,15 @@ export function AiRecommendationBar({ data, onChat }: AiRecommendationBarProps) 
       </div>
 
       <div className="grid grid-cols-3 gap-3 lg:min-w-[340px]">
-        <div className="rounded-xl border border-border bg-bg-elevated px-3 py-2">
+        <div className="rounded-xl border border-border bg-surface px-3 py-2">
           <p className="text-[10px] uppercase tracking-wider text-text-tertiary">On-Time Delivery</p>
           <p className="mt-0.5 text-sm font-bold text-text-primary">{stats?.onTimeDelivery || '—'}</p>
         </div>
-        <div className="rounded-xl border border-border bg-bg-elevated px-3 py-2">
+        <div className="rounded-xl border border-border bg-surface px-3 py-2">
           <p className="text-[10px] uppercase tracking-wider text-text-tertiary">Response Rate</p>
           <p className="mt-0.5 text-sm font-bold text-text-primary">{stats?.responseRate || '—'}</p>
         </div>
-        <div className="rounded-xl border border-border bg-bg-elevated px-3 py-2">
+        <div className="rounded-xl border border-border bg-surface px-3 py-2">
           <p className="text-[10px] uppercase tracking-wider text-text-tertiary">Happy Buyers</p>
           <p className="mt-0.5 text-sm font-bold text-text-primary">{stats?.happyBuyers || '—'}</p>
         </div>
@@ -180,7 +180,7 @@ export function InfoCards({ data, onChat }: InfoCardsProps) {
             { icon: Wallet, label: 'TradePay' },
             { icon: Building2, label: 'NetBanking' },
           ].map(({ icon: Icon, label }) => (
-            <span key={label} className="inline-flex items-center gap-1 rounded-lg border border-border bg-bg-elevated px-2 py-1 text-[11px] font-medium text-text-secondary">
+            <span key={label} className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface-secondary px-2 py-1 text-[11px] font-medium text-text-secondary">
               <Icon size={11} className="text-accent" />
               {label}
             </span>

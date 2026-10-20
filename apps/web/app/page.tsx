@@ -92,7 +92,7 @@ export default function HomePage() {
               {sellerBenefits.map((item, i) => {
                 const emojis = ['\uD83D\uDCB0', '\uD83D\uDD0D', '\uD83C\uDF1F', '\uD83D\uDEE1\uFE0F', '\uD83C\uDFC6', '\uD83D\uDCC8'];
                 const accentTokens = ['--accent-blue', '--accent-amber', '--accent-gold', '--accent-green', '--accent-pink', '--accent-purple'];
-                const hrefs = ['/trading', '/why-tradingo', '/tradhexa', '/for-sellers', '/tradgo', '/gocash'];
+                const hrefs = ['/product', '/why-tradingo', '/tradhexa', '/for-sellers', '/tradgo', '/gocash'];
                 const c = accentTokens[i % accentTokens.length];
                 return (
                   <a key={item.title} href={hrefs[i] || '/for-sellers'}

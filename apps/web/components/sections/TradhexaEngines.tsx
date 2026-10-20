@@ -79,7 +79,7 @@ export default function TradhexaEngines() {
                 <Link href={engine.href} className="flex flex-1 flex-col">
                   <motion.div
                     whileHover={{ y: -6, scale: 1.02 }}
-                    className="group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface-secondary p-5 sm:p-6 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
+                    className="group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface p-5 sm:p-6 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
                     style={{
                       backdropFilter: 'blur(20px)',
                       boxShadow: '0 8px 32px rgba(0,0,0,0.3)',

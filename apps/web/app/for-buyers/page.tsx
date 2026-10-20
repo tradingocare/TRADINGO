@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { FEATURES_BUYER, BUYER_ONBOARDING_STEPS } from '@/data/master-data';
 
 export const metadata: Metadata = {
-  title: 'For Buyers | TRADINGO',
+  title: 'For Buyers',
   description:
     'Source verified products from trusted sellers. Get competitive quotes and trade with confidence.',
 };

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Cookies Policy | TRADINGO',
+  title: 'Cookies Policy',
   description: 'Learn how TRADINGO uses cookies, tracking technologies, and how you can manage your cookie preferences.',
   openGraph: {
     title: 'Cookies Policy | TRADINGO',

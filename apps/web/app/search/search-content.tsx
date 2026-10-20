@@ -15,7 +15,6 @@ import {
   useAiBuyerRecommendations, useAiSellerRecommendations,
   useAiSearchSummary, useAiSmartFilters, useAiCrossSellUpsell, useAiSearchSidebar,
 } from '@/hooks/use-ai-search'
-import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth'
 
 export function SearchContent({ q }: { q: string }) {
   const [page, setPage] = useState(1)
@@ -76,7 +75,7 @@ export function SearchContent({ q }: { q: string }) {
     const shimmer = 'relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent'
     return (
       <div className="mx-auto max-w-7xl px-4 pt-24">
-        <div className={`h-10 w-96 rounded-2xl ${shimmer} bg-surface`} />
+        <div className={`h-10 w-full max-w-96 rounded-2xl ${shimmer} bg-surface`} />
         <div className={`mt-2 h-4 w-64 rounded-xl ${shimmer} bg-surface`} />
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -230,7 +229,7 @@ export function SearchContent({ q }: { q: string }) {
               </div>
               <h2 className="mt-4 text-xl font-bold text-text-primary">No results found for &ldquo;{q}&rdquo;</h2>
               <p className="mt-2 text-sm text-text-tertiary">Try adjusting your search terms or browse all products.</p>
-              <Link href="/trading">
+              <Link href="/product">
                   <span className="inline-block mt-6 px-5 py-2.5 rounded-xl text-xs font-bold text-text-secondary transition-all bg-surface border-border">
                   Browse All Products
                 </span>
@@ -268,8 +267,6 @@ export function SearchContent({ q }: { q: string }) {
           </div>
         </div>
       </section>
-
-      <ClaimYourGrowth />
     </>
   )
 }

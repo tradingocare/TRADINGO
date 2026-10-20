@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * WIDE CATEGORY MARKETPLACE CARD (/trading catalog — Founder reference IA)
+ * WIDE CATEGORY MARKETPLACE CARD (/product catalog — Founder reference IA)
  *
  *   CATEGORY NAME
  *   CATEGORY IMAGE BOX            │  SUBCATEGORY   SUBCATEGORY   SUBCATEGORY
@@ -17,7 +17,7 @@
  *   GET /tradeserv/search/v2?catalogSubcategoryId                        → real services
  *
  * Click map: product → /products/{slug} · service → /tradeserv/p/{slug}
- *            category/subcategory → /trading?catalogCategory=… (verified context filter)
+ *            category/subcategory → /product?catalogCategory=… (verified context filter)
  *
  * No invented data: no category image exists in the catalog (CatalogCategory.icon is null
  * for every seeded category), so the approved token fallback tile is used. A price is shown
@@ -123,7 +123,7 @@ function ListingRow({ href, name, imageUrl, price, unit, isService }: {
 
 /* ───────────────────── real listings of one subcategory column ───────────────────── */
 
-function SubcategoryColumn({ subcategory, categorySlug, active, enabled, preview, pending, failed }: {
+function SubcategoryColumn({ subcategory, categorySlug, active, enabled, preview, pending, failed, basePath }: {
   subcategory: CatalogCategoryNode['subcategories'][number]
   categorySlug: string
   active: boolean
@@ -135,6 +135,8 @@ function SubcategoryColumn({ subcategory, categorySlug, active, enabled, preview
   pending: boolean
   /** True on card transport failure or this sub's own error status. */
   failed: boolean
+  /** Product-hub base path — all deep links target the same hub. */
+  basePath: string
 }) {
   // Real Product entities mapped to this catalog subcategory (Phase 3J: sliced
   // from the single card response — never fetched per column anymore).
@@ -164,7 +166,7 @@ function SubcategoryColumn({ subcategory, categorySlug, active, enabled, preview
           <Boxes size={11} />
         </span>
         <Link
-          href={marketplaceHref('/trading', { categorySlug, subcategorySlug: subcategory.slug })}
+          href={marketplaceHref(basePath, { categorySlug, subcategorySlug: subcategory.slug })}
           className="min-w-0 flex-1 truncate text-[12px] font-bold text-text-primary transition-colors hover:text-accent"
         >
           {subcategory.name}
@@ -218,7 +220,7 @@ function SubcategoryColumn({ subcategory, categorySlug, active, enabled, preview
 
       {hiddenProducts > 0 && (
         <Link
-          href={marketplaceHref('/trading', { categorySlug, subcategorySlug: subcategory.slug })}
+          href={marketplaceHref(basePath, { categorySlug, subcategorySlug: subcategory.slug })}
           className="mt-1 inline-flex items-center gap-1 px-1 text-[11px] font-semibold text-accent hover:underline"
         >
           +{hiddenProducts} more in {subcategory.name}
@@ -230,7 +232,7 @@ function SubcategoryColumn({ subcategory, categorySlug, active, enabled, preview
 
 /* ─────────────────────────── the wide category card ─────────────────────────── */
 
-export function CategoryMarketplaceCard({ category, isSelected, imageUrl, basePath = '/trading' }: {
+export function CategoryMarketplaceCard({ category, isSelected, imageUrl, basePath = '/product' }: {
   category: CatalogCategoryNode
   isSelected: boolean
   /** Real image URL when an approved source provides one. Absent → approved fallback tile. */
@@ -334,6 +336,7 @@ export function CategoryMarketplaceCard({ category, isSelected, imageUrl, basePa
                     preview={selectSubPreview(cardQuery.data, sub.id)}
                     pending={cardWaiting || cardQuery.isLoading}
                     failed={cardQuery.isError}
+                    basePath={basePath}
                   />
                 ))}
               </div>

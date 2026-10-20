@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | TRADINGO',
+  title: 'Terms of Service',
   description: 'TRADINGO Terms of Service govern the use of India\'s first TRADINGO E-Marketplace (TEM). Read about account registration, marketplace rules, fees, and dispute resolution.',
   openGraph: {
     title: 'Terms of Service | TRADINGO',

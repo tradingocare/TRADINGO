@@ -5,7 +5,7 @@ import EngineDetailPage from '@/components/shared/engine-detail-page';
 const engine = engines.find(e => e.id === 'tradmatch')!;
 
 export const metadata: Metadata = {
-  title: 'TRADMATCH — AI Matchmaking Engine | TRADINGO',
+  title: 'TRADMATCH — AI Matchmaking Engine',
   description: engine.description,
 };
 

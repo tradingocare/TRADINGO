@@ -43,7 +43,7 @@ const themeBootstrapScript = `(function(){try{var t=localStorage.getItem('tradin
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#030630',
+  themeColor: '#2C1608',
 };
 
 export const metadata: Metadata = {

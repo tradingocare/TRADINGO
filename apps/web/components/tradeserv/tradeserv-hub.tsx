@@ -105,7 +105,12 @@ const COMING_FEATURES = [
   { icon: BarChart3, title: 'Business Dashboard', desc: 'Real-time analytics on profile views, search appearances, inquiries, and revenue.' },
 ];
 
-export default function TradeServPage() {
+/**
+ * Shared TradeServ hub content (moved from app/tradeserv/page.tsx during the
+ * canonical route migration). Rendered ONLY by the /service route; all inner
+ * links target unchanged /tradeserv/* sub-routes.
+ */
+export default function TradeservHub() {
   return (
     <div className="min-h-screen">
       {/* --- HERO --- */}
