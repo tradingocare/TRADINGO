@@ -55,7 +55,9 @@ EOF
 printf '%s\n' "$*" >> /tmp/docker_args.log
 mode=$(cat /tmp/inspect_mode 2>/dev/null || echo ok)
 TARGET_CID="abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+TARGET_SHORT="abcdef123456"
 OTHER_CID="9999999999999999999999999999999999999999999999999999999999999999"
+OTHER_SHORT="999999999999"
 last=""
 for a in "$@"; do last="$a"; done
 if [ "$1" = "volume" ]; then
@@ -67,8 +69,15 @@ if [ "$1" = "volume" ]; then
   esac; exit 0
 fi
 if [ "$1" = "ps" ] && [ "$2" = "-aq" ]; then
-  echo "$TARGET_CID"
-  [ "$mode" = "ambiguous" ] && echo "$OTHER_CID"
+  no_trunc=0
+  for arg in "$@"; do [ "$arg" = "--no-trunc" ] && no_trunc=1; done
+  if [ "$no_trunc" = "1" ]; then
+    echo "$TARGET_CID"
+    [ "$mode" = "ambiguous" ] && echo "$OTHER_CID"
+  else
+    echo "$TARGET_SHORT"
+    [ "$mode" = "ambiguous" ] && echo "$OTHER_SHORT"
+  fi
   exit 0
 fi
 case "$*" in
@@ -79,8 +88,8 @@ case "$*" in
     esac; exit 0 ;;
   *Mounts*)
     case "$last" in
-      "$TARGET_CID") case "$mode" in wrong-volume) echo "tradingo_postgres_data";; *) echo "tradingo-prod_postgres_data";; esac; exit 0 ;;
-      "$OTHER_CID") case "$mode" in ambiguous) echo "tradingo-prod_postgres_data";; *) echo "";; esac; exit 0 ;;
+      "$TARGET_CID"|"$TARGET_SHORT") case "$mode" in wrong-volume) echo "tradingo_postgres_data";; *) echo "tradingo-prod_postgres_data";; esac; exit 0 ;;
+      "$OTHER_CID"|"$OTHER_SHORT") case "$mode" in ambiguous) echo "tradingo-prod_postgres_data";; *) echo "";; esac; exit 0 ;;
       *) echo ""; exit 0 ;;
     esac ;;
 esac
@@ -339,6 +348,18 @@ else
 fi
 n=$(ls /tmp/cbk/testbk-*.dump /tmp/cbk/*.tmp 2>/dev/null | wc -l)
 [ "$n" = "0" ] && ok "C13h: no artifact created" || bad "C13h: artifact left behind"
+
+# C13i: regression — `docker ps -aq` prints SHORT ids by default (as Docker does);
+# the library must list with --no-trunc or the target itself is mistaken for a
+# second mounter and every backup fails with a false "ambiguous" error.
+setup_mocks; fresh_env
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume tradingo-prod_postgres_data >/tmp/c13i.log 2>&1; then
+  ok "C13i: short-ID container listing does not produce a false ambiguity"
+else
+  bad "C13i: short-ID container listing must not block the backup"
+fi
+grep -qx "ps -aq --no-trunc" /tmp/docker_args.log && ok "C13i: container listing requests full IDs" || bad "C13i: container listing must use --no-trunc"
+grep -q "ambiguous" /tmp/c13i.log && bad "C13i: false ambiguity reported" || ok "C13i: no false ambiguity reported"
 rm -f /tmp/c13*.log
 
 echo ""
