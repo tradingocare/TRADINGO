@@ -174,7 +174,7 @@ async function withRetry(label, fn) {
 }
 
 async function ensureIndex(name) {
-  const exists = await client.indices.exists({ index: name });
+  const exists = (await client.indices.exists({ index: name })).body === true;
   if (exists) {
     if (RECREATE) {
       console.warn(`reindex: deleting and recreating index '${name}' (--recreate --allow-destructive)`);
@@ -304,8 +304,8 @@ async function main() {
   for (const name of Object.keys(results)) {
     await withRetry(`refresh ${name}`, () => client.indices.refresh({ index: name }));
     const count = await withRetry(`count ${name}`, () => client.count({ index: name }));
-    results[name].indexed = count.count;
-    console.log(`reindex: ${name}: selected=${results[name].selected} written=${results[name].written} failed=${results[name].failed} indexed_total=${count.count}`);
+    results[name].indexed = count.body.count;
+    console.log(`reindex: ${name}: selected=${results[name].selected} written=${results[name].written} failed=${results[name].failed} indexed_total=${count.body.count}`);
     if (results[name].failed > 0) process.exitCode = 1;
   }
 
@@ -315,11 +315,12 @@ async function main() {
       const existing = await withRetry(`scan ${name}`, async () => {
         const out = [];
         let after;
+        let res;
         do {
-          const res = await client.search({ index: name, body: { query: { match_all: {} }, size: 1000, ...(after ? { search_after: after } : {}) } });
-          out.push(...res.hits.hits);
-          after = res.hits.hits.length ? res.hits.hits[res.hits.hits.length - 1].sort : undefined;
-        } while (res.hits.hits.length === 1000);
+          res = await client.search({ index: name, body: { query: { match_all: {} }, size: 1000, ...(after ? { search_after: after } : {}) } });
+          out.push(...res.body.hits.hits);
+          after = res.body.hits.hits.length ? res.body.hits.hits[res.body.hits.hits.length - 1].sort : undefined;
+        } while (res.body.hits.hits.length === 1000);
         return out;
       });
       const stale = existing.filter((h) => !live.has(String(h._id)));

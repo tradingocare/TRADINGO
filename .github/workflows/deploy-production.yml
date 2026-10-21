@@ -345,7 +345,7 @@ jobs:
           # identical to the release SHA being deployed. up -d recreates the
           # containers because the image ID changed.
           docker tag "$API_IMAGE" tradingo-prod-api:latest
-          docker tag "$MIGRATE_IMAGE" tradingo-prod-api-migrate:latest
+          docker tag "$API_MIGRATE_IMAGE" tradingo-prod-api-migrate:latest
           docker tag "$WEB_IMAGE" tradingo-prod-web:latest
           echo "Release images pulled and retagged for $TARGET_SHA."
           # Record the IMMUTABLE identity of this release (image IDs + digests)
