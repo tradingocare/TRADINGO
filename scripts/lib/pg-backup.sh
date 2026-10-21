@@ -146,7 +146,7 @@ tradingo_pg_backup() {
     # The pinned volume must not be attached to a second container at the same
     # data mount point: that would make the target ambiguous.
     _ambiguous=""
-    for _other in $(docker ps -aq 2>/dev/null); do
+    for _other in $(docker ps -aq --no-trunc 2>/dev/null); do
       [ "$_other" = "$_cid" ] && continue
       _other_mount="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Name}}{{end}}{{end}}' "$_other" 2>/dev/null)"
       if [ "$_other_mount" = "$expect_volume" ]; then
