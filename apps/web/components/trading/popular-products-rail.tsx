@@ -219,7 +219,7 @@ function PopularProductCard({ model }: { model: ProductCardModel }) {
 export function PopularProductsRail({
   context,
   limit = 5,
-  basePath = '/trading',
+  basePath = '/product',
 }: {
   context: PopularContext
   limit?: number

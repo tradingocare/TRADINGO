@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const category = CATEGORIES.find((c) => c.slug === slug);
   if (!category) return { title: 'Category Not Found — TradeServ' };
   return {
-    title: `Find ${category.title}s | TradeServ by TRADINGO`,
+    title: `Find ${category.title}s | TradeServ`,
     description: `Browse verified ${category.title.toLowerCase()} professionals on TradeServ. TRADTRUST-verified, AI-matched, and ready to help your business.`,
     openGraph: {
       title: `Find ${category.title}s | TradeServ by TRADINGO`,

@@ -19,7 +19,7 @@ import { toProductCard } from '@/app/products/[slug]/page';
  */
 const CONVERTER_SRC = readFileSync(join(__dirname, '..', 'card-converters.ts'), 'utf8');
 const TRADING_CLIENT_SRC = readFileSync(
-  join(__dirname, '..', '..', '..', 'app', 'trading', 'TradingDiscoveryClient.tsx'),
+  join(__dirname, '..', '..', '..', 'app', 'product', 'TradingDiscoveryClient.tsx'),
   'utf8',
 );
 

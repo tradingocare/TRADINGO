@@ -5,7 +5,7 @@ import EngineDetailPage from '@/components/shared/engine-detail-page';
 const engine = engines.find(e => e.id === 'tradconnect')!;
 
 export const metadata: Metadata = {
-  title: 'TRADCONNECT — Communication Engine | TRADINGO',
+  title: 'TRADCONNECT — Communication Engine',
   description: engine.description,
 };
 

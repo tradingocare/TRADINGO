@@ -45,7 +45,7 @@ const engines: Engine[] = [
     name: 'Trade Matching',
     tagline: 'AI-Powered Match',
     description: 'Our intelligent algorithm matches buyers with the right sellers based on product, price, and location.',
-    href: '/trading',
+    href: '/product',
     color: 'from-emerald-500 to-teal-500',
   },
   {

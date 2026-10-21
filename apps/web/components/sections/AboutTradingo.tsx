@@ -30,7 +30,7 @@ export default function AboutTradingo() {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-[1600px]"
         >
-          <div className="relative rounded-[24px] border border-border bg-bg-elevated backdrop-blur-2xl">
+          <div className="relative rounded-[24px] border border-border bg-surface backdrop-blur-2xl">
             <div className="pointer-events-none absolute inset-0 rounded-[24px] overflow-hidden">
               <div className="absolute -left-32 -top-32 h-64 w-64 rounded-full bg-[rgba(96,165,250,0.05)] blur-[80px]" />
               <div className="absolute -bottom-32 -right-32 h-64 w-64 rounded-full bg-[rgba(255,77,0,0.04)] blur-[80px]" />
@@ -75,7 +75,7 @@ export default function AboutTradingo() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.08 }}
-                  className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300 h-full">
+                  className="group relative overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300 h-full">
                   <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
                     style={{ background: `radial-gradient(500px circle at 30% 50%, ${f.color}15, transparent 50%)` }} />
                   <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"

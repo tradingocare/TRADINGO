@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Professional Services Categories | TradeServ by TRADINGO',
+  title: 'Professional Services Categories | TradeServ',
   description:
     'Browse 10 verified professional service categories on TradeServ — Chartered Accountants, GST Consultants, Company Secretaries, Trademark Consultants, Legal Advisors, Business Consultants, Brand Consultants, Export Consultants, Product Photographers, and Packaging Designers.',
   openGraph: {

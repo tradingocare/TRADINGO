@@ -19,10 +19,29 @@ networks:
     name: tradingo_tradingo-net
 
 services:
+  # NOTE on the standalone database/redis services below:
+  # Production PostgreSQL and Redis are NOT owned by this compose project. They
+  # are the long-lived containers of the legacy `tradingo-clean` project, they
+  # carry the fixed container names `tradingo-postgres` / `tradingo-redis`, and
+  # the API reaches them through the external `legacy-db` network
+  # (`tradingo_tradingo-net`), which is the only network that carries the
+  # `postgres` DNS alias that DATABASE_URL uses.
+  #
+  # Declaring them here with those same container_name values is a name
+  # collision: any `docker compose up` that includes them would fail against
+  # the live containers (or, worse, create a second, empty database that
+  # competes for the same DNS alias). They are therefore placed behind the
+  # `standalone-db` profile: they are documentation of the topology and can
+  # only ever be started deliberately, with
+  #   docker compose -p <other-project> --profile standalone-db up -d
+  # The supported production path never starts them — the deploy workflow
+  # addresses the live legacy containers by name and runs every compose
+  # command with --no-deps.
   postgres:
     image: postgres:16-alpine
     container_name: tradingo-postgres
     restart: unless-stopped
+    profiles: ["standalone-db"]
     networks:
       - tradingo-net
     ports:
@@ -48,6 +67,10 @@ services:
     image: redis:7-alpine
     container_name: tradingo-redis
     restart: unless-stopped
+    # See the note above the `postgres` service: the live Redis is a legacy
+    # container with this fixed name and must never be recreated by this
+    # project. Opt-in only.
+    profiles: ["standalone-db"]
     networks:
       - tradingo-net
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
@@ -90,10 +113,12 @@ services:
     depends_on:
       api-migrate:
         condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      # The live database and Redis belong to the legacy project and are
+      # verified by the deploy workflow's pre-flight (container present,
+      # running, healthy) before anything is replaced. They are deliberately
+      # NOT declared as dependencies here: a dependency would re-enable their
+      # `standalone-db` profile and make a bare `compose up` try to create
+      # containers whose names are already taken by the live services.
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/live"]
       interval: 30s
@@ -125,11 +150,12 @@ services:
       PRISMA_MIGRATE_DISABLED: "false"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    # The live database and Redis belong to the legacy project; see the note
+    # on the `api` service. The migration entrypoint performs its own bounded,
+    # fatal PostgreSQL readiness wait, so no compose dependency is declared
+    # here: a dependency would re-enable the `standalone-db` profile and make
+    # a bare `compose up` try to create containers whose names are already
+    # taken by the live services.
     # Entrypoint runs migrations and verification, then execs this command
     # and exits. This message only prints if the entrypoint succeeded —
     # any migration/verification failure exits non-zero before reaching here.

@@ -6,9 +6,8 @@ const sitemapSections = [
   {
     title: 'Marketplace',
     links: [
-      { label: 'Browse Products', href: '/trading' },
+      { label: 'Browse Products', href: '/product' },
       { label: 'Categories', href: '/categories' },
-      { label: 'Trading', href: '/trading' },
       { label: 'RFQ Marketplace', href: '/rfq' },
       { label: 'Compare Products', href: '/compare' },
       { label: 'Search', href: '/search' },
@@ -26,7 +25,7 @@ const sitemapSections = [
   {
     title: 'TradeServ',
     links: [
-      { label: 'TradeServ Home', href: '/tradeserv' },
+      { label: 'Service Home', href: '/service' },
     ],
   },
   {

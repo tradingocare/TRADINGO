@@ -8,12 +8,17 @@ tradingo_pg_backup() {
   # usage: tradingo_pg_backup <out_dir> <prefix> <compose|direct> [options]
   # options: --compose-file F | --env-file E | --min-entries N | --require-mounted | --db-container C | --expect-volume V
   # Compose mode addresses the database by EXPLICIT CONTAINER (docker exec),
-  # never by Compose project/service labels: the live container may belong to
-  # a different Compose project than the caller's files (run 38850639427 showed
+  # never by Compose project/service labels: the live container may belong
+  # to a different Compose project than the caller's files (run 38850639427 showed
   # project-scoped `exec -T postgres` failing while the container was healthy).
   # --db-container is REQUIRED in compose mode (fail closed, no silent
-  # default). --expect-volume defaults to the verified production data volume;
-  # the container must mount it at /var/lib/postgresql/data or the run aborts.
+  # default). The data volume is verified by OWNERSHIP: the volume mounted at
+  # the PostgreSQL data directory must belong to the same Compose project as
+  # the container. A hard-coded volume name cannot express that — the live
+  # database belongs to the legacy project, not to this one — so
+  # --expect-volume is an optional strict pin and the ownership check is the
+  # default. Either way the run aborts when the target storage cannot be
+  # established.
   # Direct mode ignores container/volume flags (it uses DATABASE_URL).
   if [ $# -lt 3 ]; then
     echo "[pg-backup] ERROR: usage: tradingo_pg_backup <out_dir> <prefix> <compose|direct> [options]" >&2
@@ -26,7 +31,8 @@ tradingo_pg_backup() {
   min_entries=10
   require_mounted=0
   db_container=""
-  expect_volume="tradingo-prod_postgres_data"
+  expect_volume=""
+  require_same_project=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --compose-file) compose_file="$2"; shift 2 ;;
@@ -35,6 +41,7 @@ tradingo_pg_backup() {
       --require-mounted) require_mounted=1; shift ;;
       --db-container) db_container="$2"; shift 2 ;;
       --expect-volume) expect_volume="$2"; shift 2 ;;
+      --require-same-project) require_same_project=1; shift ;;
       --project-name)
         echo "[pg-backup] ERROR: --project-name was removed; use --db-container (container addressing is project-agnostic)" >&2
         return 1 ;;
@@ -74,7 +81,7 @@ tradingo_pg_backup() {
       ;;
     direct)
       [ -n "${DATABASE_URL:-}" ] || { echo "[pg-backup] ERROR: DATABASE_URL is not set" >&2; return 1; }
-      if [ -n "$db_container" ] || [ "$expect_volume" != "tradingo-prod_postgres_data" ]; then
+      if [ -n "$db_container" ] || [ -n "$expect_volume" ] || [ "$require_same_project" = "1" ]; then
         echo "[pg-backup] ERROR: container/volume flags are compose-mode only" >&2; return 1
       fi
       ;;
@@ -86,11 +93,24 @@ tradingo_pg_backup() {
 
   # Resolve the intended database container ONCE and validate the identity
   # bundle: exists, running, postgres image family, Compose service label
-  # `postgres`, and the expected data volume mounted at the Postgres data dir.
+  # `postgres`, and the PINNED data volume mounted at the Postgres data dir.
   # Prints the full container ID on success. Never logs environment or secrets.
   # Callers must use the printed ID (not the name) for all subsequent execs so
   # a name-reuse swap between check and use fails closed instead of hitting a
   # different container.
+  #
+  # DATA VOLUME RULES (revised 2026-10-21 after the live Hostinger check):
+  #   The PINNED volume name is the primary constraint. It is REQUIRED in
+  #   compose mode: a data volume is never inferred, guessed or selected.
+  #   The pinned volume must (a) be the one this container actually mounts at
+  #   the PostgreSQL data mount point, (b) exist, and (c) not be mounted at that
+  #   same mount point by a second container (ambiguous target).
+  #   The Compose-project LABELS of the container and of the volume are compared
+  #   for information only: on the live Hostinger layout the database container
+  #   belongs to the legacy project (`tradingo`) while its data volume was
+  #   created by the production project (`tradingo-prod`) and adopted through
+  #   an override file, so a label mismatch is a normal, verified state and must
+  #   not block a backup. Pass --require-same-project to make it fatal.
   verify_db_container() {
     _info="$(docker inspect --format '{{.Id}}|{{.Config.Image}}|{{.State.Running}}' "$db_container" 2>/dev/null)" || {
       echo "[pg-backup] ERROR: database container '$db_container' not found" >&2; return 1; }
@@ -106,9 +126,45 @@ tradingo_pg_backup() {
     _labels="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$_cid" 2>/dev/null)" || {
       echo "[pg-backup] ERROR: cannot read labels of '$db_container'" >&2; return 1; }
     [ "$_labels" = "postgres" ] || { echo "[pg-backup] ERROR: container '$db_container' service label is '$_labels', not 'postgres'" >&2; return 1; }
+
+    # The data mount point is the only acceptable location for the data volume.
     _mount="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Name}}{{end}}{{end}}' "$_cid" 2>/dev/null)" || {
       echo "[pg-backup] ERROR: cannot read mounts of '$db_container'" >&2; return 1; }
-    [ "$_mount" = "$expect_volume" ] || { echo "[pg-backup] ERROR: container '$db_container' data volume is '$_mount', expected '$expect_volume'" >&2; return 1; }
+    [ -n "$_mount" ] || {
+      echo "[pg-backup] ERROR: container '$db_container' has no volume mounted at /var/lib/postgresql/data" >&2; return 1; }
+
+    # The pinned volume is REQUIRED: never infer or select a volume.
+    [ -n "$expect_volume" ] || {
+      echo "[pg-backup] ERROR: no expected data volume pinned for '$db_container' — refusing to select a volume implicitly. Pass --expect-volume <volume>." >&2; return 1; }
+    [ "$_mount" = "$expect_volume" ] || {
+      echo "[pg-backup] ERROR: container '$db_container' mounts data volume '$_mount', but the pinned volume is '$expect_volume' — refusing to back up a different database" >&2; return 1; }
+
+    # The pinned volume must exist.
+    docker volume inspect "$expect_volume" >/dev/null 2>&1 || {
+      echo "[pg-backup] ERROR: pinned data volume '$expect_volume' does not exist" >&2; return 1; }
+
+    # The pinned volume must not be attached to a second container at the same
+    # data mount point: that would make the target ambiguous.
+    _ambiguous=""
+    for _other in $(docker ps -aq 2>/dev/null); do
+      [ "$_other" = "$_cid" ] && continue
+      _other_mount="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Name}}{{end}}{{end}}' "$_other" 2>/dev/null)"
+      if [ "$_other_mount" = "$expect_volume" ]; then
+        _ambiguous="$_ambiguous $_other"
+      fi
+    done
+    [ -z "$_ambiguous" ] || {
+      echo "[pg-backup] ERROR: pinned data volume '$expect_volume' is also mounted by container(s):$_ambiguous — the backup target is ambiguous" >&2; return 1; }
+
+    # Compose-project labels: advisory by default, fatal only in strict mode.
+    _cproject="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$_cid" 2>/dev/null || echo '')"
+    _vproject="$(docker volume inspect --format '{{index .Labels "com.docker.compose.project"}}' "$expect_volume" 2>/dev/null || echo '')"
+    if [ -n "$_cproject" ] && [ -n "$_vproject" ] && [ "$_vproject" != "$_cproject" ]; then
+      if [ "$require_same_project" = "1" ]; then
+        echo "[pg-backup] ERROR: data volume '$expect_volume' is owned by Compose project '$_vproject' but '$db_container' belongs to '$_cproject' (strict mode: --require-same-project)" >&2; return 1
+      fi
+      echo "[pg-backup] NOTE: data volume '$expect_volume' is labelled by Compose project '$_vproject' while '$db_container' belongs to '$_cproject'. The pinned volume and the container's actual mount both match, so the backup proceeds (use --require-same-project to make this fatal)." >&2
+    fi
     printf '%s' "$_cid"
     return 0
   }

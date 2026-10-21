@@ -165,13 +165,13 @@ export default function TradingDiscoveryClient() {
           <ProductDiscovery
             key={discoveryKey}
             variant="embedded"
-            basePath="/trading"
-            railRight={<CatalogPopularRail />}
+            basePath="/product"
+            railRight={<CatalogPopularRail basePath="/product" />}
           />
         </section>
 
         {/* ─── 6C. CATEGORY BROWSER lives on /categories now ───────────────
-            (relocated — same component/design, links target /trading) ─── */}
+            (relocated — same component/design, links target /product) ─── */}
 
         {/* ─── 2. LIVE DIRECTORY STATS ───────────────────────────────── */}
         <section className="pb-6">

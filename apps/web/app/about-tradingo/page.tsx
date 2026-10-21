@@ -179,7 +179,7 @@ export default function AboutTradingoPage() {
         primaryLabel="Create Free Account"
         primaryHref="/register/buyer"
         secondaryLabel="Explore Marketplace"
-        secondaryHref="/trading"
+        secondaryHref="/product"
         variant="accent"
       />
     </>

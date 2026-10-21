@@ -186,7 +186,7 @@ function InfoPanel({ product, trail, isSaved, isCompared, onSave, onCompare, onS
             ))
           ) : (
             <>
-              <Link href="/trading" className="transition-colors hover:text-accent">Products</Link>
+              <Link href="/product" className="transition-colors hover:text-accent">Products</Link>
               <ChevronRight size={10} />
               {product.categoryName && (
                 <>

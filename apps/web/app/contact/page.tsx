@@ -275,7 +275,7 @@ export default function ContactPage() {
         primaryLabel="Create Free Account"
         primaryHref="/register/buyer"
         secondaryLabel="Explore Marketplace"
-        secondaryHref="/trading"
+        secondaryHref="/product"
         variant="accent"
       />
     </>

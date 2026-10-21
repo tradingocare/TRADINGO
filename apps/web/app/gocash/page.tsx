@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { GOCASH_EARN_FEATURES, GOCASH_REDEMPTIONS, GOCASH_TIERS, GOCASH_EARNING_RATES } from '@/data/master-data';
 
 export const metadata: Metadata = {
-  title: 'GOCASH Rewards | TRADINGO',
+  title: 'GOCASH Rewards',
   description:
     'Earn GOCASH on every trade. Redeem for platform benefits, discounts, and premium features on TRADINGO.',
 };
@@ -213,7 +213,7 @@ export default function GocashPage() {
         primaryLabel="Get Started Free"
         primaryHref="/register/buyer"
         secondaryLabel="Learn About Trading"
-        secondaryHref="/trading"
+        secondaryHref="/product"
         variant="accent"
       />
     </>

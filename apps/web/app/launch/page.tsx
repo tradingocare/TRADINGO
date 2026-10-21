@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { LAUNCH_FEATURES, LAUNCH_PRICING_PLANS, LAUNCH_STATS } from '@/data/master-data';
 
 export const metadata: Metadata = {
-  title: 'Launch Campaign | TRADINGO',
+  title: 'Launch Campaign',
   description:
     'India\'s Premier B2B Trade Platform Has Arrived. Join the beta â€” limited slots available. Start your 30-day free trial today.',
 };

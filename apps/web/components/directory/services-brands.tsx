@@ -109,7 +109,7 @@ export function ServicesPlaceholder(props: {
       onNotify={props.onNotify}
       ctas={[
         { label: 'Become a Service Provider', href: '/golive', primary: true },
-        { label: 'Explore Products', href: '/trading' },
+        { label: 'Explore Products', href: '/product' },
       ]}
     />
   )
@@ -125,7 +125,7 @@ export function BrandsPlaceholder() {
       ctas={[
         { label: 'Register Your Brand', href: '/golive', primary: true },
         { label: 'Become a Verified Brand', href: '/golive' },
-        { label: 'Explore Products', href: '/trading' },
+        { label: 'Explore Products', href: '/product' },
       ]}
     />
   )

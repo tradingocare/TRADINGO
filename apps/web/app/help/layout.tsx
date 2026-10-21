@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Help Center | TRADINGO',
+  title: 'Help Center',
   description: 'Find answers to common questions, browse help articles, and contact TRADINGO support for assistance with your account, orders, and platform features.',
 };
 

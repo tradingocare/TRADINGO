@@ -32,11 +32,11 @@ describe('PHASE 2-B — founder-locked metadata + catalog authority contracts', 
   it('4. marketplace title/H1 preserved (trading + products)', () => {
     expect(read('apps/web/app/products/page.tsx')).toContain(MARKETPLACE_TITLE);
     // The locked H1 lives (HTML-escaped) in the shared discovery client that
-    // both /trading (via embedded ProductDiscovery) and /products render.
+    // both /product (via embedded ProductDiscovery) and /products render.
     expect(read('apps/web/components/discovery/ProductDiscoveryClient.tsx')).toContain(
       'Find, Compare &amp; Buy Products and Services',
     );
-    expect(read('apps/web/app/trading/TradingDiscoveryClient.tsx')).toMatch(
+    expect(read('apps/web/app/product/TradingDiscoveryClient.tsx')).toMatch(
       /import ProductDiscovery from '@\/components\/discovery\/ProductDiscoveryClient'/,
     );
   });
@@ -66,7 +66,7 @@ describe('PHASE 2-B — founder-locked metadata + catalog authority contracts', 
 
   it('8. parent-category breadcrumb links resolve to real routes', () => {
     const page = read('apps/web/app/categories/[slug]/[subcategory]/page.tsx');
-    expect(page).toMatch(/href="\/trading"/);
+    expect(page).toMatch(/href="\/product"/);
     expect(page).toMatch(/href=\{`\/categories\/\$\{cat\.slug\}`\}/);
     expect(page).toMatch(/'@type': 'BreadcrumbList'/);
   });

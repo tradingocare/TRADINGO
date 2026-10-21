@@ -10,7 +10,7 @@ import { MarketplaceCounters } from '@/components/shared/marketplace-counters';
 import { Separator } from '@/components/ui/separator';
 
 export const metadata: Metadata = {
-  title: 'RFQ Marketplace | TRADINGO',
+  title: 'RFQ Marketplace',
   description:
     'Post your requirements and receive competitive quotes from verified sellers in real-time.',
 };
@@ -51,7 +51,7 @@ const rfqFeatures = [
     icon: 'ðŸ‘¥',
     title: 'Pan-India Sellers',
     description: 'Access sellers from 500+ cities. Find local suppliers to optimize your logistics.',
-    href: '/trading',
+    href: '/product',
   },
 ];
 

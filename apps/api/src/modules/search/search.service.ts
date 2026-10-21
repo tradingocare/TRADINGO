@@ -24,23 +24,38 @@ export interface SearchResult<T> {
 
 @Injectable()
 export class SearchService {
-  private readonly client: Client;
+  private readonly client: Client | null;
+  private readonly enabled: boolean;
   private readonly logger = new Logger(SearchService.name);
 
   constructor(private readonly configService: ConfigService) {
+    const node = this.configService.get<string>('opensearch.url')?.trim();
+    this.enabled = Boolean(node);
+    if (!node) {
+      // Optional infrastructure: no endpoint configured => the feature is
+      // explicitly disabled. No client is constructed against a fabricated URL.
+      this.client = null;
+      this.logger.warn('OpenSearch is not configured — search and discovery features are disabled');
+      return;
+    }
+    const username = this.configService.get<string>('opensearch.username')?.trim();
+    const password = this.configService.get<string>('opensearch.password') ?? '';
     this.client = new Client({
-      node: this.configService.get<string>('opensearch.url'),
-      auth: {
-        username: this.configService.get<string>('opensearch.username')!,
-        password: this.configService.get<string>('opensearch.password')!,
-      },
+      node,
+      ...(username ? { auth: { username, password } } : {}),
       ssl: { rejectUnauthorized: this.configService.get<boolean>('opensearch.rejectUnauthorized', true) },
       maxRetries: 1,
       requestTimeout: 30000,
     });
   }
 
+  /** True when an OpenSearch endpoint is configured and the client is active. */
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+
   async ping(): Promise<boolean> {
+    if (!this.client) return false;
     try {
       const result = await this.client.ping();
       const r: any = result;
@@ -51,6 +66,10 @@ export class SearchService {
   }
 
   async indexDocument(index: string, id: string, body: Record<string, unknown>): Promise<void> {
+    if (!this.client) {
+      this.logger.warn(`Skipping index of ${index}/${id}: OpenSearch is not configured`);
+      return;
+    }
     await this.client.index({
       index,
       id,
@@ -64,6 +83,10 @@ export class SearchService {
     docs: { id: string; body: Record<string, unknown> }[],
   ): Promise<{ indexed: number; failed: number }> {
     if (docs.length === 0) return { indexed: 0, failed: 0 };
+    if (!this.client) {
+      this.logger.warn(`Skipping bulk index of ${docs.length} document(s) into ${index}: OpenSearch is not configured`);
+      return { indexed: 0, failed: docs.length };
+    }
     const operations: Record<string, unknown>[] = [];
     for (const doc of docs) {
       operations.push({ index: { _index: index, _id: doc.id } });
@@ -87,6 +110,19 @@ export class SearchService {
     const page = pagination.page || 1;
     const limit = pagination.limit || 20;
     const from = (page - 1) * limit;
+
+    if (!this.client) {
+      // Feature disabled: return the documented degraded shape instead of
+      // failing the request (DEGRADATION_MATRIX 'opensearch' -> Prisma fallback).
+      return {
+        hits: [],
+        total: 0,
+        page,
+        limit,
+        degraded: true,
+        error: 'opensearch_not_configured',
+      };
+    }
 
     try {
       const must: Record<string, unknown>[] = [];
@@ -136,6 +172,7 @@ export class SearchService {
   }
 
   async deleteDocument(index: string, id: string): Promise<void> {
+    if (!this.client) return;
     await this.client.delete({
       index,
       id,
@@ -143,11 +180,13 @@ export class SearchService {
   }
 
   async indexExists(index: string): Promise<boolean> {
+    if (!this.client) return false;
     const response = await this.client.indices.exists({ index });
     return response.body as boolean;
   }
 
   async createIndex(index: string, body: Record<string, unknown>): Promise<void> {
+    if (!this.client) return;
     const exists = await this.indexExists(index);
     if (!exists) {
       await this.client.indices.create({
@@ -158,6 +197,7 @@ export class SearchService {
   }
 
   async deleteIndex(index: string): Promise<void> {
+    if (!this.client) return;
     const exists = await this.indexExists(index);
     if (exists) {
       await this.client.indices.delete({

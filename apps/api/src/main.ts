@@ -29,6 +29,7 @@ import { RedisService } from './common/services/redis.service';
 import { PrismaService } from './prisma/prisma.service';
 import { logger, createRequestContext } from './common/logger';
 import { registerCsrfPreHandler } from './common/hooks/csrf-prehandler';
+import { getFrontendOrigins } from './common/utils/frontend-origins';
 
 async function bootstrap() {
   // Global process-level error handlers â€” prevent Node.js crashes on unhandled rejections
@@ -195,8 +196,13 @@ async function bootstrap() {
   app.useWebSocketAdapter(redisIoAdapter);
 
   // CORS
+  // FRONTEND_URL is a comma-separated allowlist (e.g. "http://localhost:3000,
+  // http://localhost:3116"). It MUST be passed as an array so the cors
+  // middleware echoes the actual request origin; passing the raw string made
+  // every browser origin mismatch and blocked all cross-origin API calls.
+  const frontendOrigins = getFrontendOrigins(configService.get<string>('FRONTEND_URL'));
   app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL', 'http://localhost:3000'),
+    origin: frontendOrigins,
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],

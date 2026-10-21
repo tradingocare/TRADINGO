@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   try {
     const industry: any = await getIndustry(slug);
     return {
-      title: `${industry.name} Industry | TRADINGO`,
+      title: `${industry.name} Industry`,
       description: industry.description ?? `Explore ${industry.name} industry products and suppliers on TRADINGO.`,
       openGraph: {
         title: `${industry.name} Industry | TRADINGO`,
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       alternates: { canonical },
     };
   } catch {
-    return { title: 'Industry | TRADINGO', robots: ROBOTS_INDEX_FOLLOW, alternates: { canonical } };
+    return { title: 'Industry', robots: ROBOTS_INDEX_FOLLOW, alternates: { canonical } };
   }
 }
 
@@ -83,7 +83,7 @@ async function IndustryContent({ slug }: { slug: string }) {
       <section className="border-b border-border bg-surface-secondary/50 pb-8 pt-24">
         <div className="container-main">
           <nav className="flex items-center gap-2 text-sm text-text-secondary">
-            <Link href="/trading" className="hover:text-accent transition-colors">Products</Link>
+            <Link href="/product" className="hover:text-accent transition-colors">Products</Link>
             <ChevronRight className="h-4 w-4" />
             <Link href="/industries" className="hover:text-accent transition-colors">Industries</Link>
             <ChevronRight className="h-4 w-4" />
@@ -139,7 +139,7 @@ async function IndustryContent({ slug }: { slug: string }) {
               <p className="mt-2 text-text-secondary">
                 Check back later or browse other industries.
               </p>
-              <Link href="/trading">
+              <Link href="/product">
                 <span className="mt-6 inline-block rounded-lg bg-accent px-6 py-2 text-sm font-medium text-btn-primary-text hover:opacity-90 transition-opacity">
                   Browse All Products
                 </span>

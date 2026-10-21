@@ -159,7 +159,7 @@ export function ProductsSection() {
       <DirHeader
         title="Products"
         subtitle={`${totalCount.toLocaleString()} products across the marketplace — every list scales with the catalog.`}
-        viewMoreHref="/trading"
+        viewMoreHref="/product"
         viewMoreLabel="All Products"
       />
 

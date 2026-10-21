@@ -45,7 +45,7 @@ export function SpecGrid({ data }: SpecGridProps) {
         </a>
       )}
       {highlights.length > 0 && (
-        <p className="mt-4 rounded-xl bg-bg-elevated px-3 py-2 text-xs leading-relaxed text-text-secondary">
+        <p className="mt-4 rounded-xl border border-border bg-surface-secondary px-3 py-2 text-xs leading-relaxed text-text-secondary">
           <strong className="text-text-primary">Highlights:</strong>{' '}
           {highlights.map((highlight) => `• ${highlight}`).join(' ')}
         </p>
@@ -68,7 +68,7 @@ export function DocumentsSection({ data }: DocumentsSectionProps) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-5">
         <h3 className="text-sm font-semibold text-text-primary">Documents &amp; Downloads</h3>
-        <p className="mt-3 rounded-xl bg-bg-elevated px-3 py-2 text-xs leading-relaxed text-text-secondary">
+        <p className="mt-3 rounded-xl border border-border bg-surface-secondary px-3 py-2 text-xs leading-relaxed text-text-secondary">
           No documents provided by the seller yet. Use RFQ or Chat to request datasheets, catalogs, or compliance certificates.
         </p>
       </div>
@@ -89,7 +89,7 @@ export function DocumentsSection({ data }: DocumentsSectionProps) {
         {docs.slice(0, 4).map((doc) => (
           <div
             key={`${doc.name}-${doc.url}`}
-            className="flex items-center gap-2 rounded-xl border border-border bg-bg-elevated px-3 py-2 transition-all hover:border-accent/40"
+            className="flex items-center gap-2 rounded-xl border border-border bg-surface-secondary px-3 py-2 transition-all hover:border-accent/40"
           >
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] font-semibold text-text-primary">{doc.name}</p>

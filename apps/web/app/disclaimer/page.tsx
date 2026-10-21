@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { CTABlock } from '@/components/shared/cta-block';
 
 export const metadata: Metadata = {
-  title: 'Disclaimer | TRADINGO',
+  title: 'Disclaimer',
   description: 'TRADINGO Disclaimer outlines limitations of liability, no warranty provisions, and terms governing use of India\'s first TRADINGO E-Marketplace.',
   openGraph: {
     title: 'Disclaimer | TRADINGO',

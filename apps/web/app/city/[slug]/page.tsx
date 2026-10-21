@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const cityName = toCityName(slug);
   const base = {
-    title: `Marketplace in ${cityName} | TRADINGO`,
+    title: `Marketplace in ${cityName}`,
     description: `Find products and sellers in ${cityName}. Browse local listings on TRADINGO TEM E-Marketplace.`,
     openGraph: {
       title: `${cityName} Marketplace | TRADINGO`,
@@ -162,7 +162,7 @@ async function CityContent({ slug }: { slug: string }) {
               <p className="mt-2 text-text-secondary">
                 Be the first to list a product or check back later.
               </p>
-              <Link href="/trading">
+              <Link href="/product">
                 <button className="mt-6 rounded-lg bg-accent px-6 py-2 text-sm font-medium text-white hover:bg-primary-700">
                   Browse All Products
                 </button>
@@ -225,7 +225,7 @@ async function CityContent({ slug }: { slug: string }) {
         primaryLabel="Start Selling"
         primaryHref="/seller"
         secondaryLabel="Browse All Products"
-        secondaryHref="/trading"
+        secondaryHref="/product"
         variant="default"
       />
     </>

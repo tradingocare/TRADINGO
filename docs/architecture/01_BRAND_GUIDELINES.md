@@ -59,22 +59,44 @@ GOCASH leaderboard and rankings.
 
 ## Color Palette
 
-### Dark Theme (Default)
-- **Background**: `#0a0a0f` (deep dark)
-- **Surface**: `#1a1a2e` (card backgrounds)
-- **Surface Hover**: `#232340`
-- **Primary**: `#6366f1` (indigo)
-- **Primary Hover**: `#818cf8`
-- **Secondary**: `#06b6d4` (cyan)
-- **Accent**: `#f59e0b` (amber)
-- **Success**: `#10b981` (emerald)
-- **Danger**: `#ef4444` (red)
-- **Warning**: `#f97316` (orange)
-- **Text Primary**: `#f1f5f9` (light)
-- **Text Secondary**: `#94a3b8` (muted)
-- **Border**: `#334155` (subtle borders)
+The brand foundation is locked in `apps/web/app/globals.css` and exposed through
+Tailwind v4 tokens. Components must consume semantic tokens (`bg-surface`,
+`bg-bg-elevated`, `bg-bg-base`, `text-text-*`) rather than raw color values.
 
-These are the Tailwind CSS defaults used across the app. (Status: Not Yet Documented in design tokens file.)
+### Brand Foundation (Founder Locked)
+- **Brand Primary** (nav, sidebar, header, footer): `#2C1608`
+- **Brand Surface / Box**: `#100C08`
+- **Page Background**: `#2C1608`
+- **Accent**: `#FF4D00` (orange)
+- **Accent Hover**: `#CC3D00`
+- **Accent Light**: `#FF7A33`
+- **Text on Primary**: `#FFFFFF`
+- **Text on Surface**: `#F0F4FF`
+
+### Dark Theme (Default)
+- **Page Background**: `#2C1608`
+- **Elevated Surface**: `#100C08`
+- **Surface / Card / Input**: `#100C08`
+- **Text Primary**: `#F0F4FF`
+- **Text Secondary**: `#A8B4CC`
+- **Text Tertiary**: `#94A3B8`
+- **Border**: `rgba(255, 255, 255, 0.12)`
+- **Success**: `#22C55E`
+- **Warning**: `#F59E0B`
+- **Error**: `#EF4444`
+- **Info**: `#3B82F6`
+
+### Light Theme
+- **Page Background**: `#F5E3D9`
+- **Elevated / Surface**: `#F8F8FF`
+- **Text Primary**: `#000000`
+- **Text Secondary**: `#374151`
+- **Text Tertiary**: `#4B5563`
+- **Primary Button**: `#2C1608` with white text
+
+### Legacy Note
+Earlier `#00001C` / `#00072D` and indigo/cyan palette values are superseded by
+the locked brand foundation above and must not be reintroduced.
 
 ## Spacing
 
@@ -96,7 +118,7 @@ Logo files in `apps/web/public/logo/` directory. SVG format preferred.
 ## Visual Style
 
 - Modern, clean, dark-themed UI
-- Gradient accents (indigo to cyan)
+- Orange/amber accent gradients
 - Glass morphism effects on cards
 - Subtle animations (Framer Motion)
 - Data-rich dashboards

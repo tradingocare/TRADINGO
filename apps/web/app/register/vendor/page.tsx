@@ -7,7 +7,7 @@ import VendorRegistrationWizard from './VendorRegistrationWizard'
 import { getSellerEntryTarget } from '@/lib/auth/redirects'
 
 export const metadata: Metadata = {
-  title: 'Register as Seller — TRADINGO',
+  title: 'Register as Seller',
   description: 'Join TRADINGO as a verified seller. Zero commission. AI-powered buyer matching. GST invoicing. Start selling to 5L+ verified buyers across India.',
 }
 

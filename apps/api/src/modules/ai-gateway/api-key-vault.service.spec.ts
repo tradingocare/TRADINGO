@@ -20,10 +20,32 @@ describe('ApiKeyVaultService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should throw when master key is missing or placeholder', () => {
-    expect(() => {
-      new ApiKeyVaultService({ get: jest.fn().mockReturnValue('') } as any);
-    }).toThrow();
+  describe('when the master key is missing, empty or a known unsafe value', () => {
+    const unsafe = [
+      '',
+      'change-me-to-a-random-64-char-string',
+      'local-development-ai-vault-master-key-32chars-minimum',
+      'tradingo-ai-vault-default-key-change-in-production!',
+    ];
+
+    it.each(unsafe)('constructs without throwing but disables the vault (%p)', (value) => {
+      const disabled = new ApiKeyVaultService({ get: jest.fn().mockReturnValue(value) } as any);
+      expect(disabled.isEnabled()).toBe(false);
+    });
+
+    it('fails closed on encrypt', () => {
+      const disabled = new ApiKeyVaultService({ get: jest.fn().mockReturnValue('') } as any);
+      expect(() => disabled.encrypt('sk-test-12345')).toThrow(/AI_VAULT_MASTER_KEY/);
+    });
+
+    it('fails closed on decrypt', () => {
+      const disabled = new ApiKeyVaultService({ get: jest.fn().mockReturnValue('') } as any);
+      expect(() => disabled.decrypt('aa:bb:cc')).toThrow(/AI_VAULT_MASTER_KEY/);
+    });
+  });
+
+  it('is enabled with a strong configured key', () => {
+    expect(service.isEnabled()).toBe(true);
   });
 
   describe('encrypt/decrypt', () => {

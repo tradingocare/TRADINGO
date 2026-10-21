@@ -153,11 +153,12 @@ export function CategoryStrip() {
       </Link>
 
       {/* Ranked categories horizontal scroll.
-          On /trading a strip click opens category discovery (/categories)
-          with that category selected; elsewhere it filters in place. */}
+          On the product-discovery hub (/trading historically, /product today)
+          a strip click opens category discovery (/categories) with that
+          category selected; elsewhere it filters in place. */}
       {categories.map((cat) => {
         const isActive = cat.slug === activeCategory?.slug
-        const catHref = basePath === '/trading'
+        const catHref = basePath === '/trading' || basePath === '/product'
           ? `/categories?category=${encodeURIComponent(cat.slug)}`
           : (() => {
               const catParams = new URLSearchParams(baseSearch.toString())

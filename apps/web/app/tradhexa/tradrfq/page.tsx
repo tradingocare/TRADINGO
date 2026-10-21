@@ -5,7 +5,7 @@ import EngineDetailPage from '@/components/shared/engine-detail-page';
 const engine = engines.find(e => e.id === 'tradrfq')!;
 
 export const metadata: Metadata = {
-  title: 'TRADRFQ — Smart RFQ & Negotiation Engine | TRADINGO',
+  title: 'TRADRFQ — Smart RFQ & Negotiation Engine',
   description: engine.description,
 };
 

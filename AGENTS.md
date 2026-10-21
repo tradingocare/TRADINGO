@@ -90,8 +90,11 @@ NEVER introduce hardcoded UI colors. All functional surfaces use tokens only:
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `bg-bg-base` | `#00001C` | Page background ONLY |
-| `bg-surface` / `bg-bg-elevated` | `#00072D` | Card, container, section, table, modal, drawer, popover, sidebar, workspace, filter, search panel, dropdown, form panel, widget |
+| `bg-bg-base` | `#2C1608` | Page background ONLY (FOUNDER LOCKED) |
+| `bg-bg-elevated` | `#100C08` | Elevated surface (card level): cards, sections, panels, modals |
+| `bg-surface` | `#100C08` | Card, container, section, table, modal, drawer, popover, workspace, filter, search panel, dropdown, form panel, widget |
+
+**Brand Foundation (FOUNDER LOCKED — 2026-10-20):** Brand Primary `#2C1608` (nav, sidebar, header, footer); Brand Surface / Box `#100C08` (cards, sections, panels); Page background `#2C1608`. These supersede earlier Zaffre/Neon and `#00072D`/`#00001C` documentation values. The earlier `#030630` blue is deprecated and must not be used as the active page background.
 
 **FORBIDDEN as functional surfaces:** `bg-white`, `bg-gray-50`, `bg-gray-100`, `bg-black`, `bg-slate-*`, `bg-neutral-*`, `bg-zinc-*`, `bg-[#...]`, `bg-[rgba(...)]`, `style={{background}}`, `style={{backgroundColor}}`, `rgba(...)`, `rgb(...)`, `hsl(...)`, `linear-gradient(...)`
 

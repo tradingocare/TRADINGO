@@ -42,7 +42,7 @@ export default function ClaimYourGrowth() {
               {'\uD83D\uDFE1'} Create Free Account
             </a>
             <a
-              href="/trading"
+              href="/product"
               className="btn-glass inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-xs font-semibold transition-all hover:scale-105 sm:gap-2 sm:px-8 sm:py-3.5 sm:text-sm"
             >
               {'\u26A1'} Explore Marketplace
@@ -54,7 +54,7 @@ export default function ClaimYourGrowth() {
               {'\uD83D\uDFE2'} Become a Seller
             </a>
             <a
-              href="/trading"
+              href="/product"
               className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-6 py-3 text-xs font-semibold text-blue-400 transition-all hover:scale-105 hover:bg-blue-500/20 sm:gap-2 sm:px-8 sm:py-3.5 sm:text-sm"
             >
               {'\uD83D\uDD35'} Browse as Buyer

@@ -47,11 +47,20 @@ describe('P1-01 fabricated stats contract', () => {
     expect(src).not.toContain("value: formatNum(city.buyers)");
   });
 
-  it('demo /product route retired with zero references', () => {
-    expect(existsSync(join(web, 'app/product/page.tsx'))).toBe(false);
-    for (const f of ['app/page.tsx', 'components/shared/footer.tsx']) {
-      expect(read(f)).not.toMatch(/href="\/product"/);
-    }
+  it('retired demo /product fixtures are gone; canonical /product hub is the real trading discovery', () => {
+    const src = read('app/product/page.tsx');
+    // /product is the full trading-hub experience (moved client), since the
+    // simplistic standalone discovery page is gone.
+    expect(src).toContain('TradingDiscoveryClient');
+    expect(read('app/product/TradingDiscoveryClient.tsx')).toContain('basePath="/product"');
+    expect(src).not.toContain('DEMO_PRODUCTS');
+    expect(src).not.toContain('GALLERY_IMAGES');
+    expect(src).not.toContain('Demo 1 VMC-850');
+  });
+
+  it('authority chain: /trading 308-redirects to /product (page + config)', () => {
+    expect(read('app/trading/page.tsx')).toContain("permanentRedirect('/product')");
+    expect(read('next.config.ts')).toMatch(/source:\s*'\/trading',\s*destination:\s*'\/product',\s*permanent:\s*true/);
   });
 
   it('IndiaHubs has no fabricated fallback stat values', () => {

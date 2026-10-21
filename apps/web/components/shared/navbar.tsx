@@ -18,8 +18,9 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Trading', subtitle: 'PRODUCTS', href: '/trading' },
-  { label: 'TradeServ', subtitle: 'SERVICES', href: '/tradeserv' },
+  { label: 'Tradegories', subtitle: 'CATEGORIES', href: '/categories' },
+  { label: 'TRADING', subtitle: 'PRODUCTS', href: '/product' },
+  { label: 'TRADESERV', subtitle: 'SERVICES', href: '/service' },
   { label: 'Tradors', subtitle: 'BUSINESS DIRECTORY', href: '/companies' },
   { label: 'TradeTalk', subtitle: 'BUSINESS NETWORK', href: '/tradetalk' },
   { label: 'GoStart', subtitle: 'CREATE ACCOUNT', href: '/register/buyer' },
@@ -41,7 +42,7 @@ const themeToggleClass =
 
 const capsuleStyle = {
   background:
-    'linear-gradient(180deg, rgba(255,255,255,0.05), transparent 44%), radial-gradient(circle at 16% 0%, rgba(255,77,0,0.10), transparent 34%), radial-gradient(circle at 84% 100%, rgba(245,158,11,0.08), transparent 30%), var(--nav-capsule-fill, rgba(8, 10, 18, 0.94))',
+    'linear-gradient(180deg, rgba(255,255,255,0.05), transparent 44%), radial-gradient(circle at 16% 0%, rgba(255,77,0,0.10), transparent 34%), radial-gradient(circle at 84% 100%, rgba(245,158,11,0.08), transparent 30%), var(--nav-capsule-fill, var(--bg-elevated))',
   boxShadow:
     '0 24px 80px rgba(0,0,0,0.55), 0 8px 28px rgba(0,0,0,0.40), 0 0 80px -16px rgba(255,77,0,0.15), 0 0 60px -20px rgba(245,158,11,0.12), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(255,255,255,0.04)',
   backdropFilter: 'blur(32px) saturate(1.15)',
@@ -132,7 +133,7 @@ function HomeSegment({ active, onClick }: { active: boolean; onClick?: () => voi
       <Link
         href="/"
         onClick={onClick}
-        aria-label="TRADINGO Trading Home"
+        aria-label="TRADINGO Home"
         className={textCapsule}
       >
         {active && <ActiveTreatment />}
@@ -141,7 +142,7 @@ function HomeSegment({ active, onClick }: { active: boolean; onClick?: () => voi
             TRADINGO
           </span>
           <span className="mt-1 text-[9px] font-medium uppercase leading-none tracking-[0.14em] text-text-tertiary">
-            TRADING HOME
+            HOME
           </span>
         </span>
       </Link>
@@ -155,7 +156,7 @@ function MobileHomeItem({ active, onClick }: { active: boolean; onClick: () => v
       href="/"
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      aria-label="TRADINGO Trading Home"
+      aria-label="TRADINGO Home"
       className={cn(
         segmentBase,
         'nav-capsule-rainbow min-h-[54px] flex-row items-center justify-start gap-3 border border-border bg-surface-secondary/50 px-5 text-left',
@@ -169,7 +170,7 @@ function MobileHomeItem({ active, onClick }: { active: boolean; onClick: () => v
           TRADINGO
         </span>
         <span className="mt-1 text-[9px] font-medium uppercase leading-none tracking-[0.14em] text-text-tertiary">
-          TRADING HOME
+          HOME
         </span>
       </span>
     </Link>
@@ -182,8 +183,8 @@ function DesktopNavItem({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <motion.div
       className="flex items-center"
-      whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.015 }}
-      whileTap={shouldReduceMotion ? undefined : { scale: 0.985 }}
+      whileHover={shouldReduceMotion ? { y: 0, scale: 1 } : { y: -2, scale: 1.015 }}
+      whileTap={shouldReduceMotion ? { scale: 1 } : { scale: 0.985 }}
       transition={{ type: 'spring', stiffness: 420, damping: 30 }}
     >
       <Link
@@ -294,8 +295,8 @@ function NavbarInner() {
           >
             <div className="relative z-10 flex items-center gap-2">
               <motion.div
-                whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.01 }}
-                whileTap={shouldReduceMotion ? undefined : { scale: 0.985 }}
+                whileHover={shouldReduceMotion ? { y: 0, scale: 1 } : { y: -2, scale: 1.01 }}
+                whileTap={shouldReduceMotion ? { scale: 1 } : { scale: 0.985 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 30 }}
               >
                 <HomeSegment active={isActive('/')} />

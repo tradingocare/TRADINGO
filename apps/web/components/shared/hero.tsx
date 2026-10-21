@@ -17,7 +17,7 @@ export function Hero({
   title,
   subtitle,
   ctaPrimary = { label: 'Get Started', href: '/register/buyer' },
-  ctaSecondary = { label: 'Learn More', href: '/trading' },
+  ctaSecondary = { label: 'Learn More', href: '/product' },
   badges,
 }: HeroProps) {
   return (

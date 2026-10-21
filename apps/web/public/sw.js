@@ -1,8 +1,10 @@
-const CACHE_NAME = 'tradingo-v8';
+const CACHE_NAME = 'tradingo-v9';
+const OFFLINE_URL = '/offline';
 const STATIC_ASSETS = [
-  '/',
-  '/offline',
+  OFFLINE_URL,
   '/logo/trdn5.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -22,26 +24,68 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+  if (request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
+  const url = new URL(request.url);
+
+  // Never intercept cross-origin requests (API, analytics). A failed network
+  // request must surface as a network error, never a synthetic response that
+  // axios reports as an HTTP status.
+  if (url.origin !== self.location.origin) return;
+
+  // HTML navigations: network-first so a fresh deploy is served immediately.
+  // Only fall back to cache (or the offline page) while offline. Serving HTML
+  // cache-first causes hydration mismatches when new JS chunks meet old HTML.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
         .then((response) => {
-          if (response.ok && response.type === 'basic') {
+          if (response.ok) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
         })
-        .catch(() => {
-          if (event.request.mode === 'navigate') {
-            return caches.match('/offline');
-          }
-          return cached || new Response('Offline', { status: 503 });
-        });
+        .catch(async () => (await caches.match(request)) || (await caches.match(OFFLINE_URL))),
+    );
+    return;
+  }
 
-      return cached || fetchPromise;
+  // Static brand assets are stable and safe to serve cache-first.
+  const isBrandAsset =
+    url.pathname.startsWith('/logo/') || url.pathname.startsWith('/icons/');
+
+  // Build output is only cache-first when the response is explicitly
+  // immutable. Production chunks are content-hashed and served with
+  // `Cache-Control: public, max-age=31536000, immutable`, so caching them is
+  // safe. Dev assets are served under a STABLE url with
+  // `Cache-Control: no-cache, must-revalidate`; serving those from cache
+  // without revalidation pins a stale stylesheet (e.g. a retired
+  // `--bg-base`) in the browser forever, so they must be revalidated.
+  const isBuildOutput = url.pathname.startsWith('/_next/static/');
+
+  if (!isBrandAsset && !isBuildOutput) return;
+
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      const immutable =
+        cached && /immutable/i.test(cached.headers.get('cache-control') || '');
+
+      if (cached && (immutable || isBrandAsset)) return cached;
+
+      return fetch(request)
+        .then((response) => {
+          if (response.ok && response.type === 'basic') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch((error) => {
+          if (cached) return cached;
+          throw error;
+        });
     }),
   );
 });

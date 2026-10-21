@@ -5,18 +5,32 @@ import { SearchAnalyticsEvent } from '../interfaces/search-types';
 
 @Injectable()
 export class SearchAnalyticsService {
-  private readonly client: ClickHouseClient;
+  private readonly client: ClickHouseClient | null;
   private readonly logger = new Logger(SearchAnalyticsService.name);
 
   constructor(private readonly configService: ConfigService) {
+    const url = this.configService.get<string>('clickhouse.url')?.trim();
+    if (!url) {
+      // Optional infrastructure: without an endpoint no client is created and
+      // search analytics are skipped (DEGRADATION_MATRIX 'clickhouse').
+      this.client = null;
+      this.logger.warn('ClickHouse is not configured — search analytics are disabled');
+      return;
+    }
     this.client = createClient({
-      url: this.configService.get<string>('clickhouse.url'),
+      url,
       username: this.configService.get<string>('clickhouse.username'),
       password: this.configService.get<string>('clickhouse.password'),
     });
   }
 
+  /** True when a ClickHouse endpoint is configured and the client is active. */
+  isEnabled(): boolean {
+    return this.client !== null;
+  }
+
   async trackSearch(event: SearchAnalyticsEvent): Promise<void> {
+    if (!this.client) return;
     try {
       await this.client.insert({
         table: 'search_analytics',
@@ -60,6 +74,7 @@ export class SearchAnalyticsService {
   }
 
   async getPopularQueries(limit: number = 20): Promise<{ query: string; count: number }[]> {
+    if (!this.client) return [];
     try {
       const result = await this.client.query({
         query: `
@@ -85,6 +100,9 @@ export class SearchAnalyticsService {
     avgResultsPerSearch: number;
     topQueries: { query: string; count: number }[];
   }> {
+    if (!this.client) {
+      return { totalSearches: 0, uniqueQueries: 0, avgResultsPerSearch: 0, topQueries: [] };
+    }
     try {
       const summary = await this.client.query({
         query: `

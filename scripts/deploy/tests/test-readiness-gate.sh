@@ -25,8 +25,8 @@ report() {
   esac
 }
 
-if ! command -v node >/dev/null 2>&1; then
-  echo "FATAL: node is required to run the readiness gate behavioural tests"
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "FATAL: python3 is required to run the readiness gate behavioural tests"
   exit 2
 fi
 
@@ -36,10 +36,20 @@ cleanup() { [ -n "$SERVER_PIDS" ] && kill $SERVER_PIDS 2>/dev/null; rm -rf "$TMP
 trap cleanup EXIT
 
 free_port() {
-  node -e 'const s=require("net").createServer();s.listen(0,"127.0.0.1",()=>{console.log(s.address().port);s.close();});'
+  python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1]);s.close()'
 }
 start_server() { # port delay_ms http_code
-  node -e 'const http=require("http");const p=Number(process.argv[1]),d=Number(process.argv[2]),c=Number(process.argv[3]);const s=http.createServer((q,r)=>{r.writeHead(c);r.end();});setTimeout(()=>s.listen(p,"127.0.0.1"),d);' "$1" "$2" "$3" >/dev/null 2>&1 &
+  python3 -c '
+import sys, time
+from http.server import BaseHTTPRequestHandler, HTTPServer
+p=int(sys.argv[1]); d=int(sys.argv[2]); c=int(sys.argv[3])
+class H(BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
+    def do_GET(self):
+        self.send_response(c); self.end_headers(); self.wfile.write(b"")
+time.sleep(d/1000.0)
+HTTPServer(("127.0.0.1", p), H).serve_forever()
+' "$1" "$2" "$3" >/dev/null 2>&1 &
   SERVER_PIDS="$SERVER_PIDS $!"
 }
 
@@ -115,16 +125,16 @@ else
 fi
 
 # R5: workflow wiring — order identity < readiness < smoke (invocation lines).
-L_ID="$(grep -n 'verify-release-images.sh "\$TARGET_SHA" "\$GHCR_OWNER"' "$WF" | head -1 | cut -d: -f1)"
-L_WAIT="$(grep -n 'bash scripts/deploy/wait-for-ready.sh' "$WF" | head -1 | cut -d: -f1)"
-L_SMOKE="$(grep -n 'if bash scripts/deploy/smoke-test.sh http://localhost:3001' "$WF" | head -1 | cut -d: -f1)"
+  L_ID="$(grep -n '^[[:space:]]*bash scripts/deploy/verify-release-images\.sh' "$WF" | head -1 | cut -d: -f1)"
+  L_WAIT="$(grep -n '^[[:space:]]*bash scripts/deploy/wait-for-ready\.sh' "$WF" | head -1 | cut -d: -f1)"
+  L_SMOKE="$(grep -n '^[[:space:]]*if bash scripts/deploy/smoke-test\.sh http://localhost:3001' "$WF" | head -1 | cut -d: -f1)"
 if [ -n "$L_ID" ] && [ -n "$L_WAIT" ] && [ -n "$L_SMOKE" ] \
    && [ "$L_ID" -lt "$L_WAIT" ] && [ "$L_WAIT" -lt "$L_SMOKE" ]; then
   report PASS R5 "order: identity ($L_ID) < readiness ($L_WAIT) < smoke ($L_SMOKE)"
 else report FAIL R5 "wiring order wrong (identity=$L_ID readiness=$L_WAIT smoke=$L_SMOKE)"; fi
 
 # R5b: readiness call guarded fail-closed, single invocation, errexit intact.
-L_COUNT="$(grep -c 'bash scripts/deploy/wait-for-ready.sh' "$WF")"
+  L_COUNT="$(grep -c '^[[:space:]]*bash scripts/deploy/wait-for-ready\.sh' "$WF")"
 if grep -q 'wait-for-ready.sh || { echo "ERROR' "$WF" && [ "$L_COUNT" -eq 1 ] \
    && grep -q 'set -euo pipefail' "$WF" && grep -q 'set -euo pipefail' "$GATE"; then
   report PASS R5b "readiness gate guarded fail-closed (single invocation, errexit)"

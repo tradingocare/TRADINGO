@@ -28,15 +28,44 @@ export class ProductionConfigValidator {
     '<your-', '<secret', 'dummy', 'founder', 'xxxxxx',
   ] as const;
 
+  /**
+   * Exact literals that are (or have been) published in this repository and
+   * are therefore publicly known. They are real, usable strings — they pass a
+   * naive minimum-length check and match none of the prose placeholders above
+   * — so they must be matched exactly rather than by substring. A value from
+   * this list must never be accepted as a production signing key.
+   */
+  static readonly KNOWN_UNSAFE_SECRETS = [
+    'local-development-secret-key-32chars-minimum',
+    'local-development-refresh-secret-32chars-min',
+    'local-development-ai-vault-master-key-32chars-minimum',
+    'tradingo-ai-vault-default-key-change-in-production!',
+  ] as const;
+
   static isPlaceholder(value?: string | null): boolean {
     if (!value) return true;
     const v = value.toLowerCase();
     return ProductionConfigValidator.PLACEHOLDER_PATTERNS.some((p) => v.includes(p));
   }
 
+  /** True when the value is a publicly known literal (exact match, case-insensitive). */
+  static isKnownUnsafeSecret(value?: string | null): boolean {
+    if (!value) return false;
+    const v = value.trim().toLowerCase();
+    return ProductionConfigValidator.KNOWN_UNSAFE_SECRETS.some((k) => v === k);
+  }
+
+  /** True when the value must not be used as a secret: a placeholder or a publicly known literal. */
+  static isUnsafeSecret(value?: string | null): boolean {
+    return (
+      ProductionConfigValidator.isPlaceholder(value) ||
+      ProductionConfigValidator.isKnownUnsafeSecret(value)
+    );
+  }
+
   static classify(value?: string | null): SecretStatus {
     if (!value || value.trim() === '') return 'MISSING';
-    if (ProductionConfigValidator.isPlaceholder(value)) return 'PLACEHOLDER';
+    if (ProductionConfigValidator.isUnsafeSecret(value)) return 'PLACEHOLDER';
     return 'CONFIGURED';
   }
 
@@ -48,10 +77,14 @@ export class ProductionConfigValidator {
 
     const jwtSecret = configService.get<string>('jwt.secret', '');
     const jwtRefreshSecret = configService.get<string>('jwt.refreshSecret', '');
-    if (!jwtSecret || ProductionConfigValidator.isPlaceholder(jwtSecret) || jwtSecret.length < 32) {
+    if (ProductionConfigValidator.isKnownUnsafeSecret(jwtSecret)) {
+      result.errors.push('JWT_SECRET is a publicly known development default — it must not be used to sign production tokens');
+    } else if (!jwtSecret || ProductionConfigValidator.isPlaceholder(jwtSecret) || jwtSecret.length < 32) {
       result.errors.push('JWT_SECRET is invalid, missing, or still a placeholder (min 32 chars required)');
     }
-    if (!jwtRefreshSecret || ProductionConfigValidator.isPlaceholder(jwtRefreshSecret) || jwtRefreshSecret.length < 32) {
+    if (ProductionConfigValidator.isKnownUnsafeSecret(jwtRefreshSecret)) {
+      result.errors.push('JWT_REFRESH_SECRET is a publicly known development default — it must not be used to sign production tokens');
+    } else if (!jwtRefreshSecret || ProductionConfigValidator.isPlaceholder(jwtRefreshSecret) || jwtRefreshSecret.length < 32) {
       result.errors.push('JWT_REFRESH_SECRET is invalid, missing, or still a placeholder (min 32 chars required)');
     }
     result.report.push(
@@ -148,9 +181,12 @@ export class ProductionConfigValidator {
     }
 
     const aiVaultKey = process.env.AI_VAULT_MASTER_KEY || '';
-    result.report.push(this.report('AI_VAULT_MASTER_KEY', aiVaultKey, false, false, 'AI provider API key vault encryption key'));
-    if (ProductionConfigValidator.isPlaceholder(aiVaultKey) || aiVaultKey === 'tradingo-ai-vault-default-key-change-in-production!') {
-      result.warnings.push('AI_VAULT_MASTER_KEY is missing or uses the default placeholder \u2014 AI key vault will not be secure');
+    result.report.push(this.report('AI_VAULT_MASTER_KEY', aiVaultKey, false, true, 'AI provider API key vault encryption key'));
+    if (ProductionConfigValidator.isUnsafeSecret(aiVaultKey)) {
+      // Security-critical: the vault encrypts provider API keys with this value.
+      // A missing, empty or publicly known key must fail CLOSED in production
+      // rather than silently encrypting credentials with a known key.
+      result.errors.push('AI_VAULT_MASTER_KEY is missing, empty or a known unsafe value — it must be a strong secret (32+ chars) in production');
     }
 
     const pgPassword = process.env.POSTGRES_PASSWORD || '';

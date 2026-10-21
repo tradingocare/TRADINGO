@@ -4,7 +4,7 @@ import Link from 'next/link'
 import VendorRegistrationWizard from '../vendor/VendorRegistrationWizard'
 
 export const metadata: Metadata = {
-  title: 'Activate Seller Mode — TRADINGO',
+  title: 'Activate Seller Mode',
   description: 'Activate your seller workspace, keep your buyer features. Join TRADINGO as a verified seller with zero commission and GST invoicing.',
 }
 

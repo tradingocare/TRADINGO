@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { FEATURES_SELLER, SELLER_PRICING_PLANS, SELLER_ONBOARDING_STEPS } from '@/data/master-data';
 
 export const metadata: Metadata = {
-  title: 'For Sellers | TRADINGO',
+  title: 'For Sellers',
   description:
     'Reach millions of buyers across India. List your products, get AI-matched leads, and grow your business.',
 };

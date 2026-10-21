@@ -6,7 +6,7 @@ import AdminLoginClient  from './AdminLoginClient'
 import { resolvePostLoginTarget } from '@/lib/auth/redirects'
 
 export const metadata: Metadata = {
-  title: 'Admin Sign In — TRADINGO',
+  title: 'Admin Sign In',
   description:
     'Sign in to the TRADINGO admin console — internal team '
     + 'and authorized RMs only.',

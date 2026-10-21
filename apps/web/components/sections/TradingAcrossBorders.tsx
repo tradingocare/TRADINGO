@@ -110,7 +110,7 @@ export default function TradingAcrossBorders() {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="h-px w-48 bg-gradient-to-r from-transparent via-border to-transparent" />
                 </div>
-                <div className="relative flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface-secondary px-6 py-3.5 max-w-2xl mx-auto">
+                <div className="relative flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-6 py-3.5 max-w-2xl mx-auto">
                   <span className="text-sm font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-base">Born in</span>
                   <span className="text-base font-extrabold text-primary sm:text-lg">India,</span>
                   <span className="text-sm font-semibold uppercase tracking-[0.15em] text-text-secondary sm:text-base">Built for</span>
@@ -174,7 +174,7 @@ export default function TradingAcrossBorders() {
                         <div className={`absolute inset-0 rounded-full transition-all duration-300 ${
                           isSelected 
                             ? 'border-2 border-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.5)] scale-105' 
-                            : 'border border-border bg-surface-secondary group-hover:border-border'
+                            : 'border border-border bg-surface group-hover:border-border'
                         }`} />
 
                         {/* Inner gold border highlight for selected */}
@@ -220,7 +220,7 @@ export default function TradingAcrossBorders() {
           </div>
 
           {/* Mockup footer attributes */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-text-tertiary max-w-2xl mx-auto rounded-full border border-border bg-surface-secondary py-3 px-8">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-text-tertiary max-w-2xl mx-auto rounded-full border border-border bg-surface py-3 px-8">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-amber-500/80" />
               <span className="font-medium text-primary/80">Secure</span>
@@ -251,7 +251,7 @@ export default function TradingAcrossBorders() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.3 }}
-            className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface-secondary px-8 py-4 text-center max-w-[1600px] mx-auto backdrop-blur-md"
+            className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface px-8 py-4 text-center max-w-[1600px] mx-auto backdrop-blur-md"
           >
             {/* Dynamic Flag Icon at the top */}
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-amber-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden">
@@ -272,7 +272,7 @@ export default function TradingAcrossBorders() {
                   Driven by Trust, Technology, Intelligence.
                   Starting in India and expanding globally.
                 </p>
-                <Link href="/trading">
+                <Link href="/product">
                   <motion.span
                     whileHover={{ y: -2, scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
@@ -304,10 +304,10 @@ export default function TradingAcrossBorders() {
                   <button className="group flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-[#ff4d00] px-6 py-2.5 text-sm font-bold text-primary transition-all hover:shadow-lg hover:shadow-[#ff4d00]/25 cursor-pointer">
                     Notify Me When We Launch
                   </button>
-                  <button className="group flex items-center justify-center gap-2 rounded-full border border-border bg-surface-secondary px-6 py-2.5 text-sm font-semibold text-text-secondary transition-all hover:bg-surface-tertiary hover:text-primary cursor-pointer">
+                  <button className="group flex items-center justify-center gap-2 rounded-full border border-border bg-surface px-6 py-2.5 text-sm font-semibold text-text-secondary transition-all hover:bg-surface-tertiary hover:text-primary cursor-pointer">
                     Join the Waiting List
                   </button>
-                <Link href="/trading">
+                <Link href="/product">
                     <button className="group flex items-center justify-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-6 py-2.5 text-sm font-semibold text-amber-400 transition-all hover:bg-amber-500/10 cursor-pointer">
                       Explore TRADINGO India
                     </button>

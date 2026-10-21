@@ -5,7 +5,7 @@ import EngineDetailPage from '@/components/shared/engine-detail-page';
 const engine = engines.find(e => e.id === 'tradtrust')!;
 
 export const metadata: Metadata = {
-  title: 'TRADTRUST — Trust & Verification Engine | TRADINGO',
+  title: 'TRADTRUST — Trust & Verification Engine',
   description: engine.description,
 };
 

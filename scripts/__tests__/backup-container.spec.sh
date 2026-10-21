@@ -39,26 +39,57 @@ i=0; while [ $i -lt 500 ]; do echo "TABLE - $i public table_$i"; i=$((i+1)); don
 [ "$own_tmp" = "1" ] && rm -f "$src"; exit 0
 EOF
   # docker mock: logs full argv; `inspect` answers from /tmp/inspect_mode
-  # (ok | missing | stopped | wrong-image | wrong-label | wrong-volume).
+  # (ok | missing | stopped | wrong-image | wrong-label | wrong-volume |
+  #  volume-missing | volume-mismatch-project | ambiguous | no-volume-label).
+  # The DEFAULT state models the VERIFIED LIVE Hostinger layout: the database
+  # container belongs to Compose project `tradingo` while its data volume
+  # carries the project label `tradingo-prod` (the volume was created by the
+  # production project and adopted by the legacy project through an override
+  # file). That label mismatch is a normal state and must NOT block a backup
+  # when the pinned volume and the actual container mount both match.
   # Format-specific inspects (labels, mounts) are matched BEFORE the generic
   # inspect branch; `exec` delegates to the pg_dump/pg_restore mock named in
   # argv (stdin inherited, so redirections work).
   cat > "$MOCKBIN/docker" <<'EOF'
 #!/usr/bin/env sh
 printf '%s\n' "$*" >> /tmp/docker_args.log
+mode=$(cat /tmp/inspect_mode 2>/dev/null || echo ok)
+TARGET_CID="abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+OTHER_CID="9999999999999999999999999999999999999999999999999999999999999999"
+last=""
+for a in "$@"; do last="$a"; done
+if [ "$1" = "volume" ]; then
+  case "$mode" in
+    volume-missing) echo "Error: no such volume" >&2; exit 1 ;;
+    no-volume-label) echo "";;
+    volume-mismatch-project) echo "some-other-project";;
+    *) echo "tradingo-prod";;
+  esac; exit 0
+fi
+if [ "$1" = "ps" ] && [ "$2" = "-aq" ]; then
+  echo "$TARGET_CID"
+  [ "$mode" = "ambiguous" ] && echo "$OTHER_CID"
+  exit 0
+fi
 case "$*" in
-  *com.docker.compose.service*) mode=$(cat /tmp/inspect_mode 2>/dev/null || echo ok)
-    case "$mode" in wrong-label) echo "api";; *) echo "postgres";; esac; exit 0 ;;
-  *Mounts*) mode=$(cat /tmp/inspect_mode 2>/dev/null || echo ok)
-    case "$mode" in wrong-volume) echo "tradingo_postgres_data";; *) echo "tradingo-prod_postgres_data";; esac; exit 0 ;;
+  *com.docker.compose.service*) case "$mode" in wrong-label) echo "api";; *) echo "postgres";; esac; exit 0 ;;
+  *com.docker.compose.project*) case "$mode" in
+      no-project-label) echo "";;
+      *) echo "tradingo";;
+    esac; exit 0 ;;
+  *Mounts*)
+    case "$last" in
+      "$TARGET_CID") case "$mode" in wrong-volume) echo "tradingo_postgres_data";; *) echo "tradingo-prod_postgres_data";; esac; exit 0 ;;
+      "$OTHER_CID") case "$mode" in ambiguous) echo "tradingo-prod_postgres_data";; *) echo "";; esac; exit 0 ;;
+      *) echo ""; exit 0 ;;
+    esac ;;
 esac
 if [ "$1" = "inspect" ]; then
-  mode=$(cat /tmp/inspect_mode 2>/dev/null || echo ok)
   case "$mode" in
     missing) echo 'Error: No such container' >&2; exit 1 ;;
     stopped) echo "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef|postgres:16-alpine|false"; exit 0 ;;
-    wrong-image) echo "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890|redis:7-alpine|true"; exit 0 ;;
-    *) echo "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890|postgres:16-alpine|true"; exit 0 ;;
+    wrong-image) echo "$TARGET_CID|redis:7-alpine|true"; exit 0 ;;
+    *) echo "$TARGET_CID|postgres:16-alpine|true"; exit 0 ;;
   esac
 fi
 while [ $# -gt 0 ]; do
@@ -229,6 +260,86 @@ grep -q "BACKUP_RESULT=OK" /tmp/c12.log && bad "C12: success line emitted after 
 n=$(ls /tmp/cbk/testbk-*.dump /tmp/cbk/*.tmp 2>/dev/null | wc -l)
 [ "$n" = "0" ] && ok "C12: no final artifact and no tmp left behind" || bad "C12: artifacts left behind"
 rm -f /tmp/c12.log
+
+# ── C13: pinned data volume (primary) + advisory project-label comparison ────
+echo "--- C13: pinned data volume ---"
+# The mock's default state models the VERIFIED LIVE Hostinger layout: the
+# container belongs to Compose project `tradingo`, the data volume carries the
+# project label `tradingo-prod`. A label mismatch must NOT block a backup when
+# the pinned volume and the container's actual mount both match.
+setup_mocks; fresh_env
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume tradingo-prod_postgres_data >/tmp/c13a.log 2>&1; then
+  ok "C13a: explicitly pinned volume succeeds despite the project-label mismatch"
+else
+  bad "C13a: pinned volume must succeed despite the project-label mismatch"
+fi
+grep -q "NOTE: data volume" /tmp/c13a.log && ok "C13a: the label mismatch is reported" || bad "C13a: label mismatch not reported"
+
+# C13b: NO pin -> a volume is never inferred or selected.
+setup_mocks; fresh_env
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres >/tmp/c13b.log 2>&1; then
+  bad "C13b: a backup without a pinned volume must fail"
+else
+  ok "C13b: a backup without a pinned volume fails closed"
+fi
+grep -q "no expected data volume pinned" /tmp/c13b.log && ok "C13b: reason reported" || bad "C13b: reason missing"
+
+# C13c: the pin names a different volume than the container actually mounts.
+setup_mocks; fresh_env
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume some_other_volume >/tmp/c13c.log 2>&1; then
+  bad "C13c: a pin that does not match the actual mount must fail"
+else
+  ok "C13c: a pin that does not match the actual mount fails closed"
+fi
+grep -q "refusing to back up a different database" /tmp/c13c.log && ok "C13c: reason reported" || bad "C13c: reason missing"
+
+# C13d: the container's ACTUAL mount differs from the pin (wrong-volume mode).
+setup_mocks; fresh_env
+echo wrong-volume > /tmp/inspect_mode
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume tradingo-prod_postgres_data >/tmp/c13d.log 2>&1; then
+  bad "C13d: a mismatching actual mount must fail"
+else
+  ok "C13d: a mismatching actual mount fails closed"
+fi
+
+# C13e: the pinned volume does not exist.
+setup_mocks; fresh_env
+echo volume-missing > /tmp/inspect_mode
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume tradingo-prod_postgres_data >/tmp/c13e.log 2>&1; then
+  bad "C13e: a non-existent pinned volume must fail"
+else
+  ok "C13e: a non-existent pinned volume fails closed"
+fi
+
+# C13f: the pinned volume is ALSO mounted by a second container -> ambiguous.
+setup_mocks; fresh_env
+echo ambiguous > /tmp/inspect_mode
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume tradingo-prod_postgres_data >/tmp/c13f.log 2>&1; then
+  bad "C13f: an ambiguous pinned volume must fail"
+else
+  ok "C13f: an ambiguous pinned volume fails closed"
+fi
+grep -q "ambiguous" /tmp/c13f.log && ok "C13f: reason reported" || bad "C13f: reason missing"
+
+# C13g: strict mode makes the project-label mismatch fatal (opt-in).
+setup_mocks; fresh_env
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume tradingo-prod_postgres_data --require-same-project >/tmp/c13g.log 2>&1; then
+  bad "C13g: strict mode must fail on a project-label mismatch"
+else
+  ok "C13g: strict mode (--require-same-project) fails on a label mismatch"
+fi
+
+# C13h: a missing target container still fails closed (no fallback to another DB).
+setup_mocks; fresh_env
+echo missing > /tmp/inspect_mode
+if tradingo_pg_backup /tmp/cbk testbk compose --compose-file /tmp/cbk.env --env-file /tmp/cbk.env --db-container tradingo-postgres --expect-volume tradingo-prod_postgres_data >/tmp/c13h.log 2>&1; then
+  bad "C13h: a missing target container must fail"
+else
+  ok "C13h: a missing target container fails closed (no fallback)"
+fi
+n=$(ls /tmp/cbk/testbk-*.dump /tmp/cbk/*.tmp 2>/dev/null | wc -l)
+[ "$n" = "0" ] && ok "C13h: no artifact created" || bad "C13h: artifact left behind"
+rm -f /tmp/c13*.log
 
 echo ""
 echo "=== RESULTS: $PASS passed, $FAIL failed ==="

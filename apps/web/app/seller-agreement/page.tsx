@@ -5,7 +5,7 @@ import { CTABlock } from '@/components/shared/cta-block';
 import { getSellerEntryTarget } from '@/lib/auth/redirects';
 
 export const metadata: Metadata = {
-  title: 'Seller Agreement | TRADINGO',
+  title: 'Seller Agreement',
   description: 'TRADINGO Seller Agreement governing product listings, fees, commissions, payment terms, and order fulfillment for sellers on India\'s first TRADINGO E-Marketplace (TEM).',
   openGraph: {
     title: 'Seller Agreement | TRADINGO',
