@@ -77,6 +77,14 @@ name: Deploy Production
 #   Release images live on GHCR tagged by SHA and are pulled anonymously.
 #   Images exist for every main commit built by build-images; for earlier
 #   releases fall back to the preserved rollback images/containers.
+#   The verified procedure is now a single command:
+#   ssh tradingo@<VPS_HOST> 'cd /home/tradingo/tradingo \
+#     && bash ops/recovery/rollback.sh --version=<PREV_SHA>'
+#   It re-tags the previous release images, recreates ONLY api and web with
+#   --no-deps (no project-wide `down`, no pruning), preserves the database and
+#   every volume, and reports success only after the running image identities
+#   and the API health endpoint have been verified.
+#   The equivalent explicit command sequence is:
 #   ssh tradingo@<VPS_HOST> 'cd /home/tradingo/tradingo \
 #     && PREV=<sha-printed-by-failed-run> && REG=ghcr.io/tradingocare \
 #     && docker pull $REG/tradingo-api:$PREV \
@@ -87,11 +95,14 @@ name: Deploy Production
 #     && docker tag $REG/tradingo-api-migrate:$PREV tradingo-prod-api-migrate:latest \
 #     && docker tag $REG/tradingo-web:$PREV tradingo-prod-web:latest \
 #     && docker compose -p tradingo-prod --env-file .env.production.local \
-#          -f docker-compose.prod.yml up -d --no-deps api web \
-#     && bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000'
+#          -f docker-compose.prod.yml up -d --no-deps api web'
 #   Database restore is a separate, deliberate decision (forward-only
-#   migrations are not reversed automatically):
-#   `bash scripts/deploy/manage.sh restore backups/tradingo-<DATE>.sql.gz`
+#   migrations are not reversed automatically). The backup artefacts are
+#   PostgreSQL CUSTOM-FORMAT archives (pg_dump --format=custom, magic
+#   "PGDMP"); restore them with the validated format contract, which refuses
+#   to write into an existing database without explicit authorization:
+#   `bash scripts/deploy/restore-backup.sh --file backups/tradingo-<DATE>.dump \
+#      --target-db <database>`
 #   See docs/deployment/ROLLBACK-PROCEDURE.md for the full procedure.
 
 on:
@@ -334,9 +345,19 @@ jobs:
           # identical to the release SHA being deployed. up -d recreates the
           # containers because the image ID changed.
           docker tag "$API_IMAGE" tradingo-prod-api:latest
-          docker tag "$API_MIGRATE_IMAGE" tradingo-prod-api-migrate:latest
+          docker tag "$MIGRATE_IMAGE" tradingo-prod-api-migrate:latest
           docker tag "$WEB_IMAGE" tradingo-prod-web:latest
           echo "Release images pulled and retagged for $TARGET_SHA."
+          # Record the IMMUTABLE identity of this release (image IDs + digests)
+          # BEFORE anything is switched, so a later rollback can restore exactly
+          # these images instead of a mutable `latest` tag. Recorded outside the
+          # checkout because the checkout is replaced on every release.
+          # Fatal here on purpose: at this point nothing has been migrated or
+          # switched, and a release without a recorded identity has no verified
+          # rollback path.
+          RELEASE_MANIFEST_DIR="${RELEASE_MANIFEST_DIR:-/home/tradingo/releases}" \
+            bash scripts/deploy/release-manifest.sh record "$TARGET_SHA" \
+            || { echo "ERROR: the immutable release identity could not be recorded — aborting before any migration or service change"; exit 1; }
           # Record immutable release identities (image ID + registry digest)
           # in the run log: mutable tags are not proof of release identity.
           for entry in "api:$API_IMAGE" "api-migrate:$API_MIGRATE_IMAGE" "web:$WEB_IMAGE"; do
@@ -359,6 +380,26 @@ jobs:
           # unless the dispatcher set the documented stale-backup exception
           # (skip_fresh_backup=true), which is recorded in the run inputs.
           ALLOW_STALE_BACKUP="$SKIP_FRESH_BACKUP" bash scripts/deploy/verify-backup.sh || { echo "ERROR: no fresh verified backup and no documented exception; resolve backup health before retrying"; exit 1; }
+
+          echo "=== Verifying production configuration (fail-closed, before any change) ==="
+          # Secret validity was otherwise only proven when the new API container
+          # booted — i.e. AFTER the live containers had been replaced. A missing
+          # AI_VAULT_MASTER_KEY or a live-mode payment key surfaced as a
+          # crash-looping API after the traffic switch. This gate checks names
+          # and shape only; no value is ever printed.
+          bash scripts/deploy/verify-production-secrets.sh || { echo "ERROR: production configuration pre-flight failed; nothing has been changed"; exit 1; }
+
+          echo "=== Verifying OpenSearch readiness (optional infrastructure) ==="
+          # When no endpoint is configured, search is intentionally disabled and
+          # this gate passes. When an endpoint IS configured it must be
+          # reachable FROM the API container, so the API is never started
+          # against a fake or unreachable search endpoint (the previous
+          # host.docker.internal value produced a client that could never
+          # connect, and a silently empty discover feed).
+          if [ -n "$(sed -n 's/^[[:space:]]*OPENSEARCH_URL[[:space:]]*=[[:space:]]*//p' .env.production.local | head -n 1 | tr -d '\r' | sed -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//')" ]; then
+            $COMPOSE up -d --no-deps opensearch </dev/null || { echo "ERROR: the OpenSearch service could not be started"; exit 1; }
+          fi
+          bash scripts/deploy/verify-opensearch.sh || { echo "ERROR: the configured OpenSearch endpoint is not reachable from the API container; the API must not be started with an unreachable search endpoint"; exit 1; }
 
           echo "=== Running migrations (exit-gated; previous containers still live) ==="
           # stdin is redirected from /dev/null: this remote script is fed to
@@ -398,10 +439,23 @@ jobs:
             echo "Health checks passed."
           else
             echo "::error::Health checks FAILED. NOT rolling back automatically."
-            echo "If the previous release ($PREV_SHA) was healthy, roll back manually:"
+            echo "TRADINGO_DEPLOY_FAILED_AFTER_SWITCH target=$TARGET_SHA previous=$PREV_SHA"
+            echo ""
+            echo "==================== PARTIAL DEPLOYMENT — RECOVERY REQUIRED ===================="
+            echo "The new release IS CURRENTLY SERVING TRAFFIC. The previous release was not restored."
+            echo "The database was NOT modified: forward-only migrations are not reversed automatically."
+            echo "The verified rollback procedure is:"
+            echo "  bash ops/recovery/rollback.sh --version=$PREV_SHA"
+            echo "  (it re-tags the previous release images, recreates ONLY api and web with --no-deps,"
+            echo "   preserves the database and all volumes, and verifies image identity + health before"
+            echo "   reporting success. It never runs 'compose down' and never prunes.)"
+            echo ""
+            echo "The manual image-level equivalent is:"
             echo "  docker pull ghcr.io/$GHCR_OWNER/tradingo-api:$PREV_SHA && docker pull ghcr.io/$GHCR_OWNER/tradingo-api-migrate:$PREV_SHA && docker pull ghcr.io/$GHCR_OWNER/tradingo-web:$PREV_SHA"
             echo "  git checkout $PREV_SHA && docker tag ghcr.io/$GHCR_OWNER/tradingo-api:$PREV_SHA tradingo-prod-api:latest && docker tag ghcr.io/$GHCR_OWNER/tradingo-api-migrate:$PREV_SHA tradingo-prod-api-migrate:latest && docker tag ghcr.io/$GHCR_OWNER/tradingo-web:$PREV_SHA tradingo-prod-web:latest && $COMPOSE up -d --no-deps api web"
-            echo "  then re-run the smoke test above. See the ROLLBACK header of this workflow file."
+            echo "  then re-run the endpoint readiness gate and the smoke test (both in scripts/deploy/)"
+            echo "  (a release that predates the IA migration serves /products directly: add SMOKE_STRICT_REDIRECTS=false)"
+            echo "See the ROLLBACK header of this workflow file and docs/deployment/ROLLBACK-PROCEDURE.md."
             exit 1
           fi
 

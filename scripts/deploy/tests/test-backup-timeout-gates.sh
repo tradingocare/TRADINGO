@@ -5,7 +5,7 @@
 # Exit 0 = all pass.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-ROOT="${1:-$HERE/../..}"
+ROOT="${1:-$HERE/../../..}"
 WF="$ROOT/.github/workflows/deploy-production.yml"
 VB="$ROOT/scripts/deploy/verify-backup.sh"
 

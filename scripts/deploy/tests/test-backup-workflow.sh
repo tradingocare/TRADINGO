@@ -6,7 +6,7 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-WF="${1:-$HERE/../..}"
+WF="${1:-$HERE/../../..}"
 WF="${WF}/.github/workflows/deploy-backup.yml"
 
 PASS=0; FAIL=0
