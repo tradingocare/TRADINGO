@@ -93,10 +93,10 @@ export default function HeroSection() {
       </div>
 
       <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-10
-                      grid lg:grid-cols-2 gap-8 xl:gap-12 min-h-screen
+                      grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-12 min-h-screen
                       items-center pt-12 pb-16">
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
 
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -108,14 +108,14 @@ export default function HeroSection() {
               src="/logo/trdn5.png"
               alt="TRADINGO"
               width={300} height={300}
-              className="object-contain"
+              className="object-contain w-full max-w-[300px] h-auto"
               priority
             />
             <div className="mt-4 flex gap-1.5">
-              <span className="text-lg font-semibold text-primary/50">Trading Right.</span>
+              <span className="text-lg font-semibold text-text-secondary">Trading Right.</span>
               <span className="text-lg font-semibold"
                 style={{
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #00E5FF 50%, #00CCFF 100%)',
+                  background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-amber) 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}>Go Bright.</span>
@@ -128,13 +128,13 @@ export default function HeroSection() {
             transition={{ duration: 0.65, delay: 0.1 }}
             className="flex flex-col gap-4"
           >
-            <h1 className="text-[22px] sm:text-2xl font-black leading-tight text-primary">
-              The Global Marketplace for Businesses &amp; Consumers
+            <h1 className="text-[22px] sm:text-2xl font-black leading-tight text-text-primary">
+              B2B e-Marketplace for Products &amp; Services Across Commercial &amp; Retail
             </h1>
 
             <p className="text-xl sm:text-2xl font-bold"
               style={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #00E5FF 50%, #00CCFF 100%)',
+                background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-amber) 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
@@ -145,34 +145,50 @@ export default function HeroSection() {
               Discover verified manufacturers, suppliers, distributors, and service providers worldwide. Explore products, raw materials, daily essentials, machinery, business supplies, and professional services. Compare prices, connect directly, request quotations, negotiate deals, and find the right solutions&mdash;all on one trusted global marketplace.
             </p>
 
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Link href="/trading">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Link href="/product">
                 <motion.span
                   whileHover={{ y: -2, scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="inline-flex items-center gap-2 font-bold rounded-full
-                             px-6 py-3 text-sm cursor-pointer"
-                  style={{
-                    background: 'linear-gradient(135deg, #3b82f6, #6366f6)',
-                    color: '#fff',
-                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)',
-                  }}>
-                  Start Buying <ArrowRight size={15} />
+                  className="inline-flex items-center gap-3 font-bold rounded-full border
+                             bg-accent-blue/10 border-accent-blue/45 text-accent-blue
+                             hover:bg-accent-blue/15 hover:border-accent-blue/70
+                             px-7 sm:px-8 py-3.5 text-[15px] sm:text-base cursor-pointer
+                             transition-colors duration-300">
+                  <span
+                    aria-hidden
+                    className="h-4 w-4 rounded-full flex-shrink-0"
+                    style={{
+                      background: 'radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--accent-blue) 45%, white), var(--accent-blue) 72%)',
+                      boxShadow: '0 0 10px color-mix(in srgb, var(--accent-blue) 60%, transparent)',
+                    }}
+                  />
+                  Start Buying
                 </motion.span>
               </Link>
               <Link href="/register">
                 <motion.span
                   whileHover={{ y: -2, scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="inline-flex items-center gap-2 font-bold rounded-full
-                             bg-surface-secondary border border-border text-text-secondary
-                             px-6 py-3 text-sm cursor-pointer">
-                  Become a Seller <ArrowRight size={15} />
+                  className="inline-flex items-center gap-3 font-bold rounded-full border
+                             bg-accent-green/10 border-accent-green/45 text-accent-green
+                             hover:bg-accent-green/15 hover:border-accent-green/70
+                             px-7 sm:px-8 py-3.5 text-[15px] sm:text-base cursor-pointer
+                             transition-colors duration-300">
+                  <span
+                    aria-hidden
+                    className="h-4 w-4 rounded-full flex-shrink-0"
+                    style={{
+                      background: 'radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--accent-green) 45%, white), var(--accent-green) 72%)',
+                      boxShadow: '0 0 10px color-mix(in srgb, var(--accent-green) 60%, transparent)',
+                    }}
+                  />
+                  Become a Seller
                 </motion.span>
               </Link>
             </div>
 
-            <div className="flex gap-2 sm:gap-3 mt-3 whitespace-nowrap overflow-x-auto pb-1">
+            <div className="flex min-w-0 gap-2 sm:gap-3 mt-3 whitespace-nowrap overflow-x-auto pb-1">
               {[
                 { icon: '\uD83D\uDD0D', label: 'TRADFIND' },
                 { icon: '\uD83C\uDFAF', label: 'TRADMATCH' },
@@ -200,15 +216,15 @@ export default function HeroSection() {
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative flex flex-col gap-2"
+          className="relative flex min-w-0 flex-col gap-2"
         >
           <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-black text-xl sm:text-2xl tracking-wider text-primary whitespace-nowrap">
+              <span className="font-black text-xl sm:text-2xl tracking-wider text-text-primary whitespace-nowrap">
                 GO DIGITAL
               </span>
               <span className="h-4 w-px bg-surface-tertiary hidden sm:inline-block opacity-60" />
-              <span className="text-text-secondary text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap">
+              <span className="text-text-secondary text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-normal sm:whitespace-nowrap">
                 Premium Vendor Showcase &middot; Advertising Space
               </span>
             </div>
@@ -280,10 +296,10 @@ export default function HeroSection() {
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={activeSlide}
-                      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
-                      animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-                      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97 }}
-                      transition={{ duration: 0.55, ease: 'easeInOut' }}
+                      initial={{ opacity: 0, scale: 1.04 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.97 }}
+                      transition={reduceMotion ? { duration: 0 } : { duration: 0.55, ease: 'easeInOut' }}
                       className="absolute inset-0"
                       role="group"
                       aria-roledescription="slide"
@@ -416,25 +432,20 @@ export default function HeroSection() {
                   </AnimatePresence>
 
                   {/* Glass sheen — slow premium drift over the whole panel */}
-                  {reduceMotion ? (
-                    <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-[26px]" aria-hidden>
-                      <div className="absolute -inset-y-4 -left-1/3 w-1/4 rotate-[18deg] opacity-[0.05]"
-                        style={{ background: 'linear-gradient(90deg, transparent, #ffffff, transparent)' }} />
-                    </div>
-                  ) : (
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-[26px]"
+                    aria-hidden
+                    initial={{ opacity: 0 }}
+                    animate={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
+                    transition={{ duration: 0 }}
+                  >
                     <motion.div
-                      className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-[26px]"
-                      style={{ opacity: 0 }}
-                      aria-hidden
-                    >
-                      <motion.div
-                        className="absolute -inset-y-4 left-1/3 w-1/4 rotate-[18deg]"
-                        style={{ background: 'linear-gradient(90deg, transparent, #ffffff, transparent)' }}
-                        animate={{ opacity: [0, 0.05, 0], left: ['-20%', '120%'] }}
-                        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', repeatDelay: 6 }}
-                      />
-                    </motion.div>
-                  )}
+                      className="absolute -inset-y-4 left-1/3 w-1/4 rotate-[18deg]"
+                      style={{ background: 'linear-gradient(90deg, transparent, #ffffff, transparent)' }}
+                      animate={reduceMotion ? { opacity: 0.05, left: '-33.3333%' } : { opacity: [0, 0.05, 0], left: ['-20%', '120%'] }}
+                      transition={reduceMotion ? { duration: 0 } : { duration: 18, repeat: Infinity, ease: 'easeInOut', repeatDelay: 6 }}
+                    />
+                  </motion.div>
                 </div>
               </div>
             </div>
@@ -521,8 +532,8 @@ export default function HeroSection() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.1 + i * 0.1 }}
                   className="flex flex-col items-center text-center gap-0.5 py-2 px-2.5">
-                  <Icon size={15} className="text-accent-blue" />
-                  <p className="text-primary text-[11px] sm:text-xs font-bold">{t.label}</p>
+                  <Icon size={15} className="text-accent" />
+                  <p className="text-text-primary text-[11px] sm:text-xs font-bold">{t.label}</p>
                   <p className="text-text-secondary text-[9px] sm:text-[10px] font-medium">{t.sub}</p>
                 </motion.div>
               );

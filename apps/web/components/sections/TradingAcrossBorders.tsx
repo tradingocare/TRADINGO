@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, ChevronRight, ShieldCheck, Handshake, Zap } from 'lucide-react';
+import { Globe, ChevronRight, ShieldCheck, Handshake, Zap, Wallet } from 'lucide-react';
 
 const countries = [
   { code: 'IN', name: 'India' },
@@ -220,7 +220,7 @@ export default function TradingAcrossBorders() {
           </div>
 
           {/* Mockup footer attributes */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-text-tertiary max-w-2xl mx-auto rounded-full border border-border bg-surface py-3 px-8">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-text-tertiary w-full max-w-5xl mx-auto rounded-full border border-border bg-surface py-3 px-5 sm:px-8 md:flex-nowrap md:justify-between md:gap-x-6 lg:gap-x-10">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-amber-500/80" />
               <span className="font-medium text-primary/80">Secure</span>
@@ -239,6 +239,11 @@ export default function TradingAcrossBorders() {
             <div className="flex items-center gap-1.5">
               <Globe className="h-4 w-4 text-amber-500/80" />
               <span className="font-medium text-primary/80">Global</span>
+            </div>
+            <span className="text-primary/10">|</span>
+            <div className="flex items-center gap-1.5">
+              <Wallet className="h-4 w-4 text-amber-500/80" />
+              <span className="font-medium text-primary/80">Affordable</span>
             </div>
           </div>
         </motion.div>

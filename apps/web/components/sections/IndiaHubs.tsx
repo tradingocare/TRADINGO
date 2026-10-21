@@ -23,29 +23,59 @@ const formatCompact = (n: number): string => {
 
 const ICON_MAP: Record<string, any> = { Globe, Building2, Store, Package, Wrench, Users, DollarSign, Shield };
 
-interface TopStatCardProps { icon: React.ElementType; label: string; display: string; color: string }
+type StatAccent = 'blue' | 'purple' | 'pink' | 'green';
 
-function TopStatCard({ icon: Icon, label, display, color }: TopStatCardProps) {
+const STAT_ACCENTS: Record<StatAccent, { card: string; icon: string; value: string; dot: string }> = {
+  blue: {
+    card: 'border-accent-blue/40 hover:border-accent-blue/80',
+    icon: 'border-accent-blue/30 bg-accent-blue/15 text-accent-blue',
+    value: 'text-accent-blue',
+    dot: 'bg-accent-blue',
+  },
+  purple: {
+    card: 'border-accent-purple/40 hover:border-accent-purple/80',
+    icon: 'border-accent-purple/30 bg-accent-purple/15 text-accent-purple',
+    value: 'text-accent-purple',
+    dot: 'bg-accent-purple',
+  },
+  pink: {
+    card: 'border-accent-pink/40 hover:border-accent-pink/80',
+    icon: 'border-accent-pink/30 bg-accent-pink/15 text-accent-pink',
+    value: 'text-accent-pink',
+    dot: 'bg-accent-pink',
+  },
+  green: {
+    card: 'border-accent-green/40 hover:border-accent-green/80',
+    icon: 'border-accent-green/30 bg-accent-green/15 text-accent-green',
+    value: 'text-accent-green',
+    dot: 'bg-accent-green',
+  },
+};
+
+interface TopStatCardProps { icon: React.ElementType; label: string; display: string; accent: StatAccent }
+
+function TopStatCard({ icon: Icon, label, display, accent }: TopStatCardProps) {
+  const tone = STAT_ACCENTS[accent];
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       whileHover={{ y: -2, scale: 1.01 }}
-      className="group relative overflow-hidden rounded-[16px] border border-border bg-surface transition-all duration-500 hover:border-[rgba(212,175,55,0.3)]"
+      className={`group relative h-full overflow-hidden rounded-[16px] border bg-surface transition-all duration-500 ${tone.card}`}
       style={{
         backdropFilter: 'blur(20px)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
       }}
     >
+      <span aria-hidden className={`pointer-events-none absolute right-3 top-3 h-1.5 w-1.5 rounded-full ${tone.dot}`} />
       <div className="relative flex items-center gap-2.5 p-2.5 sm:p-3">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(212,175,55,0.2)] to-[rgba(212,175,55,0.05)] sm:h-8 sm:w-8"
-          style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
-          <Icon size={12} className="sm:hidden" style={{ color }} />
-          <Icon size={14} className="hidden sm:block" style={{ color }} />
+        <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border sm:h-8 sm:w-8 ${tone.icon}`}>
+          <Icon size={12} className="sm:hidden" />
+          <Icon size={14} className="hidden sm:block" />
         </div>
         <div className="min-w-0">
-          <span className="block text-sm font-black leading-none tracking-tight text-text-primary sm:text-base tabular-nums">
+          <span className={`block text-sm font-black leading-none tracking-tight sm:text-base tabular-nums ${tone.value}`}>
             {display}
           </span>
           <span className="mt-0.5 block text-[11px] font-medium leading-tight text-text-secondary sm:text-xs">{label}</span>
@@ -139,11 +169,11 @@ const intelligencePills = [
   { icon: Globe, label: 'Export Opportunities' },
 ];
 
-const PLATFORM_STAT_CARDS: { icon: string; label: string; color: string; source: 'api' | 'qualitative' }[] = [
-  { icon: 'Package',   label: 'Products Listed', color: '#A78BFA', source: 'api' },
-  { icon: 'Building2', label: 'Cities Covered',  color: '#60A5FA', source: 'api' },
-  { icon: 'Store',     label: 'Active Companies', color: '#F472B6', source: 'api' },
-  { icon: 'Shield',    label: 'Verified Network', color: '#34D399', source: 'qualitative' },
+const PLATFORM_STAT_CARDS: { icon: string; label: string; accent: StatAccent; source: 'api' | 'qualitative' }[] = [
+  { icon: 'Package',   label: 'Products Listed', accent: 'purple', source: 'api' },
+  { icon: 'Building2', label: 'Cities Covered',  accent: 'blue', source: 'api' },
+  { icon: 'Store',     label: 'Active Companies', accent: 'pink', source: 'api' },
+  { icon: 'Shield',    label: 'Verified Network', accent: 'green', source: 'qualitative' },
 ];
 
 export default function IndiaHubs() {
@@ -244,7 +274,7 @@ export default function IndiaHubs() {
           </div>
         </motion.div>
 
-        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-6 lg:grid-cols-8">
+        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4">
           {topStatCards.map((card, i) => (
             <motion.div
               key={card.label}
