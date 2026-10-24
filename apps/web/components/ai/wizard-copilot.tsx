@@ -111,6 +111,27 @@ function getStepActions(
     case 1:
       return [
         {
+          key: 'suggestCategory',
+          label: 'Suggest Category',
+          onClick: () =>
+            onGenerate(
+              'suggestCategory',
+              () =>
+                apiClient.post('/catalog/classify', {
+                  name: String(ctx.name || ''),
+                  description: String(ctx.description || ctx.shortDescription || ''),
+                  brand: String(ctx.brand || '') || undefined,
+                }),
+              (data) => {
+                // Tick/Change contract (FD-TAX-02): NEVER auto-fill taxonomy.
+                // The wizard renders the suggestion with Confirm/Change.
+                if (typeof window !== 'undefined' && data) {
+                  window.dispatchEvent(new CustomEvent('wizard-ai-suggest-category', { detail: data }))
+                }
+              },
+            ),
+        },
+        {
           key: 'generateTitle',
           label: 'Generate Title',
           onClick: () =>

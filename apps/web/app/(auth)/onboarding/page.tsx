@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -56,7 +56,27 @@ export default function OnboardingPage() {
 
  const step1 = useForm<Step1>({ resolver: zodResolver(step1Schema) });
  const step2 = useForm<Step2>({ resolver: zodResolver(step2Schema) });
- const step3 = useForm<Step3>({ resolver: zodResolver(step3Schema) });
+  const step3 = useForm<Step3>({ resolver: zodResolver(step3Schema) });
+
+  // Phase 12 (FD-TAX-01/04): category comes from the canonical platform
+  // tree — never free-typed. Public endpoint, no auth needed.
+  const [treeCategories, setTreeCategories] = useState<string[]>([]);
+  const [treeError, setTreeError] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    import('@/lib/api/client').then(({ default: apiClient }) =>
+      apiClient.get('/categories/tree').then((res: any) => {
+        if (cancelled) return;
+        const flatten = (nodes: any[]): string[] =>
+          (nodes || []).flatMap((n: any) => [n?.name, ...flatten(n?.children || [])].filter(Boolean));
+        const list = res?.data;
+        const names = flatten(Array.isArray(list) ? list : list?.data || []);
+        if (names.length > 0) setTreeCategories(names);
+        else setTreeError(true);
+      }).catch(() => { if (!cancelled) setTreeError(true); }),
+    );
+    return () => { cancelled = true; };
+  }, []);
 
  const forms = [step1, step2, step3];
  const currentForm = forms[step - 1];
@@ -82,11 +102,12 @@ export default function OnboardingPage() {
  ...step2.getValues(),
  ...step3.getValues(),
  };
- // Use the onboarding controller to advance
- const companyId = localStorage.getItem('currentCompanyId');
- if (companyId) {
- await apiClient.post(`/onboarding/${companyId}/advance`, { onboardingStatus: 'BUSINESS_ADDED', data });
- }
+  // Use the onboarding controller to advance (Batch B: canonical route is
+  // `companies/:companyId/onboarding/advance` — onboarding.controller.ts)
+  const companyId = localStorage.getItem('currentCompanyId');
+  if (companyId) {
+  await apiClient.post(`/companies/${companyId}/onboarding/advance`, { onboardingStatus: 'BUSINESS_ADDED', data });
+  }
  router.push(getDashboardForRole(getRoleFromCookie()));
  } catch (err: any) {
  setServerError(err?.response?.data?.message || err.message || 'Submission failed');
@@ -130,7 +151,7 @@ export default function OnboardingPage() {
  <span
  className={cn(
  'text-xs',
- isActive && 'font-medium text-accent-500 dark:text-accent-400',
+ isActive && 'font-medium text-accent-600 dark:text-accent-400',
  isCompleted && 'text-accent-600 dark:text-accent-400',
  !isActive && !isCompleted && 'text-text-tertiary',
  )}
@@ -142,7 +163,7 @@ export default function OnboardingPage() {
  <div
  className={cn(
  'mx-2 h-0.5 w-12 sm:w-20',
- step > s.step ? 'bg-accent-500' : 'bg-border dark:bg-dark-border',
+ step > s.step ? 'bg-accent-500' : 'bg-border dark:bg-border',
  )}
  />
  )}
@@ -238,23 +259,30 @@ export default function OnboardingPage() {
  )}
  </div>
 
- <div className="space-y-1">
- <label className="text-sm font-medium text-text-secondary">
- Category
- </label>
- <div className="relative">
- <ListTree className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
- <Input
- type="text"
- placeholder="Electronics, Textiles, etc."
- className="pl-10"
- {...step2.register('category')}
- />
- </div>
- {step2.formState.errors.category && (
- <p className="text-xs text-red-500">{step2.formState.errors.category.message}</p>
- )}
- </div>
+  <div className="space-y-1">
+  <label className="text-sm font-medium text-text-secondary">
+  Category
+  </label>
+  <div className="relative">
+  <ListTree className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+  <select
+    className="w-full rounded-lg border border-border bg-surface py-2 pl-10 pr-3 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    {...step2.register('category')}
+    defaultValue=""
+  >
+    <option value="" disabled>Select a category</option>
+    {treeCategories.map((c) => (
+      <option key={c} value={c}>{c}</option>
+    ))}
+  </select>
+  </div>
+  {treeError && (
+  <p className="text-xs text-amber-500">Category list could not be loaded. Please try again later.</p>
+  )}
+  {step2.formState.errors.category && (
+  <p className="text-xs text-red-500">{step2.formState.errors.category.message}</p>
+  )}
+  </div>
 
  <div className="space-y-1">
  <label className="text-sm font-medium text-text-secondary">

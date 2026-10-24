@@ -12,6 +12,7 @@ import { RatingStars } from '@/components/product-detail-view/sections'
 import { useAuthStore } from '@/store/auth-store'
 import { getCompanyProducts, getCompanySimilar } from '@/lib/api/companies'
 import type { DirectoryCompany, CompanyProduct, SimilarCompany } from '@/lib/api/companies'
+import { openChat } from '@/lib/messaging/chat-navigation'
 
 interface CompanyFullProfileCardProps {
   company: DirectoryCompany
@@ -138,7 +139,7 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
           </div>
           <div className="flex flex-wrap gap-2 flex-shrink-0">
             <button
-              onClick={() => requireAuth(() => router.push(`/messages?seller=${company.id}`))}
+              onClick={() => requireAuth(() => openChat({ router, companyId: company.id, title: company.name }))}
               className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs bg-accent text-btn-primary-text">
               <MessageCircle size={13} /> Contact Seller
             </button>
@@ -148,7 +149,7 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
               <FileText size={13} /> Request Catalog
             </button>
             <button
-              onClick={() => requireAuth(() => router.push(`/messages?vendor=${company.id}`))}
+              onClick={() => requireAuth(() => openChat({ router, companyId: company.id, title: company.name }))}
               className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs bg-surface border border-border text-text-secondary">
               <MessageCircle size={13} /> Direct Chat
             </button>
@@ -214,7 +215,7 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
             <div className="flex justify-between items-center gap-2">
               <span className="text-text-tertiary">Flagship Product</span>
               {flagship ? (
-                <Link href={`/trading/${flagship.slug || flagship.id}`}
+                <Link href={`/products/${flagship.slug || flagship.id}`}
                   className="text-accent font-semibold inline-flex items-center gap-1 hover:underline text-right max-w-[60%] truncate">
                   {flagship.name} <ArrowRight size={10} />
                 </Link>
@@ -255,7 +256,7 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {products.map(p => (
               <div key={p.id} className="rounded-xl overflow-hidden border border-border bg-bg-elevated group">
-                <Link href={`/trading/${p.slug || p.id}`} className="block">
+                <Link href={`/products/${p.slug || p.id}`} className="block">
                   <div className="aspect-square bg-bg-elevated flex items-center justify-center overflow-hidden">
                     {p.media?.find(m => m.type === 'IMAGE')?.url ? (
                       <img src={p.media.find(m => m.type === 'IMAGE')!.url} alt={p.name}
@@ -266,17 +267,17 @@ export function CompanyFullProfileCard({ company }: CompanyFullProfileCardProps)
                   </div>
                 </Link>
                 <div className="p-2.5">
-                  <Link href={`/trading/${p.slug || p.id}`} className="text-[11px] font-semibold text-text-primary line-clamp-1 group-hover:text-accent transition-colors">
+                  <Link href={`/products/${p.slug || p.id}`} className="text-[11px] font-semibold text-text-primary line-clamp-1 group-hover:text-accent transition-colors">
                     {p.name}
                   </Link>
                   <p className="text-[10px] text-text-tertiary mt-0.5">₹{(p.price ?? 0).toLocaleString('en-IN')}{p.unit ? `/${p.unit}` : ''}</p>
                   <div className="flex gap-1 mt-2">
-                    <Link href={`/trading/${p.slug || p.id}`}
+                    <Link href={`/products/${p.slug || p.id}`}
                       className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold bg-surface border border-border text-text-secondary">
                       <Eye size={10} /> View
                     </Link>
                     <button
-                      onClick={() => requireAuth(() => router.push(`/messages?vendor=${company.id}&product=${p.id}`))}
+                      onClick={() => requireAuth(() => openChat({ router, companyId: company.id, productId: p.id, title: p.name }))}
                       className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold bg-surface border border-border text-text-secondary">
                       <MessageCircle size={10} /> Chat
                     </button>

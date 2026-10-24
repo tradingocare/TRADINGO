@@ -195,16 +195,16 @@ export default function TradhexaPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
           className="mt-16 text-center">
-          <Link href="/trading">
+          <Link href="/product">
             <motion.span whileHover={{ y: -2, scale: 1.03 }}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-accent to-accent/80 px-6 py-3 text-sm font-bold text-text-primary shadow-lg">
               Explore Marketplace <ArrowRight size={16} />
             </motion.span>
           </Link>
           <div className="mt-3 flex justify-center gap-4 text-xs">
-            <Link href="/register" className="text-text-secondary underline underline-offset-2 hover:text-text-primary">Become a Seller</Link>
+            <Link href="/golive" className="text-text-secondary underline underline-offset-2 hover:text-text-primary">Become a Seller</Link>
             <span className="text-text-tertiary">|</span>
-            <Link href="/register" className="text-text-secondary underline underline-offset-2 hover:text-text-primary">Start Trading</Link>
+            <Link href="/register/buyer" className="text-text-secondary underline underline-offset-2 hover:text-text-primary">Start Trading</Link>
           </div>
         </motion.div>
       </div>

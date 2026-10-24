@@ -14,7 +14,7 @@ import { Roles } from '../../common/decorators/roles.decorator'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
 import { Throttle } from '@nestjs/throttler'
 import { TaskType } from '@prisma/client'
-import { AiCreditsService } from './ai-credits.service'
+import { AiCreditsService, COMPANY_LESS_USAGE_KEY } from './ai-credits.service'
 
 @ApiTags('AI Gateway')
 @Controller('ai-gateway')
@@ -34,14 +34,14 @@ export class AiGatewayController {
   @Post('process')
   @Roles('SELLER', 'ADMIN')
   async process(@Body() dto: AiGatewayRequestDto, @Req() req: any) {
-    return this.gateway.process(dto, req.user?.companyId || 'system', req.user?.id)
+    return this.gateway.process(dto, req.user?.companyId || COMPANY_LESS_USAGE_KEY, req.user?.id, req.ip)
   }
 
   @ApiOperation({ summary: 'Stream AI gateway response' })
   @Post('stream')
   @Roles('SELLER', 'ADMIN')
   async stream(@Body() dto: AiStreamRequestDto, @Req() req: any, @Res() res: any) {
-    const result = await this.gateway.process(dto, req.user?.companyId || 'system', req.user?.id)
+    const result = await this.gateway.process(dto, req.user?.companyId || COMPANY_LESS_USAGE_KEY, req.user?.id, req.ip)
 
     res.setHeader('Content-Type', 'text/event-stream')
     res.setHeader('Cache-Control', 'no-cache')

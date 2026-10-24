@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Mail, Menu, Phone, X } from 'lucide-react';
-import { getDashboardForRole } from '@/lib/auth/redirects';
 import { ThemeToggle } from './theme-toggle';
 import { TradingoLogoIcon } from './tradingo-logo';
 import { cn } from '@/lib/utils';
@@ -19,12 +18,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Trading', subtitle: 'PRODUCTS', href: '/trading' },
-  { label: 'TradeServ', subtitle: 'SERVICES', href: '/tradeserv' },
+  { label: 'Tradegories', subtitle: 'CATEGORIES', href: '/categories' },
+  { label: 'TRADING', subtitle: 'PRODUCTS', href: '/product' },
+  { label: 'TRADESERV', subtitle: 'SERVICES', href: '/service' },
   { label: 'Tradors', subtitle: 'BUSINESS DIRECTORY', href: '/companies' },
   { label: 'TradeTalk', subtitle: 'BUSINESS NETWORK', href: '/tradetalk' },
-  { label: 'GoStart', subtitle: 'CREATE ACCOUNT', href: '/register' },
-  { label: 'GoLive', subtitle: 'VENDOR MODE', href: '/login?next=/register/vendor-onboarding' },
+  { label: 'GoStart', subtitle: 'CREATE ACCOUNT', href: '/register/buyer' },
+  { label: 'GoLive', subtitle: 'VENDOR MODE', href: '/plans' },
   { label: 'GoJoin', subtitle: 'LOGIN', href: '/login' },
 ];
 
@@ -42,7 +42,7 @@ const themeToggleClass =
 
 const capsuleStyle = {
   background:
-    'linear-gradient(180deg, rgba(255,255,255,0.05), transparent 44%), radial-gradient(circle at 16% 0%, rgba(255,77,0,0.10), transparent 34%), radial-gradient(circle at 84% 100%, rgba(245,158,11,0.08), transparent 30%), var(--nav-capsule-fill, rgba(8, 10, 18, 0.94))',
+    'linear-gradient(180deg, rgba(255,255,255,0.05), transparent 44%), radial-gradient(circle at 16% 0%, rgba(255,77,0,0.10), transparent 34%), radial-gradient(circle at 84% 100%, rgba(245,158,11,0.08), transparent 30%), var(--nav-capsule-fill, var(--bg-elevated))',
   boxShadow:
     '0 24px 80px rgba(0,0,0,0.55), 0 8px 28px rgba(0,0,0,0.40), 0 0 80px -16px rgba(255,77,0,0.15), 0 0 60px -20px rgba(245,158,11,0.12), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(255,255,255,0.04)',
   backdropFilter: 'blur(32px) saturate(1.15)',
@@ -68,14 +68,14 @@ function TopBar() {
       <div className="flex w-full max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-5">
           <a
-            href="mailto:tradingocare@gmail.com"
+            href="mailto:tradingocare@tradingo.in"
             className="group flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-text-secondary transition-colors duration-200 hover:text-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
             <Mail className="h-3 w-3 text-accent-500 transition-colors duration-200 group-hover:text-[#FF7A33]" />
             <span>GoConect</span>
             <span className="mx-1 text-text-tertiary">/</span>
             <span className="text-text-secondary transition-colors duration-200 group-hover:text-accent-500">
-              tradingocare@gmail.com
+              tradingocare@tradingo.in
             </span>
           </a>
           <span className="h-3 w-px bg-border" />
@@ -133,7 +133,7 @@ function HomeSegment({ active, onClick }: { active: boolean; onClick?: () => voi
       <Link
         href="/"
         onClick={onClick}
-        aria-label="TRADINGO Trading Home"
+        aria-label="TRADINGO Home"
         className={textCapsule}
       >
         {active && <ActiveTreatment />}
@@ -142,7 +142,7 @@ function HomeSegment({ active, onClick }: { active: boolean; onClick?: () => voi
             TRADINGO
           </span>
           <span className="mt-1 text-[9px] font-medium uppercase leading-none tracking-[0.14em] text-text-tertiary">
-            TRADING HOME
+            HOME
           </span>
         </span>
       </Link>
@@ -156,7 +156,7 @@ function MobileHomeItem({ active, onClick }: { active: boolean; onClick: () => v
       href="/"
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      aria-label="TRADINGO Trading Home"
+      aria-label="TRADINGO Home"
       className={cn(
         segmentBase,
         'nav-capsule-rainbow min-h-[54px] flex-row items-center justify-start gap-3 border border-border bg-surface-secondary/50 px-5 text-left',
@@ -170,7 +170,7 @@ function MobileHomeItem({ active, onClick }: { active: boolean; onClick: () => v
           TRADINGO
         </span>
         <span className="mt-1 text-[9px] font-medium uppercase leading-none tracking-[0.14em] text-text-tertiary">
-          TRADING HOME
+          HOME
         </span>
       </span>
     </Link>
@@ -183,8 +183,8 @@ function DesktopNavItem({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <motion.div
       className="flex items-center"
-      whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.015 }}
-      whileTap={shouldReduceMotion ? undefined : { scale: 0.985 }}
+      whileHover={shouldReduceMotion ? { y: 0, scale: 1 } : { y: -2, scale: 1.015 }}
+      whileTap={shouldReduceMotion ? { scale: 1 } : { scale: 0.985 }}
       transition={{ type: 'spring', stiffness: 420, damping: 30 }}
     >
       <Link
@@ -247,20 +247,10 @@ function NavbarInner() {
   const shouldReduceMotion = useReducedMotion();
 
   const handleGoLive = () => {
-    const roleCookie = typeof document !== 'undefined'
-      ? (document.cookie.match(/(?:^|;\s*)userRole=([^;]*)/)?.[1] ?? '')
-      : '';
-    let target: string;
-    if (roleCookie === 'SELLER' || roleCookie === 'ADMIN' || roleCookie === 'SUPER_ADMIN' || roleCookie === 'MANAGER') {
-      target = getDashboardForRole(roleCookie);
-    } else if (roleCookie === 'BUYER') {
-      target = '/register/vendor-onboarding';
-    } else if (roleCookie === 'VIEWER') {
-      target = '/buyer/dashboard';
-    } else {
-      target = '/login?next=/register/vendor-onboarding';
-    }
-    router.push(target);
+    // Addendum canonical rule: GoLive is a commercial acquisition entry —
+    // every role first sees/selects a plan on /plans. Plan CTAs fan out
+    // (guest/buyer → /register/vendor direct, seller → purchase).
+    router.push('/plans');
   };
 
   const navItems = NAV_ITEMS.map(item =>
@@ -278,8 +268,22 @@ function NavbarInner() {
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [mobileOpen]);
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    // GoLive canonical entry (/golive) fans out server-side. Its journey
+    // surface is the plans acquisition page, the golive entry, the vendor
+    // wizard, the buyer→seller upgrade wizard, and the seller workspace.
+    // Highlight GoLive on those paths (F-14).
+    if (href === '/plans') {
+      return pathname === '/plans'
+        || pathname === '/golive'
+        || pathname === '/register/vendor'
+        || pathname.startsWith('/register/vendor/')
+        || pathname === '/register/vendor-onboarding'
+        || pathname.startsWith('/seller/');
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <>
@@ -291,8 +295,8 @@ function NavbarInner() {
           >
             <div className="relative z-10 flex items-center gap-2">
               <motion.div
-                whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.01 }}
-                whileTap={shouldReduceMotion ? undefined : { scale: 0.985 }}
+                whileHover={shouldReduceMotion ? { y: 0, scale: 1 } : { y: -2, scale: 1.01 }}
+                whileTap={shouldReduceMotion ? { scale: 1 } : { scale: 0.985 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 30 }}
               >
                 <HomeSegment active={isActive('/')} />

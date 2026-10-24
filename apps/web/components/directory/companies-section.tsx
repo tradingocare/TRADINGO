@@ -118,7 +118,7 @@ export function CompaniesSection() {
         <EmptyNote
           icon={<Building2 className="h-6 w-6" />}
           text={`No ${tab} companies yet.`}
-          actionHref="/register"
+          actionHref="/golive"
           actionLabel="Register Your Company"
         />
       ) : (

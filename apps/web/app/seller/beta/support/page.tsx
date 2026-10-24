@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -93,7 +93,7 @@ export default function SupportPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <MessageSquare className="mb-4 h-12 w-12 text-text-tertiary" />
-            <p className="text-lg font-medium text-text-primary dark:text-dark-text-primary">
+            <p className="text-lg font-medium text-text-primary">
               No tickets yet. Create your first support ticket.
             </p>
           </CardContent>
@@ -109,7 +109,7 @@ export default function SupportPage() {
               <CardContent className="flex items-center gap-4 p-5">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
+                    <span className="text-base font-semibold text-text-primary">
                       {ticket.subject}
                     </span>
                     <Badge variant={STATUS_BADGE_VARIANTS[ticket.status] || 'outline'}>
@@ -119,7 +119,7 @@ export default function SupportPage() {
                       {ticket.priority}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary line-clamp-1">
+                  <p className="mt-1 text-sm text-text-secondary line-clamp-1">
                     {ticket.description}
                   </p>
                   <div className="mt-1 flex items-center gap-3 text-xs text-text-tertiary">
@@ -137,7 +137,7 @@ export default function SupportPage() {
       <Modal open={showModal} onClose={() => setShowModal(false)} title="New Support Ticket">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            <label className="mb-1 block text-sm font-medium text-text-primary">
               Subject
             </label>
             <Input
@@ -147,7 +147,7 @@ export default function SupportPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            <label className="mb-1 block text-sm font-medium text-text-primary">
               Description
             </label>
             <Textarea
@@ -159,7 +159,7 @@ export default function SupportPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+              <label className="mb-1 block text-sm font-medium text-text-primary">
                 Category
               </label>
               <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
@@ -169,7 +169,7 @@ export default function SupportPage() {
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+              <label className="mb-1 block text-sm font-medium text-text-primary">
                 Priority
               </label>
               <Select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>

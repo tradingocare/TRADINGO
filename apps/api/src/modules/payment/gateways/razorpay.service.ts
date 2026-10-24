@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Razorpay from 'razorpay';
 import { verifySignature } from '../utils/signature';
@@ -29,7 +29,7 @@ export class RazorpayService implements IPaymentGateway {
 
   private ensureClient(): Razorpay {
     if (!this.client) {
-      throw new Error('Razorpay client not initialized: missing keyId or keySecret configuration');
+      throw new ServiceUnavailableException('Payment gateway temporarily unavailable (Razorpay client not configured). Please try again later.');
     }
     return this.client;
   }

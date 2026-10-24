@@ -3,7 +3,6 @@ export * from './use-rfqs';
 export * from './use-quotes';
 export * from './use-orders';
 export * from './use-payments';
-export * from './use-chat';
 export * from './use-tradgo';
 export * from './use-analytics';
 export * from './use-notifications';

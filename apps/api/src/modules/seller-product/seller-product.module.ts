@@ -14,10 +14,11 @@ import { BrandService } from './brand.service';
 import { ProductExportController } from './product-export.controller';
 import { ProductExportService } from './product-export.service';
 import { SearchModule } from '../search/search.module';
+import { MembershipModule } from '../membership/membership.module';
 import { MarketplaceCatalogBridgeModule } from '../marketplace-catalog-bridge/marketplace-catalog-bridge.module';
 
 @Module({
-  imports: [SearchModule, MarketplaceCatalogBridgeModule],
+  imports: [SearchModule, MembershipModule, MarketplaceCatalogBridgeModule],
   controllers: [
     SellerProductController,
     ApprovalController,

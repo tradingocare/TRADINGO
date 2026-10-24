@@ -24,6 +24,12 @@ export class AutocompleteService {
 
     const openSearchClient = (this.searchService as any).client;
 
+    if (!openSearchClient) {
+      // OpenSearch is not configured: the feature is disabled and returns no
+      // suggestions instead of failing.
+      return results;
+    }
+
     for (const { index, type } of indices) {
       try {
         const body: Record<string, unknown> = {

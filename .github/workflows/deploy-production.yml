@@ -1,202 +1,479 @@
 name: Deploy Production
 
+# REAL Hostinger VPS deployment (SSH + Docker Compose, images built in CI).
+# Replaces the former echo/template implementation.
+#
+# IMAGE POLICY (2026-10-19): api / api-migrate / web images are built by the
+#   `Build Production Images` workflow (build-images.yml), pushed to GHCR and
+#   tagged with the exact commit SHA. This workflow PULLS the images for
+#   $TARGET_SHA and retags them to the compose-local names instead of
+#   building on-host: the VPS (3.9GB RAM / 1 vCPU) livelocks on the web
+#   build (run 39204845542). A missing image for the target SHA aborts
+#   BEFORE the backup gate, with the previous containers untouched.
+#
+# Design notes (do not weaken without founder approval):
+# - Manual dispatch only, and only from the `main` ref: a dispatch launched
+#   from any other workflow ref fails closed before any secret or SSH use.
+#   Each run requires the typed confirmation below. NOTE (verified 2026-10-13):
+#   the `production` environment currently has NO required reviewers, so its
+#   gate resolves immediately — effective approval is dispatch permission
+#   (write access) plus the typed confirmation. This is NOT two-person review.
+#   To restore a reviewer checkpoint, add an eligible reviewer under Settings
+#   → Environments → production (founder decision; weigh self-review
+#   protection for single-account operation). No push trigger.
+# - The release is pinned to the exact SHA of `origin/main` resolved on the
+#   VPS at deploy time — never an operator-supplied branch, tag, or SHA, and
+#   never "latest whatever happens to be on main at build time".
+# - Host trust is pinned, not discovered: SSH uses a founder-provisioned
+#   `VPS_KNOWN_HOSTS` secret (verified out-of-band); runtime `ssh-keyscan`
+#   trust-on-first-use is forbidden in this workflow.
+# - Before checkout, a preservation gate (`scripts/deploy/checkout-preservation.sh`,
+#   read from the target release itself) relocates untracked files that collide
+#   with new target paths into a unique timestamped recovery directory outside
+#   the repository (`<app-dir>-recovery/untracked-<UTC>-<PID>/`, mode 700),
+#   verifies every copy by hash, and only then clears the sources. Any failure
+#   aborts before checkout with the working tree untouched. Ignored files that
+#   collide (secrets/certificates) abort the run for manual resolution.
+# - Migrations run via the api-migrate compose target BEFORE containers are
+#   recreated. Forward-only (`prisma migrate deploy`); there is no
+#   down-migration path by design.
+# - Compose project is pinned to `tradingo-prod` (live volumes are
+#   `tradingo-prod_*`; an explicit -p prevents operating on/creating a
+#   parallel stack). Dependency startup is deliberately disabled (`--no-deps`
+#   on migrate-run and recreate): PostgreSQL is managed by a separate compose
+#   project under a fixed container name, so resolving dependencies would
+#   collide instead of help. Dependency health is verified by an explicit
+#   pre-flight step; migration and smoke tests prove connectivity end to end.
+# - On health-check failure this workflow FAILS LOUDLY and stops. It never
+#   auto-rolls back. The previous release SHA is printed with the exact
+#   manual rollback commands (see ROLLBACK section below + rollback step).
+# - Claiming success requires proof (added 2026-10-19 after runs 39214456391
+#   and 39218521897 completed confusingly): after `up`, the RUNNING
+#   containers' image IDs must equal the SHA-tagged images pulled from GHCR
+#   (scripts/deploy/verify-release-images.sh; regression tests in
+#   scripts/deploy/tests/test-release-image-identity.sh), the checkout must
+#   be verified to sit on exactly TARGET_SHA, and the remote script must emit
+#   its terminal marker TRADINGO_DEPLOY_VERIFIED_OK which the runner greps in
+#   the teed remote log. Mutable tags are never accepted as release proof.
+# - Readiness gate (added 2026-10-19 after run 39228403830): `up` recreated
+#   tradigo-web and smoke started ~400ms later, before the Next.js server had
+#   bound :3000 ("Ready" logged at +0.8s), so seven UI checks failed with
+#   instant connection-refused (000000) on a healthy release. Smoke tests now
+#   run only after the real web and API endpoints answer HTTP 200
+#   (scripts/deploy/wait-for-ready.sh; bounded 60s web / 30s API, fail closed;
+#   regression tests in scripts/deploy/tests/test-readiness-gate.sh).
+#
+# BACKUP POLICY (fail-closed): a database backup is attempted before every
+#   release via scripts/deploy/manage.sh backup, then
+#   scripts/deploy/verify-backup.sh requires a FRESH verified backup
+#   (status=OK, recent timestamp, existing non-empty artifact) BEFORE any
+#   migration or service recreation runs. Without one the rollout stops.
+#   Documented exception only: dispatch with skip_fresh_backup=true (recorded
+#   in the run inputs, loud ::warning:: in logs) when a known-good backup
+#   exists or the release cannot wait (e.g. security fix). Data restore stays
+#   a separate deliberate decision in every case (see ROLLBACK below).
+#
+# ROLLBACK (manual, only after verifying the previous release was healthy).
+#   Release images live on GHCR tagged by SHA and are pulled anonymously.
+#   Images exist for every main commit built by build-images; for earlier
+#   releases fall back to the preserved rollback images/containers.
+#   The verified procedure is now a single command:
+#   ssh tradingo@<VPS_HOST> 'cd /home/tradingo/tradingo \
+#     && bash ops/recovery/rollback.sh --version=<PREV_SHA>'
+#   It re-tags the previous release images, recreates ONLY api and web with
+#   --no-deps (no project-wide `down`, no pruning), preserves the database and
+#   every volume, and reports success only after the running image identities
+#   and the API health endpoint have been verified.
+#   The equivalent explicit command sequence is:
+#   ssh tradingo@<VPS_HOST> 'cd /home/tradingo/tradingo \
+#     && PREV=<sha-printed-by-failed-run> && REG=ghcr.io/tradingocare \
+#     && docker pull $REG/tradingo-api:$PREV \
+#     && docker pull $REG/tradingo-api-migrate:$PREV \
+#     && docker pull $REG/tradingo-web:$PREV \
+#     && git checkout $PREV \
+#     && docker tag $REG/tradingo-api:$PREV tradingo-prod-api:latest \
+#     && docker tag $REG/tradingo-api-migrate:$PREV tradingo-prod-api-migrate:latest \
+#     && docker tag $REG/tradingo-web:$PREV tradingo-prod-web:latest \
+#     && docker compose -p tradingo-prod --env-file .env.production.local \
+#          -f docker-compose.prod.yml up -d --no-deps api web'
+#   Database restore is a separate, deliberate decision (forward-only
+#   migrations are not reversed automatically). The backup artefacts are
+#   PostgreSQL CUSTOM-FORMAT archives (pg_dump --format=custom, magic
+#   "PGDMP"); restore them with the validated format contract, which refuses
+#   to write into an existing database without explicit authorization:
+#   `bash scripts/deploy/restore-backup.sh --file backups/tradingo-<DATE>.dump \
+#      --target-db <database>`
+#   See docs/deployment/ROLLBACK-PROCEDURE.md for the full procedure.
+
 on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Confirm production deployment'
+        description: 'Type "deploy" to confirm production deployment'
         required: true
-        default: 'no'
+        type: string
+      skip_fresh_backup:
+        description: 'Documented exception only: "true" proceeds without a fresh verified backup'
+        required: false
+        default: false
+        type: boolean
 
+# Serialize production deployments: a second dispatch waits instead of
+# running concurrently against the same VPS working tree. The remote script
+# additionally holds an advisory mkdir lock as defense in depth.
 concurrency:
-  group: production-manual
+  group: deploy-production
   cancel-in-progress: false
-
-env:
-  AWS_REGION: ap-south-1
-  ECR_REPOSITORY_API: tradingo-production-api
-  ECR_REPOSITORY_WEB: tradingo-production-web
-  ECS_CLUSTER: tradingo-production
-  ECS_SERVICE_API: tradingo-production-api
-  ECS_SERVICE_WEB: tradingo-production-web
-  TASK_DEFINITION_API: tradingo-production-api
-  TASK_DEFINITION_WEB: tradingo-production-web
 
 jobs:
   validate:
-    name: Validate Secrets
-    if: ${{ github.event.inputs.confirm == 'yes' }}
-    runs-on: ubuntu-latest
+    name: Validate Deployment
+    # Environment-scoped secrets (VPS_HOST/VPS_SSH_KEY/VPS_KNOWN_HOSTS) are
+    # visible ONLY to jobs declaring this environment. Without this line the
+    # presence check reads empty values and fails closed (see run 38514946256).
     environment: production
+    runs-on: ubuntu-latest
+    outputs:
+      can_deploy: ${{ steps.confirm.outputs.valid }}
+      target_ref: ${{ steps.confirm.outputs.target_ref }}
     steps:
-      - name: Check AWS_ACCOUNT_ID is configured
+      - name: Check confirmation
+        id: confirm
+        # Injection hygiene: operator-influenced contexts enter ONLY as step
+        # environment variables, never as ${{ }} fragments inside shell code.
+        # Quoted shell comparisons below then operate on plain data.
+        env:
+          CONFIRM_INPUT: ${{ github.event.inputs.confirm }}
+          WORKFLOW_REF: ${{ github.ref }}
         run: |
-          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
-            echo "::error::AWS_ACCOUNT_ID secret is not configured. Set it in GitHub secrets."
+          if [ "$CONFIRM_INPUT" = "deploy" ]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "ERROR: Confirmation must be 'deploy'"
             exit 1
           fi
-          echo "AWS_ACCOUNT_ID is configured: OK"
+          # Single-account lockdown: this workflow file must run from `main`.
+          # A dispatch launched from any other ref fails here, before any
+          # secret is touched or any SSH connection is opened.
+          if [ "$WORKFLOW_REF" != "refs/heads/main" ]; then
+            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "ERROR: production deployment is allowed only from the main branch (this run uses $WORKFLOW_REF)"
+            exit 1
+          fi
+          # Releases track origin/main only; the exact SHA is resolved on the
+          # VPS at deploy time (see deploy step), never operator-supplied.
+          echo "target_ref=origin/main" >> $GITHUB_OUTPUT
+          echo "Target ref: origin/main"
+
+      - name: Validate required secrets
+        run: |
+          echo "Checking required secrets are configured (names only, values never printed)..."
+          echo "VPS_HOST: ${{ secrets.VPS_HOST && 'configured' || 'MISSING' }}"
+          echo "VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY && 'configured' || 'MISSING' }}"
+          echo "VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS && 'configured' || 'MISSING' }}"
+
+          if [ -z "${{ secrets.VPS_HOST }}" ] || [ -z "${{ secrets.VPS_SSH_KEY }}" ] || [ -z "${{ secrets.VPS_KNOWN_HOSTS }}" ]; then
+            echo "ERROR: VPS_HOST, VPS_SSH_KEY and VPS_KNOWN_HOSTS secrets are required"
+            echo "VPS_KNOWN_HOSTS must hold verified known_hosts line(s) for the VPS (see docs/deployment/VPS-DEPLOYMENT-GUIDE.md section 12)"
+            echo "See docs/deployment/PRODUCTION-DEPLOYMENT.md for setup instructions"
+            exit 1
+          fi
+          echo "All required secrets configured"
 
   deploy:
-    name: Build & Deploy to Production
-    needs: [validate]
-    if: ${{ github.event.inputs.confirm == 'yes' }}
+    name: Deploy to Production VPS
     runs-on: ubuntu-latest
+    # Production environment gate: consults the `production` environment before
+    # any command reaches the VPS. NOTE (verified 2026-10-13): no required
+    # reviewers are currently configured there, so it resolves immediately;
+    # see the header note before relying on this as an approval checkpoint.
+    # Never remove this gate without founder approval.
     environment: production
-
+    needs: [validate]
+    if: needs.validate.outputs.can_deploy == 'true'
+    timeout-minutes: 100
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.10.0
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build & push API image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:latest
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:${{ github.sha }}
-
-      - name: Build & push Web image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/web/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:latest
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
-            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
-            NEXT_PUBLIC_SOCKET_URL=${{ secrets.NEXT_PUBLIC_SOCKET_URL }}
-            NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
-            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
-
-      - name: Run database migrations (before service deploy)
+      - name: Install pinned VPS host keys
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
-          aws ecs run-task \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --task-definition tradingo-production-migration \
-            --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNETS }}],securityGroups=[${{ secrets.SECURITY_GROUPS }}],assignPublicIp=ENABLED}"
-          TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --family tradingo-production-migration --query 'taskArns[0]' --output text)
-          aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN
-          TASK_INFO=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks $TASK_ARN)
-          EXIT_CODE=$(echo $TASK_INFO | jq -r '.tasks[0].containers[0].exitCode')
-          if [ "$EXIT_CODE" != "0" ]; then
-            echo "Migration failed with exit code $EXIT_CODE — aborting deployment"
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          # Pinned trust only: host keys come from the founder-provisioned
+          # secret, verified out-of-band. Runtime ssh-keyscan discovery is
+          # forbidden here (TOFU against an unauthenticated network peer).
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          # Fail closed on malformed content: at least one recognizable SSH
+          # public-key line must be present (also matches hashed known_hosts).
+          grep -qE '(ssh-(ed25519|rsa|ecdsa|dss)|sk-ssh-ed25519@|sk-ecdsa-sha2-)' ~/.ssh/known_hosts \
+            || { echo "ERROR: VPS_KNOWN_HOSTS does not contain a recognizable SSH host key"; exit 1; }
+          echo "Pinned VPS host keys installed (StrictHostKeyChecking stays enforced)."
+
+      - name: Deploy release to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          VPS_USER: ${{ secrets.VPS_USER || 'tradingo' }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR || '/home/tradingo/tradingo' }}
+          TARGET_REF: ${{ needs.validate.outputs.target_ref }}
+          # GHCR namespace holding the CI-built release images (public
+          # packages linked to this public repository; pulls are anonymous).
+          GHCR_OWNER: ${{ github.repository_owner }}
+          # Documented stale-backup exception (default false). Passed through
+          # as data only; the remote gate decides.
+          SKIP_FRESH_BACKUP: ${{ github.event.inputs.skip_fresh_backup }}
+        run: |
+          set -euo pipefail
+          # Fail closed on unexpected ref characters (branch/tag/SHA only).
+          if [[ ! "$TARGET_REF" =~ ^[A-Za-z0-9_./-]+$ ]]; then
+            echo "ERROR: target ref contains unexpected characters: $TARGET_REF"
             exit 1
           fi
-          echo "Database migrations completed successfully"
+          SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -p $VPS_PORT"
+          # Backstop: the whole remote session must finish within 90 minutes.
+          # Must stay below the job timeout (100 min) with margin for the
+          # status-report step and agent cleanup. Exit 124 means THIS backstop
+          # fired (remote deploy exceeded 90 min), not the job timeout.
+          # The remote log is teed so the terminal marker can be verified
+          # after the pipeline without losing live streaming.
+          timeout 5400 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "SKIP_FRESH_BACKUP='$SKIP_FRESH_BACKUP' TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' GHCR_OWNER='$GHCR_OWNER' bash -s" << 'REMOTE_EOF' | tee "$RUNNER_TEMP/deploy-remote.log"
+          set -euo pipefail
+          # BEGIN SKIP_FRESH_BACKUP handling (tested: scripts/deploy/tests/test-backup-timeout-gates.sh)
+          # Default closed when absent/empty; only the explicit dispatch value
+          # "true" enables the documented stale-backup exception. Anything else
+          # aborts: never silently coerce malformed input.
+          # NOTE: this file uses CRLF line endings; avoid `case...in` here
+          # because a trailing CR breaks reserved-word recognition.
+          : "${SKIP_FRESH_BACKUP:=false}"
+          if [ "$SKIP_FRESH_BACKUP" = "true" ] || [ "$SKIP_FRESH_BACKUP" = "false" ]; then
+            :
+          else
+            echo "ERROR: SKIP_FRESH_BACKUP must be 'true' or 'false'"; exit 1
+          fi
+          # END SKIP_FRESH_BACKUP handling
+          cd "$APP_DIR" || { echo "ERROR: app directory $APP_DIR missing on VPS"; exit 1; }
+          test -f docker-compose.prod.yml || { echo "ERROR: docker-compose.prod.yml missing in $APP_DIR"; exit 1; }
+          test -f .env.production.local || { echo "ERROR: .env.production.local missing in $APP_DIR (tracked placeholder .env.production must never be used)"; exit 1; }
 
-      - name: Substitute __AWS_ACCOUNT_ID__ in task definitions
-        run: |
-          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.api.json
-          sed -i "s/__AWS_ACCOUNT_ID__/${{ secrets.AWS_ACCOUNT_ID }}/g" infrastructure/ecs/task-definition.web.json
-          echo "Task definition placeholders substituted"
+          COMPOSE="docker compose -p tradingo-prod --env-file .env.production.local -f docker-compose.prod.yml"
 
-      - name: Render API task definition
-        id: render-api
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: infrastructure/ecs/task-definition.api.json
-          container-name: api
-          image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_API }}:${{ github.sha }}
+          # CI image namespace: must be a plain lowercase GHCR owner.
+          # repository_owner is lowercase for this repo; normalize defensively.
+          GHCR_OWNER="${GHCR_OWNER,,}"
+          if [[ ! "$GHCR_OWNER" =~ ^[a-z0-9-]+$ ]]; then
+            echo "ERROR: invalid GHCR owner: '$GHCR_OWNER'"
+            exit 1
+          fi
 
-      - name: Render Web task definition
-        id: render-web
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: infrastructure/ecs/task-definition.web.json
-          container-name: web
-          image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY_WEB }}:${{ github.sha }}
+          echo "=== Fetching release ==="
+          git fetch origin || { echo "ERROR: git fetch failed"; exit 1; }
+          TARGET_SHA="$(git rev-parse "$TARGET_REF")" || { echo "ERROR: unknown ref $TARGET_REF"; exit 1; }
+          PREV_SHA="$(git rev-parse HEAD)"
+          echo "Previous release: $PREV_SHA"
+          echo "Target release:   $TARGET_SHA"
+          if [ "$PREV_SHA" = "$TARGET_SHA" ]; then
+            echo "Target already deployed; refreshing containers to converge state."
+          fi
+          echo "=== Pre-checkout: untracked collision preservation ==="
+          # Runs the target release's own preservation gate (read from the
+          # fetched commit, not the current checkout) so untracked files that
+          # collide with new target paths are preserved to a unique recovery
+          # directory, verified, and cleared. Aborts before checkout on any
+          # failure. See scripts/deploy/checkout-preservation.sh.
+          PRESERVE_TMP="$(mktemp)"
+          git show "$TARGET_SHA:scripts/deploy/checkout-preservation.sh" > "$PRESERVE_TMP" || { echo "ERROR: cannot read preservation gate from target release $TARGET_SHA"; exit 1; }
+          APP_DIR="$APP_DIR" TARGET_SHA="$TARGET_SHA" bash "$PRESERVE_TMP" || { echo "ERROR: collision preservation failed; checkout aborted"; rm -f "$PRESERVE_TMP"; exit 1; }
+          rm -f "$PRESERVE_TMP"
+          git checkout "$TARGET_SHA" || { echo "ERROR: checkout of $TARGET_SHA failed"; exit 1; }
+          # Fail closed if the working tree did not land on the exact release
+          # commit: everything below must only ever act on TARGET_SHA.
+          [ "$(git rev-parse HEAD)" = "$TARGET_SHA" ] || { echo "ERROR: checkout landed on $(git rev-parse HEAD), expected $TARGET_SHA; refusing to continue"; exit 1; }
 
-      - name: Deploy API to ECS
-        uses: aws-actions/amazon-ecs-deploy-service-definition@v1
-        with:
-          task-definition: ${{ steps.render-api.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE_API }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          echo "=== Pre-flight: dependency health (fail fast on broken estate) ==="
+          # NOTE: postgres/redis are intentionally NOT started here. PostgreSQL
+          # is managed by a separate compose project and shares a fixed
+          # container name, so dependency startup would collide instead of
+          # help. Every compose invocation below uses --no-deps (matching all
+          # historical successful hand operations); health is verified here,
+          # connectivity is proven by the gated migration run, and end-to-end
+          # readiness by the smoke tests. A missing/unhealthy dependency stops
+          # the rollout before backup, migration, or recreation.
+          for svc in tradingo-postgres tradingo-redis; do
+            if ! docker inspect "$svc" >/dev/null 2>&1; then
+              echo "ERROR: required container $svc is missing. Resolve before deploying."
+              exit 1
+            fi
+            running="$(docker inspect --format '{{.State.Running}}' "$svc")"
+            if [ "$running" != "true" ]; then
+              echo "ERROR: required container $svc is not running. Resolve before deploying."
+              exit 1
+            fi
+            health="$(docker inspect --format '{{.State.Health.Status}}' "$svc" 2>/dev/null || true)"
+            if [ -n "$health" ] && [ "$health" != "healthy" ]; then
+              echo "ERROR: required container $svc reports health '$health'. Resolve before deploying."
+              exit 1
+            fi
+            echo "$svc: running."
+          done
 
-      - name: Deploy Web to ECS
-        uses: aws-actions/amazon-ecs-deploy-service-definition@v1
-        with:
-          task-definition: ${{ steps.render-web.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE_WEB }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          echo "=== Pulling CI-built release images (pinned to target SHA) ==="
+          # Images are built by the Build Production Images workflow and tagged
+          # with the exact commit SHA. Pulling BEFORE the backup/migration
+          # gates means a missing release aborts with zero mutations.
+          if [[ ! "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: unexpected TARGET_SHA format: $TARGET_SHA"
+            exit 1
+          fi
+          GHCR_BASE="ghcr.io/$GHCR_OWNER"
+          API_IMAGE="$GHCR_BASE/tradingo-api:$TARGET_SHA"
+          API_MIGRATE_IMAGE="$GHCR_BASE/tradingo-api-migrate:$TARGET_SHA"
+          WEB_IMAGE="$GHCR_BASE/tradingo-web:$TARGET_SHA"
+          for img in "$API_IMAGE" "$API_MIGRATE_IMAGE" "$WEB_IMAGE"; do
+            docker pull "$img" || { echo "ERROR: failed to pull $img. Ensure the 'Build Production Images' workflow succeeded for this SHA and the GHCR package is publicly readable."; exit 1; }
+          done
+          # Compose services api/api-migrate/web declare build: contexts, so
+          # they resolve to project-local image names (tradingo-prod-api,
+          # -api-migrate, -web). Retagging converges compose onto the pulled
+          # images WITHOUT touching docker-compose.prod.yml, which must stay
+          # identical to the release SHA being deployed. up -d recreates the
+          # containers because the image ID changed.
+          docker tag "$API_IMAGE" tradingo-prod-api:latest
+          docker tag "$API_MIGRATE_IMAGE" tradingo-prod-api-migrate:latest
+          docker tag "$WEB_IMAGE" tradingo-prod-web:latest
+          echo "Release images pulled and retagged for $TARGET_SHA."
+          # Record the IMMUTABLE identity of this release (image IDs + digests)
+          # BEFORE anything is switched, so a later rollback can restore exactly
+          # these images instead of a mutable `latest` tag. Recorded outside the
+          # checkout because the checkout is replaced on every release.
+          # Fatal here on purpose: at this point nothing has been migrated or
+          # switched, and a release without a recorded identity has no verified
+          # rollback path.
+          RELEASE_MANIFEST_DIR="${RELEASE_MANIFEST_DIR:-/home/tradingo/releases}" \
+            bash scripts/deploy/release-manifest.sh record "$TARGET_SHA" \
+            || { echo "ERROR: the immutable release identity could not be recorded — aborting before any migration or service change"; exit 1; }
+          # Record immutable release identities (image ID + registry digest)
+          # in the run log: mutable tags are not proof of release identity.
+          for entry in "api:$API_IMAGE" "api-migrate:$API_MIGRATE_IMAGE" "web:$WEB_IMAGE"; do
+            name="${entry%%:*}"
+            img="${entry#*:}"
+            id="$(docker image inspect --format '{{.Id}}' "$img")"
+            digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$img" 2>/dev/null || echo '<none>')"
+            echo "RELEASE_IMAGE $name tag=$img id=$id digest=$digest"
+          done
 
-      - name: Health check - API (via ALB)
-        run: |
-          API_URL="${{ vars.API_URL }}"
-          curl -f --retry 10 --retry-delay 10 --retry-max-time 120 "${API_URL:-https://api.tradingo.in}/live"
+          echo "=== Pre-deploy database backup (best effort, then verified) ==="
+          if bash scripts/deploy/manage.sh backup; then
+            echo "Pre-deploy backup complete."
+          else
+            echo "::warning::Pre-deploy backup attempt failed; the verification gate below decides whether to proceed."
+          fi
 
-      - name: Health check - Web (via ALB)
-        run: |
-          WEB_URL="${{ vars.WEB_URL }}"
-          curl -f --retry 10 --retry-delay 10 --retry-max-time 120 "${WEB_URL:-https://tradingo.in}"
+          echo "=== Verifying usable backup (fail-closed gate) ==="
+          # No migration or service replacement without a fresh verified backup,
+          # unless the dispatcher set the documented stale-backup exception
+          # (skip_fresh_backup=true), which is recorded in the run inputs.
+          ALLOW_STALE_BACKUP="$SKIP_FRESH_BACKUP" bash scripts/deploy/verify-backup.sh || { echo "ERROR: no fresh verified backup and no documented exception; resolve backup health before retrying"; exit 1; }
 
-      - name: Notify Slack
+          echo "=== Verifying production configuration (fail-closed, before any change) ==="
+          # Secret validity was otherwise only proven when the new API container
+          # booted — i.e. AFTER the live containers had been replaced. A missing
+          # AI_VAULT_MASTER_KEY or a live-mode payment key surfaced as a
+          # crash-looping API after the traffic switch. This gate checks names
+          # and shape only; no value is ever printed.
+          bash scripts/deploy/verify-production-secrets.sh || { echo "ERROR: production configuration pre-flight failed; nothing has been changed"; exit 1; }
+
+          echo "=== Verifying OpenSearch readiness (optional infrastructure) ==="
+          # When no endpoint is configured, search is intentionally disabled and
+          # this gate passes. When an endpoint IS configured it must be
+          # reachable FROM the API container, so the API is never started
+          # against a fake or unreachable search endpoint (the previous
+          # host.docker.internal value produced a client that could never
+          # connect, and a silently empty discover feed).
+          if [ -n "$(sed -n 's/^[[:space:]]*OPENSEARCH_URL[[:space:]]*=[[:space:]]*//p' .env.production.local | head -n 1 | tr -d '\r' | sed -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//')" ]; then
+            $COMPOSE up -d --no-deps opensearch </dev/null || { echo "ERROR: the OpenSearch service could not be started"; exit 1; }
+          fi
+          bash scripts/deploy/verify-opensearch.sh || { echo "ERROR: the configured OpenSearch endpoint is not reachable from the API container; the API must not be started with an unreachable search endpoint"; exit 1; }
+
+          echo "=== Running migrations (exit-gated; previous containers still live) ==="
+          # stdin is redirected from /dev/null: this remote script is fed to
+          # `bash -s` over stdin, and `docker compose run` attaches stdin by
+          # default. On 2026-10-19 (run 39214456391) the attached migrate
+          # container consumed the remainder of this script, so the recreate
+          # and smoke-test steps silently never ran while the run still
+          # reported success. Never let a child process read the deploy
+          # script.
+          $COMPOSE run -T --rm --no-deps api-migrate </dev/null || { echo "ERROR: migration failed; previous containers untouched. Resolve before retrying."; exit 1; }
+
+          echo "=== Recreating services ==="
+          $COMPOSE up -d --no-deps api web </dev/null || { echo "ERROR: service recreate failed"; exit 1; }
+
+          echo "=== Verifying running containers are the release images (fail closed) ==="
+          # Regression guard for run 39218521897 ("success" without the
+          # recreate/smoke steps ever running) and 39214456391: the deployment
+          # may only claim the release applied if the RUNNING container image
+          # IDs equal the SHA-tagged release image IDs pulled above.
+          # Regression-test: scripts/deploy/tests/test-release-image-identity.sh
+          bash scripts/deploy/verify-release-images.sh "$TARGET_SHA" "$GHCR_OWNER" || { echo "ERROR: running containers do not match release $TARGET_SHA; deployment NOT applied"; exit 1; }
+
+          echo "=== Waiting for endpoint readiness (bounded, fail closed) ==="
+          # Regression guard for run 39228403830: `up` had recreated web and
+          # the smoke test started ~400ms later, before the Next.js server
+          # bound :3000 (server logged "Ready" at +0.8s); seven UI checks
+          # failed with instant connection-refused (000000) on a release that
+          # was actually healthy. The smoke test may only run once the real
+          # endpoints answer: web first, then API /health, each wall-clock
+          # bounded and fail closed. Image identity and backup verification
+          # still run strictly before this gate and are never bypassed.
+          # Regression-test: scripts/deploy/tests/test-readiness-gate.sh
+          bash scripts/deploy/wait-for-ready.sh || { echo "ERROR: services did not become ready; smoke tests not attempted"; exit 1; }
+
+          echo "=== Health checks ==="
+          if bash scripts/deploy/smoke-test.sh http://localhost:3001 http://localhost:3000; then
+            echo "Health checks passed."
+          else
+            echo "::error::Health checks FAILED. NOT rolling back automatically."
+            echo "TRADINGO_DEPLOY_FAILED_AFTER_SWITCH target=$TARGET_SHA previous=$PREV_SHA"
+            echo ""
+            echo "==================== PARTIAL DEPLOYMENT — RECOVERY REQUIRED ===================="
+            echo "The new release IS CURRENTLY SERVING TRAFFIC. The previous release was not restored."
+            echo "The database was NOT modified: forward-only migrations are not reversed automatically."
+            echo "The verified rollback procedure is:"
+            echo "  bash ops/recovery/rollback.sh --version=$PREV_SHA"
+            echo "  (it re-tags the previous release images, recreates ONLY api and web with --no-deps,"
+            echo "   preserves the database and all volumes, and verifies image identity + health before"
+            echo "   reporting success. It never runs 'compose down' and never prunes.)"
+            echo ""
+            echo "The manual image-level equivalent is:"
+            echo "  docker pull ghcr.io/$GHCR_OWNER/tradingo-api:$PREV_SHA && docker pull ghcr.io/$GHCR_OWNER/tradingo-api-migrate:$PREV_SHA && docker pull ghcr.io/$GHCR_OWNER/tradingo-web:$PREV_SHA"
+            echo "  git checkout $PREV_SHA && docker tag ghcr.io/$GHCR_OWNER/tradingo-api:$PREV_SHA tradingo-prod-api:latest && docker tag ghcr.io/$GHCR_OWNER/tradingo-api-migrate:$PREV_SHA tradingo-prod-api-migrate:latest && docker tag ghcr.io/$GHCR_OWNER/tradingo-web:$PREV_SHA tradingo-prod-web:latest && $COMPOSE up -d --no-deps api web"
+            echo "  then re-run the endpoint readiness gate and the smoke test (both in scripts/deploy/)"
+            echo "  (a release that predates the IA migration serves /products directly: add SMOKE_STRICT_REDIRECTS=false)"
+            echo "See the ROLLBACK header of this workflow file and docs/deployment/ROLLBACK-PROCEDURE.md."
+            exit 1
+          fi
+
+          echo "=== Release summary ==="
+          echo "Deployed: $PREV_SHA -> $TARGET_SHA"
+          $COMPOSE ps api web
+          # Terminal marker: the runner-side grep below refuses to report
+          # success unless this line is present, so the remote script cannot
+          # end early (e.g. stdin consumption) and still pass the job.
+          echo "TRADINGO_DEPLOY_VERIFIED_OK target=$TARGET_SHA"
+          REMOTE_EOF
+          # A remote run that ended before its terminal marker did not
+          # complete the release (see the marker comment inside the script).
+          # Note: if the SSH pipeline itself fails, `set -e` aborts before
+          # this grep; reaching here means the marker check is authoritative.
+          grep -q 'TRADINGO_DEPLOY_VERIFIED_OK target=' "$RUNNER_TEMP/deploy-remote.log" || { echo "::error::Remote deploy finished without the verified-complete marker; treating the release as NOT deployed"; exit 1; }
+
+      - name: Report deployment status
         if: always()
-        uses: slackapi/slack-github-action@v2
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": "Production manual deployment completed: ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }} — ${{ github.sha }}"
-            }
-
-  rollback:
-    name: Rollback
-    if: failure()
-    needs: [deploy]
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Rollback API service to previous task definition
         run: |
-          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} --query 'services[0].taskDefinition' --output text)
-          echo "Rolling back API to: $PREVIOUS_TASK_DEF"
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_API }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
-
-      - name: Rollback Web service to previous task definition
-        run: |
-          PREVIOUS_TASK_DEF=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_WEB }} --query 'services[0].taskDefinition' --output text)
-          echo "Rolling back Web to: $PREVIOUS_TASK_DEF"
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE_WEB }} --task-definition $PREVIOUS_TASK_DEF --force-new-deployment
-
-      - name: Wait for rollback stability
-        run: |
-          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE_API }} ${{ env.ECS_SERVICE_WEB }}
-
-      - name: Notify Slack rollback
-        uses: slackapi/slack-github-action@v2
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": "🔄 Production manual rollback completed — ${{ github.sha }}"
-            }
+          echo "Deployment job status: ${{ job.status }} (target ref: ${{ needs.validate.outputs.target_ref }})"

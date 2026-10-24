@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1">
-              <label htmlFor="password" className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">
+              <label htmlFor="password" className="text-sm font-medium text-text-secondary">
                 New password
               </label>
               <div className="relative">
@@ -127,7 +127,7 @@ export default function ResetPasswordPage() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary">
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-text-secondary">
                 Confirm new password
               </label>
               <div className="relative">
@@ -155,8 +155,8 @@ export default function ResetPasswordPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-text-secondary dark:text-dark-text-secondary">
-            <Link href="/login" className="font-medium text-accent-500 hover:text-accent-600 dark:text-accent-400">
+          <p className="mt-6 text-center text-sm text-text-secondary">
+            <Link href="/login" className="font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
               &larr; Back to sign in
             </Link>
           </p>

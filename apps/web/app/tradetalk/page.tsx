@@ -162,7 +162,7 @@ export default function TradeTalkPage() {
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
-                href="/register"
+                href="/register/buyer"
                 className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 text-sm font-semibold text-btn-primary-text transition-all hover:bg-accent/90"
               >
                 <LogIn className="h-4 w-4" /> Join TRADINGO
@@ -442,7 +442,7 @@ export default function TradeTalkPage() {
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <Link
-                  href="/register"
+                  href="/register/buyer"
                   className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 text-sm font-semibold text-btn-primary-text transition-all hover:bg-accent/90"
                 >
                   Get Started <ArrowRight className="h-4 w-4" />

@@ -43,12 +43,12 @@ export function Testimonials({ testimonials, className }: TestimonialsProps) {
                         <Star key={i} className="h-5 w-5 fill-accent-500 text-accent-500" />
                       ))}
                     </div>
-                    <blockquote className="text-lg leading-relaxed text-text-primary dark:text-dark-text-primary">
+                    <blockquote className="text-lg leading-relaxed text-text-primary">
                       &ldquo;{t.quote}&rdquo;
                     </blockquote>
                     <div className="mt-6">
-                      <p className="font-semibold text-text-primary dark:text-dark-text-primary">{t.author}</p>
-                      <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                      <p className="font-semibold text-text-primary">{t.author}</p>
+                      <p className="text-sm text-text-secondary">
                         {t.role}, {t.company}
                       </p>
                     </div>
@@ -61,14 +61,14 @@ export function Testimonials({ testimonials, className }: TestimonialsProps) {
 
         <button
           onClick={prev}
-          className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full border border-border bg-surface p-2 shadow-sm transition-colors hover:bg-surface-secondary dark:bg-dark-surface dark:border-dark-border"
+          className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full border border-border bg-surface p-2 shadow-sm transition-colors hover:bg-surface-secondary"
           aria-label="Previous testimonial"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button
           onClick={next}
-          className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full border border-border bg-surface p-2 shadow-sm transition-colors hover:bg-surface-secondary dark:bg-dark-surface dark:border-dark-border"
+          className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full border border-border bg-surface p-2 shadow-sm transition-colors hover:bg-surface-secondary"
           aria-label="Next testimonial"
         >
           <ChevronRight className="h-5 w-5" />
@@ -81,7 +81,7 @@ export function Testimonials({ testimonials, className }: TestimonialsProps) {
               onClick={() => setCurrent(i)}
               className={cn(
                 'h-2 w-2 rounded-full transition-all',
-                i === current ? 'w-6 bg-primary-600' : 'bg-border dark:bg-dark-border',
+                i === current ? 'w-6 bg-accent' : 'bg-border dark:bg-border',
               )}
               aria-label={`Go to testimonial ${i + 1}`}
             />

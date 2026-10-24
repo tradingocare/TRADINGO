@@ -70,6 +70,10 @@ export class CreateProductDto {
   @IsString()
   categoryId?: string;
 
+  @IsOptional()
+  @IsString()
+  industryId?: string;
+
   // P0-2 canonical taxonomy triple (confirmed via Tick/Change; validated
   // server-side before persistence — never taken on faith from the client).
   @IsOptional()
@@ -83,10 +87,6 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   catalogSubcategoryId?: string;
-
-  @IsOptional()
-  @IsString()
-  industryId?: string;
 
   @IsOptional()
   @IsString()

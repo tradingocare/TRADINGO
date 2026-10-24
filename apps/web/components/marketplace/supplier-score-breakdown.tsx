@@ -23,7 +23,7 @@ const RECOMMENDATION_COLORS: Record<string, string> = {
   BEST: 'text-emerald-400',
   STRONG: 'text-blue-400',
   GOOD: 'text-[#FF4D00]',
-  AVERAGE: 'text-gray-400',
+  AVERAGE: 'text-text-tertiary',
   POOR: 'text-red-400',
 }
 

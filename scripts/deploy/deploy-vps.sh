@@ -193,11 +193,21 @@ AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 AWS_BUCKET=tradingo-uploads
 CLOUDFRONT_DOMAIN=
 
-OPENSEARCH_URL=http://host.docker.internal:9200
+# OpenSearch is provisioned by docker-compose.prod.yml as service `opensearch`
+# on the `tradingo-net` network, which the API container also joins. The
+# service publishes NO host port, so the only reachable endpoint is the
+# service DNS name — `host.docker.internal:9200` points at a host port where
+# nothing listens and yields a client that can never connect (empty discover
+# feed, silently).
+OPENSEARCH_URL=http://opensearch:9200
 OPENSEARCH_USERNAME=
 OPENSEARCH_PASSWORD=
 
-CLICKHOUSE_URL=http://host.docker.internal:8123
+# No ClickHouse service exists in docker-compose.prod.yml, and the API
+# degrades to Prisma aggregations when no endpoint is configured. Leaving an
+# unreachable host.docker.internal URL here would construct a client that can
+# never connect, so the endpoint is intentionally empty.
+CLICKHOUSE_URL=
 CLICKHOUSE_USERNAME=
 CLICKHOUSE_PASSWORD=
 

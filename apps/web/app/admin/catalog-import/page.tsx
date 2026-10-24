@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -47,24 +47,24 @@ import {
 } from '@/lib/api/catalog-import';
 
 const jobStatusStyles: Record<string, string> = {
-  pending: 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary',
+  pending: 'bg-surface-secondary text-text-secondary bg-surface-secondary',
   running: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',
   completed: 'bg-accent-50 text-accent-700 dark:bg-accent-900/20 dark:text-accent-400',
   failed: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
   partial: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
   rolling_back: 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400',
-  rolled_back: 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary',
+  rolled_back: 'bg-surface-secondary text-text-secondary bg-surface-secondary',
 };
 
 const rowStatusStyles: Record<string, string> = {
-  pending: 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary',
+  pending: 'bg-surface-secondary text-text-secondary bg-surface-secondary',
   valid: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',
   invalid: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
   imported: 'bg-accent-50 text-accent-700 dark:bg-accent-900/20 dark:text-accent-400',
   skipped: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
   duplicate: 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400',
   error: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
-  rolled_back: 'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary',
+  rolled_back: 'bg-surface-secondary text-text-secondary bg-surface-secondary',
 };
 
 const importTypeLabels: Record<string, string> = {
@@ -285,8 +285,8 @@ export default function CatalogImportPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-        <div className="flex items-center gap-3 border-b border-border p-4 dark:border-dark-border">
+      <div className="rounded-xl border border-border bg-surface">
+        <div className="flex items-center gap-3 border-b border-border p-4">
           <Search className="h-4 w-4 text-text-tertiary" />
           <Input
             placeholder="Search products & services in catalog..."
@@ -306,7 +306,7 @@ export default function CatalogImportPage() {
           </div>
         )}
         {searchResults && !searching && (
-          <div className="divide-y divide-border dark:divide-dark-border">
+          <div className="divide-y divide-border">
             {searchResults.products.length === 0 && searchResults.services.length === 0 ? (
               <div className="p-6 text-center text-sm text-text-secondary">
                 No results found for &quot;{searchQuery}&quot;
@@ -318,7 +318,7 @@ export default function CatalogImportPage() {
                     <div className="flex items-center gap-3">
                       <Package className="h-4 w-4 text-text-tertiary" />
                       <div>
-                        <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{p.name}</p>
+                        <p className="text-sm font-medium text-text-primary">{p.name}</p>
                         <p className="text-xs text-text-secondary">{p.category} &middot; {p.slug}</p>
                       </div>
                     </div>
@@ -333,7 +333,7 @@ export default function CatalogImportPage() {
                     <div className="flex items-center gap-3">
                       <Wrench className="h-4 w-4 text-text-tertiary" />
                       <div>
-                        <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{s.name}</p>
+                        <p className="text-sm font-medium text-text-primary">{s.name}</p>
                         <p className="text-xs text-text-secondary">{s.category} &middot; {s.slug}</p>
                       </div>
                     </div>
@@ -349,8 +349,8 @@ export default function CatalogImportPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-        <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary lg:grid">
+      <div className="rounded-xl border border-border bg-surface">
+        <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary lg:grid">
           <div className="col-span-1">Job ID</div>
           <div className="col-span-1">Type</div>
           <div className="col-span-1">Status</div>
@@ -367,7 +367,7 @@ export default function CatalogImportPage() {
           <>
             {jobs.map((job) => (
               <div key={job.id}>
-                <div className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center dark:border-dark-border">
+                <div className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 lg:grid-cols-12 lg:items-center">
                   <div className="flex items-center gap-2 lg:col-span-1">
                     <button
                       onClick={() => toggleJobExpand(job.id)}
@@ -384,7 +384,7 @@ export default function CatalogImportPage() {
                     </span>
                   </div>
                   <div className="lg:col-span-1">
-                    <span className="text-sm text-text-primary dark:text-dark-text-primary">
+                    <span className="text-sm text-text-primary">
                       {importTypeLabels[job.type] || job.type}
                     </span>
                   </div>
@@ -397,7 +397,7 @@ export default function CatalogImportPage() {
                     <span className="text-red-600">{job.invalidRows}</span>
                     <span className="text-blue-600">{job.importedRows}</span>
                   </div>
-                  <div className="text-sm text-text-secondary dark:text-dark-text-secondary lg:col-span-2">
+                  <div className="text-sm text-text-secondary lg:col-span-2">
                     {new Date(job.createdAt).toLocaleDateString('en-IN', {
                       day: '2-digit',
                       month: 'short',
@@ -441,9 +441,9 @@ export default function CatalogImportPage() {
                 </div>
 
                 {expandedJob === job.id && (
-                  <div className="border-b border-border bg-surface-secondary/50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface-secondary/50">
+                  <div className="border-b border-border bg-surface-secondary/50 px-6 py-4">
                     <div className="mb-3 flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+                      <h4 className="text-sm font-semibold text-text-primary">
                         Row Breakdown
                       </h4>
                       <div className="flex items-center gap-4 text-xs text-text-secondary">
@@ -463,7 +463,7 @@ export default function CatalogImportPage() {
                         {(jobRows[job.id] || []).length === 0 ? (
                           <p className="py-3 text-center text-sm text-text-secondary">No row data available.</p>
                         ) : (
-                          <div className="grid grid-cols-8 gap-2 border-b border-border pb-2 text-xs font-medium uppercase text-text-secondary dark:border-dark-border">
+                          <div className="grid grid-cols-8 gap-2 border-b border-border pb-2 text-xs font-medium uppercase text-text-secondary">
                             <div className="col-span-1">Row</div>
                             <div className="col-span-1">Status</div>
                             <div className="col-span-2">Entity</div>
@@ -474,7 +474,7 @@ export default function CatalogImportPage() {
                         {(jobRows[job.id] || []).map((row) => (
                           <div
                             key={row.id}
-                            className="grid grid-cols-8 gap-2 border-b border-border py-2 text-sm last:border-0 dark:border-dark-border"
+                            className="grid grid-cols-8 gap-2 border-b border-border py-2 text-sm last:border-0"
                           >
                             <div className="col-span-1 font-mono text-xs text-text-secondary">
                               {row.rowNumber}
@@ -496,7 +496,7 @@ export default function CatalogImportPage() {
                       </div>
                     )}
                     {job.summary && (
-                      <div className="mt-3 rounded-lg bg-surface p-3 dark:bg-dark-surface">
+                      <div className="mt-3 rounded-lg bg-surface p-3">
                         <p className="mb-1 text-xs font-medium text-text-secondary uppercase">Summary</p>
                         <pre className="text-xs text-text-primary whitespace-pre-wrap">
                           {JSON.stringify(job.summary, null, 2)}
@@ -540,7 +540,7 @@ export default function CatalogImportPage() {
       <Modal open={showImportDialog} onClose={() => setShowImportDialog(false)} title="Start New Import">
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            <label className="mb-1.5 block text-sm font-medium text-text-primary">
               Import Type
             </label>
             <Select
@@ -556,10 +556,10 @@ export default function CatalogImportPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            <label className="mb-1.5 block text-sm font-medium text-text-primary">
               File Upload <span className="text-text-tertiary">(optional)</span>
             </label>
-            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border p-4 text-sm text-text-secondary hover:border-primary-500 hover:text-primary-600 dark:border-dark-border">
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border p-4 text-sm text-text-secondary hover:border-primary-500 hover:text-primary-600">
               <Upload className="h-5 w-5" />
               {importFile ? importFile.name : 'Upload CSV or JSON file'}
               <input

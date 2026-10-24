@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { DashboardPageHeader, StatusBadge, DashboardSkeleton } from '@/components/dashboard';
@@ -27,7 +27,7 @@ export default function SellerProfilePage() {
         <DashboardPageHeader title="Profile" description="Manage your seller profile" />
         <Card>
           <CardContent className="py-10 text-center">
-            <p className="text-text-secondary dark:text-dark-text-secondary">Failed to load company profile. Please try again.</p>
+            <p className="text-text-secondary">Failed to load company profile. Please try again.</p>
           </CardContent>
         </Card>
       </div>
@@ -36,9 +36,9 @@ export default function SellerProfilePage() {
 
   const companyFields = [
     { label: 'Company Name', value: company.name, icon: Building2 },
-    { label: 'Phone', value: company.phone || '—', icon: Phone },
-    { label: 'GSTIN', value: company.gst || '—', icon: BadgeIndianRupee },
-    { label: 'Address', value: [company.address, company.city, company.state].filter(Boolean).join(', ') || '—', icon: MapPin },
+    { label: 'Phone', value: company.phone || 'â€”', icon: Phone },
+    { label: 'GSTIN', value: company.gst || 'â€”', icon: BadgeIndianRupee },
+    { label: 'Address', value: [company.address, company.city, company.state].filter(Boolean).join(', ') || 'â€”', icon: MapPin },
     { label: 'Business Type', value: company.type, icon: Globe },
   ];
 
@@ -66,8 +66,8 @@ export default function SellerProfilePage() {
                     <Icon className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">{item.label}</p>
-                    <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{item.value}</p>
+                    <p className="text-xs text-text-secondary">{item.label}</p>
+                    <p className="text-sm font-medium text-text-primary">{item.value}</p>
                   </div>
                 </div>
               );
@@ -82,19 +82,19 @@ export default function SellerProfilePage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-border bg-surface-secondary/50 p-4 dark:border-dark-border dark:bg-dark-surface-secondary/50">
-              <p className="text-xs text-text-secondary dark:text-dark-text-secondary">Account Status</p>
-              <p className="mt-1 text-sm font-medium capitalize text-text-primary dark:text-dark-text-primary">{company.status}</p>
+            <div className="rounded-lg border border-border bg-surface-secondary/50 p-4">
+              <p className="text-xs text-text-secondary">Account Status</p>
+              <p className="mt-1 text-sm font-medium capitalize text-text-primary">{company.status}</p>
             </div>
-            <div className="rounded-lg border border-border bg-surface-secondary/50 p-4 dark:border-dark-border dark:bg-dark-surface-secondary/50">
-              <p className="text-xs text-text-secondary dark:text-dark-text-secondary">Verification Status</p>
+            <div className="rounded-lg border border-border bg-surface-secondary/50 p-4">
+              <p className="text-xs text-text-secondary">Verification Status</p>
               <div className="mt-1">
                 <StatusBadge status={company.verificationStatus} />
               </div>
             </div>
-            <div className="rounded-lg border border-border bg-surface-secondary/50 p-4 dark:border-dark-border dark:bg-dark-surface-secondary/50">
-              <p className="text-xs text-text-secondary dark:text-dark-text-secondary">Member Since</p>
-              <p className="mt-1 text-sm font-medium text-text-primary dark:text-dark-text-primary">{new Date(company.createdAt).toLocaleDateString()}</p>
+            <div className="rounded-lg border border-border bg-surface-secondary/50 p-4">
+              <p className="text-xs text-text-secondary">Member Since</p>
+              <p className="mt-1 text-sm font-medium text-text-primary">{new Date(company.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
         </CardContent>

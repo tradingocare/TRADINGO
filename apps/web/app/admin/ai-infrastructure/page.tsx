@@ -53,7 +53,7 @@ export default function AdminAiInfrastructurePage() {
       DOWN: { color: 'bg-red-500/15 text-red-400', label: 'Down' },
       DISABLED: { color: 'bg-surface-secondary text-text-tertiary', label: 'Disabled' },
     }
-    const m = map[status] || { color: 'bg-surface text-gray-500', label: status }
+    const m = map[status] || { color: 'bg-surface text-text-secondary', label: status }
     return <Badge className={m.color}>{m.label}</Badge>
   }
 

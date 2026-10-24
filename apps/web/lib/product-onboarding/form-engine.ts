@@ -147,6 +147,9 @@ export function applyDraftToForm(
     exportCountries: draft.exportCountries,
     categoryId: draft.categoryId,
     subcategoryId: draft.subcategoryId,
+    catalogCategoryId: draft.catalogCategoryId ?? null,
+    catalogSubcategoryId: draft.catalogSubcategoryId ?? null,
+    catalogItemId: draft.catalogItemId ?? null,
     step: draft.step,
     totalSteps: draft.totalSteps,
     status: draft.status,
@@ -209,6 +212,9 @@ export function getFormDataWithRelations(
   if (draft.exportCountries !== undefined) data.exportCountries = draft.exportCountries;
   if (draft.categoryId !== undefined) data.categoryId = draft.categoryId;
   if (draft.subcategoryId !== undefined) data.subcategoryId = draft.subcategoryId;
+  if (draft.catalogCategoryId !== undefined) data.catalogCategoryId = draft.catalogCategoryId;
+  if (draft.catalogSubcategoryId !== undefined) data.catalogSubcategoryId = draft.catalogSubcategoryId;
+  if (draft.catalogItemId !== undefined) data.catalogItemId = draft.catalogItemId;
   if (draft.step !== undefined) data.step = draft.step;
   if (draft.totalSteps !== undefined) data.totalSteps = draft.totalSteps;
   if (draft.status !== undefined) data.status = draft.status;

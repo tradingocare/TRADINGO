@@ -125,14 +125,14 @@ export default function EngineDetailPage({ engineId: _engineId }: { engineId: st
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
           className="mt-12 text-center">
-          <Link href="/trading">
+          <Link href="/product">
             <motion.span whileHover={{ y: -2, scale: 1.03 }}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-accent-500 to-accent-500 px-6 py-3 text-sm font-bold text-primary shadow-lg">
               Explore Marketplace <ArrowRight size={16} />
             </motion.span>
           </Link>
           <div className="mt-3 flex items-center justify-center gap-3 text-xs">
-            <Link href="/register" className="text-gray-400 underline underline-offset-2 hover:text-gray-600">Become a Seller</Link>
+            <Link href="/golive" className="text-text-tertiary underline underline-offset-2 hover:text-text-primary">Become a Seller</Link>
             <span className="text-primary/10">|</span>
             <Link href="/tradhexa" className="text-accent-500 underline underline-offset-2 hover:text-accent-500">Learn About TRADHEXA</Link>
           </div>

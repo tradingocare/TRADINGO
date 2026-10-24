@@ -10,6 +10,11 @@ if (process.env.ANALYZE === 'true') {
 const nextConfig: NextConfig = withBundleAnalyzer({
   output: 'standalone',
 
+  // Next 16 dev-only: unlisted origins are blocked from dev resources
+  // (/_next/hmr, dev asset loading), which leaves fresh dev pages unhydrated
+  // when browsed at 127.0.0.1.
+  allowedDevOrigins: ['localhost', '127.0.0.1'],
+
   transpilePackages: ['@tradingo/types', '@tradingo/utils'],
   experimental: {
     staticGenerationMaxConcurrency: 2,
@@ -71,13 +76,28 @@ const nextConfig: NextConfig = withBundleAnalyzer({
   async redirects() {
     return [
       {
-        source: '/product',
-        destination: '/products',
+        source: '/seller-plans',
+        destination: '/plans',
+        permanent: true,
+      },
+      {
+        source: '/products',
+        destination: '/product',
+        permanent: true,
+      },
+      {
+        source: '/trading',
+        destination: '/product',
+        permanent: true,
+      },
+      {
+        source: '/tradeserv',
+        destination: '/service',
         permanent: true,
       },
       {
         source: '/browse',
-        destination: '/products',
+        destination: '/product',
         permanent: true,
       },
       {

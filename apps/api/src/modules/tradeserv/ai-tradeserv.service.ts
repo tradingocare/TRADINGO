@@ -3,6 +3,8 @@ import { AiGatewayService } from '../ai-gateway/ai-gateway.service';
 import { PromptManagerService } from '../ai-gateway/prompt-manager.service';
 import { TradTrustService } from '../tradtrust/tradtrust.service';
 import { MarketplaceIntelligenceService } from '../marketplace-intelligence/marketplace-intelligence.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
+import type { ClassifyCatalogResponse } from '../marketplace-catalog-bridge/dto/classify-catalog.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TradeservService } from './tradeserv.service';
 import { TaskType } from '@prisma/client';
@@ -18,6 +20,7 @@ export class AiTradeservService {
     private readonly marketplaceIntelligence: MarketplaceIntelligenceService,
     private readonly prisma: PrismaService,
     private readonly tradeserv: TradeservService,
+    private readonly taxonomy: CatalogTaxonomyPersistenceService,
   ) {}
 
   async onModuleInit() {
@@ -143,16 +146,49 @@ export class AiTradeservService {
     return this.processAi(TaskType.MARKET_INSIGHT, companyId, 'suggest_skills', context, userId);
   }
 
+  /**
+   * P0-3 Step 10 (F-13): canonical delegation. The legacy free-text LLM
+   * prompt (which suggested category NAMES against the legacy professional
+   * category list) is retired. The suggestion now comes from the single
+   * canonical engine via the validated adapter, in deterministic mode
+   * (aiTier:false — no LLM, no credits; exact/synonym tiers only), so the
+   * response carries {categoryId, subcategoryId, catalogItemId, confidence,
+   * band} with server-side-verified IDs. Names remain display-only. The
+   * route/DTO/guards are unchanged; zero frontend callers existed for the
+   * legacy shape (orphaned endpoint), so the additive canonical contract
+   * breaks nobody.
+   */
   async suggestCategories(companyId: string, userId: string, payload: { serviceName?: string; description?: string; currentCategory?: string }) {
-    const context: Record<string, unknown> = {};
-    if (payload.serviceName) context.serviceName = payload.serviceName;
-    if (payload.description) context.description = payload.description;
-    if (payload.currentCategory) context.currentCategory = payload.currentCategory;
-
-    const categories = await this.tradeserv.getProfessionalCategories(false).catch(() => []);
-    if (categories.length) context.existingCategories = categories;
-
-    return this.processAi(TaskType.MARKET_INSIGHT, companyId, 'suggest_categories', context, userId);
+    const name = (payload.serviceName || payload.currentCategory || '').trim();
+    if (!name) {
+      return {
+        success: true,
+        data: {
+          categoryId: null, subcategoryId: null, catalogItemId: null, type: null,
+          confidence: 0, band: 'LOW', matchType: 'unclassified',
+          reasons: ['no service name provided — structured picker required'],
+          alternatives: [],
+        } as ClassifyCatalogResponse,
+        engine: 'catalog-classify-v1',
+      };
+    }
+    let taxonomy: ClassifyCatalogResponse;
+    try {
+      taxonomy = await this.taxonomy.classifyValidated(
+        { name, description: payload.description || undefined, context: 'service' },
+        companyId,
+        userId,
+        { aiTier: false, expectedType: 'Service' },
+      );
+    } catch {
+      taxonomy = {
+        categoryId: null, subcategoryId: null, catalogItemId: null, type: null,
+        confidence: 0, band: 'LOW', matchType: 'unclassified',
+        reasons: ['classification unavailable — structured picker required'],
+        alternatives: [],
+      };
+    }
+    return { success: true, data: taxonomy, engine: 'catalog-classify-v1' };
   }
 
   async getRecommendations(companyId: string, _userId: string, _payload: { limit?: number }) {

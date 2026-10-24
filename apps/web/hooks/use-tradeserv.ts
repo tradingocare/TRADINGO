@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tradeservApi } from '@/lib/api/tradeserv';
+import { retryExcept429 } from '@/lib/query/retry-policy';
 
 export function useProfessionalProfile(slug: string) {
   return useQuery({
@@ -400,12 +401,21 @@ export function useAdminBookingStats() {
   });
 }
 
-export function useTradeServSearchV2(params: Record<string, string | number | undefined>) {
+export function useTradeServSearchV2(
+  params: Record<string, string | number | undefined>,
+  enabled = true,
+  // Phase 3E: subcategory previews opt out of 429 retries so throttled
+  // preview fan-out never doubles. Default true preserves existing behavior
+  // for final-result callers (services tab, listing pages).
+  options?: { retryOn429?: boolean },
+) {
+  const retryOn429 = options?.retryOn429 ?? true;
   return useQuery({
     queryKey: ['tradeserv', 'search-v2', params],
     queryFn: () => tradeservApi.searchProfessionalsV2(params),
-    enabled: true,
+    enabled,
     staleTime: 30_000,
     placeholderData: (prev) => prev,
+    retry: retryOn429 ? undefined : retryExcept429,
   });
 }

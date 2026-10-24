@@ -5,6 +5,11 @@ export interface SearchProductsParams {
   q?: string;
   categoryId?: string;
   subCategory?: string;
+  // P0-3 Step 5: canonical taxonomy filters (server-side validated —
+  // invalid combos resolve to honest empty, never unfiltered).
+  catalogCategoryId?: string;
+  catalogSubcategoryId?: string;
+  catalogItemId?: string;
   minPrice?: number;
   maxPrice?: number;
   minMoq?: number;
@@ -76,7 +81,7 @@ function mapOsHitToDiscoveryResult(hit: Record<string, any>): DiscoveryResult {
     tradeCreditEligible: hit.tradeCreditEligible ?? undefined,
     certifications: Array.isArray(hit.certifications) ? hit.certifications : undefined,
     specifications: rawSpecs.length ? rawSpecs : undefined,
-    keywords: Array.isArray(hit.catalogKeywords) ? hit.catalogKeywords : undefined,
+    keywords: Array.isArray(hit.catalogKeywords) ? hit.catalogKeywords : (Array.isArray(hit.focusKeywords) ? hit.focusKeywords : undefined),
     brand: hit.brand || undefined,
     listedDate: hit.createdAt || undefined,
   };
@@ -107,11 +112,65 @@ export function discoverItemToDiscoveryResult(item: DiscoveryFeedItem): Discover
   return mapOsHitToDiscoveryResult(hit);
 }
 
+export interface CanonicalTreeNode {
+  slug: string;
+  id: string;
+  subcategories: { slug: string; id: string }[];
+}
+
+export interface CanonicalResolution {
+  /** True when the URL carried canonical catalog params at all. */
+  hasCanonicalParams: boolean;
+  /** True when a carried param matched nothing (backend will honest-empty). */
+  unresolved: boolean;
+  /** Backend-ready IDs (or the raw slug as an ID probe when unresolved). */
+  categoryId?: string;
+  subcategoryId?: string;
+}
+
+/**
+ * Phase 3B: resolve canonical catalog URL slugs to backend IDs against the
+ * already-cached bridge tree. Pure function — no fetching, no hardcoding.
+ * Unresolvable slugs pass through as ID probes so the backend answers
+ * honest-empty (its designed unknown-ID semantics) instead of unfiltered.
+ */
+export function resolveCanonicalTaxonomy(
+  tree: CanonicalTreeNode[],
+  catSlug?: string,
+  subSlug?: string,
+): CanonicalResolution {
+  if (!catSlug && !subSlug) return { hasCanonicalParams: false, unresolved: false };
+  const cat = catSlug ? tree.find((c) => c.slug === catSlug) : undefined;
+  let subId: string | undefined;
+  let subUnresolved = false;
+  if (subSlug) {
+    const scope = cat
+      ? cat.subcategories
+      : tree.flatMap((c) => c.subcategories);
+    const sub = scope.find((s) => s.slug === subSlug);
+    if (sub) subId = sub.id;
+    else {
+      subId = subSlug;
+      subUnresolved = true;
+    }
+  }
+  return {
+    hasCanonicalParams: true,
+    unresolved: (catSlug ? !cat : false) || subUnresolved,
+    categoryId: cat ? cat.id : catSlug,
+    subcategoryId: subId,
+  };
+}
+
 export function searchProducts(params: SearchProductsParams): Promise<DiscoveryResponse> {
   const qp = new URLSearchParams();
   if (params.q) qp.set('q', params.q);
   if (params.categoryId) qp.set('categoryId', params.categoryId);
   if (params.subCategory) qp.set('subCategory', params.subCategory);
+  // P0-3 Step 5: canonical taxonomy filters
+  if (params.catalogCategoryId) qp.set('catalogCategoryId', params.catalogCategoryId);
+  if (params.catalogSubcategoryId) qp.set('catalogSubcategoryId', params.catalogSubcategoryId);
+  if (params.catalogItemId) qp.set('catalogItemId', params.catalogItemId);
   if (params.minPrice !== undefined) qp.set('minPrice', String(params.minPrice));
   if (params.maxPrice !== undefined) qp.set('maxPrice', String(params.maxPrice));
   if (params.minMoq !== undefined) qp.set('minMoq', String(params.minMoq));

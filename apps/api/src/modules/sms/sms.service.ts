@@ -3,6 +3,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SmsProviderFactory } from './sms-provider.factory';
 import { SMS_TEMPLATES, SMS_RATE_LIMITS } from './sms.constants';
 
+/** F-4: OTP template names (rendered bodies embed the live code). */
+const OTP_TEMPLATE_NAMES = new Set(['OTP_LOGIN', 'OTP_REGISTER', 'OTP_RESET_PASSWORD', 'OTP_VERIFY_MOBILE']);
+
+/** Redact the 6-digit OTP from a rendered template body for safe persistence. */
+function redactOtpBody(message: string): string {
+  return message.replace(/\b\d{6}\b/g, '[REDACTED]');
+}
+
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
@@ -32,10 +40,14 @@ export class SmsService {
     const provider = this.smsProviderFactory.getProvider();
     const result = await provider.send(phoneNumber, message);
 
+    // F-4: never persist the plaintext OTP body. OTP templates render the
+    // live 6-digit code into `message` — log a redacted representation while
+    // keeping the same row shape and non-OTP messages untouched.
+    const loggableMessage = template && OTP_TEMPLATE_NAMES.has(template) ? redactOtpBody(message) : message;
     await this.prisma.smsLog.create({
       data: {
         phoneNumber,
-        message,
+        message: loggableMessage,
         template: template ?? null,
         provider: provider.getName(),
         status: result.success ? 'sent' : 'failed',

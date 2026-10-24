@@ -32,7 +32,7 @@ export function ExecutivePrioritiesCard({ data, isLoading, error }: Props) {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-500/10 text-xs font-bold text-accent-500">{p.rank}</div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <Icon className="h-3 w-3 text-gray-400" />
+                  <Icon className="h-3 w-3 text-text-tertiary" />
                   <span className="text-sm font-medium text-text-primary">{p.title}</span>
                   <span className={`ml-auto text-[10px] font-medium ${riskColor}`}>{p.riskLevel}</span>
                 </div>

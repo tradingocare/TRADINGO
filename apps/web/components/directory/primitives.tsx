@@ -97,7 +97,7 @@ export function SectionError({ label, onRetry }: { label: string; onRetry: () =>
       <p className="mt-3 font-semibold text-text-primary">Failed to load {label}</p>
       <button
         onClick={onRetry}
-        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2 text-sm font-medium text-white transition-all hover:brightness-110"
+        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-gray-800"
       >
         ↻ Retry
       </button>

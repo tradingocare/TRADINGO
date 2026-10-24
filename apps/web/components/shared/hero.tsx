@@ -16,8 +16,8 @@ interface HeroProps {
 export function Hero({
   title,
   subtitle,
-  ctaPrimary = { label: 'Get Started', href: '/register' },
-  ctaSecondary = { label: 'Learn More', href: '/trading' },
+  ctaPrimary = { label: 'Get Started', href: '/register/buyer' },
+  ctaSecondary = { label: 'Learn More', href: '/product' },
   badges,
 }: HeroProps) {
   return (

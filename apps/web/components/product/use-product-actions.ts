@@ -7,6 +7,7 @@ import { useCompareStore } from '@/store/compare-store'
 import { useWishlistStore } from '@/store/wishlist-store'
 import { toast } from '@/components/ui/use-toast'
 import type { ProductCardModel } from '@/types/product-card'
+import { openChat } from '@/lib/messaging/chat-navigation'
 
 export function useProductActions(product: ProductCardModel) {
   const router = useRouter()
@@ -22,31 +23,38 @@ export function useProductActions(product: ProductCardModel) {
     if (user?.role === 'BUYER' && !loaded) fetchWishlist()
   }, [user, loaded, fetchWishlist])
 
-  const requireAuth = useCallback((fn: () => void) => {
+  const requireAuth = useCallback((destination: string, fn: () => void) => {
     if (!user) {
       toast({ title: 'Login karke continue karein', variant: 'destructive' })
-      router.push('/login')
+      // R6: preserve the intended destination so a successful login returns here.
+      router.push(`/login?next=${encodeURIComponent(destination)}`)
       return
     }
     fn()
   }, [user, router])
 
   const handleChat = useCallback(() => {
-    requireAuth(() => router.push(`/buyer/chat?productId=${pid}`))
-  }, [requireAuth, router, pid])
+    const target = `/products/${product.slug}`
+    requireAuth(target, () =>
+      openChat({ router, companyId: product.seller.id, productId: pid, title: product.title, returnUrl: target }),
+    )
+  }, [requireAuth, router, pid, product.slug, product.seller.id, product.title])
 
   const handleRFQ = useCallback(() => {
-    requireAuth(() => router.push(`/buyer/rfq/new?source=PRODUCT&sourceId=${pid}`))
+    const target = `/buyer/rfq/new?source=PRODUCT&sourceId=${pid}`
+    requireAuth(target, () => router.push(target))
   }, [requireAuth, router, pid])
 
   const handleBuyNow = useCallback((qty?: number) => {
-    requireAuth(() => router.push(`/checkout?productId=${pid}&qty=${qty ?? product.moq}`))
+    const target = `/checkout?productId=${pid}&qty=${qty ?? product.moq}`
+    requireAuth(target, () => router.push(target))
   }, [requireAuth, router, pid, product.moq])
 
   const handleSave = useCallback(async () => {
     if (!user) {
       toast({ title: 'Login karke continue karein', variant: 'destructive' })
-      router.push('/login')
+      // R6: return to this page after login so the save can complete.
+      router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`)
       return
     }
     if (user.role !== 'BUYER') {

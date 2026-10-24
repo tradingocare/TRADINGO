@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useCallback } from 'react';
 import { Upload, X, FileText, Video, Image as ImageIcon, File as FileIcon } from 'lucide-react';
@@ -138,13 +138,13 @@ export function FileUploadZone({
           'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition-all',
           dragOver
             ? 'border-primary-500 bg-primary-500/5 dark:border-primary-400 dark:bg-primary-500/10'
-            : 'border-border bg-surface hover:border-primary-400 hover:bg-primary-500/5 dark:border-dark-border dark:bg-dark-surface dark:hover:border-primary-500',
+            : 'border-border bg-surface hover:border-primary-400 hover:bg-primary-500/5 border-border bg-surface dark:hover:border-primary-500',
         )}
       >
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary-500/10 dark:bg-primary-500/20">
           <Upload className="h-6 w-6 text-primary-600 dark:text-primary-400" />
         </div>
-        <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+        <p className="text-sm font-medium text-text-primary">
           Drop your {label} here
         </p>
         <p className="mt-1 text-xs text-text-tertiary">
@@ -167,7 +167,7 @@ export function FileUploadZone({
 
       {items.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
+          <p className="text-xs font-medium text-text-secondary">
             {items.length} file{items.length !== 1 ? 's' : ''} selected
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -176,7 +176,7 @@ export function FileUploadZone({
               return (
                 <div
                   key={`${item.file.name}-${index}`}
-                  className="group relative flex items-center gap-3 rounded-lg border border-border bg-surface p-3 dark:border-dark-border dark:bg-dark-surface"
+                  className="group relative flex items-center gap-3 rounded-lg border border-border bg-surface p-3"
                 >
                   {item.preview ? (
                     <img
@@ -185,17 +185,17 @@ export function FileUploadZone({
                       className="h-12 w-12 shrink-0 rounded-md object-cover"
                     />
                   ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-surface-secondary dark:bg-dark-surface-secondary">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-surface-secondary">
                       <Icon className="h-6 w-6 text-text-tertiary" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                    <p className="truncate text-sm font-medium text-text-primary">
                       {item.file.name}
                     </p>
                     <p className="text-xs text-text-tertiary">{formatSize(item.file.size)}</p>
                     {item.progress !== undefined && (
-                      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
+                      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-surface-tertiary">
                         <div
                           className="h-full rounded-full bg-primary-500 transition-all"
                           style={{ width: `${item.progress}%` }}

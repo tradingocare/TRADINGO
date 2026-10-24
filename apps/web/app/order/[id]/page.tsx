@@ -109,7 +109,7 @@ async function OrderContent({ id }: { id: string }) {
  </CardHeader>
  <CardContent>
  <div className="relative">
- <div className="absolute left-4 top-0 h-full w-0.5 bg-border dark:bg-dark-border" />
+ <div className="absolute left-4 top-0 h-full w-0.5 bg-border dark:bg-border" />
  <div className="space-y-8">
  {timelineSteps.map((step, index) => {
  const isActive = index <= activeStep;
@@ -119,7 +119,7 @@ async function OrderContent({ id }: { id: string }) {
  <div
  className={`absolute left-2.5 flex h-3 w-3 items-center justify-center rounded-full border-2 ${
  isActive
- ? 'border-primary-600 bg-primary-600 dark:border-primary-400 dark:bg-primary-400'
+ ? 'border-accent bg-accent dark:border-primary-400 dark:bg-primary-400'
  : 'border-border bg-surface'
  } ${isCurrent ? 'ring-2 ring-accent/30' : ''}`}
  />

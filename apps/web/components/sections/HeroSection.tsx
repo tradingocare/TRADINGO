@@ -107,8 +107,8 @@ export default function HeroSection() {
             <Image
               src="/logo/trdn5.png"
               alt="TRADINGO"
-              width={400} height={400}
-              className="w-[min(300px,70vw)] object-contain"
+              width={300} height={300}
+              className="object-contain"
               priority
             />
             <div className="mt-4 flex gap-1.5">

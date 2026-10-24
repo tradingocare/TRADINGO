@@ -5,6 +5,7 @@ import { ReviewsService } from './reviews.service';
 import { WishlistService } from './wishlist.service';
 import { QaService } from './qa.service';
 import { BestsellerService } from './bestseller.service';
+import { ProductPricingService } from './services/product-pricing.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CanActivate } from '@nestjs/common';
@@ -38,6 +39,7 @@ describe('ProductsController', () => {
         { provide: WishlistService, useValue: { findAll: jest.fn(), toggle: jest.fn() } },
         { provide: QaService, useValue: { findQuestions: jest.fn(), createQuestion: jest.fn(), answerQuestion: jest.fn() } },
         { provide: BestsellerService, useValue: { getBestsellers: jest.fn() } },
+        { provide: ProductPricingService, useValue: { resolvePricing: jest.fn() } },
         { provide: PrismaService, useValue: { product: { findUnique: jest.fn() } } },
       ],
     })

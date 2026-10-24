@@ -13,11 +13,11 @@ interface FormFieldProps {
 export default function FormField({ label, required, error, hint, children }: FormFieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-white/70 text-xs font-semibold flex items-center gap-1">
+      <label className="text-text-secondary text-xs font-semibold flex items-center gap-1">
         {label}
         {required
           ? <span style={{ color: '#f59e0b' }}>*</span>
-          : <span className="text-white/25 text-[9px] font-normal">(optional)</span>}
+          : <span className="text-text-tertiary text-[9px] font-normal">(optional)</span>}
       </label>
       {children}
       {error && (
@@ -26,7 +26,7 @@ export default function FormField({ label, required, error, hint, children }: Fo
         </p>
       )}
       {hint && !error && (
-        <p className="text-white/30 text-[10px]">{hint}</p>
+        <p className="text-text-tertiary text-[10px]">{hint}</p>
       )}
     </div>
   )

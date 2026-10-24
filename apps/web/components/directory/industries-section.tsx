@@ -83,7 +83,7 @@ export function IndustriesSection() {
         <EmptyNote
           icon={<Factory className="h-6 w-6" />}
           text={query ? `No industries match "${query}".` : 'No industries yet.'}
-          actionHref="/register"
+          actionHref="/golive"
           actionLabel="Register Your Industry"
         />
       ) : (

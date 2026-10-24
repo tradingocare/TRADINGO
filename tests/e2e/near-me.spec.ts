@@ -39,9 +39,14 @@ test.describe('Near Me — Product Discovery', () => {
 
     const radiusBtn = page.locator('button:has-text("100 km")').filter({ visible: true }).first();
     await radiusBtn.scrollIntoViewIfNeeded();
-    await radiusBtn.click({ force: true });
+    // Normal click: keep Playwright's visibility/stability/hit-target checks so a
+    // mid-scroll click cannot punch through onto the fixed sidebar (force:true
+    // bypasses those guards and mis-navigated on narrow viewports).
+    await radiusBtn.click();
     await waitForSettled(page);
 
+    // Selection applied: route carries radius=100 and results render its context.
+    await expect(page).toHaveURL(/radius=100/);
     await expect(page.locator('text=100 km').first()).toBeVisible({ timeout: 5000 });
     await context.close();
   });

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import VendorRegistrationWizard from '../vendor/VendorRegistrationWizard'
 
 export const metadata: Metadata = {
-  title: 'Activate Seller Mode — TRADINGO',
+  title: 'Activate Seller Mode',
   description: 'Activate your seller workspace, keep your buyer features. Join TRADINGO as a verified seller with zero commission and GST invoicing.',
 }
 
@@ -20,7 +21,7 @@ export default function VendorOnboardingPage() {
         <div className="flex items-center justify-between px-6 py-4"
           style={{ borderBottom: '1px solid var(--border-color)' }}>
           <Link href="/">
-            <img src="/logo/trdn5.png" alt="TRADINGO" className="h-9 w-9 object-contain" />
+            <Image src="/logo/trdn5.png" alt="TRADINGO" width={54} height={36} className="object-contain" />
           </Link>
           <p className="text-text-secondary text-xs">
             Signed in as a buyer?{' '}

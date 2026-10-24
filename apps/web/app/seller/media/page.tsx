@@ -97,7 +97,7 @@ export default function MediaLibraryPage() {
                 return (
                   <div key={m.id} className="group relative rounded-xl overflow-hidden transition-all bg-bg-elevated border border-border">
                     <div className="aspect-square bg-surface-secondary flex items-center justify-center">
-                      {m.type === 'IMAGE' && m.url ? <img src={m.url} alt={m.altText || ''} className="w-full h-full object-cover" /> : <Icon size={28} className="text-gray-300" />}
+                      {m.type === 'IMAGE' && m.url ? <img src={m.url} alt={m.altText || ''} className="w-full h-full object-cover" /> : <Icon size={28} className="text-text-tertiary" />}
                     </div>
                     <div className="p-2">
                       <p className="text-[10px] font-medium text-text-secondary truncate">{m.title || 'Untitled'}</p>

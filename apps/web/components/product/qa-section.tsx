@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -78,7 +78,7 @@ export function QaSection({ questions, productSlug }: QaSectionProps) {
       </form>
 
       {paged.length === 0 && (
-        <p className="py-8 text-center text-text-secondary dark:text-dark-text-secondary">
+        <p className="py-8 text-center text-text-secondary">
           No questions yet. Be the first to ask!
         </p>
       )}
@@ -87,15 +87,15 @@ export function QaSection({ questions, productSlug }: QaSectionProps) {
         {paged.map((qa) => (
           <div
             key={qa.id}
-            className="rounded-xl border border-border bg-surface p-5 dark:bg-dark-surface dark:border-dark-border"
+            className="rounded-xl border border-border bg-surface p-5"
           >
             <div className="flex items-start gap-3">
               <Avatar size="sm" className="bg-accent/10 text-accent" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                <p className="text-sm font-medium text-text-primary">
                   {qa.question}
                 </p>
-                <div className="mt-1 flex items-center gap-3 text-xs text-text-tertiary dark:text-dark-text-tertiary">
+                <div className="mt-1 flex items-center gap-3 text-xs text-text-tertiary">
                   {qa.askedBy && <span>Asked by {qa.askedBy}</span>}
                   <span>
                     {new Date(qa.createdAt).toLocaleDateString('en-IN', {
@@ -111,11 +111,11 @@ export function QaSection({ questions, productSlug }: QaSectionProps) {
                     <p className="text-sm font-medium text-accent">
                       Seller Answer
                     </p>
-                    <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <p className="mt-1 text-sm text-text-secondary">
                       {qa.answer}
                     </p>
                     {qa.answeredAt && (
-                      <p className="mt-1 text-xs text-text-tertiary dark:text-dark-text-tertiary">
+                      <p className="mt-1 text-xs text-text-tertiary">
                         Answered{' '}
                         {new Date(qa.answeredAt).toLocaleDateString('en-IN', {
                           year: 'numeric',

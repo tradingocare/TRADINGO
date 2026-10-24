@@ -87,7 +87,12 @@ jobs:
         run: pnpm db:generate
 
       - name: Run database migrations
-        run: pnpm db:migrate
+        run: pnpm --filter @tradingo/api exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
+
+      - name: Verify database schema
+        run: pnpm --filter @tradingo/api exec prisma migrate status
         env:
           DATABASE_URL: postgresql://tradingo:tradingo@localhost:5432/tradingo_e2e
 
@@ -120,8 +125,41 @@ jobs:
           cp -r apps/web/public apps/web/.next/standalone/apps/web/public
           ls -la apps/web/.next/standalone/apps/web
 
+      # Playwright browser binaries are large (~300MB: chromium 1228 +
+      # webkit 2311 + ffmpeg 1011 for Playwright 1.61.0) and were
+      # re-downloaded every run. The key pins the exact browser revisions,
+      # so a Playwright upgrade naturally misses the cache and re-downloads.
+      # NOTE: this covers binaries only — OS dependencies are still
+      # installed below on every run (a browser cache must never be taken
+      # to imply system libraries are present).
+      - uses: actions/cache@v4
+        name: Cache Playwright browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-1.61.0-chromium-1228-webkit-2311-ffmpeg-1011
+
       - name: Install Playwright browsers
-        run: pnpm --filter @tradingo/web exec playwright install chromium webkit --with-deps
+        run: pnpm --filter @tradingo/web exec playwright install chromium webkit
+
+      # Split from the old monolithic `install --with-deps`: browser binaries
+      # (served from the cache above when possible) stay separate from OS
+      # dependencies so each can be handled independently. Ubuntu mirrors
+      # stalled 25+ minutes inside dependency downloads on consecutive runs,
+      # so this step retries transient apt/mirror failures a bounded number
+      # of times — exhaustion still fails the job loudly, never silently.
+      - name: Install Playwright OS dependencies
+        run: |
+          for attempt in 1 2 3; do
+            echo "Installing Playwright OS dependencies (attempt ${attempt}/3)..."
+            if pnpm --filter @tradingo/web exec playwright install-deps chromium webkit; then
+              echo "Playwright OS dependencies installed."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/3 failed; retrying in 15s..."
+            sleep 15
+          done
+          echo "Playwright OS dependency installation failed after 3 attempts." >&2
+          exit 1
 
       - name: Start application
         env:
@@ -156,6 +194,64 @@ jobs:
             exit 1
           fi
 
+      # Pre-warm the Next.js image optimizer for the logo variants the E2E
+      # suite renders, so no Playwright test is ever the first client of a
+      # cold /_next/image transform. A client abort during a cold transform
+      # can permanently hang that optimizer key for the server process
+      # lifetime (vercel/next.js#96537, unfixed in Next 16.3.6); runs #149,
+      # #151 and #185 all hung on the w=256 variant of this URL. Widths are
+      # the imageSizes candidates rendered on E2E-visited pages: topbar and
+      # footer height 32 -> 48/96, navbar height 38 -> 64/128, section logo
+      # width 108 -> 128/256; 96/128/256 were observed as requests and
+      # 48/64 appear in rendered srcsets but were never captured as a
+      # request (desktop traces are not retained). Homepage-only renders
+      # (logo widths 216/300) are outside the E2E route scope. Remove this
+      # step once a fixed Next.js release is adopted.
+      - name: Pre-warm Next.js image optimizer (logo variants)
+        run: |
+          set -uo pipefail
+          base="http://localhost:3000"
+          widths=(256 128 96 64 48)
+
+          prewarm_variant() {
+            local w="$1" url attempt rc meta code ctype size
+            url="$base/_next/image?url=%2Flogo%2Ftrdn5.png&w=$w&q=75"
+            for attempt in 1 2; do
+              echo "Pre-warm w=$w (attempt $attempt/2): $url"
+              rc=0
+              meta=$(curl -sS --connect-timeout 5 --max-time 60 \
+                -H 'Accept: image/avif,image/webp,*/*' \
+                -o /dev/null \
+                -w '%{http_code}\n%{content_type}\n%{size_download}' \
+                "$url") || rc=$?
+              code=$(printf '%s\n' "$meta" | sed -n '1p' | tr -d '[:space:]')
+              ctype=$(printf '%s\n' "$meta" | sed -n '2p' | tr '[:upper:]' '[:lower:]' | cut -d';' -f1 | tr -d '[:space:]')
+              size=$(printf '%s\n' "$meta" | sed -n '3p' | tr -d '[:space:]')
+              echo "  curl_exit=$rc http_status='$code' content_type='$ctype' body_bytes='$size'"
+              if [ "$rc" -ne 0 ]; then
+                echo "  rejected: curl exit $rc (transport or incomplete transfer)"
+              elif [ "$code" != "200" ]; then
+                echo "  rejected: HTTP status is not exactly 200"
+              elif [ "$ctype" != "image/avif" ] && [ "$ctype" != "image/webp" ]; then
+                echo "  rejected: Content-Type is not an approved optimized image type"
+              elif ! grep -Eq '^[1-9][0-9]*$' <<<"$size"; then
+                echo "  rejected: body size is not a positive integer"
+              else
+                echo "  pre-warmed OK"
+                return 0
+              fi
+              if [ "$attempt" -eq 1 ]; then
+                sleep 3
+              fi
+            done
+            echo "::error::Image optimizer pre-warm failed for w=$w ($url)"
+            return 1
+          }
+
+          for w in "${widths[@]}"; do
+            prewarm_variant "$w" || exit 1
+          done
+          echo "Image optimizer pre-warm OK (widths: ${widths[*]})"
       - name: Run Playwright tests
         run: pnpm test:e2e
         env:
@@ -174,4 +270,15 @@ jobs:
         with:
           name: playwright-test-results
           path: test-results/
+          retention-days: 30
+
+      - name: Upload server logs on failure
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            /tmp/web.log
+            /tmp/api.log
+          if-no-files-found: warn
           retention-days: 30

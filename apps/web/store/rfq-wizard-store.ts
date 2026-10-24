@@ -9,6 +9,11 @@ export interface WizardProduct {
   unit: string;
   targetPrice?: number;
   categoryId?: string;
+  // P0-3 Step 3: canonical taxonomy triple (AI-predicted / Tick-Change
+  // confirmed; server re-validates before persistence).
+  catalogCategoryId?: string;
+  catalogSubcategoryId?: string;
+  catalogItemId?: string;
   description?: string;
   isService?: boolean;
 }

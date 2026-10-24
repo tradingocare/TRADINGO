@@ -53,7 +53,7 @@ export function ProductHeroSeller({
   void reviewCount;
   void responseRate;
   const locationParts = [company?.city, company?.state].filter(Boolean);
-  const locationText = locationParts.length > 0 ? locationParts.join(', ') : (hasLocation ? 'Location verified' : 'Pan India');
+  const locationText = locationParts.length > 0 ? locationParts.join(', ') : (hasLocation ? 'Location verified' : 'Location on request');
   const sellerYears = yearsActive ? `${yearsActive}+ Years` : 'Established';
 
   return (
@@ -120,7 +120,7 @@ export function ProductHeroSeller({
         </Link>
 
         <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-          <div className="rounded-xl border border-border bg-bg-elevated px-3 py-2 text-left">
+          <div className="rounded-xl border border-border bg-surface px-3 py-2 text-left">
             <p className="text-[11px] uppercase tracking-[0.22em] text-text-tertiary">Years in Business</p>
             <p className="mt-0.5 text-sm font-bold text-text-primary">
               {sellerYears}

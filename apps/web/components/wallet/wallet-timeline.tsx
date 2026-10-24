@@ -21,7 +21,7 @@ export function WalletTimeline({ entries, formatCurrency }: WalletTimelineProps)
   if (!entries?.length) {
     return (
       <div className="flex flex-col items-center py-6 text-center">
-        <Award className="mb-2 h-8 w-8 text-gray-300" />
+        <Award className="mb-2 h-8 w-8 text-text-tertiary" />
         <p className="text-sm text-text-tertiary">No recent activity</p>
       </div>
     );

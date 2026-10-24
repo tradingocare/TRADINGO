@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
@@ -45,7 +45,7 @@ export function MegaMenu({ label, columns, featured }: MegaMenuProps) {
       <button
         onMouseEnter={() => setIsOpen(true)}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary dark:text-dark-text-secondary dark:hover:text-dark-text-primary"
+        className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
       >
         {label}
         <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
@@ -59,12 +59,12 @@ export function MegaMenu({ label, columns, featured }: MegaMenuProps) {
           />
           <div
             onMouseLeave={() => setIsOpen(false)}
-            className="absolute left-0 top-full z-50 mt-1 w-screen max-w-4xl rounded-2xl border border-border bg-surface p-6 shadow-xl animate-slide-down dark:bg-dark-surface dark:border-dark-border"
+            className="absolute left-0 top-full z-50 mt-1 w-screen max-w-4xl rounded-2xl border border-border bg-surface p-6 shadow-xl animate-slide-down"
           >
             <div className={cn('grid gap-8', featured ? 'grid-cols-4' : 'grid-cols-3')}>
               {columns.map((column) => (
                 <div key={column.title}>
-                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary dark:text-dark-text-tertiary">
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                     {column.title}
                   </h3>
                   <ul className="space-y-2">
@@ -73,13 +73,13 @@ export function MegaMenu({ label, columns, featured }: MegaMenuProps) {
                         <Link
                           href={item.href}
                           onClick={() => setIsOpen(false)}
-                          className="group block rounded-lg p-2 transition-colors hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary"
+                          className="group block rounded-lg p-2 transition-colors hover:bg-surface-secondary"
                         >
-                     <span className="text-sm font-medium text-text-primary transition-colors group-hover:text-accent-600 dark:text-dark-text-primary dark:group-hover:text-accent-400">
+                     <span className="text-sm font-medium text-text-primary transition-colors group-hover:text-accent-600 dark:group-hover:text-accent-400">
                        {item.label}
                      </span>
                      {item.description && (
-                       <span className="mt-0.5 block text-xs text-text-tertiary dark:text-dark-text-tertiary">
+                       <span className="mt-0.5 block text-xs text-text-tertiary">
                        {item.description}
                      </span>
                    )}
@@ -96,7 +96,7 @@ export function MegaMenu({ label, columns, featured }: MegaMenuProps) {
                     <h4 className="mb-2 text-sm font-semibold text-accent-700 dark:text-accent-300">
                       {featured.title}
                     </h4>
-                    <p className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                    <p className="text-xs text-text-secondary">
                       {featured.description}
                     </p>
                   </Link>

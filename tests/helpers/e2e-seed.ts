@@ -4,8 +4,15 @@ import {
   ProductStatus,
   StockStatus,
   CompanyStatus,
+  GeographicReach,
+  PlanVisibility,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+// Canonical plan seed data shared with MembershipService.seedPlans() (single
+// source of truth — never duplicated here). seed-data.ts is dependency-free
+// by design so this standalone ts-node seed can import it, unlike
+// membership.service.ts (Nest DI graph, unresolvable from tests/).
+import { CORE_PLANS, PLAN_FEATURES } from '../../apps/api/src/modules/membership/seed-data';
 
 const prisma = new PrismaClient();
 
@@ -132,10 +139,58 @@ async function upsertProduct(opts: {
   unit: string;
   specifications: { key: string; value: string }[];
   slabs: { minQty: number; maxQty: number | null; price: number }[];
+  location?: { latitude: number; longitude: number; visibilityRadius: GeographicReach };
 }) {
   const existing = await prisma.product.findUnique({ where: { slug: opts.slug } });
   if (existing) {
-    return existing;
+    // Re-anchor idempotently: a stale row must never stay attached to the
+    // wrong company, inactive, or soft-deleted while the slug collides.
+    await prisma.product.update({
+      where: { id: existing.id },
+      data: {
+        companyId: opts.companyId,
+        status: ProductStatus.ACTIVE,
+        deletedAt: null,
+        ...(opts.location
+          ? {
+              latitude: opts.location.latitude,
+              longitude: opts.location.longitude,
+              visibilityRadius: opts.location.visibilityRadius,
+            }
+          : {}),
+      },
+    });
+
+    // Ensure the required relations exist even for pre-existing rows.
+    const [specCount, slabCount, mediaCount, inventory] = await Promise.all([
+      prisma.productSpecification.count({ where: { productId: existing.id } }),
+      prisma.productPriceSlab.count({ where: { productId: existing.id } }),
+      prisma.productMedia.count({ where: { productId: existing.id, type: 'IMAGE' } }),
+      prisma.productInventory.findUnique({ where: { productId: existing.id } }),
+    ]);
+    if (specCount === 0) {
+      await prisma.productSpecification.createMany({
+        data: opts.specifications.map((s, i) => ({ productId: existing.id, key: s.key, label: s.key, value: s.value, sortOrder: i })),
+      });
+    }
+    if (slabCount === 0) {
+      await prisma.productPriceSlab.createMany({
+        data: opts.slabs.map((s) => ({ productId: existing.id, ...s, currency: 'INR' })),
+      });
+    }
+    if (mediaCount === 0) {
+      await prisma.productMedia.create({
+        data: { productId: existing.id, type: 'IMAGE', url: `https://example.com/${opts.slug}.jpg`, title: opts.name, isPrimary: true, sortOrder: 0 },
+      });
+    }
+    if (!inventory) {
+      await prisma.productInventory.create({
+        data: { productId: existing.id, availableQuantity: 5000, reservedQuantity: 0, minimumThreshold: 100, stockStatus: StockStatus.IN_STOCK },
+      });
+    }
+    const refreshed = await prisma.product.findUnique({ where: { slug: opts.slug } });
+    if (!refreshed) throw new Error(`E2E seed invariant failed: product ${opts.slug} vanished after re-anchor`);
+    return refreshed;
   }
 
   const product = await prisma.product.create({
@@ -159,6 +214,13 @@ async function upsertProduct(opts: {
       countryOfOrigin: 'India',
       returnPolicy: '7-day return',
       createdBy: opts.companyId,
+      ...(opts.location
+        ? {
+            latitude: opts.location.latitude,
+            longitude: opts.location.longitude,
+            visibilityRadius: opts.location.visibilityRadius,
+          }
+        : {}),
     },
   });
 
@@ -179,6 +241,59 @@ async function upsertProduct(opts: {
   });
 
   return product;
+}
+/**
+ * Membership plans for the E2E environment. Mirrors the COMMITTED canonical
+ * MembershipService.seedPlans() (plan rows + display features) while sharing
+ * its canonical data (seed-data.ts) with zero duplication.
+ * Every step is existence-guarded exactly like the canonical path: re-runs
+ * never duplicate rows and never overwrite admin edits.
+ * NOTE: the entitlement-matrix keys and v1 version snapshots produced by the
+ * uncommitted P0 plan-program stack (plan-entitlements.ts /
+ * backfillPlanVersions, no schema table for versions yet) are deliberately
+ * NOT written here — they cannot be imported or persisted from a committed
+ * state. Extend this function to cover them once that stack merges; Tier-B/C
+ * purchase, activation and plan listing depend only on the rows below.
+ */
+async function seedMembershipPlans() {
+  let plansCreated = 0;
+  for (const p of CORE_PLANS) {
+    const existing = await prisma.membershipPlan.findUnique({ where: { planId: p.planId } });
+    if (existing) {
+      await prisma.membershipPlan.update({
+        where: { planId: p.planId },
+        data: { visibility: PlanVisibility.PUBLIC },
+      });
+    } else {
+      await prisma.membershipPlan.create({
+        data: {
+          ...p,
+          description: `${p.name} membership plan`,
+          visibility: PlanVisibility.PUBLIC,
+          duration: 12,
+          features: PLAN_FEATURES[p.planId] || [],
+        },
+      });
+      plansCreated++;
+    }
+
+    const featureNames = PLAN_FEATURES[p.planId] || [];
+    if (featureNames.length > 0) {
+      const existingFeatures = await prisma.planFeature.findMany({
+        where: { planId: p.planId },
+        select: { feature: true },
+      });
+      const present = new Set(existingFeatures.map((f) => f.feature));
+      const missing = featureNames.filter((f) => !present.has(f));
+      if (missing.length > 0) {
+        await prisma.planFeature.createMany({
+          data: missing.map((f, i) => ({ planId: p.planId, feature: f, included: true, sortOrder: i })),
+        });
+      }
+    }
+  }
+
+  return { plansCreated };
 }
 
 async function main() {
@@ -211,6 +326,9 @@ async function main() {
     slug: 'industrial-pcb-board-4-layer',
     moq: 100,
     unit: 'piece',
+    // Deterministic Set-state location for the seller geo-location suite.
+    // The solvent product below intentionally keeps no location (Missing path).
+    location: { latitude: 19.076, longitude: 72.8777, visibilityRadius: GeographicReach.PAN_INDIA },
     specifications: [
       { key: 'Material', value: 'FR-4' },
       { key: 'Layers', value: '4-Layer' },
@@ -241,6 +359,38 @@ async function main() {
   });
 
   console.log(`Products ready: ${pcb?.slug ?? 'skipped'} / ${solvent?.slug ?? 'skipped'}`);
+
+  const planSeed = await seedMembershipPlans();
+  console.log(`Membership plans ready: ${planSeed.plansCreated} created`);
+
+  // ---- E2E seed invariants: fail loudly, never let tests run on bad data ----
+  const invariant = async (cond: boolean, reason: string) => {
+    if (!cond) throw new Error(`E2E seed invariant failed: ${reason}`);
+  };
+  const seedSeller = await prisma.user.findUnique({ where: { email: SELLER_EMAIL } });
+  await invariant(!!seedSeller, 'seller user missing');
+  const seedOwnership = seedSeller
+    ? await prisma.companyOwner.findFirst({
+        where: { userId: seedSeller.id, company: { slug: 'cmp-seller-001' } },
+      })
+    : null;
+  await invariant(!!seedOwnership, 'seller CompanyOwner for cmp-seller-001 missing');
+  const seedCompany = await prisma.company.findUnique({ where: { slug: 'cmp-seller-001' } });
+  await invariant(!!seedCompany && seedCompany.status === CompanyStatus.ACTIVE, 'seller company missing or inactive');
+  const seedProduct = await prisma.product.findUnique({ where: { slug: 'industrial-pcb-board-4-layer' } });
+  await invariant(!!seedProduct, 'required product industrial-pcb-board-4-layer missing');
+  await invariant(seedProduct!.companyId === seedCompany!.id, 'required product attached to wrong company');
+  await invariant(seedProduct!.status === ProductStatus.ACTIVE, 'required product not ACTIVE');
+  await invariant(!!seedProduct!.catalogItemId, 'required product catalog relationship missing');
+  await invariant(
+    seedProduct!.latitude != null && seedProduct!.longitude != null,
+    'required product location state missing',
+  );
+  const seedSolvent = await prisma.product.findUnique({ where: { slug: 'industrial-grade-solvent-99-9' } });
+  await invariant(!!seedSolvent && seedSolvent.companyId === seedCompany!.id, 'solvent product missing or mis-owned');
+  const seededPlanCount = await prisma.membershipPlan.count({ where: { planId: { in: CORE_PLANS.map((p) => p.planId) } } });
+  await invariant(seededPlanCount === CORE_PLANS.length, 'required membership plans missing');
+  console.log('E2E seed invariants verified');
   console.log('E2E seed completed successfully');
 }
 

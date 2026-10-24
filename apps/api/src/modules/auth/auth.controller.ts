@@ -289,6 +289,25 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  @Get('providers/available')
+  @ApiOperation({ summary: 'Report which OAuth providers are configured (no secrets)' })
+  getOAuthProviderAvailability() {
+    const isConfigured = (id?: string, secret?: string, callback?: string) =>
+      Boolean(id && secret && callback);
+    return {
+      google: isConfigured(
+        this.configService.get<string>('GOOGLE_CLIENT_ID'),
+        this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
+        this.configService.get<string>('GOOGLE_CALLBACK_URL'),
+      ),
+      linkedin: isConfigured(
+        this.configService.get<string>('LINKEDIN_CLIENT_ID'),
+        this.configService.get<string>('LINKEDIN_CLIENT_SECRET'),
+        this.configService.get<string>('LINKEDIN_CALLBACK_URL'),
+      ),
+    };
+  }
+
   @Get('google')
   @ApiOperation({ summary: 'Google OAuth login' })
   @UseGuards(AuthGuard('google'))

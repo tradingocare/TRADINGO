@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -42,8 +42,8 @@ export default function SellerConversationDetailPage() {
   const messages = messagesData?.items ?? [];
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3 dark:border-dark-border">
+    <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-border bg-surface">
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <button onClick={() => router.back()} className="text-text-secondary hover:text-text-primary"><ArrowLeft className="h-5 w-5" /></button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-text-primary">{conv?.title || 'Conversation'}</p>
@@ -52,10 +52,10 @@ export default function SellerConversationDetailPage() {
         {templates?.length > 0 && (
           <div className="relative group">
             <Button variant="outline" size="sm" className="text-xs">Quick Replies</Button>
-            <div className="absolute right-0 top-full z-50 mt-1 hidden w-64 rounded-lg border border-border bg-surface p-2 shadow-lg group-hover:block dark:bg-dark-surface dark:border-dark-border">
+            <div className="absolute right-0 top-full z-50 mt-1 hidden w-64 rounded-lg border border-border bg-surface p-2 shadow-lg group-hover:block">
               {templates.map((tpl: any) => (
                 <button key={tpl.id} onClick={() => insertTemplate(tpl.content)}
-                  className="block w-full rounded-md px-3 py-2 text-left text-xs text-text-primary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary">
+                  className="block w-full rounded-md px-3 py-2 text-left text-xs text-text-primary hover:bg-surface-secondary">
                   <p className="font-medium">{tpl.title}</p>
                   <p className="mt-0.5 text-text-tertiary line-clamp-2">{tpl.content}</p>
                 </button>
@@ -68,7 +68,7 @@ export default function SellerConversationDetailPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg: any) => (
           <div key={msg.id} className={`group flex ${msg.senderId === 'me' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`relative max-w-[75%] rounded-2xl px-4 py-2.5 ${msg.senderId === 'me' ? 'bg-[#f97316] text-text-primary' : 'bg-surface-secondary text-text-primary dark:bg-dark-surface-secondary'}`}>
+            <div className={`relative max-w-[75%] rounded-2xl px-4 py-2.5 ${msg.senderId === 'me' ? 'bg-[#f97316] text-text-primary' : 'bg-surface-secondary text-text-primary bg-surface-secondary'}`}>
               <p className="text-sm">{msg.content}</p>
               <div className="mt-1 flex items-center justify-end gap-2">
                 <span className="text-[10px] opacity-60">{new Date(msg.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -89,7 +89,7 @@ export default function SellerConversationDetailPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-border p-4 dark:border-dark-border">
+      <div className="border-t border-border p-4">
         <form onSubmit={handleSend} className="flex gap-2">
           <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..." className="flex-1" />

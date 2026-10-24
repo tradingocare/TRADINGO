@@ -1,24 +1,50 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import TradeServSearchClient from './search-client';
+import {
+  buildSelfCanonical,
+  hasIndexAffectingParams,
+  resolveSearchParams,
+  ROBOTS_INDEX_FOLLOW,
+  ROBOTS_NOINDEX_FOLLOW,
+  type SearchParamsLike,
+} from '@/lib/seo/seo-policy';
 
-export const metadata: Metadata = {
-  title: 'Search Professionals \u2014 TradeServ | TRADINGO',
-  description:
-    'Find TRADTRUST-verified accountants, legal experts, consultants, and creative professionals on TradeServ. Search by name, category, service, or location.',
-  openGraph: {
-    title: 'Search Professionals \u2014 TradeServ | TRADINGO',
-    description:
-      'Find TRADTRUST-verified accountants, legal experts, consultants, and creative professionals on TradeServ.',
-    url: '/tradeserv/search',
-    type: 'website',
-    siteName: 'TRADINGO',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+const TRADESERV_SEARCH_URL = 'https://tradingo.in/tradeserv/search';
+const TRADESERV_SEARCH_TITLE = 'Search Professionals \u2014 TradeServ | TRADINGO';
+const TRADESERV_SEARCH_DESCRIPTION =
+  'Find TRADTRUST-verified accountants, legal experts, consultants, and creative professionals on TradeServ. Search by name, category, service, or location.';
+
+/**
+ * PHASE 2-A §4 — /tradeserv/search query-variant policy.
+ * CURRENT: robots index:true + OG for every URL incl. ?q=/ ?page= / filter
+ *   permutations; no canonical. TradeServ detail/listing routes untouched.
+ * POLICY: bare /tradeserv/search = index + follow + self-canonical (existing
+ *   posture preserved); any query/filter variant = noindex + follow + honest
+ *   self-canonical. Search UX/functionality untouched — metadata only.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const sp = await resolveSearchParams(searchParams as SearchParamsLike);
+  const isVariant = hasIndexAffectingParams(sp);
+  return {
+    title: TRADESERV_SEARCH_TITLE,
+    description: TRADESERV_SEARCH_DESCRIPTION,
+    openGraph: {
+      title: TRADESERV_SEARCH_TITLE,
+      description:
+        'Find TRADTRUST-verified accountants, legal experts, consultants, and creative professionals on TradeServ.',
+      url: '/tradeserv/search',
+      type: 'website',
+      siteName: 'TRADINGO',
+    },
+    robots: isVariant ? ROBOTS_NOINDEX_FOLLOW : ROBOTS_INDEX_FOLLOW,
+    alternates: { canonical: buildSelfCanonical(TRADESERV_SEARCH_URL, sp) },
+  };
+}
 
 export default function SearchPage() {
   return (

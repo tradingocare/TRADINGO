@@ -8,6 +8,21 @@ export interface AiSearchResponse<T> {
   cached: boolean
   latencyMs: number
   cost: number
+  // P0-3 Step 4: canonical taxonomy sidecar (intent + query-carrying
+  // copilots). Server-side validated IDs; null when unresolvable.
+  taxonomy?: {
+    categoryId: string | null
+    subcategoryId: string | null
+    catalogItemId: string | null
+    type: string | null
+    confidence: number
+    band: 'HIGH' | 'MEDIUM' | 'LOW'
+    matchType: string
+    reasons: string[]
+    alternatives: { categoryId: string; subcategoryId: string | null; catalogItemId: string | null; label: string; confidence: number }[]
+    categoryName?: string | null
+    subcategoryName?: string | null
+  }
 }
 
 export function aiSemanticSearch(data: any) {

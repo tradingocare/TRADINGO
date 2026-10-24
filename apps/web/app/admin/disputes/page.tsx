@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { DashboardPageHeader, StatusBadge, TableSkeleton } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,7 @@ export default function AdminDisputesPage() {
           {disputes.map((dispute: Dispute) => (
             <div
               key={dispute.id}
-              className="rounded-xl border border-border bg-surface p-5 shadow-sm dark:bg-dark-surface dark:border-dark-border"
+              className="rounded-xl border border-border bg-surface p-5 shadow-sm"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
@@ -53,13 +53,13 @@ export default function AdminDisputesPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">{dispute.id}</p>
+                      <p className="text-sm font-semibold text-text-primary">{dispute.id}</p>
                       <StatusBadge status={dispute.status === 'under_review' ? 'pending' : dispute.status} />
                     </div>
-                    <p className="mt-1 text-sm text-text-primary dark:text-dark-text-primary">{dispute.reason}</p>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary dark:text-dark-text-secondary">
-                      <span>Raised by: <span className="font-medium text-text-primary dark:text-dark-text-primary">{dispute.raisedById.slice(0, 8)}...</span></span>
-                      <span>Order: <span className="font-medium text-text-primary dark:text-dark-text-primary">{dispute.orderId.slice(0, 8)}...</span></span>
+                    <p className="mt-1 text-sm text-text-primary">{dispute.reason}</p>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary">
+                      <span>Raised by: <span className="font-medium text-text-primary">{dispute.raisedById.slice(0, 8)}...</span></span>
+                      <span>Order: <span className="font-medium text-text-primary">{dispute.orderId.slice(0, 8)}...</span></span>
                       <span>{new Date(dispute.createdAt).toLocaleDateString('en-IN')}</span>
                     </div>
                   </div>

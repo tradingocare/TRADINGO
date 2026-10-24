@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { X, ArrowRight } from 'lucide-react';
@@ -37,7 +37,7 @@ export function Toast({ show, title, message, type = 'info', onDismiss, onAction
   return (
     <div
       className={cn(
-        'fixed bottom-4 right-4 z-50 max-w-sm rounded-xl border border-border bg-surface shadow-2xl transition-all duration-300 dark:bg-dark-surface dark:border-dark-border',
+        'fixed bottom-4 right-4 z-50 max-w-sm rounded-xl border border-border bg-surface shadow-2xl transition-all duration-300 bg-surface border-border',
         show ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
         typeStyles[type],
         'border-l-4',
@@ -45,8 +45,8 @@ export function Toast({ show, title, message, type = 'info', onDismiss, onAction
     >
       <div className="flex items-start gap-3 p-4">
         <div className="flex-1">
-          <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">{title}</p>
-          <p className="mt-0.5 text-sm text-text-secondary dark:text-dark-text-secondary">{message}</p>
+          <p className="text-sm font-semibold text-text-primary">{title}</p>
+          <p className="mt-0.5 text-sm text-text-secondary">{message}</p>
           {onAction && actionLabel && (
             <button
               onClick={onAction}
@@ -56,7 +56,7 @@ export function Toast({ show, title, message, type = 'info', onDismiss, onAction
             </button>
           )}
         </div>
-        <button onClick={onDismiss} className="flex-shrink-0 rounded-lg p-1 text-text-tertiary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary">
+        <button onClick={onDismiss} className="flex-shrink-0 rounded-lg p-1 text-text-tertiary hover:bg-surface-secondary">
           <X className="h-4 w-4" />
         </button>
       </div>

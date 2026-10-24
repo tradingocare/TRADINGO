@@ -10,6 +10,22 @@ import { renderTemplate } from '../common/utils/template.utils';
 
 type EmailProvider = 'ses' | 'resend';
 
+/**
+ * F-5: strip OTP-bearing fields before any job data reaches Sentry extras.
+ * EmailJobData.context (otp-login / password-reset / otp-verify templates)
+ * carries the live OTP — redact it, preserve all other diagnostic metadata.
+ */
+function redactEmailJobData(data: EmailJobData): Record<string, unknown> {
+  const context = data.context ? { ...data.context } : undefined;
+  if (context) {
+    if (typeof context.otp === 'string' && context.otp.length > 0) context.otp = '[REDACTED]';
+    if (typeof context.verificationToken === 'string' && context.verificationToken.length > 0) {
+      context.verificationToken = '[REDACTED]';
+    }
+  }
+  return { ...data, context };
+}
+
 @Processor(QueueNames.EMAIL)
 export class EmailProcessor extends WorkerHost {
   private readonly logger = new Logger(EmailProcessor.name);
@@ -83,12 +99,20 @@ export class EmailProcessor extends WorkerHost {
 
   private async deliver(data: EmailJobData, htmlBody: string): Promise<void> {
     if (this.provider === 'resend') {
-      await this.resend!.emails.send({
+      // Resend SDK resolves send() with { data, error } — an error object is NOT
+      // thrown (resend@6.18.1 CreateEmailResponse). Treat a non-null error as a
+      // delivery failure so the job fails/retries instead of "completing" silently.
+      const result = await this.resend!.emails.send({
         from: this.fromAddress,
         to: data.to,
         subject: data.subject,
         html: htmlBody,
       });
+      if (result.error) {
+        // Only the provider's machine-readable error name is surfaced — never
+        // internals beyond what the provider contract already defines.
+        throw new Error(`Resend delivery failed: ${result.error.name}`);
+      }
       return;
     }
     await this.ses!.send(new SendEmailCommand({
@@ -123,7 +147,7 @@ export class EmailProcessor extends WorkerHost {
   onFailed(job: Job, error: Error): void {
     this.logger.error(`Email job ${job.id} failed: ${error.message}`);
     Sentry.captureException(error, {
-      extra: { jobId: job.id, data: job.data },
+      extra: { jobId: job.id, data: redactEmailJobData(job.data) },
     });
   }
 

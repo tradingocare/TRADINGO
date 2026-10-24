@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 
 export const metadata = {
-  title: 'Create RFQ — TRADINGO',
+  title: 'Create RFQ',
 }
 
 // Legacy RFQ wizard retired: /rfq/new now forwards to the canonical flow.

@@ -105,6 +105,14 @@ export class CompaniesController {
     return this.companiesService.getProducts(slug, parseInt(page), parseInt(limit));
   }
 
+  @Get(':slug/services')
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
+  @ApiOperation({ summary: "Get company's REAL professional services (approved professional, active only)" })
+  async getServices(@Param('slug') slug: string, @Query('page') page = '1', @Query('limit') limit = '12') {
+    return this.companiesService.getServices(slug, parseInt(page), parseInt(limit));
+  }
+
   @Get(':slug/reviews')
   @Public()
   @Throttle({ default: { limit: 60, ttl: 60000 } })

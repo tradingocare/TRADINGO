@@ -8,6 +8,10 @@ import { ReviewsService } from './reviews.service';
 import { WishlistService } from './wishlist.service';
 import { QaService } from './qa.service';
 import { BestsellerService } from './bestseller.service';
+import { ProductPricingService } from './services/product-pricing.service';
+import { MembershipService } from '../membership/membership.service';
+import { MarketplaceCatalogBridgeService } from '../marketplace-catalog-bridge/marketplace-catalog-bridge.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -54,6 +58,11 @@ describe('Product Flow Integration', () => {
         { provide: WishlistService, useValue: { findAll: jest.fn(), toggle: jest.fn() } },
         { provide: QaService, useValue: { findQuestions: jest.fn(), createQuestion: jest.fn(), answerQuestion: jest.fn() } },
         { provide: BestsellerService, useValue: { getBestsellers: jest.fn() } },
+        { provide: ProductPricingService, useValue: { resolvePricing: jest.fn() } },
+        { provide: MembershipService, useValue: { getVersionedEntitlements: jest.fn().mockResolvedValue(null), enforcePriceTierLimit: jest.fn().mockResolvedValue(undefined) } },
+        { provide: MarketplaceCatalogBridgeService, useValue: { resolveLegacyCategorySlugOrId: jest.fn(async (input: string) => ({ id: input })) } },
+        // P0-2: deterministic no-op taxonomy resolution for legacy-flow tests.
+        { provide: CatalogTaxonomyPersistenceService, useValue: { resolvePersistableTaxonomy: jest.fn().mockResolvedValue(null), validateConfirmedTriple: jest.fn().mockResolvedValue(null), bridgeLegacyCategoryId: jest.fn().mockResolvedValue(null) } },
       ],
     })
       .overrideGuard(JwtAuthGuard)

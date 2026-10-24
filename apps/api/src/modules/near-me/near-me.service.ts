@@ -143,11 +143,11 @@ export class NearMeService {
 
     const SORT_CLAUSES: Record<string, Prisma.Sql> = {
       distance: Prisma.sql`distance ASC`,
-      trust: Prisma.sql`pli."trustScore" DESC, distance ASC`,
-      price_asc: Prisma.sql`pli.price ASC NULLS LAST, distance ASC`,
-      price_desc: Prisma.sql`pli.price DESC NULLS LAST, distance ASC`,
-      trending: Prisma.sql`pli."trustScore" DESC, pli."isVerified" DESC, distance ASC`,
-      delivery: Prisma.sql`pli."deliveryEta" ASC NULLS LAST, distance ASC`,
+      trust: Prisma.sql`f."trustScore" DESC, distance ASC`,
+      price_asc: Prisma.sql`f.price ASC NULLS LAST, distance ASC`,
+      price_desc: Prisma.sql`f.price DESC NULLS LAST, distance ASC`,
+      trending: Prisma.sql`f."trustScore" DESC, f."isVerified" DESC, distance ASC`,
+      delivery: Prisma.sql`f."deliveryEta" ASC NULLS LAST, distance ASC`,
     };
     const orderClause = SORT_CLAUSES[sort] || SORT_CLAUSES.distance;
 

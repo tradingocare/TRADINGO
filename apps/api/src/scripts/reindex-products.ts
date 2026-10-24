@@ -2,18 +2,42 @@
  * One-off reindex script: rebuilds the OpenSearch `products` index from Prisma.
  * Usage: npm run reindex:products
  * Reuses buildProductIndexDoc() + the same include shape as ProductsService.syncOpenSearch.
+ *
+ * ENDPOINT CONTRACT (corrected 2026-10-21 after the live Hostinger check):
+ *   The endpoint MUST come from OPENSEARCH_URL — the same variable the API
+ *   itself uses. The previous fallback (`https://localhost:9200`) pointed the
+ *   client at a port nothing listens on, so the command appeared to run and
+ *   silently indexed nothing (and the discover feed stayed empty). There is no
+ *   safe default and no fabricated endpoint: the script refuses to start
+ *   without one. Credentials are only supplied when the endpoint actually
+ *   requires them; the previous `|| 'admin'` default is gone.
+ *
+ *   For a FULL rebuild of all four discovery indices with explicit mappings, a
+ *   dry run and a guarded recreate, use scripts/reindex-products.js.
  */
 import { PrismaClient } from '@prisma/client';
 import { Client } from '@opensearch-project/opensearch';
 import { buildProductIndexDoc } from '../modules/products/product-index.doc';
 
+const OPENSEARCH_URL = (process.env.OPENSEARCH_URL ?? '').trim();
+const OPENSEARCH_USERNAME = (process.env.OPENSEARCH_USERNAME ?? '').trim();
+const OPENSEARCH_PASSWORD = process.env.OPENSEARCH_PASSWORD ?? '';
+
+if (!OPENSEARCH_URL) {
+  console.error(
+    'reindex:products — OPENSEARCH_URL is not set. Refusing to run: there is no safe default ' +
+      'OpenSearch endpoint, and a fabricated one would index nothing while appearing to succeed. ' +
+      'Set OPENSEARCH_URL to the OpenSearch service address (e.g. http://opensearch:9200).',
+  );
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 const client = new Client({
-  node: process.env.OPENSEARCH_URL || 'https://localhost:9200',
-  auth: {
-    username: process.env.OPENSEARCH_USERNAME || 'admin',
-    password: process.env.OPENSEARCH_PASSWORD || '',
-  },
+  node: OPENSEARCH_URL,
+  ...(OPENSEARCH_USERNAME
+    ? { auth: { username: OPENSEARCH_USERNAME, password: OPENSEARCH_PASSWORD } }
+    : {}),
   ssl: { rejectUnauthorized: process.env.OPENSEARCH_REJECT_UNAUTHORIZED !== 'false' },
   maxRetries: 3,
   requestTimeout: 15000,

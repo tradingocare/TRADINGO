@@ -152,6 +152,50 @@ export function deleteIndustryCategoryMapping(id: string) {
   return apiClient.delete(`/enterprise-catalog/taxonomy/industry-category-mappings/${id}`);
 }
 
+// Public catalog category authority (Phase 2-B — SEO foundation).
+// Mirrors GET /enterprise-catalog/taxonomy/categories/slug/:slug.
+// Counts are live-product counts (ACTIVE + not-deleted + live company),
+// computed server-side in the same query — never invented client-side.
+export interface CatalogCategoryItemRef {
+  id: string;
+  slug: string;
+  name: string;
+  type: string;
+}
+
+export interface CatalogSubcategoryRef {
+  id: string;
+  slug: string;
+  name: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  activeProductCount: number;
+  items: CatalogCategoryItemRef[];
+}
+
+export interface CatalogCategoryAuthority {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  updatedAt: string;
+  activeProductCount: number;
+  subcategories: CatalogSubcategoryRef[];
+}
+
+export function getCatalogCategoryBySlug(slug: string) {
+  return apiClient
+    .get<CatalogCategoryAuthority>(
+      `/enterprise-catalog/taxonomy/categories/slug/${encodeURIComponent(slug)}`,
+    )
+    .then(r => r.data);
+}
+
 // Admin
 export function getCatalogDashboard() {
   return apiClient.get('/enterprise-catalog/admin/dashboard').then(r => r.data);

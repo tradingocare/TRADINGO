@@ -4,6 +4,7 @@ import { RfqService } from './rfq.service';
 import { RfqNumberService } from './rfq-number.service';
 import { RfqAnalyticsService } from './rfq-analytics.service';
 import { NotificationService } from '../notification/notification.service';
+import { MembershipService } from '../membership/membership.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRfqDto } from './dto/create-rfq.dto';
 import { UpdateRfqDto } from './dto/update-rfq.dto';
@@ -38,6 +39,11 @@ const mockNotificationService = {
   create: jest.fn().mockResolvedValue(undefined),
 };
 
+const mockMembershipService = {
+  getVersionedEntitlements: jest.fn(),
+  enforcePriceTierLimit: jest.fn().mockResolvedValue(undefined),
+};
+
 const mockDate = new Date('2026-06-10T12:00:00Z');
 
 describe('RfqService', () => {
@@ -51,6 +57,7 @@ describe('RfqService', () => {
     mockTx.rfqCreditLedger.create.mockReset();
     mockRfqNumberService.generate.mockClear();
     mockAnalyticsService.trackEvent.mockClear();
+    mockMembershipService.getVersionedEntitlements.mockReset().mockResolvedValue(null);
 
     prisma = makePrisma();
     prisma.company.findUnique.mockResolvedValue({ subscriptionPlan: 'TRADBUY' });
@@ -65,6 +72,7 @@ describe('RfqService', () => {
         { provide: RfqNumberService, useValue: mockRfqNumberService },
         { provide: RfqAnalyticsService, useValue: mockAnalyticsService },
         { provide: NotificationService, useValue: mockNotificationService },
+        { provide: MembershipService, useValue: mockMembershipService },
       ],
     }).compile();
 
@@ -890,6 +898,85 @@ describe('RfqService', () => {
       prisma.auditLog.create.mockResolvedValue({});
 
       await service.create('c1', { title: 'Unlimited', rfqType: 'PRODUCT' as any, quantity: 1, unit: 'pcs' }, 'u1');
+
+      expect(prisma.rfq.create).toHaveBeenCalled();
+    });
+
+    it('should keep the flat-5 legacy rule for a NULL-version Plus company (matrix 30 must NOT apply)', async () => {
+      prisma.company.findUnique.mockResolvedValue({ subscriptionPlan: 'TRADE_PLUS', currentPlanVersionId: null });
+      prisma.rfq.count.mockResolvedValue(5);
+
+      await expect(
+        service.create('c1', { title: 'Sixth legacy', rfqType: 'PRODUCT' as any, quantity: 1, unit: 'pcs' }, 'u1'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(prisma.rfq.create).not.toHaveBeenCalled();
+    });
+
+    it('should enforce the snapshot cap (20) for a version-pinned Smart company', async () => {
+      prisma.company.findUnique.mockResolvedValue({ subscriptionPlan: 'TRADE_SMART', currentPlanVersionId: 'v1' });
+      mockMembershipService.getVersionedEntitlements.mockResolvedValue({
+        rfq_monthly_limit: { included: true, value: '20' },
+      });
+      prisma.rfq.count.mockResolvedValue(20);
+
+      await expect(
+        service.create('c1', { title: 'Over snapshot', rfqType: 'PRODUCT' as any, quantity: 1, unit: 'pcs' }, 'u1'),
+      ).rejects.toThrow(/Monthly RFQ limit of 20/);
+
+      expect(prisma.rfq.create).not.toHaveBeenCalled();
+    });
+
+    it('should allow a version-pinned Smart company below its snapshot cap', async () => {
+      prisma.company.findUnique.mockResolvedValue({ subscriptionPlan: 'TRADE_SMART', currentPlanVersionId: 'v1' });
+      mockMembershipService.getVersionedEntitlements.mockResolvedValue({
+        rfq_monthly_limit: { included: true, value: '20' },
+      });
+      prisma.rfq.count.mockResolvedValue(19);
+      prisma.rfq.create.mockResolvedValue(draftRfq());
+      prisma.auditLog.create.mockResolvedValue({});
+
+      await service.create('c1', { title: 'Within snapshot', rfqType: 'PRODUCT' as any, quantity: 1, unit: 'pcs' }, 'u1');
+
+      expect(prisma.rfq.create).toHaveBeenCalled();
+    });
+
+    it('should block a version-pinned Start company (RFQ not included) even at zero usage', async () => {
+      prisma.company.findUnique.mockResolvedValue({ subscriptionPlan: 'TRADE_START', currentPlanVersionId: 'v1' });
+      mockMembershipService.getVersionedEntitlements.mockResolvedValue({
+        rfq_monthly_limit: { included: false, value: null },
+      });
+      prisma.rfq.count.mockResolvedValue(0);
+
+      await expect(
+        service.create('c1', { title: 'Start RFQ', rfqType: 'PRODUCT' as any, quantity: 1, unit: 'pcs' }, 'u1'),
+      ).rejects.toThrow(/does not include RFQ creation/);
+
+      expect(prisma.rfq.create).not.toHaveBeenCalled();
+    });
+
+    it('should skip the count for a version-pinned Elite company (unlimited)', async () => {
+      prisma.company.findUnique.mockResolvedValue({ subscriptionPlan: 'TRADE_ELITE', currentPlanVersionId: 'v1' });
+      mockMembershipService.getVersionedEntitlements.mockResolvedValue({
+        rfq_monthly_limit: { included: true, value: 'unlimited' },
+      });
+      prisma.rfq.create.mockResolvedValue(draftRfq());
+      prisma.auditLog.create.mockResolvedValue({});
+
+      await service.create('c1', { title: 'Elite RFQ', rfqType: 'PRODUCT' as any, quantity: 1, unit: 'pcs' }, 'u1');
+
+      expect(prisma.rfq.create).toHaveBeenCalled();
+      expect(prisma.rfq.count).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to the legacy rule when the version ref dangles', async () => {
+      prisma.company.findUnique.mockResolvedValue({ subscriptionPlan: null, currentPlanVersionId: 'deleted' });
+      mockMembershipService.getVersionedEntitlements.mockResolvedValue(null);
+      prisma.rfq.count.mockResolvedValue(4);
+      prisma.rfq.create.mockResolvedValue(draftRfq());
+      prisma.auditLog.create.mockResolvedValue({});
+
+      await service.create('c1', { title: 'Dangling ref', rfqType: 'PRODUCT' as any, quantity: 1, unit: 'pcs' }, 'u1');
 
       expect(prisma.rfq.create).toHaveBeenCalled();
     });

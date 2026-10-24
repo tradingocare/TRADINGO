@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -78,12 +78,12 @@ export default function AdminBetaDashboardPage() {
         <DashboardPageHeader title="Beta Program Dashboard" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 animate-pulse rounded-xl bg-surface-secondary dark:bg-dark-surface-secondary" />
+            <div key={i} className="h-32 animate-pulse rounded-xl bg-surface-secondary" />
           ))}
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-48 animate-pulse rounded-xl bg-surface-secondary dark:bg-dark-surface-secondary" />
+            <div key={i} className="h-48 animate-pulse rounded-xl bg-surface-secondary" />
           ))}
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function AdminBetaDashboardPage() {
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-12">
             <AlertTriangle className="h-12 w-12 text-red-500" />
-            <p className="text-sm text-text-secondary dark:text-dark-text-secondary">{error}</p>
+            <p className="text-sm text-text-secondary">{error}</p>
             <Button onClick={fetchAll} variant="outline">
               <RefreshCw className="mr-2 h-4 w-4" /> Retry
             </Button>
@@ -135,26 +135,26 @@ export default function AdminBetaDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-text-secondary dark:text-dark-text-secondary">Total Submissions</span>
-              <span className="font-semibold text-text-primary dark:text-dark-text-primary">{feedbackStats?.total ?? 0}</span>
+              <span className="text-text-secondary">Total Submissions</span>
+              <span className="font-semibold text-text-primary">{feedbackStats?.total ?? 0}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5 text-text-secondary dark:text-dark-text-secondary">
+              <span className="flex items-center gap-1.5 text-text-secondary">
                 <Bug className="h-3.5 w-3.5 text-red-500" /> Bugs
               </span>
-              <span className="font-semibold text-text-primary dark:text-dark-text-primary">{feedbackStats?.bugs ?? 0}</span>
+              <span className="font-semibold text-text-primary">{feedbackStats?.bugs ?? 0}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5 text-text-secondary dark:text-dark-text-secondary">
+              <span className="flex items-center gap-1.5 text-text-secondary">
                 <Lightbulb className="h-3.5 w-3.5 text-amber-500" /> Features
               </span>
-              <span className="font-semibold text-text-primary dark:text-dark-text-primary">{feedbackStats?.features ?? 0}</span>
+              <span className="font-semibold text-text-primary">{feedbackStats?.features ?? 0}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5 text-text-secondary dark:text-dark-text-secondary">
+              <span className="flex items-center gap-1.5 text-text-secondary">
                 <Star className="h-3.5 w-3.5 text-purple-500" /> NPS Responses
               </span>
-              <span className="font-semibold text-text-primary dark:text-dark-text-primary">{feedbackStats?.nps ?? 0}</span>
+              <span className="font-semibold text-text-primary">{feedbackStats?.nps ?? 0}</span>
             </div>
           </CardContent>
         </Card>
@@ -168,20 +168,20 @@ export default function AdminBetaDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-text-secondary dark:text-dark-text-secondary">Total Errors</span>
-              <span className="font-semibold text-text-primary dark:text-dark-text-primary">{errorStats?.total ?? 0}</span>
+              <span className="text-text-secondary">Total Errors</span>
+              <span className="font-semibold text-text-primary">{errorStats?.total ?? 0}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-text-secondary dark:text-dark-text-secondary">Resolved</span>
+              <span className="text-text-secondary">Resolved</span>
               <span className="font-semibold text-accent-600 dark:text-accent-400">{errorStats?.resolved ?? 0}</span>
             </div>
             {errorStats?.byType && Object.keys(errorStats.byType).length > 0 && (
-              <div className="pt-2 border-t border-border dark:border-dark-border">
+              <div className="pt-2 border-t border-border">
                 <p className="mb-2 text-xs font-medium uppercase tracking-wider text-text-tertiary">By Type</p>
                 <div className="space-y-1.5">
                   {Object.entries(errorStats.byType).map(([type, count]) => (
                     <div key={type} className="flex items-center justify-between text-sm">
-                      <span className="text-text-secondary dark:text-dark-text-secondary">{type}</span>
+                      <span className="text-text-secondary">{type}</span>
                       <Badge variant="destructive">{count}</Badge>
                     </div>
                   ))}
@@ -200,13 +200,13 @@ export default function AdminBetaDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {usageStats.length === 0 ? (
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No usage data yet</p>
+              <p className="text-sm text-text-secondary">No usage data yet</p>
             ) : (
               <>
                 {usageStats.slice(0, 5).map((stat) => (
                   <div key={stat.category} className="flex items-center justify-between text-sm">
-                    <span className="text-text-secondary dark:text-dark-text-secondary capitalize">{stat.category.replace(/_/g, ' ')}</span>
-                    <span className="font-semibold text-text-primary dark:text-dark-text-primary">{stat.count}</span>
+                    <span className="text-text-secondary capitalize">{stat.category.replace(/_/g, ' ')}</span>
+                    <span className="font-semibold text-text-primary">{stat.count}</span>
                   </div>
                 ))}
                 {usageStats.length > 5 && (
