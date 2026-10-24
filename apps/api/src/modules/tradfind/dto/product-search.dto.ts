@@ -14,6 +14,24 @@ export class ProductSearchDto {
   @IsString()
   categoryId?: string;
 
+  // P0-3 Step 5: canonical taxonomy filters. Server-side validated against
+  // the live catalog before use; invalid IDs → honest empty result, never
+  // unfiltered, never fabricated.
+  @ApiProperty({ description: 'Filter by canonical CatalogCategory ID', required: false })
+  @IsOptional()
+  @IsString()
+  catalogCategoryId?: string;
+
+  @ApiProperty({ description: 'Filter by canonical CatalogSubcategory ID', required: false })
+  @IsOptional()
+  @IsString()
+  catalogSubcategoryId?: string;
+
+  @ApiProperty({ description: 'Filter by canonical CatalogItem ID (leaf)', required: false })
+  @IsOptional()
+  @IsString()
+  catalogItemId?: string;
+
   @ApiProperty({ description: 'Filter by industry ID', required: false })
   @IsOptional()
   @IsString()

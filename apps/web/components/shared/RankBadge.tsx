@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 interface RankBadgeProps {
   rank: number | null | undefined
@@ -23,7 +23,7 @@ export function RankBadge({ rank, total, size = 'sm', showLabel = false }: RankB
   if (!rank || rank <= 0) return null
 
   const isTop3 = rank <= 3
-  const colors = isTop3 ? rankColors[rank]! : { bg: 'bg-surface-secondary dark:bg-dark-surface-secondary', text: 'text-text-secondary dark:text-dark-text-secondary', label: '' }
+  const colors = isTop3 ? rankColors[rank]! : { bg: 'bg-surface-secondary bg-surface-secondary', text: 'text-text-secondary text-text-secondary', label: '' }
 
   return (
     <div className="flex items-center gap-1.5">
@@ -37,7 +37,7 @@ export function RankBadge({ rank, total, size = 'sm', showLabel = false }: RankB
         <span className={`text-[10px] font-semibold ${colors.text}`}>{colors.label}</span>
       )}
       {showLabel && total && total > 0 && (
-        <span className="text-[10px] text-text-secondary dark:text-dark-text-secondary">
+        <span className="text-[10px] text-text-secondary">
           of {total.toLocaleString()}
         </span>
       )}

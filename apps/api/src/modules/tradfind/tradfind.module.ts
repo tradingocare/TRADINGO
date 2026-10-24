@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TradfindController } from './tradfind.controller';
 import { TradfindService } from './tradfind.service';
 import { SearchModule } from '../search/search.module';
+import { MarketplaceCatalogBridgeModule } from '../marketplace-catalog-bridge/marketplace-catalog-bridge.module';
 import { AiGatewayModule } from '../ai-gateway/ai-gateway.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AiSearchController } from './ai-search.controller';
@@ -19,7 +20,7 @@ import { DiscoveryFeedService } from './services/discovery-feed.service';
 import { SearchAnalyticsService } from './services/search-analytics.service';
 
 @Module({
-  imports: [SearchModule, AiGatewayModule, PrismaModule],
+  imports: [SearchModule, AiGatewayModule, PrismaModule, MarketplaceCatalogBridgeModule],
   controllers: [TradfindController, AiSearchController],
   providers: [
     TradfindService,

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -82,40 +82,40 @@ function CompareQuotesContent() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border bg-surface-secondary/50 dark:border-dark-border dark:bg-dark-surface-secondary/50">
-                  <th className="px-4 py-3 text-xs font-medium uppercase text-text-secondary dark:text-dark-text-secondary">Parameter</th>
+                <tr className="border-b border-border bg-surface-secondary/50">
+                  <th className="px-4 py-3 text-xs font-medium uppercase text-text-secondary">Parameter</th>
                   {quotes.map((q: any) => (
-                    <th key={q.id} className="px-4 py-3 text-xs font-medium uppercase text-text-secondary dark:text-dark-text-secondary">
+                    <th key={q.id} className="px-4 py-3 text-xs font-medium uppercase text-text-secondary">
                       {q.company?.name || 'Supplier'}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-border dark:border-dark-border">
-                  <td className="px-4 py-3 text-sm font-medium text-text-primary dark:text-dark-text-primary">Total Price</td>
+                <tr className="border-b border-border">
+                  <td className="px-4 py-3 text-sm font-medium text-text-primary">Total Price</td>
                   {quotes.map((q: any) => {
                     const price = q.totalAmount || q.subtotal || 0;
                     const isBest = price === lowestPrice;
                     return (
-                      <td key={q.id} className={`px-4 py-3 font-semibold ${isBest ? 'text-accent-600' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                      <td key={q.id} className={`px-4 py-3 font-semibold ${isBest ? 'text-accent-600' : 'text-text-primary text-text-primary'}`}>
                         {price.toLocaleString('en-IN')}
                         {isBest && <span className="ml-1.5 text-xs text-accent-600">Best</span>}
                       </td>
                     );
                   })}
                 </tr>
-                <tr className="border-b border-border dark:border-dark-border">
-                  <td className="px-4 py-3 text-sm font-medium text-text-primary dark:text-dark-text-primary">Delivery Time</td>
+                <tr className="border-b border-border">
+                  <td className="px-4 py-3 text-sm font-medium text-text-primary">Delivery Time</td>
                   {quotes.map((q: any) => (
-                    <td key={q.id} className={`px-4 py-3 ${q.leadTimeDays === quickestDelivery ? 'font-semibold text-accent-600' : 'text-text-secondary dark:text-dark-text-secondary'}`}>
+                    <td key={q.id} className={`px-4 py-3 ${q.leadTimeDays === quickestDelivery ? 'font-semibold text-accent-600' : 'text-text-secondary text-text-secondary'}`}>
                       {q.leadTimeDays ? `${q.leadTimeDays} days` : 'Not specified'}
                       {q.leadTimeDays === quickestDelivery && <span className="ml-1.5 text-xs text-accent-600">Fastest</span>}
                     </td>
                   ))}
                 </tr>
-                <tr className="border-b border-border dark:border-dark-border">
-                  <td className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                <tr className="border-b border-border">
+                  <td className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-text-primary">
                     <Star className="h-4 w-4 text-text-tertiary" />
                     Seller Trust Score
                   </td>
@@ -123,34 +123,34 @@ function CompareQuotesContent() {
                     const score = q.company?.trustScore || 0;
                     const isBest = score === highestRating;
                     return (
-                      <td key={q.id} className={`px-4 py-3 ${isBest ? 'font-semibold text-accent-500' : 'text-text-secondary dark:text-dark-text-secondary'}`}>
+                      <td key={q.id} className={`px-4 py-3 ${isBest ? 'font-semibold text-accent-500' : 'text-text-secondary text-text-secondary'}`}>
                         {score}%
                         {isBest && <span className="ml-1.5 text-xs text-accent-500">Top</span>}
                       </td>
                     );
                   })}
                 </tr>
-                <tr className="border-b border-border dark:border-dark-border">
-                  <td className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                <tr className="border-b border-border">
+                  <td className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-text-primary">
                     <Clock className="h-4 w-4 text-text-tertiary" />
                     Validity
                   </td>
                   {quotes.map((q: any) => (
-                    <td key={q.id} className="px-4 py-3 text-text-secondary dark:text-dark-text-secondary">
+                    <td key={q.id} className="px-4 py-3 text-text-secondary">
                       {q.validityDate ? new Date(q.validityDate).toLocaleDateString('en-IN') : '-'}
                     </td>
                   ))}
                 </tr>
-                <tr className="border-b border-border dark:border-dark-border">
-                  <td className="px-4 py-3 text-sm font-medium text-text-primary dark:text-dark-text-primary">Delivery Terms</td>
+                <tr className="border-b border-border">
+                  <td className="px-4 py-3 text-sm font-medium text-text-primary">Delivery Terms</td>
                   {quotes.map((q: any) => (
-                    <td key={q.id} className="px-4 py-3 text-text-secondary dark:text-dark-text-secondary">{q.deliveryTerms || '-'}</td>
+                    <td key={q.id} className="px-4 py-3 text-text-secondary">{q.deliveryTerms || '-'}</td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="px-4 py-3 text-sm font-medium text-text-primary dark:text-dark-text-primary">Payment Terms</td>
+                  <td className="px-4 py-3 text-sm font-medium text-text-primary">Payment Terms</td>
                   {quotes.map((q: any) => (
-                    <td key={q.id} className="px-4 py-3 text-text-secondary dark:text-dark-text-secondary">
+                    <td key={q.id} className="px-4 py-3 text-text-secondary">
                       {q.paymentTerms ? q.paymentTerms.replace(/_/g, ' ') : '-'}
                     </td>
                   ))}
@@ -176,7 +176,7 @@ function CompareQuotesContent() {
               )}
               <CardContent className="p-5">
                 <div className="text-center">
-                  <h3 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">{q.company?.name || 'Supplier'}</h3>
+                  <h3 className="text-base font-semibold text-text-primary">{q.company?.name || 'Supplier'}</h3>
                   {q.company?.trustScore && (
                     <div className="mt-1 flex items-center justify-center gap-1 text-sm text-accent-500">
                       <Star className="h-3.5 w-3.5 fill-current" />
@@ -186,21 +186,21 @@ function CompareQuotesContent() {
                 </div>
                 <Separator className="my-4" />
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">{price.toLocaleString('en-IN')}</p>
+                  <p className="text-2xl font-bold text-text-primary">{price.toLocaleString('en-IN')}</p>
                 </div>
                 <Separator className="my-4" />
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-text-secondary dark:text-dark-text-secondary">Delivery</span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{q.leadTimeDays ? `${q.leadTimeDays} days` : '-'}</span>
+                    <span className="text-text-secondary">Delivery</span>
+                    <span className="font-medium text-text-primary">{q.leadTimeDays ? `${q.leadTimeDays} days` : '-'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-text-secondary dark:text-dark-text-secondary">Validity</span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{q.validityDate ? new Date(q.validityDate).toLocaleDateString('en-IN') : '-'}</span>
+                    <span className="text-text-secondary">Validity</span>
+                    <span className="font-medium text-text-primary">{q.validityDate ? new Date(q.validityDate).toLocaleDateString('en-IN') : '-'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-text-secondary dark:text-dark-text-secondary">Payment</span>
-                    <span className="text-right text-xs font-medium text-text-primary dark:text-dark-text-primary">{q.paymentTerms?.replace(/_/g, ' ') || '-'}</span>
+                    <span className="text-text-secondary">Payment</span>
+                    <span className="text-right text-xs font-medium text-text-primary">{q.paymentTerms?.replace(/_/g, ' ') || '-'}</span>
                   </div>
                 </div>
                 <Button className="mt-4 w-full" onClick={() => handleAccept(q.id)} disabled={acceptingId === q.id}>

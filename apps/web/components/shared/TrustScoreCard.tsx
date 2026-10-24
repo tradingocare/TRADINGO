@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Shield, TrendingUp, TrendingDown, Clock, AlertTriangle, Info } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
@@ -64,13 +64,13 @@ function BreakdownBar({ item }: { item: BreakdownItem }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-text-secondary dark:text-dark-text-secondary truncate">{item.category}</span>
-        <span className="text-text-primary dark:text-dark-text-primary font-medium ml-2">
+        <span className="text-text-secondary truncate">{item.category}</span>
+        <span className="text-text-primary font-medium ml-2">
           {item.score}/100
         </span>
       </div>
       <Progress value={item.score} size="sm" variant={item.score >= 80 ? 'success' : item.score >= 60 ? 'info' : item.score >= 40 ? 'warning' : 'danger'} />
-      <div className="text-[10px] text-text-secondary/60 dark:text-dark-text-secondary/60">
+      <div className="text-[10px] text-text-secondary/60">
         {item.contribution >= 0 ? `+${item.contribution}` : item.contribution} pts of {item.maxContribution} max
       </div>
     </div>
@@ -88,9 +88,9 @@ export function TrustScoreCard({ score, grade, riskLevel, breakdown, updatedAt, 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="h-24 animate-pulse rounded-xl bg-surface-secondary dark:bg-dark-surface-secondary" />
-          <div className="h-4 animate-pulse rounded bg-surface-secondary dark:bg-dark-surface-secondary w-2/3" />
-          <div className="h-4 animate-pulse rounded bg-surface-secondary dark:bg-dark-surface-secondary w-1/2" />
+          <div className="h-24 animate-pulse rounded-xl bg-surface-secondary" />
+          <div className="h-4 animate-pulse rounded bg-surface-secondary w-2/3" />
+          <div className="h-4 animate-pulse rounded bg-surface-secondary w-1/2" />
         </CardContent>
       </Card>
     )
@@ -102,7 +102,7 @@ export function TrustScoreCard({ score, grade, riskLevel, breakdown, updatedAt, 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-text-primary dark:text-dark-text-primary">
+        <CardTitle className="flex items-center gap-2 text-text-primary">
           <Shield className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           TradTrust Score
         </CardTitle>
@@ -113,7 +113,7 @@ export function TrustScoreCard({ score, grade, riskLevel, breakdown, updatedAt, 
             <div>
               <div className="flex items-baseline gap-2">
                 <span className={`text-5xl font-black ${gc.text}`}>{score}</span>
-                <span className="text-text-secondary dark:text-dark-text-secondary text-sm font-medium">/ 1000</span>
+                <span className="text-text-secondary text-sm font-medium">/ 1000</span>
               </div>
               <div className="flex items-center gap-3 mt-2">
                 <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${gc.bg} ${gc.text}`}>
@@ -131,7 +131,7 @@ export function TrustScoreCard({ score, grade, riskLevel, breakdown, updatedAt, 
           </div>
 
           {updatedAt && (
-            <div className="flex items-center gap-1.5 mt-3 text-[11px] text-text-secondary dark:text-dark-text-secondary">
+            <div className="flex items-center gap-1.5 mt-3 text-[11px] text-text-secondary">
               <Clock className="h-3 w-3" />
               Last updated: {new Date(updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </div>
@@ -140,7 +140,7 @@ export function TrustScoreCard({ score, grade, riskLevel, breakdown, updatedAt, 
 
         {breakdown && breakdown.length > 0 && (
           <div className="space-y-4 pt-2">
-            <h4 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+            <h4 className="text-sm font-semibold text-text-primary">
               Score Breakdown
             </h4>
 
@@ -150,9 +150,9 @@ export function TrustScoreCard({ score, grade, riskLevel, breakdown, updatedAt, 
               ))}
             </div>
 
-            <div className="flex items-center gap-1.5 text-[11px] text-text-secondary/60 dark:text-dark-text-secondary/60 pt-1">
+            <div className="flex items-center gap-1.5 text-[11px] text-text-secondary/60 pt-1">
               <Info className="h-3 w-3" />
-              Each category scored 0-100. Contribution = score × weight / 100
+              Each category scored 0-100. Contribution = score Ã— weight / 100
             </div>
           </div>
         )}

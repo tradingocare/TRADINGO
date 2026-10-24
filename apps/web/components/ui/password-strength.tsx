@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { cn } from '@/lib/utils';
 
@@ -33,13 +33,13 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
             key={i}
             className={cn(
               'h-1 flex-1 rounded-full transition-all',
-              i < score ? color : 'bg-border dark:bg-dark-border',
+              i < score ? color : 'bg-border dark:bg-border',
             )}
           />
         ))}
       </div>
-      <p className="text-xs font-medium text-text-secondary dark:text-dark-text-secondary">
-        Password strength: <span className="text-text-primary dark:text-dark-text-primary">{label}</span>
+      <p className="text-xs font-medium text-text-secondary">
+        Password strength: <span className="text-text-primary">{label}</span>
       </p>
     </div>
   );

@@ -111,8 +111,30 @@ export function detectDuplicateRfqs(title: string, description?: string, product
 }
 
 // 5. AI Category Prediction
+// P0-3 Step 3: canonical taxonomy prediction — {categoryId, subcategoryId,
+// catalogItemId, confidence, band} with server-side-verified IDs.
+export interface PredictedTaxonomy {
+  categoryId: string | null
+  subcategoryId: string | null
+  catalogItemId: string | null
+  type: string | null
+  confidence: number
+  band: 'HIGH' | 'MEDIUM' | 'LOW'
+  matchType: string
+  reasons: string[]
+  alternatives: { categoryId: string; subcategoryId: string | null; catalogItemId: string | null; label: string; confidence: number }[]
+  categoryName: string | null
+  subcategoryName: string | null
+}
+
+export interface PredictCategoryResult {
+  success: boolean
+  data: PredictedTaxonomy
+  engine: string
+}
+
 export function predictCategory(productName: string, description?: string) {
-  return api.post<AiRfqResponse<any>>('/smart-rfq/ai/predict-category', { productName, description })
+  return api.post<PredictCategoryResult>('/smart-rfq/ai/predict-category', { productName, description })
 }
 
 // 6. AI Product Suggestions

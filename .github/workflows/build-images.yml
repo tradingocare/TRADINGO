@@ -1,0 +1,143 @@
+name: Build Production Images
+
+# Builds the production images (api, api-migrate, web) in CI and pushes them
+# to GHCR, tagged with the exact commit SHA. The VPS deploy workflow
+# (deploy-production.yml) pulls the images for the release SHA and retags
+# them locally instead of building on-host: the VPS (3.9GB RAM, 1 vCPU)
+# livelocks on the web build (run 39204845542, 2026-10-19).
+#
+# Design notes (do not weaken without founder approval):
+# - Runs on every push to main (plus manual dispatch): deploy pins releases
+#   to the exact origin/main SHA and requires images for that SHA, so every
+#   main commit must produce a build. A missing image aborts the deploy
+#   BEFORE the backup gate, with previous containers untouched.
+# - Build-time NEXT_PUBLIC_* values come from repository variables copied
+#   from the production env file. They are public by design (Next.js inlines
+#   them into the client bundle). The four URL values are REQUIRED: an empty
+#   build arg would override the Dockerfile defaults and silently ship a
+#   broken bundle, so this workflow fails closed instead.
+#   NEXT_PUBLIC_RAZORPAY_KEY_ID and NEXT_PUBLIC_SENTRY_DSN are deliberately
+#   optional with a loud warning when empty: the production env file had
+#   them EMPTY as of 2026-10-19, so an empty value preserves current
+#   on-host build parity. When payments/monitoring go live, add the values
+#   under Settings -> Secrets and variables -> Actions -> Variables and the
+#   next build will bake them in.
+# - Images are pushed as packages linked to this public repository; the VPS
+#   pulls them anonymously (no registry credentials on the host).
+# - Provenance attestations are disabled so older Docker engines on the VPS
+#   can pull the plain manifests; GHA layer caches (per-image scopes) keep
+#   rebuilds fast.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: build-images-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build and push images
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate build-time variables
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SOCKET_URL: ${{ vars.NEXT_PUBLIC_SOCKET_URL }}
+          NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ vars.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+        run: |
+          set -u
+          missing=""
+          for name in NEXT_PUBLIC_API_URL NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_APP_URL NEXT_PUBLIC_SOCKET_URL; do
+            value="$(printenv "$name" || true)"
+            if [ -z "$value" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "ERROR: missing required repository variables:$missing"
+            echo "These are baked into the web bundle at build time (an empty build arg"
+            echo "overrides the Dockerfile default and ships a broken bundle)."
+            echo "Set them under Settings -> Secrets and variables -> Actions -> Variables."
+            exit 1
+          fi
+          for name in NEXT_PUBLIC_RAZORPAY_KEY_ID NEXT_PUBLIC_SENTRY_DSN; do
+            value="$(printenv "$name" || true)"
+            if [ -z "$value" ]; then
+              echo "::warning::$name is empty; the built bundle matches the current production env file (empty since 2026-10-19). Set the repository variable when payments/monitoring go live."
+            fi
+          done
+          echo "Build-time variables validated."
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API (runtime image)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: runner
+          push: true
+          provenance: false
+          tags: ghcr.io/${{ github.repository_owner }}/tradingo-api:${{ github.sha }}
+          cache-from: type=gha,scope=api-runner
+          cache-to: type=gha,mode=max,scope=api-runner
+
+      - name: Build and push API (migration image)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: migration
+          push: true
+          provenance: false
+          tags: ghcr.io/${{ github.repository_owner }}/tradingo-api-migrate:${{ github.sha }}
+          cache-from: type=gha,scope=api-migration
+          cache-to: type=gha,mode=max,scope=api-migration
+
+      - name: Build and push web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          provenance: false
+          tags: ghcr.io/${{ github.repository_owner }}/tradingo-web:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL }}
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_SOCKET_URL }}
+            NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ vars.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+            NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Summary
+        run: |
+          echo "Pushed images for ${GITHUB_SHA}:"
+          echo "  ghcr.io/${{ github.repository_owner }}/tradingo-api:${GITHUB_SHA}"
+          echo "  ghcr.io/${{ github.repository_owner }}/tradingo-api-migrate:${GITHUB_SHA}"
+          echo "  ghcr.io/${{ github.repository_owner }}/tradingo-web:${GITHUB_SHA}"

@@ -3,7 +3,6 @@ export * from './rfqs';
 export * from './quotes';
 export * from './orders';
 export * from './payments';
-export * from './chat';
 export * from './tradgo';
 export * from './analytics';
 export * from './notifications';

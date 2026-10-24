@@ -11,6 +11,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SearchProfessionalsDto, SaveSearchDto } from './dto';
 import { TradeservSearchV2Dto } from './dto/tradeserv-search-v2.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ProfessionalCompanyStatus } from '@prisma/client';
 
 @ApiTags('TradeServ Search')
 @Controller('tradeserv')
@@ -46,8 +47,10 @@ export class TradeservSearchController {
   @ApiOperation({ summary: 'Get nearby professionals by city' })
   async getNearby(@Query('city') city: string) {
     if (!city) return [];
+    // O-9/O-11 narrowed scope: public nearby results enforce the established
+    // APPROVED-company gate (same predicate as featured/search/detail).
     return this.prisma.company.findMany({
-      where: { professionalType: { not: null }, locations: { some: { city: { contains: city, mode: 'insensitive' } } } },
+      where: { professionalType: { not: null }, professionalStatus: ProfessionalCompanyStatus.APPROVED, locations: { some: { city: { contains: city, mode: 'insensitive' } } } },
       select: { id: true, name: true, slug: true, logo: true, professionalType: true, description: true, trustScore: true, locations: { select: { city: true } } },
       take: 20,
     });
@@ -64,7 +67,36 @@ export class TradeservSearchController {
   @Public()
   @ApiOperation({ summary: 'Search professionals with OpenSearch full-text + faceted filters' })
   async searchV2(@Query() query: TradeservSearchV2Dto) {
-    const result = await this.indexSyncService.searchV2(query);
+    // C-01 P1 F-8: resolve + server-validate canonical taxonomy filters ONCE
+    // (both paths share this resolution — OpenSearch + Prisma fallback parity
+    // by construction). Invalid IDs / mismatched parent-child resolve to the
+    // honest empty company set; product-type items can never match (Service
+    // type enforced in the resolver).
+    const canonicalCompanyIds = await this.service.resolveCanonicalCompanyFilters({
+      catalogCategoryId: query.catalogCategoryId,
+      catalogSubcategoryId: query.catalogSubcategoryId,
+      catalogItemId: query.catalogItemId,
+    });
+
+    const result = await this.indexSyncService.searchV2({
+      query: query.query,
+      category: query.category,
+      city: query.city,
+      state: query.state,
+      professionalType: query.professionalType,
+      minRating: query.minRating,
+      verificationLevel: query.verificationLevel,
+      languages: query.languages,
+      sort: query.sort,
+      page: query.page,
+      limit: query.limit,
+      // Resolved validated APPROVED company set (undefined = no canonical
+      // filter submitted; [] = honest unsatisfiable).
+      resolvedCompanyIds: canonicalCompanyIds ?? undefined,
+    });
+    // F-14: searchV2 returns null on OpenSearch error OR zero-total on page 1
+    // (empty/unsynced index must not masquerade as "no professionals") —
+    // both fall through to the Prisma APPROVED search below.
     if (result) return result;
     const fallback = await this.service.searchProfessionals({
       query: query.query,
@@ -75,8 +107,31 @@ export class TradeservSearchController {
       page: query.page,
       limit: query.limit,
       sortBy: query.sort === 'newest' ? 'lastActiveAt' : 'trustScore',
+      // C-01 P1 F-8: PG fallback parity — the same validated company-ID set.
+      canonicalCompanyIds: canonicalCompanyIds ?? undefined,
     });
-    return fallback;
+    // C-01 P1 F-8 (Phase 8 parity): canonical facets computed within the SAME
+    // filtered universe as the OpenSearch aggregations (base filters + the
+    // validated canonical company set) — real counts, no static lists.
+    const canonicalFacets = await this.service.computeCanonicalFacets({
+      query: query.query,
+      city: query.city,
+      professionalType: query.professionalType,
+      minRating: query.minRating,
+      canonicalCompanyIds: canonicalCompanyIds ?? undefined,
+    });
+    return {
+      ...fallback,
+      aggregations: {
+        categories: [],
+        ...canonicalFacets,
+        cities: [],
+        states: [],
+        verificationLevels: [],
+        ratingRanges: [],
+        professionalTypes: [],
+      },
+    };
   }
 
   @Post('professionals-index/sync')

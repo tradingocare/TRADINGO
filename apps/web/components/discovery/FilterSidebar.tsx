@@ -189,7 +189,7 @@ export default function FilterSidebar({
               {filters.lat && (
                 <button
                   onClick={() => onChange({ lat: undefined, lng: undefined, kmRadius: undefined })}
-                  className="text-[10px] text-text-tertiary hover:text-gray-600 underline">
+                  className="text-[10px] text-text-tertiary hover:text-text-secondary underline">
                   Clear location
                 </button>
               )}

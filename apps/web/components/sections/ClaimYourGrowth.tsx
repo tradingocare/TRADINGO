@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 export default function ClaimYourGrowth() {
   return (
     <section className="relative overflow-hidden py-14 sm:py-16 lg:py-20">
@@ -7,11 +9,7 @@ export default function ClaimYourGrowth() {
       </div>
       <div className="relative z-10 mx-auto max-w-[1600px] px-4 text-center">
         <div className="glass-panel-prism p-6 sm:p-10">
-          <img
-            src="/logo/trdn5.png"
-            alt="TRADINGO"
-            className="mx-auto h-10 w-auto opacity-70 sm:h-12"
-          />
+          <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy" className="mx-auto opacity-70" />
 
           <h2 className="mt-6 text-3xl font-black text-primary sm:text-4xl lg:text-5xl bg-gradient-to-r from-[var(--text-primary)] via-[var(--text-secondary)] to-[var(--text-tertiary)] bg-clip-text text-transparent">
             Ready to Grow Your Business?
@@ -44,7 +42,7 @@ export default function ClaimYourGrowth() {
               {'\uD83D\uDFE1'} Create Free Account
             </a>
             <a
-              href="/trading"
+              href="/product"
               className="btn-glass inline-flex items-center gap-1.5 rounded-full px-6 py-3 text-xs font-semibold transition-all hover:scale-105 sm:gap-2 sm:px-8 sm:py-3.5 sm:text-sm"
             >
               {'\u26A1'} Explore Marketplace
@@ -56,7 +54,7 @@ export default function ClaimYourGrowth() {
               {'\uD83D\uDFE2'} Become a Seller
             </a>
             <a
-              href="/trading"
+              href="/product"
               className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-6 py-3 text-xs font-semibold text-blue-400 transition-all hover:scale-105 hover:bg-blue-500/20 sm:gap-2 sm:px-8 sm:py-3.5 sm:text-sm"
             >
               {'\uD83D\uDD35'} Browse as Buyer

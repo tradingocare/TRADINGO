@@ -109,8 +109,10 @@ export class MarketplaceIntelligenceEngine {
     const trustBreakdown = await this.tradTrustService.getScoreBreakdown(companyId);
     const tradTrustScore = trustBreakdown?.unifiedScore ?? (company.trustScore ?? 500) / 10;
 
+    // P0-3: only APPROVED reviews may feed the unified-score seller rating.
+    // PENDING/REJECTED reviews contribute zero (falsy avg → neutral 50 fallback).
     const reviews = await this.prisma.productReview.aggregate({
-      where: { companyId },
+      where: { companyId, status: 'APPROVED' },
       _avg: { rating: true },
       _count: true,
     });

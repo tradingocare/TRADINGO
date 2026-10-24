@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { FileQuestion, Home, LayoutDashboard, Search } from 'lucide-react';
@@ -35,11 +35,11 @@ export function NotFoundState({
             <FileQuestion className="h-8 w-8 text-accent-500" aria-hidden="true" />
           </div>
 
-          <h1 className="mb-2 text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+          <h1 className="mb-2 text-2xl font-bold text-text-primary">
             {title}
           </h1>
 
-          <p className="mb-6 text-sm text-text-secondary dark:text-dark-text-secondary">
+          <p className="mb-6 text-sm text-text-secondary">
             {message}
           </p>
 

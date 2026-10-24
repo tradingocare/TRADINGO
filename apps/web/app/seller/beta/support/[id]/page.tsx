@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -111,7 +111,7 @@ export default function TicketDetailPage() {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-16">
           <AlertCircle className="mb-4 h-12 w-12 text-red-500" />
-          <p className="text-lg font-medium text-text-primary dark:text-dark-text-primary">
+          <p className="text-lg font-medium text-text-primary">
             {error || 'Ticket not found'}
           </p>
           <Button variant="outline" className="mt-4" onClick={() => router.push('/seller/beta/support')}>
@@ -132,7 +132,7 @@ export default function TicketDetailPage() {
       </Button>
 
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+        <h1 className="text-2xl font-bold text-text-primary">
           {ticket.subject}
         </h1>
         <Badge variant={STATUS_BADGE_VARIANTS[ticket.status] || 'outline'}>
@@ -154,7 +154,7 @@ export default function TicketDetailPage() {
 
       <Card>
         <CardContent className="p-5">
-          <p className="text-sm text-text-secondary dark:text-dark-text-secondary whitespace-pre-wrap">
+          <p className="text-sm text-text-secondary whitespace-pre-wrap">
             {ticket.description}
           </p>
           <p className="mt-3 text-xs text-text-tertiary">
@@ -164,7 +164,7 @@ export default function TicketDetailPage() {
       </Card>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+        <h2 className="text-lg font-semibold text-text-primary">
           Messages ({messages.length})
         </h2>
         {messages.length === 0 ? (
@@ -174,14 +174,14 @@ export default function TicketDetailPage() {
             <Card key={msg.id}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
-                  <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                  <p className="text-sm font-medium text-text-primary">
                     {msg.userId}
                   </p>
                   <span className="text-xs text-text-tertiary">
                     {new Date(msg.createdAt).toLocaleString()}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary whitespace-pre-wrap">
+                <p className="mt-2 text-sm text-text-secondary whitespace-pre-wrap">
                   {msg.message}
                 </p>
               </CardContent>
@@ -192,7 +192,7 @@ export default function TicketDetailPage() {
 
       <Card>
         <CardContent className="p-5">
-          <label className="mb-2 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+          <label className="mb-2 block text-sm font-medium text-text-primary">
             Reply
           </label>
           <Textarea

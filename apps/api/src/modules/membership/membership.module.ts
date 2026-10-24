@@ -4,9 +4,10 @@ import { MembershipAdminController } from './membership-admin.controller';
 import { MembershipService } from './membership.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BillingModule } from '../billing/billing.module';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
-  imports: [forwardRef(() => BillingModule)],
+  imports: [forwardRef(() => BillingModule), forwardRef(() => PaymentModule)],
   controllers: [MembershipController, MembershipAdminController],
   providers: [MembershipService, PrismaService],
   exports: [MembershipService],

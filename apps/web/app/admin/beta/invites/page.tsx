@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { DashboardPageHeader } from '@/components/dashboard';
@@ -68,7 +68,7 @@ function InviteModal({
     <Modal open={open} onClose={onClose} title="Send Beta Invite">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+          <label className="mb-1 block text-sm font-medium text-text-primary">
             Email <span className="text-red-500">*</span>
           </label>
           <Input
@@ -80,7 +80,7 @@ function InviteModal({
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+          <label className="mb-1 block text-sm font-medium text-text-primary">
             Company Name <span className="text-text-tertiary">(optional)</span>
           </label>
           <Input
@@ -90,7 +90,7 @@ function InviteModal({
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+          <label className="mb-1 block text-sm font-medium text-text-primary">
             Message <span className="text-text-tertiary">(optional)</span>
           </label>
           <Textarea
@@ -209,7 +209,7 @@ export default function BetaInvitesPage() {
           ) : error ? (
             <div className="flex flex-col items-center gap-4 py-12">
               <AlertTriangle className="h-10 w-10 text-red-500" />
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">{error}</p>
+              <p className="text-sm text-text-secondary">{error}</p>
               <Button onClick={fetchData} variant="outline" size="sm">
                 <RefreshCw className="mr-2 h-4 w-4" /> Retry
               </Button>

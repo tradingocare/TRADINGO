@@ -9,7 +9,7 @@ export function StarRating({ rating, size = 'sm', interactive = false, onChange 
       {[1, 2, 3, 4, 5].map((star) => (
         <button key={star} type="button" disabled={!interactive} onClick={() => onChange?.(star)}
           className={`${interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'} transition-transform`}>
-          <Star className={`${sizeClass} ${star <= rating ? 'fill-accent-500 text-accent-500' : 'text-gray-300'}`} />
+          <Star className={`${sizeClass} ${star <= rating ? 'fill-accent-500 text-accent-500' : 'text-text-tertiary'}`} />
         </button>
       ))}
     </div>

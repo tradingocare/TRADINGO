@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import type { GeographicReach } from '@prisma/client';
@@ -119,7 +119,7 @@ export function LocationForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+          <label className="block text-sm font-medium text-text-primary">
             Latitude
           </label>
           <input
@@ -128,11 +128,11 @@ export function LocationForm({
             value={latitude}
             onChange={(e) => handleLatChange(e.target.value)}
             placeholder="e.g. 19.076"
-            className="w-full rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface px-3 py-2 text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary dark:placeholder:text-dark-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark"
+            className="w-full rounded-lg border border-surface-border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark"
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+          <label className="block text-sm font-medium text-text-primary">
             Longitude
           </label>
           <input
@@ -141,7 +141,7 @@ export function LocationForm({
             value={longitude}
             onChange={(e) => handleLngChange(e.target.value)}
             placeholder="e.g. 72.8777"
-            className="w-full rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface px-3 py-2 text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary dark:placeholder:text-dark-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark"
+            className="w-full rounded-lg border border-surface-border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-dark"
           />
         </div>
       </div>
@@ -152,7 +152,7 @@ export function LocationForm({
           <button
             type="button"
             onClick={handleCopyFromCompany}
-            className="inline-flex items-center gap-2 rounded-lg border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface px-3 py-2 text-sm font-medium text-text-secondary dark:text-dark-text-secondary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg border border-surface-border border-border bg-surface px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
           >
             Copy from Company Address
           </button>
@@ -167,7 +167,7 @@ export function LocationForm({
       <RadiusSelector value={radius} onChange={handleRadiusChange} />
 
       {hasCoordinates && (
-        <div className="rounded-lg bg-surface-secondary dark:bg-dark-surface-secondary p-3 text-sm text-text-secondary dark:text-dark-text-secondary">
+        <div className="rounded-lg bg-surface-secondary p-3 text-sm text-text-secondary">
           <span className="font-medium">Preview:</span>{' '}
           {latitude}, {longitude}
           {radius && ` \u00B7 ${radius}`}

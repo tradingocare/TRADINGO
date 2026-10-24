@@ -149,13 +149,31 @@ export class CompanyVerificationService {
     return this.maskDocumentUrls(data);
   }
 
+  // P0-1: every sensitive KYC document type in the REAL DocumentType enum is
+  // masked in responses. The previous list used 'GST_CERTIFICATE' /
+  // 'BANK_STATEMENT' — values that do not exist in the enum — so GST,
+  // cancelled-cheque and bank documents were never masked. The list now
+  // covers ALL identity/bank/compliance document types (only genuinely
+  // non-sensitive professional-portfolio references stay unmasked).
+  private static readonly SENSITIVE_DOC_TYPES = new Set([
+    'PAN',
+    'GST',
+    'AADHAAR',
+    'BUSINESS_REGISTRATION',
+    'CANCELLED_CHEQUE',
+    'BANK_VERIFICATION',
+    'LIABILITY_INSURANCE',
+    'PROFESSIONAL_MEMBERSHIP',
+    'CLIENT_REFERENCE',
+    'EXPERIENCE_LETTER',
+  ]);
+
   private maskDocumentUrls(record: any) {
     if (!record?.documents) return record;
-    const SENSITIVE_TYPES = ['PAN', 'AADHAAR', 'BANK_STATEMENT', 'GST_CERTIFICATE'];
     return {
       ...record,
       documents: record.documents.map((doc: any) => {
-        if (SENSITIVE_TYPES.includes(doc.documentType?.toUpperCase())) {
+        if (CompanyVerificationService.SENSITIVE_DOC_TYPES.has(doc.documentType?.toUpperCase?.() ?? doc.documentType)) {
           return { ...doc, documentUrl: '[MASKED]' };
         }
         return doc;
@@ -194,6 +212,71 @@ export class CompanyVerificationService {
     });
     if (!verification) throw new NotFoundException('Verification not found');
     return this.maskSensitiveFields(verification);
+  }
+
+  /**
+   * P0-1: cross-tenant read eliminated. Non-admin callers may only read a
+   * verification belonging to a company they own (via CompanyOwner); any
+   * other id resolves to 404 — same no-disclosure discipline as the
+   * canonical ownership pattern. Admins retain full access.
+   */
+  async findAuthorizedById(id: string, userId: string, role: string) {
+    const verification = await this.prisma.companyVerification.findUnique({
+      where: { id },
+      include: {
+        documents: true,
+        submitter: { select: { id: true, email: true, name: true } },
+        reviewer: { select: { id: true, email: true, name: true } },
+        company: { select: { id: true, name: true, slug: true } },
+      },
+    });
+    if (!verification) throw new NotFoundException('Verification not found');
+
+    if (role !== Role.SUPER_ADMIN && role !== Role.ADMIN) {
+      const owner = await this.prisma.companyOwner.findUnique({
+        where: { companyId_userId: { companyId: verification.companyId, userId } },
+        select: { id: true },
+      });
+      if (!owner) throw new NotFoundException('Verification not found');
+    }
+
+    return this.maskSensitiveFields(verification);
+  }
+
+  /**
+   * P0-1: serves a sensitive document to authorized eyes only — the document
+   * itself (its raw URL) never leaves this method unmasked for anyone else.
+   * ADMIN/SUPER_ADMIN or the owning company's users pass; all others 403/404.
+   */
+  async getDocumentForAuthorizedAccess(
+    verificationId: string,
+    documentId: string,
+    userId: string,
+    role: string,
+  ): Promise<{ documentUrl: string; companyId: string }> {
+    const verification = await this.prisma.companyVerification.findUnique({
+      where: { id: verificationId },
+      select: { companyId: true },
+    });
+    if (!verification) throw new NotFoundException('Verification not found');
+
+    if (role !== Role.SUPER_ADMIN && role !== Role.ADMIN) {
+      const owner = await this.prisma.companyOwner.findUnique({
+        where: { companyId_userId: { companyId: verification.companyId, userId } },
+        select: { id: true },
+      });
+      if (!owner) throw new NotFoundException('Verification not found');
+    }
+
+    const document = await this.prisma.companyVerificationDocument.findUnique({
+      where: { id: documentId },
+      select: { documentUrl: true, verificationId: true },
+    });
+    if (!document || document.verificationId !== verificationId) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return { documentUrl: document.documentUrl, companyId: verification.companyId };
   }
 
   async findAll(query: { status?: string; cursor?: string; limit?: number }) {

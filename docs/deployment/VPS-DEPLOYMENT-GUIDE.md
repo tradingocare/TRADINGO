@@ -241,3 +241,102 @@ See `ROLLBACK-PROCEDURE.md` for detailed rollback steps.
 ## 11. Post-Launch Checklist
 
 Run through `docs/operations/POST-LAUNCH-CHECKLIST.md` after deployment for T+0, T+1h, T+24h, T+7d, and T+30d checks.
+
+---
+
+## 12. Production Releases via GitHub Actions
+
+Releases run from the `main` branch only through `.github/workflows/deploy-production.yml`
+(manual `workflow_dispatch`). The workflow builds images on the VPS itself; no
+registry is involved.
+
+### 12.1 Main-only policy
+
+- The workflow **fails closed unless it runs from `refs/heads/main`**. A dispatch
+  launched from any other branch's copy of the file stops before any secret is
+  touched or any SSH connection is opened.
+- The release tracks **`origin/main` only**. The exact SHA is resolved on the VPS
+  at deploy time (`git rev-parse origin/main`); operator-supplied branches, tags
+  and SHAs are not accepted.
+- There is no push trigger. Every release needs the typed `deploy` confirmation.
+  NOTE (verified 2026-10-13): the `production` environment currently has **no
+  required reviewers**, so its gate resolves immediately — effective approval
+  is dispatch permission (write access) plus the typed confirmation. This is
+  NOT two-person review. To restore a reviewer checkpoint, add an eligible
+  reviewer under Settings → Environments → `production` (founder decision;
+  weigh self-review protection for single-account operation).
+
+### 12.2 Required secrets (production environment, names only)
+
+| Secret | Required | Purpose / default |
+|--------|----------|-------------------|
+| `VPS_HOST` | yes | VPS hostname. No default. |
+| `VPS_SSH_KEY` | yes | Private Ed25519 deployment key for the `tradingo` user. No default. |
+| `VPS_KNOWN_HOSTS` | yes | Verified `known_hosts` line(s) for the VPS (see 12.3). No default. |
+| `VPS_PORT` | no | SSH port. Defaults to `22`. |
+| `VPS_USER` | no | Deployment user. Defaults to `tradingo` (least privilege; do not use `root`). |
+| `VPS_APP_DIR` | no | Repo checkout on the VPS. Defaults to `/home/tradingo/tradingo`. |
+
+Set them under repository Settings → Secrets and variables → Actions →
+**Environment secrets** for the `production` environment (not repository
+secrets), so they are only exposed to runs using that environment.
+Values are never printed by the workflow; verification steps report
+`configured` / `MISSING` names only.
+
+### 12.3 Provisioning and verifying `VPS_KNOWN_HOSTS`
+
+The workflow performs **no runtime `ssh-keyscan` discovery** (trust-on-first-use
+against an unauthenticated peer is forbidden). The founder provisions the pinned
+host keys once, through a trusted channel:
+
+1. From a trusted machine/network, collect the VPS host keys:
+   `ssh-keyscan -t ed25519 -p 22 srv1889262.hstgr.cloud`
+2. **Verify out-of-band before trusting:** compare the key fingerprint against an
+   independent source — the Hostinger control panel (hPanel shows the server's
+   SSH fingerprint), a second network, or a previously recorded value from a
+   trusted session. If the two sources disagree, STOP and investigate; do not
+   store the key.
+3. Store the full verified `known_hosts` line(s) (unhashed form, `host keytype
+   base64...`) as the `VPS_KNOWN_HOSTS` environment secret. One line per key
+   type present; do not invent, truncate, or hand-edit key material.
+4. Rotate the secret the same way if the VPS is rebuilt or its host keys change
+   (SSH will then fail closed with a host-key mismatch instead of connecting).
+
+### 12.4 Release and rollback behavior
+
+- Order on the VPS: fetch → pin SHA → record previous SHA → **untracked-collision
+  preservation gate** (`scripts/deploy/checkout-preservation.sh`, read from the
+  target release) → checkout → pre-deploy DB backup attempt → **backup
+  verification gate** (`scripts/deploy/verify-backup.sh`, fail-closed) →
+  build `api` + `web` (compose project `tradingo-prod`) → exit-gated
+  `api-migrate` → recreate `api` + `web` → `smoke-test.sh` against localhost.
+- Timeouts: the remote SSH session is capped at 90 minutes (`timeout 5400`)
+  inside a 100-minute job, leaving margin for status reporting and cleanup.
+  Exit code 124 on the deploy step means the SSH backstop fired (remote work
+  exceeded 90 minutes), not the job timeout.
+- No migration or service replacement runs without a fresh verified backup
+  (status=OK, recent, non-empty artifact, stored size matching the actual
+  artifact). Documented exception only: dispatch with `skip_fresh_backup=true`,
+  recorded in the run inputs.
+- Backups address the database by verified container ID (`BACKUP_DB_CONTAINER`,
+  default `tradingo-postgres`) for both `pg_dump` and archive validation —
+  never by Compose project/service labels, which may belong to a different
+  Compose project than the caller's files. Identity (running, postgres image,
+  `postgres` service label, expected data volume) is verified before the dump
+  and re-verified before validation.
+- The preservation gate relocates untracked files that collide with new target
+  paths into a unique timestamped recovery directory outside the repository
+  (`<app-dir>-recovery/untracked-<UTC-timestamp>-<PID>/`, mode 700), verifies
+  every copy by hash, and only then clears the sources. Detection is
+  target-driven (every target path is checked directly against the filesystem
+  and the index), so collisions cannot be missed the way untracked-file
+  enumeration can. Any failure aborts **before checkout** with the working
+  tree untouched. Ignored files that collide (secrets/certificates) abort
+  the run for manual resolution.
+- A failed backup logs a loud warning and continues **only** under the policy
+  documented in the workflow header (operator must confirm a known-good backup
+  exists). A failed migration or failed smoke test stops the rollout with
+  containers untouched (migrate) or explicitly reported (health).
+- Rollback is always manual using the previous SHA printed by the failed run;
+  database restore is a separate deliberate decision (migrations are
+  forward-only). Full procedure: `docs/deployment/ROLLBACK-PROCEDURE.md`.

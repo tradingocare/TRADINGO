@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import {
@@ -20,7 +20,7 @@ import { CheckCircle2, Circle, Clock, Loader2, Shield } from 'lucide-react';
 type ItemStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'VERIFIED';
 
 const statusConfig: Record<ItemStatus, { icon: typeof CheckCircle2; color: string; label: string }> = {
-  NOT_STARTED: { icon: Circle, color: 'text-text-tertiary dark:text-dark-text-tertiary', label: 'Not Started' },
+  NOT_STARTED: { icon: Circle, color: 'text-text-tertiary text-text-tertiary', label: 'Not Started' },
   IN_PROGRESS: { icon: Clock, color: 'text-amber-500', label: 'In Progress' },
   COMPLETED: { icon: CheckCircle2, color: 'text-blue-500', label: 'Completed' },
   VERIFIED: { icon: CheckCircle2, color: 'text-accent-500', label: 'Verified' },
@@ -127,7 +127,7 @@ export default function GoLiveChecklistPage() {
       <DashboardPageHeader
         title="Go-Live Checklist"
         description={
-          `${verifiedCount}/${progress.total} verified · ${completedCount + verifiedCount}/${progress.total} completed`
+          `${verifiedCount}/${progress.total} verified Â· ${completedCount + verifiedCount}/${progress.total} completed`
         }
       />
 
@@ -137,12 +137,12 @@ export default function GoLiveChecklistPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-text-secondary dark:text-dark-text-secondary">{verifiedPercent}% verified</span>
-            <span className="text-text-secondary dark:text-dark-text-secondary">
+            <span className="text-text-secondary">{verifiedPercent}% verified</span>
+            <span className="text-text-secondary">
               {progress.verified} / {progress.total} items
             </span>
           </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
+          <div className="h-3 w-full overflow-hidden rounded-full bg-surface-tertiary">
             <div
               className="h-full rounded-full bg-accent-500 transition-all duration-500"
               style={{ width: `${verifiedPercent}%` }}
@@ -167,14 +167,14 @@ export default function GoLiveChecklistPage() {
                 return (
                   <div
                     key={item.id}
-                    className="rounded-lg border border-border bg-surface-secondary/50 p-4 dark:border-dark-border dark:bg-dark-surface-secondary/50"
+                    className="rounded-lg border border-border bg-surface-secondary/50 p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3 min-w-0 flex-1">
                         <StatusIcon className={`mt-0.5 h-5 w-5 shrink-0 ${config.color}`} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                            <span className="font-medium text-text-primary">
                               {item.label}
                             </span>
                             {item.isRequired && (
@@ -187,7 +187,7 @@ export default function GoLiveChecklistPage() {
                             </Badge>
                           </div>
                           {item.description && (
-                            <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
+                            <p className="mt-1 text-sm text-text-secondary">
                               {item.description}
                             </p>
                           )}

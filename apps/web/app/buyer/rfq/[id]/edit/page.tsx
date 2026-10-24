@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -59,7 +59,7 @@ export default function EditRfqPage() {
         }
       />
 
-      <div className="glass-card p-6  space-y-4">
+      <div className="glass-card p-6 space-y-4">
         {isLoading ? (
           <div className="animate-pulse space-y-4">
             {[1, 2, 3].map((i) => <div key={i} className="h-12 rounded-lg bg-surface" />)}

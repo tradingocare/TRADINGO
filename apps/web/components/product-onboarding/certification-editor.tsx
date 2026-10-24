@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Plus, X, ShieldCheck, Pencil, FileUp } from 'lucide-react';
@@ -73,13 +73,13 @@ export function CertificationEditor({ certifications, onChange }: CertificationE
             Add Certification
           </Button>
           {showTypeSelector && (
-            <div className="absolute right-0 top-full z-10 mt-1 w-56 rounded-lg border border-border bg-surface p-1 shadow-lg dark:border-dark-border dark:bg-dark-surface">
+            <div className="absolute right-0 top-full z-10 mt-1 w-56 rounded-lg border border-border bg-surface p-1 shadow-lg">
               {CERT_TYPES.map((cert) => (
                 <button
                   key={cert.value}
                   type="button"
                   onClick={() => addCertification(cert.value)}
-                  className="w-full rounded-md px-3 py-1.5 text-left text-sm text-text-primary hover:bg-surface-secondary dark:text-dark-text-primary dark:hover:bg-dark-surface-secondary"
+                  className="w-full rounded-md px-3 py-1.5 text-left text-sm text-text-primary hover:bg-surface-secondary"
                 >
                   {cert.label}
                 </button>
@@ -90,7 +90,7 @@ export function CertificationEditor({ certifications, onChange }: CertificationE
       </div>
 
       {certifications.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-10 text-center dark:border-dark-border dark:bg-dark-surface-secondary">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-secondary p-10 text-center">
           <ShieldCheck className="mb-2 h-8 w-8 text-text-tertiary" />
           <p className="text-sm text-text-tertiary">
             No certifications added. Add certifications to increase buyer confidence.
@@ -108,7 +108,7 @@ export function CertificationEditor({ certifications, onChange }: CertificationE
                 'rounded-xl border transition-all',
                 isEditing
                   ? 'border-primary-300 bg-primary-500/5 dark:border-primary-700 dark:bg-primary-500/10'
-                  : 'border-border bg-surface dark:border-dark-border dark:bg-dark-surface',
+                  : 'border-border bg-surface border-border bg-surface',
               )}
             >
               {isEditing ? (
@@ -120,7 +120,7 @@ export function CertificationEditor({ certifications, onChange }: CertificationE
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
-                      className="rounded-md p-1 text-text-tertiary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary"
+                      className="rounded-md p-1 text-text-tertiary hover:bg-surface-secondary"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -167,7 +167,7 @@ export function CertificationEditor({ certifications, onChange }: CertificationE
 
                   <div className="space-y-1.5">
                     <Label>Upload Certificate</Label>
-                    <div className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border bg-surface-secondary p-4 text-center transition-colors hover:border-primary-400 hover:bg-primary-500/5 dark:border-dark-border dark:bg-dark-surface-secondary dark:hover:border-primary-500">
+                    <div className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border bg-surface-secondary p-4 text-center transition-colors hover:border-primary-400 hover:bg-primary-500/5 dark:hover:border-primary-500">
                       <FileUp className="h-5 w-5 text-text-tertiary" />
                       <span className="text-sm text-text-tertiary">
                         {cert.fileUrl ? 'Replace file' : 'Click to upload certificate (PDF, JPG, PNG)'}
@@ -188,7 +188,7 @@ export function CertificationEditor({ certifications, onChange }: CertificationE
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                        <span className="text-sm font-medium text-text-primary">
                           {getTypeLabel(cert.type)}
                         </span>
                         {cert.verified && (
@@ -204,7 +204,7 @@ export function CertificationEditor({ certifications, onChange }: CertificationE
                     <button
                       type="button"
                       onClick={() => setEditingId(cert.id)}
-                      className="rounded-md p-1.5 text-text-tertiary transition-colors hover:bg-surface-secondary hover:text-text-primary dark:hover:bg-dark-surface-secondary"
+                      className="rounded-md p-1.5 text-text-tertiary transition-colors hover:bg-surface-secondary hover:text-text-primary"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>

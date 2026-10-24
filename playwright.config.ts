@@ -23,9 +23,13 @@ export default defineConfig({
     video: 'retain-on-failure',
     actionTimeout: 15000,
     navigationTimeout: 30000,
-    extraHTTPHeaders: {
-      'x-playwright-test': 'true',
-    },
+    // NOTE (CI-06): no extraHTTPHeaders. The API CORS policy does not
+    // allowlist custom headers, so any extra header forces a preflight the
+    // API cannot satisfy and the browser blocks every CORS API call.
+    // The previous 'x-playwright-test' marker was read by nothing
+    // (verified: zero references in apps/ and tests/) and silently broke
+    // all browser-side API data loading. Do not re-add custom headers here
+    // unless the API CORS allowlist is updated first.
   },
 
   projects: [

@@ -5,16 +5,43 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
+  opensearch_data:
 
 networks:
   tradingo-net:
     driver: bridge
+  # DB lives in another compose project (tradingo-clean) on legacy network
+  # tradingo_tradingo-net. Declared external so recreates converge instead of
+  # dropping the API's database route. Never move postgres or its volume here;
+  # never add a second OpenSearch service (standalone instance preserved).
+  legacy-db:
+    external: true
+    name: tradingo_tradingo-net
 
 services:
+  # NOTE on the standalone database/redis services below:
+  # Production PostgreSQL and Redis are NOT owned by this compose project. They
+  # are the long-lived containers of the legacy `tradingo-clean` project, they
+  # carry the fixed container names `tradingo-postgres` / `tradingo-redis`, and
+  # the API reaches them through the external `legacy-db` network
+  # (`tradingo_tradingo-net`), which is the only network that carries the
+  # `postgres` DNS alias that DATABASE_URL uses.
+  #
+  # Declaring them here with those same container_name values is a name
+  # collision: any `docker compose up` that includes them would fail against
+  # the live containers (or, worse, create a second, empty database that
+  # competes for the same DNS alias). They are therefore placed behind the
+  # `standalone-db` profile: they are documentation of the topology and can
+  # only ever be started deliberately, with
+  #   docker compose -p <other-project> --profile standalone-db up -d
+  # The supported production path never starts them — the deploy workflow
+  # addresses the live legacy containers by name and runs every compose
+  # command with --no-deps.
   postgres:
     image: postgres:16-alpine
     container_name: tradingo-postgres
     restart: unless-stopped
+    profiles: ["standalone-db"]
     networks:
       - tradingo-net
     ports:
@@ -40,6 +67,10 @@ services:
     image: redis:7-alpine
     container_name: tradingo-redis
     restart: unless-stopped
+    # See the note above the `postgres` service: the live Redis is a legacy
+    # container with this fixed name and must never be recreated by this
+    # project. Opt-in only.
+    profiles: ["standalone-db"]
     networks:
       - tradingo-net
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
@@ -64,6 +95,7 @@ services:
     restart: unless-stopped
     networks:
       - tradingo-net
+      - legacy-db
     ports:
       - "127.0.0.1:3001:3001"
     env_file:
@@ -81,10 +113,12 @@ services:
     depends_on:
       api-migrate:
         condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      # The live database and Redis belong to the legacy project and are
+      # verified by the deploy workflow's pre-flight (container present,
+      # running, healthy) before anything is replaced. They are deliberately
+      # NOT declared as dependencies here: a dependency would re-enable their
+      # `standalone-db` profile and make a bare `compose up` try to create
+      # containers whose names are already taken by the live services.
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/live"]
       interval: 30s
@@ -99,31 +133,43 @@ services:
       target: migration
     container_name: tradingo-api-migrate
     restart: "no"
+    # The database is managed by the legacy compose project and only the
+    # legacy network carries the `postgres` DNS alias that DATABASE_URL uses
+    # (verified 2026-10-19: migration run 39212010080 could not resolve
+    # `postgres` on tradingo-net alone). Must match the api service, which
+    # joins both networks; without this the migrate container fails its
+    # PostgreSQL readiness wait and aborts the release.
     networks:
       - tradingo-net
+      - legacy-db
+    volumes:
+      - ./backups:/backups
     env_file:
       - .env.production.local
     environment:
       PRISMA_MIGRATE_DISABLED: "false"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    # Entrypoint runs migrations, then execs this command and exits.
-    command: ["sh", "-c", "echo 'TRADINGO migrations applied'"]
+    # The live database and Redis belong to the legacy project; see the note
+    # on the `api` service. The migration entrypoint performs its own bounded,
+    # fatal PostgreSQL readiness wait, so no compose dependency is declared
+    # here: a dependency would re-enable the `standalone-db` profile and make
+    # a bare `compose up` try to create containers whose names are already
+    # taken by the live services.
+    # Entrypoint runs migrations and verification, then execs this command
+    # and exits. This message only prints if the entrypoint succeeded —
+    # any migration/verification failure exits non-zero before reaching here.
+    command: ["sh", "-c", "echo 'TRADINGO migrations applied and verified'"]
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3001}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.tradingo.in/api/v1}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://tradingo.in}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://tradingo.in}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-https://api.tradingo.in}
         NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID:-}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     container_name: tradingo-web
@@ -324,3 +370,38 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  # OpenSearch — founder-approved strict-limit provisioning (2026-09-12).
+  # Disposable search cache ONLY; PostgreSQL remains sole source of truth.
+  # Internal-only: NO host port binding. API must NOT depend on this service.
+  opensearch:
+    image: opensearchproject/opensearch:2.17.0
+    container_name: tradingo-opensearch
+    restart: unless-stopped
+    networks:
+      - tradingo-net
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      bootstrap.system_call_filter: "false"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 1.25G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

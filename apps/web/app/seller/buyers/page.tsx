@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { DashboardPageHeader, TableSkeleton } from '@/components/dashboard';
@@ -51,9 +51,9 @@ export default function SellerBuyersPage() {
                       <Building2 className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">{buyer.name}</h3>
+                      <h3 className="text-sm font-semibold text-text-primary">{buyer.name}</h3>
                       {(buyer.city || buyer.state) && (
-                        <div className="flex items-center gap-1 mt-0.5 text-xs text-text-secondary dark:text-dark-text-secondary">
+                        <div className="flex items-center gap-1 mt-0.5 text-xs text-text-secondary">
                           <MapPin className="h-3 w-3" />
                           {[buyer.city, buyer.state].filter(Boolean).join(', ')}
                         </div>

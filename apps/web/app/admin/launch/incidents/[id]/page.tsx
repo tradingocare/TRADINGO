@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -114,16 +114,16 @@ export default function IncidentDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+        <div className="flex items-center gap-2 text-sm text-text-secondary">
           <Link href="/admin/launch/incidents" className="hover:text-primary-600 dark:hover:text-primary-400">
             <ArrowLeft className="mr-1 inline h-4 w-4" />
             Back to Incidents
           </Link>
         </div>
-        <div className="h-8 w-64 animate-pulse rounded bg-surface-tertiary dark:bg-dark-surface-tertiary" />
+        <div className="h-8 w-64 animate-pulse rounded bg-surface-tertiary" />
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-48 animate-pulse rounded-xl bg-surface-secondary dark:bg-dark-surface-secondary" />
-          <div className="h-48 animate-pulse rounded-xl bg-surface-secondary dark:bg-dark-surface-secondary" />
+          <div className="h-48 animate-pulse rounded-xl bg-surface-secondary" />
+          <div className="h-48 animate-pulse rounded-xl bg-surface-secondary" />
         </div>
       </div>
     );
@@ -132,16 +132,16 @@ export default function IncidentDetailPage() {
   if (notFound) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+        <div className="flex items-center gap-2 text-sm text-text-secondary">
           <Link href="/admin/launch/incidents" className="hover:text-primary-600 dark:hover:text-primary-400">
             <ArrowLeft className="mr-1 inline h-4 w-4" />
             Back to Incidents
           </Link>
         </div>
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <AlertTriangle className="h-12 w-12 text-amber-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Incident not found</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
+          <p className="mt-4 text-lg font-medium text-text-primary">Incident not found</p>
+          <p className="mt-1 text-sm text-text-secondary">
             The incident you are looking for does not exist or has been removed.
           </p>
           <Button onClick={() => router.push('/admin/launch/incidents')} className="mt-4">
@@ -155,16 +155,16 @@ export default function IncidentDetailPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+        <div className="flex items-center gap-2 text-sm text-text-secondary">
           <Link href="/admin/launch/incidents" className="hover:text-primary-600 dark:hover:text-primary-400">
             <ArrowLeft className="mr-1 inline h-4 w-4" />
             Back to Incidents
           </Link>
         </div>
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12 dark:bg-dark-surface dark:border-dark-border">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-12">
           <AlertTriangle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">Failed to load incident</p>
-          <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">{error.message}</p>
+          <p className="mt-4 text-lg font-medium text-text-primary">Failed to load incident</p>
+          <p className="mt-1 text-sm text-text-secondary">{error.message}</p>
           <Button onClick={fetchData} className="mt-4">Retry</Button>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default function IncidentDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+      <div className="flex items-center gap-2 text-sm text-text-secondary">
         <Link href="/admin/launch/incidents" className="inline-flex items-center hover:text-primary-600 dark:hover:text-primary-400">
           <ArrowLeft className="mr-1 h-4 w-4" />
           Back to Incidents
@@ -189,7 +189,7 @@ export default function IncidentDetailPage() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-dark-text-primary sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
             {incident.title}
           </h1>
           <div className="mt-2 flex items-center gap-2">
@@ -212,7 +212,7 @@ export default function IncidentDetailPage() {
             <CardTitle>Description</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-text-primary dark:text-dark-text-primary whitespace-pre-wrap">
+            <p className="text-sm text-text-primary whitespace-pre-wrap">
               {incident.description}
             </p>
           </CardContent>
@@ -232,10 +232,10 @@ export default function IncidentDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No impacted services listed</p>
+              <p className="text-sm text-text-secondary">No impacted services listed</p>
             )}
-            <div className="mt-4 text-sm text-text-secondary dark:text-dark-text-secondary">
-              Reported by: <span className="font-medium text-text-primary dark:text-dark-text-primary">{incident.reportedBy ?? 'System'}</span>
+            <div className="mt-4 text-sm text-text-secondary">
+              Reported by: <span className="font-medium text-text-primary">{incident.reportedBy ?? 'System'}</span>
             </div>
           </CardContent>
         </Card>
@@ -282,7 +282,7 @@ export default function IncidentDetailPage() {
         </CardHeader>
         <CardContent className="space-y-0">
           {sortedUpdates.length === 0 ? (
-            <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No updates yet</p>
+            <p className="text-sm text-text-secondary">No updates yet</p>
           ) : (
             <div className="relative space-y-0">
               {sortedUpdates.map((update, idx) => (
@@ -290,7 +290,7 @@ export default function IncidentDetailPage() {
                   <div className="flex flex-col items-center">
                     <div className="z-10 flex h-3 w-3 shrink-0 rounded-full bg-primary-500" />
                     {idx < sortedUpdates.length - 1 && (
-                      <div className="mt-0.5 h-full w-px bg-border dark:bg-dark-border" />
+                      <div className="mt-0.5 h-full w-px bg-border dark:bg-border" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -300,7 +300,7 @@ export default function IncidentDetailPage() {
                       </Badge>
                       <span className="text-xs text-text-tertiary">{formatDate(update.createdAt)}</span>
                     </div>
-                    <p className="mt-1 text-sm text-text-primary dark:text-dark-text-primary whitespace-pre-wrap">
+                    <p className="mt-1 text-sm text-text-primary whitespace-pre-wrap">
                       {update.message}
                     </p>
                   </div>

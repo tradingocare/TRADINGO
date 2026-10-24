@@ -178,7 +178,7 @@ export default function SellerQuoteDetail() {
                        ev.eventType === 'ACCEPTED' ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> :
                        ev.eventType === 'REJECTED' ? <XCircle className="h-3 w-3 text-red-400" /> :
                        ev.eventType === 'WITHDRAWN' ? <RotateCcw className="h-3 w-3 text-amber-400" /> :
-                       <Clock className="h-3 w-3 text-gray-400" />}
+                       <Clock className="h-3 w-3 text-text-tertiary" />}
                     </div>
                     <div className="flex-1">
                       <p className="text-xs font-medium text-text-secondary">{ev.eventType.replace(/_/g, ' ')}</p>

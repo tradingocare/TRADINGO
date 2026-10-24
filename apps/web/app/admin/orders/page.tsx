@@ -11,7 +11,7 @@ const formatINR = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 
 export default function AdminOrdersPage() {
-  const { data, isLoading, error } = useOrders();
+  const { data, isLoading, error } = useOrders({ role: 'admin', limit: 50 });
   const orders = data?.data ?? [];
 
   if (error) {
@@ -42,8 +42,8 @@ export default function AdminOrdersPage() {
       {orders.length === 0 ? (
         <EmptyState icon={ShoppingCart} title="No orders found" description="Orders from across the platform will appear here." />
       ) : (
-        <div className="rounded-xl border border-border bg-surface dark:bg-dark-surface dark:border-dark-border">
-          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary dark:border-dark-border dark:text-dark-text-secondary sm:grid">
+        <div className="rounded-xl border border-border bg-surface">
+          <div className="hidden grid-cols-12 gap-4 border-b border-border px-6 py-3 text-xs font-medium uppercase text-text-secondary sm:grid">
             <div className="col-span-2">Order ID</div>
             <div className="col-span-2">Product</div>
             <div className="col-span-2">Amount</div>
@@ -54,20 +54,20 @@ export default function AdminOrdersPage() {
           {orders.map((order: Order) => (
             <div
               key={order.id}
-              className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center dark:border-dark-border"
+              className="grid grid-cols-1 gap-3 border-b border-border px-6 py-4 last:border-0 sm:grid-cols-12 sm:items-center"
             >
               <div className="flex items-center gap-3 sm:col-span-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                   <ShoppingCart className="h-5 w-5" />
                 </div>
-                <p className="text-sm font-mono font-medium text-text-primary dark:text-dark-text-primary">{order.orderNumber}</p>
+                <p className="text-sm font-mono font-medium text-text-primary">{order.orderNumber}</p>
               </div>
-              <p className="text-sm text-text-primary dark:text-dark-text-primary sm:col-span-2">{order.productName}</p>
-              <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary sm:col-span-2">{formatINR(order.amount)}</p>
+              <p className="text-sm text-text-primary sm:col-span-2">{order.productName}</p>
+              <p className="text-sm font-medium text-text-primary sm:col-span-2">{formatINR(order.amount)}</p>
               <div className="sm:col-span-2">
                 <StatusBadge status={order.paymentStatus} />
               </div>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary sm:col-span-2">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+              <p className="text-sm text-text-secondary sm:col-span-2">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
               <div className="sm:col-span-2">
                 <StatusBadge status={order.status} />
               </div>

@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductClaimDto } from './dto/create-product-claim.dto';
 import { UpdateProductClaimDto } from './dto/update-product-claim.dto';
 import { Role } from '../../common/enums/role.enum';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { v4 as uuid } from 'uuid';
 
 function slugify(name: string): string {
@@ -14,7 +15,10 @@ function slugify(name: string): string {
 export class ProductClaimsService {
   private readonly logger = new Logger(ProductClaimsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
+  ) {}
 
   private async requireCompanyOwner(companyId: string, userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
@@ -183,11 +187,29 @@ export class ProductClaimsService {
 
     const slug = await this.generateUniqueSlug(claim.name, company.slug);
 
+    // P0-2: claim-approved products must carry canonical lineage. Resolve
+    // deterministically from the claim name (no confirmed triple on this
+    // path — the claim's productMaster may be legacy-only).
+    const canonical = await this.taxonomyPersistence.resolvePersistableTaxonomy({
+      name: claim.name,
+      description: claim.shortDescription ?? claim.description ?? null,
+      context: 'product',
+      expectedType: 'Product',
+    });
+    let legacyCategoryId = claim.productMaster?.categoryId ?? null;
+    if (canonical && !legacyCategoryId) {
+      legacyCategoryId =
+        (await this.taxonomyPersistence.bridgeLegacyCategoryId(canonical.categoryId)) ?? null;
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
           companyId: claim.companyId,
-          categoryId: claim.productMaster?.categoryId,
+          categoryId: legacyCategoryId,
+          catalogItemId: canonical?.catalogItemId ?? null,
+          catalogCategoryId: canonical?.categoryId ?? null,
+          catalogSubcategoryId: canonical?.subcategoryId ?? null,
           productMasterId: claim.productMasterId,
           name: claim.name,
           slug,

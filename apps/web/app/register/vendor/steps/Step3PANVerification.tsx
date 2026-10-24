@@ -5,15 +5,17 @@ import apiClient from '@/lib/api/client'
 import type { PANForm } from '@/types/vendor-registration'
 import StepCard from '../components/StepCard'
 import FormField from '../components/FormField'
+import { RefinedSection } from '@/components/registration/RefinedSection'
+import { maskPanDisplay } from '@/components/registration/masking'
 
-const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-white text-sm placeholder-white/25 focus:outline-none transition-all duration-200'
+const INPUT_CLASS = 'w-full px-4 py-3 rounded-xl text-text-primary text-sm placeholder:text-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:border-[var(--input-focus-border)] transition-all duration-200'
 const inputStyle = (hasError: boolean) => ({
   backgroundColor: 'var(--bg-elevated)',
   border: hasError ? '1px solid rgba(239,68,68,0.5)' : '1px solid var(--border-color)',
-  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : 'none',
+  boxShadow: hasError ? '0 0 0 3px rgba(239,68,68,0.1)' : undefined,
 })
 const btnPrimary = { background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', color: '#fff', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)' }
-const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'rgba(255,255,255,0.8)' }
+const btnSecondary = { backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }
 
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/
 
@@ -63,10 +65,11 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
         setPanVerified(false)
         setVerifyError(result?.message || 'PAN could not be verified')
       }
-    } catch (err: any) {
-      setPanVerified(false)
-      const status = err?.response?.status
-      if (status === 429) setVerifyError('Too many attempts. Please try again later.')
+      } catch (err: any) {
+        setPanVerified(false)
+        const status = err?.response?.status
+        if (status === 401) setVerifyError('Session expired. Please sign in again and retry.')
+        else if (status === 429) setVerifyError('Too many attempts. Please try again later.')
       else if (status === 504 || err?.code === 'ECONNABORTED') setVerifyError('Verification provider timed out. Please try again.')
       else if (status >= 500) setVerifyError('Verification provider unavailable. Please try again.')
       else if (status === 400) setVerifyError(err?.response?.data?.message?.[0] || 'Invalid PAN format')
@@ -113,19 +116,58 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
   maxDob.setFullYear(maxDob.getFullYear() - 18)
   const maxDate = maxDob.toISOString().split('T')[0]
 
+  // Masked display once verified: the full PAN is never shown again on this
+  // surface (shoulder-surfing / shared-screen safety). Editing re-opens
+  // verification via the existing reset path.
+  const maskedPan = maskPanDisplay(panNumber)
+  const clearVerification = () => {
+    setPanVerified(false)
+    setPanHolderName('')
+    setVerifyError('')
+  }
+
   return (
     <StepCard icon={<span className="text-lg">🪪</span>} title="PAN Verification" subtitle="Your identity for TRADINGO login">
+      <RefinedSection
+        title="PAN / KYC Identity"
+        subtitle="One PAN, one lifetime TRADINGO identity"
+        helperText="PAN is verified against the official registry and anchors your lifetime identity. It is stored only on your canonical company record — never in browser drafts."
+        requiredDone={[panNumber, panHolderName].filter(v => String(v ?? '').trim() !== '').length}
+        requiredTotal={2}
+        validationSummary={Object.values(errors).filter((m): m is string => !!m)}
+      >
       <div className="space-y-5">
-        <div className="p-3 rounded-xl text-white/50 text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
+        <div className="p-3 rounded-xl text-text-secondary text-xs" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
           PAN Number is your TRADINGO Login ID. Please enter it carefully.
         </div>
 
         <FormField label="PAN Number" required error={touched.panNumber ? errors.panNumber : undefined}>
+          {panVerified ? (
+            <div
+              className="flex gap-2 items-center"
+              role="status"
+              aria-label={`PAN verified ending in ${panNumber.slice(-4)}`}
+            >
+              <div
+                className="flex-1 px-4 py-3.5 rounded-xl text-text-primary text-sm font-semibold"
+                style={{ border: '1px solid rgba(74,222,128,0.4)', backgroundColor: 'var(--bg-elevated)', letterSpacing: '0.1em' }}
+              >
+                {maskedPan}
+              </div>
+              <button
+                type="button"
+                onClick={clearVerification}
+                className="px-4 py-3.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:opacity-90"
+                style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+              >
+                Change
+              </button>
+            </div>
+          ) : (
           <div className="flex gap-2">
             <input className={INPUT_CLASS} style={{ ...inputStyle(!!errors.panNumber && touched.panNumber), flex: 1, letterSpacing: '0.1em', textTransform: 'uppercase' }}
               placeholder="ABCDE1234F" maxLength={10} value={panNumber}
-              onChange={e => handlePanChange(e.target.value)} onBlur={() => setTouched(p => ({ ...p, panNumber: true }))}
-              disabled={panVerified} />
+              onChange={e => handlePanChange(e.target.value)} onBlur={() => setTouched(p => ({ ...p, panNumber: true }))} />
             {!panVerified && isPanValid && (
               <button type="button" onClick={verifyPan} disabled={verifying}
                 className="px-4 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:opacity-90 disabled:opacity-50"
@@ -134,6 +176,7 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
               </button>
             )}
           </div>
+          )}
           {panVerified && <p className="text-green-400 text-xs flex items-center gap-1 mt-1">✓ PAN Verified</p>}
           {!panVerified && verifyError && <p className="text-red-400 text-xs mt-1">{verifyError}</p>}
         </FormField>
@@ -157,18 +200,18 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
               {panCardPreview ? (
                 <img src={panCardPreview} alt="PAN preview" className="w-16 h-16 rounded-lg object-cover" />
               ) : (
-                <div className="w-16 h-16 rounded-lg flex items-center justify-center text-white/40 text-xs" style={{ backgroundColor: 'var(--bg-elevated)' }}>PDF</div>
+                <div className="w-16 h-16 rounded-lg flex items-center justify-center text-text-tertiary text-xs" style={{ backgroundColor: 'var(--bg-elevated)' }}>PDF</div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-white text-xs truncate">{panCardImage.name}</p>
-                <p className="text-white/30 text-[10px]">{(panCardImage.size / 1024 / 1024).toFixed(1)} MB</p>
+                <p className="text-text-primary text-xs truncate">{panCardImage.name}</p>
+                <p className="text-text-tertiary text-[10px]">{(panCardImage.size / 1024 / 1024).toFixed(1)} MB</p>
               </div>
               <button type="button" onClick={() => { setPanCardImage(null); setPanCardPreview(null); if (fileRef.current) fileRef.current.value = '' }}
-                className="text-white/40 text-xs hover:text-red-400">Remove</button>
+                className="text-text-tertiary text-xs hover:text-red-400">Remove</button>
             </div>
           ) : (
             <button type="button" onClick={() => fileRef.current?.click()}
-              className="w-full py-6 rounded-xl border border-dashed text-white/30 text-xs hover:text-white/50 transition-colors"
+              className="w-full py-6 rounded-xl border border-dashed text-text-tertiary text-xs hover:text-text-secondary transition-colors"
               style={{ borderColor: 'var(--border-color)' }}>
               Click to upload PAN card image
             </button>
@@ -176,11 +219,11 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
         </FormField>
 
         <div className="p-3 rounded-xl space-y-1" style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-          <p className="text-white/60 text-xs font-semibold">Why we need PAN:</p>
-          <p className="text-white/40 text-[10px]">✓ Login ID</p>
-          <p className="text-white/40 text-[10px]">✓ GST Invoice generation</p>
-          <p className="text-white/40 text-[10px]">✓ Mandatory for transactions above ₹2L</p>
-          <p className="text-white/40 text-[10px]">✓ Helps buyers trust</p>
+          <p className="text-text-secondary text-xs font-semibold">Why we need PAN:</p>
+          <p className="text-text-tertiary text-[10px]">✓ Login ID</p>
+          <p className="text-text-tertiary text-[10px]">✓ GST Invoice generation</p>
+          <p className="text-text-tertiary text-[10px]">✓ Mandatory for transactions above ₹2L</p>
+          <p className="text-text-tertiary text-[10px]">✓ Helps buyers trust</p>
         </div>
 
         <div className="flex gap-3">
@@ -188,6 +231,7 @@ export default function Step3PANVerification({ data, businessType, onNext, onBac
           <button onClick={handleNext} className="flex-1 py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]" style={btnPrimary}>Continue →</button>
         </div>
       </div>
+      </RefinedSection>
     </StepCard>
   )
 }

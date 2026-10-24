@@ -63,6 +63,11 @@ class DraftPriceSlabDto {
 export class UpdateDraftDto {
   @IsOptional() @IsUUID() categoryId?: string;
   @IsOptional() @IsUUID() subcategoryId?: string;
+  // P0-2 canonical triple (confirmed via Tick/Change). Canonical IDs are
+  // cuids — IsString, not IsUUID. Validated server-side before persistence.
+  @IsOptional() @IsString() catalogCategoryId?: string;
+  @IsOptional() @IsString() catalogSubcategoryId?: string;
+  @IsOptional() @IsString() catalogItemId?: string;
   @IsOptional() @IsString() name?: string;
   @IsOptional() @IsString() shortDescription?: string;
   @IsOptional() @IsString() description?: string;

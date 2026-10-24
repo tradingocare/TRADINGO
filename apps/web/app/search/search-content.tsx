@@ -13,17 +13,28 @@ import {
   useAiSemanticSearch, useAiSearchIntent, useAiSimilarProducts,
   useAiSimilarSuppliers, useAiPersonalizedRanking,
   useAiBuyerRecommendations, useAiSellerRecommendations,
-  useAiSearchSummary, useAiSmartFilters, useAiCrossSellUpsell,
+  useAiSearchSummary, useAiSmartFilters, useAiCrossSellUpsell, useAiSearchSidebar,
 } from '@/hooks/use-ai-search'
-import ClaimYourGrowth from '@/components/sections/ClaimYourGrowth'
 
 export function SearchContent({ q }: { q: string }) {
   const [page, setPage] = useState(1)
   const [brandFilter, setBrandFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  // P0-3 Step 5: canonical taxonomy filter applied from the intent sidecar
+  // (AI Copilot → Apply to Search). Server-side validated on the backend.
+  const [taxonomyFilter, setTaxonomyFilter] = useState<{ catalogCategoryId?: string; catalogSubcategoryId?: string; catalogItemId?: string } | null>(null)
   const [aiSidebar, setAiSidebar] = useState(false)
   const { data: categoryTree } = useCategoryTree()
-  const { data, isLoading, error } = useEnrichedProductSearch({ q, brand: brandFilter || undefined, categoryId: categoryFilter || undefined, page, limit: 20 })
+  const { data, isLoading, error } = useEnrichedProductSearch({
+    q,
+    brand: brandFilter || undefined,
+    categoryId: categoryFilter || undefined,
+    catalogCategoryId: taxonomyFilter?.catalogCategoryId,
+    catalogSubcategoryId: taxonomyFilter?.catalogSubcategoryId,
+    catalogItemId: taxonomyFilter?.catalogItemId,
+    page,
+    limit: 20,
+  })
 
   const categoryOptions = useMemo(() => {
     if (!categoryTree) return []
@@ -43,6 +54,8 @@ export function SearchContent({ q }: { q: string }) {
   const searchSummary = useAiSearchSummary()
   const smartFilters = useAiSmartFilters()
   const crossSellUpsell = useAiCrossSellUpsell()
+  // P0-3 Step 10 (F-12): the AI Insights (sidebar) action, correctly wired
+  const aiSearchSidebar = useAiSearchSidebar()
 
   if (!q) {
     return (
@@ -62,7 +75,7 @@ export function SearchContent({ q }: { q: string }) {
     const shimmer = 'relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent'
     return (
       <div className="mx-auto max-w-7xl px-4 pt-24">
-        <div className={`h-10 w-96 rounded-2xl ${shimmer} bg-surface`} />
+        <div className={`h-10 w-full max-w-96 rounded-2xl ${shimmer} bg-surface`} />
         <div className={`mt-2 h-4 w-64 rounded-xl ${shimmer} bg-surface`} />
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -136,6 +149,18 @@ export function SearchContent({ q }: { q: string }) {
                 <X className="h-3 w-3" /> Clear
               </button>
             )}
+            {/* P0-3 Step 6: applied AI taxonomy filter — visible + removable (user control) */}
+            {taxonomyFilter && (
+              <button
+                onClick={() => { setTaxonomyFilter(null); setPage(1) }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-orange-300 bg-orange-500/15 border border-orange-400/30 hover:bg-orange-500/25 transition-colors"
+                title="AI-suggested canonical taxonomy filter — click to remove"
+              >
+                <Sparkles className="h-3 w-3" />
+                AI taxonomy
+                <X className="h-3 w-3" />
+              </button>
+            )}
             <span className="text-xs font-semibold text-text-tertiary ml-2">Category:</span>
             <div className="w-48">
               <select
@@ -190,6 +215,8 @@ export function SearchContent({ q }: { q: string }) {
                   onSearchSummary={(d) => searchSummary.mutateAsync(d)}
                   onSmartFilters={(d) => smartFilters.mutateAsync(d)}
                   onCrossSellUpsell={(d) => crossSellUpsell.mutateAsync(d)}
+                  onAiSearchSidebar={(d) => aiSearchSidebar.mutateAsync(d)}
+                  onApplyTaxonomy={(tax) => { setTaxonomyFilter({ catalogCategoryId: tax.categoryId ?? undefined, catalogSubcategoryId: tax.subcategoryId ?? undefined, catalogItemId: tax.catalogItemId ?? undefined }); setPage(1) }}
                 />
               </div>
             </div>
@@ -202,7 +229,7 @@ export function SearchContent({ q }: { q: string }) {
               </div>
               <h2 className="mt-4 text-xl font-bold text-text-primary">No results found for &ldquo;{q}&rdquo;</h2>
               <p className="mt-2 text-sm text-text-tertiary">Try adjusting your search terms or browse all products.</p>
-              <Link href="/trading">
+              <Link href="/product">
                   <span className="inline-block mt-6 px-5 py-2.5 rounded-xl text-xs font-bold text-text-secondary transition-all bg-surface border-border">
                   Browse All Products
                 </span>
@@ -240,8 +267,6 @@ export function SearchContent({ q }: { q: string }) {
           </div>
         </div>
       </section>
-
-      <ClaimYourGrowth />
     </>
   )
 }

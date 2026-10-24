@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -29,8 +29,8 @@ export function CTABlock({
        className={cn(
          'py-20',
          variant === 'accent' && 'bg-gradient-to-r from-accent-600 to-accent-700 dark:from-accent-800 dark:to-accent-900',
-         variant === 'default' && 'bg-surface-secondary dark:bg-dark-surface-secondary',
-         variant === 'simple' && 'bg-surface dark:bg-dark-surface',
+         variant === 'default' && 'bg-surface-secondary bg-surface-secondary',
+         variant === 'simple' && 'bg-surface bg-surface',
          className,
        )}
      >
@@ -44,7 +44,7 @@ export function CTABlock({
            <h2
              className={cn(
                'text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl',
-               variant === 'accent' ? 'text-gray-900' : 'text-text-primary dark:text-dark-text-primary',
+               variant === 'accent' ? 'text-gray-900' : 'text-text-primary text-text-primary',
              )}
            >
              {title}
@@ -53,7 +53,7 @@ export function CTABlock({
              <p
                className={cn(
                  'mx-auto mt-4 max-w-2xl text-lg',
-                 variant === 'accent' ? 'text-accent-100' : 'text-text-secondary dark:text-dark-text-secondary',
+                 variant === 'accent' ? 'text-accent-100' : 'text-text-secondary text-text-secondary',
                )}
              >
                {subtitle}

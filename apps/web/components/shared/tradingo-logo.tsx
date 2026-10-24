@@ -1,4 +1,4 @@
-import Image from 'next/image';
+﻿import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface TradingoLogoProps {
@@ -34,7 +34,7 @@ export function TradingoLogo({ className, height = 40, showText = false, priorit
           'text-xl font-bold tracking-tight',
           light
             ? 'text-gray-900'
-            : 'text-text-primary dark:text-dark-text-primary'
+            : 'text-text-primary text-text-primary'
         )}>
           TRADINGO
         </span>

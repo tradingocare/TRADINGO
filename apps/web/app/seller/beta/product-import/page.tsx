@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -47,7 +47,7 @@ export default function ProductImportPage() {
         />
         <Card>
           <CardContent className="flex items-center justify-center py-16">
-            <div className="flex items-center gap-3 text-text-secondary dark:text-dark-text-secondary">
+            <div className="flex items-center gap-3 text-text-secondary">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
               Loading product import guide...
             </div>
@@ -66,7 +66,7 @@ export default function ProductImportPage() {
         />
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="mb-4 text-lg font-medium text-text-primary dark:text-dark-text-primary">{error}</p>
+            <p className="mb-4 text-lg font-medium text-text-primary">{error}</p>
             <Button onClick={fetchGuide}>Retry</Button>
           </CardContent>
         </Card>
@@ -111,12 +111,12 @@ export default function ProductImportPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6 flex items-center justify-between rounded-lg bg-surface-secondary p-4 dark:bg-dark-surface-secondary">
+          <div className="mb-6 flex items-center justify-between rounded-lg bg-surface-secondary p-4">
             <div>
-              <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+              <p className="text-sm font-medium text-text-primary">
                 Current Status
               </p>
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary capitalize">{status}</p>
+              <p className="text-sm text-text-secondary capitalize">{status}</p>
             </div>
             <Badge variant={allDone ? 'success' : 'default'}>
               {completedCount} of {totalCount} steps done
@@ -130,7 +130,7 @@ export default function ProductImportPage() {
                 className={`flex items-center gap-4 rounded-lg border p-4 ${
                   step.completed
                     ? 'border-accent-500/30 bg-accent-50/30 dark:border-accent-500/20 dark:bg-accent-900/10'
-                    : 'border-border dark:border-dark-border'
+                    : 'border-border border-border'
                 }`}
               >
                 <div className="flex shrink-0 items-start pt-0.5">
@@ -145,7 +145,7 @@ export default function ProductImportPage() {
                     className={`text-sm font-medium ${
                       step.completed
                         ? 'text-accent-700 dark:text-accent-400'
-                        : 'text-text-primary dark:text-dark-text-primary'
+                        : 'text-text-primary text-text-primary'
                     }`}
                   >
                     {step.label}
@@ -169,7 +169,7 @@ export default function ProductImportPage() {
               <p className="font-medium text-accent-700 dark:text-accent-400">
                 All import steps completed!
               </p>
-              <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
+              <p className="mt-1 text-sm text-text-secondary">
                 Your products are ready for the marketplace.
               </p>
             </div>

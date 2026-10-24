@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Save, CheckCircle2, Clock } from 'lucide-react';
@@ -70,7 +70,7 @@ export function FormWizard({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="rounded-xl border border-border bg-surface p-6 shadow-sm dark:border-dark-border dark:bg-dark-surface">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 overflow-x-auto pb-2">
             {steps.map((step, index) => {
@@ -85,7 +85,7 @@ export function FormWizard({
                     <div
                       className={cn(
                         'h-px w-8 sm:w-12',
-                        isCompleted ? 'bg-accent-500' : 'bg-border dark:bg-dark-border',
+                        isCompleted ? 'bg-accent-500' : 'bg-border dark:bg-border',
                       )}
                     />
                   )}
@@ -105,7 +105,7 @@ export function FormWizard({
                         'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all',
                         isActive && 'border-accent-600 bg-accent-600 text-gray-900 shadow-md',
                           isCompleted && 'border-accent-500 bg-accent-500/10 text-accent-600 dark:text-accent-400',
-                        !isActive && !isCompleted && 'border-border bg-surface-secondary text-text-tertiary dark:border-dark-border dark:bg-dark-surface-secondary',
+                        !isActive && !isCompleted && 'border-border bg-surface-secondary text-text-tertiary border-border bg-surface-secondary',
                       )}
                     >
                       {isCompleted ? (
@@ -118,14 +118,14 @@ export function FormWizard({
                       <p
                         className={cn(
                           'text-sm font-medium leading-tight',
-                          isActive ? 'text-text-primary dark:text-dark-text-primary' : 'text-text-secondary dark:text-dark-text-secondary',
+                          isActive ? 'text-text-primary text-text-primary' : 'text-text-secondary text-text-secondary',
                         )}
                       >
                         {step.title}
                       </p>
                       {score !== undefined && (
                         <div className="mt-0.5 flex items-center gap-1.5">
-                          <div className="h-1 w-12 overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
+                          <div className="h-1 w-12 overflow-hidden rounded-full bg-surface-tertiary">
                             <div
                                className={cn(
                                  'h-full rounded-full transition-all',
@@ -154,7 +154,7 @@ export function FormWizard({
 
       <div className="min-h-0">{children}</div>
 
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm dark:border-dark-border dark:bg-dark-surface">
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
         <div className="flex items-center gap-2">
           {saveIndicator && (
             <div className={cn('flex sm:hidden items-center gap-1.5 text-xs', saveIndicator.className)}>

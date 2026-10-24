@@ -115,9 +115,10 @@ export class MarketplaceIntelligenceService {
           where: { product: { companyId: { in: supplierIds }, status: 'ACTIVE', deletedAt: null }, isActive: true },
           select: { price: true, product: { select: { companyId: true } } },
         }),
+        // P0-3: only APPROVED reviews may feed supplier scoring (avg + count).
         this.prisma.productReview.groupBy({
           by: ['companyId'],
-          where: { companyId: { in: supplierIds } },
+          where: { companyId: { in: supplierIds }, status: 'APPROVED' },
           _avg: { rating: true },
           _count: { id: true },
         }),

@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { PrismaService } from '../../prisma/prisma.service';
 import { RfqService } from '../rfq/rfq.service';
 import { CatalogAdapterService } from '../catalog-adapter/catalog-adapter.service';
+import { CatalogClassifyService } from '../marketplace-catalog-bridge/catalog-classify.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { OrderNumberService } from '../order/order-number.service';
 import { PaginationDto, buildPaginationQuery, buildPaginatedResult } from '../../common/dto/pagination.dto';
 
@@ -12,6 +14,8 @@ export class SmartRfqService {
     private readonly prisma: PrismaService,
     private readonly rfqService: RfqService,
     private readonly catalogAdapter: CatalogAdapterService,
+    private readonly catalogClassify: CatalogClassifyService,
+    private readonly catalogTaxonomy: CatalogTaxonomyPersistenceService,
     private readonly orderNumberService: OrderNumberService,
   ) {}
 
@@ -32,7 +36,7 @@ export class SmartRfqService {
     categoryId?: string; catalogCategoryId?: string; industryId?: string;
     locations?: { city: string; state?: string; country?: string; pincode?: string; isPrimary?: boolean }[];
     attachments?: { type: string; url: string; originalName?: string; mimeType?: string; fileSize?: number }[];
-    productItems?: { productId?: string; categoryId?: string; productName: string; description?: string; quantity?: number; unit?: string; targetPrice?: number; isService?: boolean }[];
+    productItems?: { productId?: string; categoryId?: string; catalogCategoryId?: string; catalogSubcategoryId?: string; catalogItemId?: string; productName: string; description?: string; quantity?: number; unit?: string; targetPrice?: number; isService?: boolean }[];
   }) {
     const company = await this.getUserCompany(userId);
 
@@ -70,7 +74,48 @@ export class SmartRfqService {
           ? { create: data.attachments.map((a) => ({ type: a.type as any, url: a.url, originalName: a.originalName, mimeType: a.mimeType, fileSize: a.fileSize })) }
           : undefined,
         productItems: data.productItems?.length
-          ? { create: data.productItems.map((p) => ({ categoryId: p.categoryId, productName: p.productName, description: p.description, quantity: p.quantity, unit: p.unit, targetPrice: p.targetPrice, isService: p.isService ?? false })) }
+          ? { create: await Promise.all(data.productItems.map(async (p) => {
+              // P0-3 Step 3: the confirmed canonical triple is server-side
+              // validated before persistence — never taken on faith from
+              // the client, never fabricated. Invalid/stale triples are
+              // dropped (warn) and the item falls through to the
+              // deterministic auto-classify below.
+              let catalogCategoryId: string | null = p.catalogCategoryId ?? null;
+              let catalogSubcategoryId: string | null = p.catalogSubcategoryId ?? null;
+              let catalogItemId: string | null = p.catalogItemId ?? null;
+              if (catalogCategoryId || catalogSubcategoryId || catalogItemId) {
+                const validated = await this.validateItemTriple({
+                  categoryId: catalogCategoryId,
+                  subcategoryId: catalogSubcategoryId,
+                  catalogItemId: catalogItemId,
+                  isService: p.isService ?? false,
+                });
+                if (validated) {
+                  catalogCategoryId = validated.categoryId;
+                  catalogSubcategoryId = validated.subcategoryId;
+                  catalogItemId = validated.catalogItemId;
+                } else {
+                  this.logger.warn(
+                    `RFQ item "${p.productName}" carried an invalid canonical triple — dropping it (deterministic auto-classify will retry)`,
+                  );
+                  catalogCategoryId = null;
+                  catalogSubcategoryId = null;
+                  catalogItemId = null;
+                }
+              }
+              return {
+                categoryId: p.categoryId,
+                catalogCategoryId,
+                catalogSubcategoryId,
+                catalogItemId,
+                productName: p.productName,
+                description: p.description,
+                quantity: p.quantity,
+                unit: p.unit,
+                targetPrice: p.targetPrice,
+                isService: p.isService ?? false,
+              };
+            })) }
           : undefined,
       },
       include: { locations: true, attachments: true, productItems: true },
@@ -83,7 +128,80 @@ export class SmartRfqService {
       });
     }
 
-    return rfq;
+    // Phase 13 (FD-TAX-03): automatic taxonomy resolution for RFQ items.
+    // Deterministic tiers only (no LLM per item → no credit cost, no new
+    // failure modes). Each item resolves independently; any failure leaves
+    // that item exactly as submitted. Never blocks RFQ creation.
+    if (rfq.productItems?.length) {
+      await this.autoClassifyItems(rfq.productItems, company.id, userId);
+    }
+
+    // P0-3 Step 3: the create response must reflect the persisted canonical
+    // taxonomy (submitted-confirmed triples above + deterministic
+    // auto-classify just applied). The nested-create return predates those
+    // writes, so re-read through the canonical findById projection.
+    return this.findById(userId, rfq.id);
+  }
+
+  /**
+   * P0-3 Step 3: server-side validation of a submitted item triple via the
+   * canonical persistence service (existence + parent-chain + type). Reuses
+   * validateConfirmedTriple — no duplicated validation logic.
+   */
+  private async validateItemTriple(triple: {
+    categoryId?: string | null;
+    subcategoryId?: string | null;
+    catalogItemId?: string | null;
+    isService: boolean;
+  }): Promise<{ categoryId: string; subcategoryId: string | null; catalogItemId: string | null } | null> {
+    try {
+      return await this.catalogTaxonomy.validateConfirmedTriple({
+        categoryId: triple.categoryId ?? null,
+        subcategoryId: triple.subcategoryId ?? null,
+        catalogItemId: triple.catalogItemId ?? null,
+        expectedType: triple.isService ? 'Service' : 'Product',
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Item triple validation error: ${err instanceof Error ? err.message : String(err)} — treating as invalid`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Best-effort canonical linkage for RFQ product items lacking it.
+   * Only fills NULL catalog fields; caller-provided IDs are never
+   * overwritten. Every item is isolated in try/catch.
+   */
+  private async autoClassifyItems(
+    items: { id: string; productName: string; description?: string | null; catalogItemId?: string | null }[],
+    companyId: string,
+    userId: string,
+  ): Promise<void> {
+    for (const item of items) {
+      if (!item.productName || item.catalogItemId) continue;
+      try {
+        const result = await this.catalogClassify.classify(
+          { name: item.productName, description: item.description ?? undefined },
+          companyId,
+          userId,
+          { aiTier: false },
+        );
+        if ((result.matchType === 'exact' || result.matchType === 'synonym') && result.catalogItemId) {
+          await this.prisma.rfqProductItem.update({
+            where: { id: item.id },
+            data: {
+              catalogCategoryId: result.categoryId,
+              catalogSubcategoryId: result.subcategoryId,
+              catalogItemId: result.catalogItemId,
+            },
+          });
+        }
+      } catch (err) {
+        this.logger.warn(`RFQ item auto-classify skipped for item ${item.id}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
   }
 
   async duplicate(userId: string, rfqId: string) {
@@ -120,11 +238,57 @@ export class SmartRfqService {
           ? { create: original.locations.map((l) => ({ city: l.city, state: l.state, country: l.country, pincode: l.pincode, isPrimary: l.isPrimary })) }
           : undefined,
         productItems: original.productItems?.length
-          ? { create: original.productItems.map((p) => ({ categoryId: p.categoryId, productName: p.productName, description: p.description, quantity: p.quantity, unit: p.unit, targetPrice: p.targetPrice, isService: p.isService })) }
+          ? { create: await Promise.all(original.productItems.map(async (p) => {
+              // P0-3 Step 3: duplicate preserves the canonical triple — but
+              // never blindly: stale/invalid triples are re-validated against
+              // the live catalog and dropped when unverifiable (the
+              // deterministic auto-classify below can then re-resolve).
+              let catalogCategoryId: string | null = p.catalogCategoryId;
+              let catalogSubcategoryId: string | null = p.catalogSubcategoryId;
+              let catalogItemId: string | null = p.catalogItemId;
+              if (catalogCategoryId || catalogSubcategoryId || catalogItemId) {
+                const validated = await this.validateItemTriple({
+                  categoryId: catalogCategoryId,
+                  subcategoryId: catalogSubcategoryId,
+                  catalogItemId: catalogItemId,
+                  isService: p.isService ?? false,
+                });
+                if (validated) {
+                  catalogCategoryId = validated.categoryId;
+                  catalogSubcategoryId = validated.subcategoryId;
+                  catalogItemId = validated.catalogItemId;
+                } else {
+                  this.logger.warn(
+                    `Duplicating item "${p.productName}" with a stale/invalid canonical triple — dropping it (auto-classify will retry)`,
+                  );
+                  catalogCategoryId = null;
+                  catalogSubcategoryId = null;
+                  catalogItemId = null;
+                }
+              }
+              return {
+                categoryId: p.categoryId,
+                catalogCategoryId,
+                catalogSubcategoryId,
+                catalogItemId,
+                productName: p.productName,
+                description: p.description,
+                quantity: p.quantity,
+                unit: p.unit,
+                targetPrice: p.targetPrice,
+                isService: p.isService,
+              };
+            })) }
           : undefined,
       },
       include: { locations: true, productItems: true },
     });
+
+    // P0-3 Step 3: keep the duplicate's deterministic auto-classify parity
+    // with create (items whose triple was dropped as stale get re-resolved).
+    if (duplicate.productItems?.length) {
+      await this.autoClassifyItems(duplicate.productItems, company.id, userId);
+    }
 
     return duplicate;
   }

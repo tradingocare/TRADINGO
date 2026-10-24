@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!category) return { title: 'Category Not Found' };
 
   return {
-    title: `${category.title} Services | TradeServ by TRADINGO`,
+    title: `${category.title} Services | TradeServ`,
     description: category.detailedDescription.slice(0, 160),
     keywords: category.keywords.join(', '),
     openGraph: {

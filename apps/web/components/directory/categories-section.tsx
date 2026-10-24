@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Boxes, ChevronRight, Flame, Search, Sparkles } from 'lucide-react'
 import { getCategories, getCategoryTree } from '@/lib/api/categories'
-import { getDiscoveryFeed } from '@/lib/api/discovery'
+import { useSharedDiscoveryFeed } from '@/hooks/use-discovery'
 import { useCategoryTree } from '@/hooks/use-categories'
 import { SectionShell, DirHeader, SectionError, EmptyNote } from './primitives'
 import { cn } from '@/lib/utils'
@@ -24,11 +24,10 @@ export function CategoriesSection() {
   const [query, setQuery] = useState('')
 
   const categoryTree = useCategoryTree()
-  const discover = useQuery({
-    queryKey: ['directory-discover'],
-    queryFn: () => getDiscoveryFeed(1, 72),
-    staleTime: 120_000,
-  })
+  // G4-2: shared with TradingDiscoveryClient's trading-discover (same
+  // GET /discover?page=1 payload, clamped to 50 by getDiscoveryFeed).
+  // Popular filters the shared items locally; no second request.
+  const discover = useSharedDiscoveryFeed()
 
   const allCategories = useInfiniteQuery({
     queryKey: ['directory-all-categories', query],
@@ -84,7 +83,7 @@ export function CategoriesSection() {
         <EmptyNote
           icon={<Boxes className="h-6 w-6" />}
           text={query ? `No categories match "${query}".` : 'No categories yet.'}
-          actionHref="/register"
+          actionHref="/golive"
           actionLabel="List a Category"
         />
       )

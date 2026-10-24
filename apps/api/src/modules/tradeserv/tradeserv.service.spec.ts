@@ -7,6 +7,7 @@ import { NotificationService } from '../notification/notification.service';
 import { RazorpayService } from '../payment/gateways/razorpay.service';
 import { GocashIntegrationService } from '../gocash-integration/gocash-integration.service';
 import { BookingFinancialOrchestratorService } from './booking-financial-orchestrator.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { createMockPrisma } from '../../common/test/test-utils';
 
 describe('TradeservService', () => {
@@ -91,6 +92,19 @@ describe('TradeservService', () => {
         { provide: RazorpayService, useValue: { verifyPaymentSignature: jest.fn().mockReturnValue(true) } },
         { provide: GocashIntegrationService, useValue: { awardBookingCompleted: jest.fn().mockResolvedValue(undefined), awardReviewSubmitted: jest.fn().mockResolvedValue(undefined), awardProfessionalSignup: jest.fn().mockResolvedValue(undefined) } },
         { provide: BookingFinancialOrchestratorService, useValue: { processPaymentVerified: jest.fn().mockResolvedValue(undefined), processBookingCompleted: jest.fn().mockResolvedValue(undefined) } },
+        // P0-2: deterministic no-op taxonomy resolution for legacy-flow tests.
+        {
+          provide: CatalogTaxonomyPersistenceService,
+          useValue: {
+            resolvePersistableTaxonomy: jest.fn().mockResolvedValue(null),
+            validateConfirmedTriple: jest.fn().mockResolvedValue(null),
+            bridgeLegacyCategoryId: jest.fn().mockResolvedValue(null),
+            tripleForCatalogItem: jest.fn().mockResolvedValue(null),
+            // P1 O-1/O-5 mock remedy: expose the real helper (prototype
+            // delegation — zero duplication, always contract-faithful).
+            applyCanonicalTriple: jest.fn(CatalogTaxonomyPersistenceService.prototype.applyCanonicalTriple),
+          },
+        },
       ],
     }).compile();
 
@@ -115,6 +129,25 @@ describe('TradeservService', () => {
       prisma.company.findUnique.mockResolvedValue(null);
       await expect(service.getProfessionalBySlug('nonexistent')).rejects.toThrow(NotFoundException);
     });
+
+    // C-01 P1 P1-1: public detail is APPROVED-only — non-approved professionals
+    // (PENDING_REVIEW/REJECTED) must 404 on direct URL, never render.
+    it('P1-1: should throw NotFoundException for PENDING_REVIEW professional (direct-URL gate)', async () => {
+      prisma.company.findUnique.mockResolvedValue({ ...mockCompany, professionalStatus: 'PENDING_REVIEW' });
+      await expect(service.getProfessionalBySlug('pending-professional')).rejects.toThrow(NotFoundException);
+    });
+
+    it('P1-1: should throw NotFoundException for REJECTED professional (direct-URL gate)', async () => {
+      prisma.company.findUnique.mockResolvedValue({ ...mockCompany, professionalStatus: 'REJECTED' });
+      await expect(service.getProfessionalBySlug('rejected-professional')).rejects.toThrow(NotFoundException);
+    });
+
+    it('P1-1: APPROVED professional remains publicly viewable (gate does not over-block)', async () => {
+      prisma.company.findUnique.mockResolvedValue({ ...mockCompany, professionalStatus: 'APPROVED' });
+      const result = await service.getProfessionalBySlug('test-professional');
+      expect(result).toBeDefined();
+      expect(result.professionalStatus).toBe('APPROVED');
+    });
   });
 
   describe('getProfessionalSummary', () => {
@@ -131,6 +164,25 @@ describe('TradeservService', () => {
     it('should throw NotFoundException for missing professional', async () => {
       prisma.company.findUnique.mockResolvedValue(null);
       await expect(service.getProfessionalSummary('nonexistent')).rejects.toThrow(NotFoundException);
+    });
+
+    // C-01 P1 P1-1: summary parity with the detail gate. The lookup filters by
+    // professionalStatus in the where clause — the mock mirrors real DB
+    // filtering (a PENDING row does not match an APPROVED-only lookup).
+    it('P1-1: should throw NotFoundException for PENDING_REVIEW professional (summary gate)', async () => {
+      prisma.company.findUnique.mockImplementation(async ({ where }: any) =>
+        where?.professionalStatus === 'APPROVED' ? null : { ...mockCompany, professionalStatus: 'PENDING_REVIEW' },
+      );
+      await expect(service.getProfessionalSummary('pending-professional')).rejects.toThrow(NotFoundException);
+    });
+
+    it('P1-1: APPROVED professional summary remains publicly viewable', async () => {
+      prisma.company.findUnique.mockResolvedValue({ ...mockCompany, professionalStatus: 'APPROVED' });
+      prisma.professionalReview.aggregate.mockResolvedValue({ _avg: { rating: 4.5 } });
+      prisma.professionalLanguage.findMany.mockResolvedValue([{ language: 'English' }]);
+      const result = await service.getProfessionalSummary('test-professional');
+      expect(result).toBeDefined();
+      expect(result.averageRating).toBe(4.5);
     });
   });
 
@@ -149,8 +201,10 @@ describe('TradeservService', () => {
       prisma.professionalService.create.mockResolvedValue({ id: 'svc-new', ...createDto, companyId: 'company-1', sortOrder: 2, createdAt: new Date(), updatedAt: new Date() });
       const result = await service.addService('company-1', createDto);
       expect(result).toBeDefined();
+      // P0-2: unresolvable input keeps zero-loss semantics — canonical lineage
+      // persists as an explicit all-null triple (never fabricated), raw fields unchanged.
       expect(prisma.professionalService.create).toHaveBeenCalledWith({
-        data: { ...createDto, companyId: 'company-1' },
+        data: { ...createDto, catalogItemId: null, catalogCategoryId: null, catalogSubcategoryId: null, companyId: 'company-1' },
       });
     });
   });

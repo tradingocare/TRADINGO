@@ -6,8 +6,7 @@ test.describe('Accessibility', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
-    await page.goto('/buyer/near-me');
-    await page.waitForLoadState('load');
+    await page.goto('/buyer/near-me', { waitUntil: 'domcontentloaded' });
 
     const h1 = page.locator('h1').first();
     await expect(h1).toBeVisible({ timeout: 10000 });
@@ -19,8 +18,7 @@ test.describe('Accessibility', () => {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
-    await page.goto('/buyer/near-me');
-    await page.waitForLoadState('load');
+    await page.goto('/buyer/near-me', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
 
     const mapRegion = page.locator('[aria-label="Product discovery map"]').first();
@@ -32,8 +30,7 @@ test.describe('Accessibility', () => {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
-    await page.goto('/buyer/near-me');
-    await page.waitForLoadState('load');
+    await page.goto('/buyer/near-me', { waitUntil: 'domcontentloaded' });
 
     const locateBtn = page.locator('button[aria-label="Use current location"]').first();
     await expect(locateBtn).toBeVisible({ timeout: 10000 });
@@ -44,8 +41,7 @@ test.describe('Accessibility', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, SELLER_USER);
-    await page.goto('/seller/products');
-    await page.waitForLoadState('load');
+    await page.goto('/seller/products', { waitUntil: 'domcontentloaded' });
 
     const h1 = page.locator('h1').first();
     await expect(h1).toBeVisible({ timeout: 10000 });
@@ -56,8 +52,7 @@ test.describe('Accessibility', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, ADMIN_USER);
-    await page.goto('/admin/category-templates');
-    await page.waitForLoadState('load');
+    await page.goto('/admin/category-templates', { waitUntil: 'domcontentloaded' });
 
     const h1 = page.locator('h1').first();
     await expect(h1).toBeVisible({ timeout: 10000 });
@@ -68,8 +63,7 @@ test.describe('Accessibility', () => {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await loginAs(page, BUYER_USER);
-    await page.goto('/buyer/near-me?lat=19.076&lng=72.8777&radius=20000');
-    await page.waitForLoadState('load');
+    await page.goto('/buyer/near-me?lat=19.076&lng=72.8777&radius=20000', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
 
     const markers = page.locator('.leaflet-marker-icon');

@@ -251,7 +251,7 @@ function NearMeContent() {
         </div>
       </div>
 
-      <div className="sticky top-16 z-20 bg-surface-secondary dark:bg-dark-surface py-2">
+      <div className="sticky top-16 z-20 bg-surface-secondary bg-surface py-2">
         <RadiusSelector
           selected={radius}
           onChange={(r) => setRadius(r)}
@@ -299,14 +299,14 @@ function NearMeContent() {
           })}
         </div>
         {(showMap || mapFullscreen) && (
-          <div className={`${mapFullscreen ? 'fixed inset-0 z-50 p-4 bg-surface-secondary dark:bg-dark-surface' : 'w-1/2'} transition-all duration-300`}>
+          <div className={`${mapFullscreen ? 'fixed inset-0 z-50 p-4 bg-surface-secondary bg-surface' : 'w-1/2'} transition-all duration-300`}>
             {mapFullscreen && (
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Map View</h2>
+                <h2 className="text-lg font-semibold text-text-primary">Map View</h2>
                 <button
                   type="button"
                   onClick={() => setMapFullscreen(false)}
-                  className="rounded-lg p-2 hover:bg-surface dark:hover:bg-dark-surface transition-colors"
+                  className="rounded-lg p-2 hover:bg-surface transition-colors"
                   aria-label="Close fullscreen map"
                 >
                   <X className="h-5 w-5" />
@@ -357,7 +357,7 @@ function renderProductList(opts: {
 
   return (
     <>
-      <div className="text-sm text-text-tertiary dark:text-dark-text-tertiary mb-3">
+      <div className="text-sm text-text-tertiary mb-3">
         {meta && (
           <span>{meta.total} product{meta.total !== 1 ? 's' : ''} found within {radius} km</span>
         )}

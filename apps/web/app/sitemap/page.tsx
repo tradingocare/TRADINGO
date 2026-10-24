@@ -6,40 +6,26 @@ const sitemapSections = [
   {
     title: 'Marketplace',
     links: [
-      { label: 'Browse Products', href: '/trading' },
+      { label: 'Browse Products', href: '/product' },
       { label: 'Categories', href: '/categories' },
-      { label: 'Trading', href: '/trading' },
       { label: 'RFQ Marketplace', href: '/rfq' },
       { label: 'Compare Products', href: '/compare' },
       { label: 'Search', href: '/search' },
     ],
   },
+  // PHASE 2-A §9 — private dashboard routes removed (robots.txt disallows
+  // /seller/* and /buyer/*; a public HTML sitemap must not link them).
+  // Public links only below; layout/copy untouched.
   {
     title: 'For Sellers',
     links: [
-      { label: 'Seller Dashboard', href: '/seller/dashboard' },
-      { label: 'My Products', href: '/seller/products' },
-      { label: 'Orders', href: '/seller/orders' },
-      { label: 'Payments', href: '/seller/payments' },
-      { label: 'Analytics', href: '/seller/analytics' },
-      { label: 'Seller Plans', href: '/seller-plans' },
-    ],
-  },
-  {
-    title: 'For Buyers',
-    links: [
-      { label: 'Buyer Dashboard', href: '/buyer/dashboard' },
-      { label: 'My Orders', href: '/buyer/orders' },
-      { label: 'My Quotes', href: '/buyer/quotes' },
-      { label: 'My RFQs', href: '/buyer/rfqs' },
-      { label: 'Saved Products', href: '/buyer/saved-products' },
-      { label: 'Suppliers', href: '/buyer/suppliers' },
+      { label: 'Plans', href: '/plans' },
     ],
   },
   {
     title: 'TradeServ',
     links: [
-      { label: 'TradeServ Home', href: '/tradeserv' },
+      { label: 'Service Home', href: '/service' },
     ],
   },
   {
@@ -57,8 +43,6 @@ const sitemapSections = [
     title: 'Support',
     links: [
       { label: 'Contact Us', href: '/contact' },
-      { label: 'Seller Support', href: '/seller/support' },
-      { label: 'Buyer Support', href: '/buyer/support' },
       { label: 'Enterprise Plans', href: '/enterprise' },
     ],
   },

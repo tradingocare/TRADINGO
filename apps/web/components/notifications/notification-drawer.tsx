@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { Bell, CheckCheck, X, MailOpen, ShoppingCart, FileText, CreditCard, AlertTriangle, Award } from 'lucide-react';
@@ -40,11 +40,11 @@ export function NotificationDrawer({ notifications, unreadCount, onMarkRead, onM
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-full z-50 mt-2 w-96 rounded-xl border border-border bg-surface shadow-2xl animate-slide-down dark:bg-dark-surface dark:border-dark-border">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3 dark:border-dark-border">
+      <div className="absolute right-0 top-full z-50 mt-2 w-96 rounded-xl border border-border bg-surface shadow-2xl animate-slide-down">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-text-secondary" />
-              <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">Notifications</h3>
+              <h3 className="text-sm font-semibold text-text-primary">Notifications</h3>
               {unreadCount > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-600 px-1.5 text-[10px] font-medium text-gray-900">
                   {unreadCount}
@@ -60,7 +60,7 @@ export function NotificationDrawer({ notifications, unreadCount, onMarkRead, onM
                   <CheckCheck className="h-3.5 w-3.5" /> Mark all read
                 </button>
               )}
-              <button onClick={onClose} className="rounded-lg p-1 text-text-tertiary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary">
+              <button onClick={onClose} className="rounded-lg p-1 text-text-tertiary hover:bg-surface-secondary">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -70,33 +70,33 @@ export function NotificationDrawer({ notifications, unreadCount, onMarkRead, onM
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
               <Bell className="h-8 w-8 text-text-tertiary" />
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary">No notifications yet</p>
+              <p className="text-sm text-text-secondary">No notifications yet</p>
             </div>
           ) : (
             notifications.map((n) => (
               <div
                 key={n.id}
                 className={cn(
-                  'flex items-start gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 dark:border-dark-border',
+                  'flex items-start gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 border-border',
                   !n.read && 'bg-accent-50/50 dark:bg-accent-900/10',
                 )}
               >
                 <div className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-full',
-                  !n.read ? 'bg-accent-100 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400' : 'bg-surface-secondary text-text-tertiary dark:bg-dark-surface-secondary',
+                  !n.read ? 'bg-accent-100 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400' : 'bg-surface-secondary text-text-tertiary bg-surface-secondary',
                 )}>
                   {typeIcons[n.type] || <Bell className="h-4 w-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{n.title}</p>
-                  <p className="mt-0.5 text-xs text-text-secondary dark:text-dark-text-secondary line-clamp-2">{n.message}</p>
-                  <p className="mt-1 text-[10px] text-text-tertiary dark:text-dark-text-tertiary">{timeAgo(n.createdAt)}</p>
+                  <p className="text-sm font-medium text-text-primary">{n.title}</p>
+                  <p className="mt-0.5 text-xs text-text-secondary line-clamp-2">{n.message}</p>
+                  <p className="mt-1 text-[10px] text-text-tertiary">{timeAgo(n.createdAt)}</p>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   {!n.read && (
                     <button
                       onClick={() => onMarkRead(n.id)}
-                      className="rounded-lg p-1 text-text-tertiary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary"
+                      className="rounded-lg p-1 text-text-tertiary hover:bg-surface-secondary"
                       title="Mark as read"
                     >
                       <MailOpen className="h-3.5 w-3.5" />

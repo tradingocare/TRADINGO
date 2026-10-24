@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect } from 'react';
 import Link from 'next/link';
@@ -55,16 +55,16 @@ export function ErrorState({
             <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" aria-hidden="true" />
           </div>
 
-          <h1 className="mb-2 text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+          <h1 className="mb-2 text-2xl font-bold text-text-primary">
             {title}
           </h1>
 
-          <p className="mb-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+          <p className="mb-2 text-sm text-text-secondary">
             {message}
           </p>
 
           {displayId && (
-            <p className="mb-6 font-mono text-xs text-text-tertiary dark:text-dark-text-tertiary">
+            <p className="mb-6 font-mono text-xs text-text-tertiary">
               Error ID: <span className="font-semibold">{displayId}</span>
             </p>
           )}

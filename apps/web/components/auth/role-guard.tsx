@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -40,8 +40,8 @@ export function RoleGuard({ children, allowedRoles, fallback }: RoleGuardProps) 
     if (fallback) return <>{fallback}</>;
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-        <h2 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">Access Denied</h2>
-        <p className="mt-2 text-text-secondary dark:text-dark-text-secondary">
+        <h2 className="text-2xl font-bold text-text-primary">Access Denied</h2>
+        <p className="mt-2 text-text-secondary">
           You do not have permission to view this page.
         </p>
       </div>

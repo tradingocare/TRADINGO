@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -119,8 +119,8 @@ export default function RfqTemplatesPage() {
               <CardContent className="flex-1">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-text-secondary dark:text-dark-text-secondary">Product</span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{template.product}</span>
+                    <span className="text-text-secondary">Product</span>
+                    <span className="font-medium text-text-primary">{template.product}</span>
                   </div>
                   <Separator />
                   <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
@@ -129,7 +129,7 @@ export default function RfqTemplatesPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="gap-2 border-t border-border pt-4 dark:border-dark-border">
+              <CardFooter className="gap-2 border-t border-border pt-4">
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => handleUse(template)}>
                   <Copy className="mr-1.5 h-3.5 w-3.5" />
                   Use

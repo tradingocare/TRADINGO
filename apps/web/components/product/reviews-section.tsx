@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -49,7 +49,7 @@ function StarRating({ rating, size = 'sm', interactive, onChange }: { rating: nu
             className={cn(cls, 'transition-colors',
               s <= display
                 ? 'fill-accent text-accent'
-                : 'fill-none text-border dark:text-dark-border',
+                : 'fill-none text-border dark:text-border',
             )}
           />
         </button>
@@ -121,12 +121,12 @@ export function ReviewsSection({
     <>
       <div className="space-y-8">
         <div className="grid gap-8 md:grid-cols-[1fr_2fr]">
-          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-6 dark:bg-dark-surface dark:border-dark-border">
-            <span className="text-5xl font-bold text-text-primary dark:text-dark-text-primary">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface p-6">
+            <span className="text-5xl font-bold text-text-primary">
               {stats.average.toFixed(1)}
             </span>
             <StarRating rating={Math.round(stats.average)} size="lg" />
-            <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary">
+            <p className="mt-1 text-sm text-text-secondary">
               {stats.total} review{stats.total !== 1 ? 's' : ''}
             </p>
           </div>
@@ -137,17 +137,17 @@ export function ReviewsSection({
               const pct = maxBreakdown > 0 ? (count / maxBreakdown) * 100 : 0;
               return (
                 <div key={star} className="flex items-center gap-2 text-sm">
-                  <span className="w-8 text-right text-text-secondary dark:text-dark-text-secondary">
+                  <span className="w-8 text-right text-text-secondary">
                     {star}
                   </span>
                   <Star className="h-3.5 w-3.5 text-accent" />
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-tertiary dark:bg-dark-surface-tertiary">
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-tertiary">
                     <div
                       className="h-full rounded-full bg-accent transition-all"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="w-10 text-text-tertiary dark:text-dark-text-tertiary">
+                  <span className="w-10 text-text-tertiary">
                     {count}
                   </span>
                 </div>
@@ -168,7 +168,7 @@ export function ReviewsSection({
         </div>
 
         {paged.length === 0 && (
-          <p className="py-8 text-center text-text-secondary dark:text-dark-text-secondary">
+          <p className="py-8 text-center text-text-secondary">
             No reviews yet. Be the first to review this product!
           </p>
         )}
@@ -177,18 +177,18 @@ export function ReviewsSection({
           {paged.map((review) => (
             <div
               key={review.id}
-              className="rounded-xl border border-border bg-surface p-5 dark:bg-dark-surface dark:border-dark-border"
+              className="rounded-xl border border-border bg-surface p-5"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar size="lg" fallback={(review.userName || 'A').charAt(0).toUpperCase()} className="bg-accent/10 text-accent" />
                   <div>
-                    <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                    <p className="text-sm font-medium text-text-primary">
                       {review.userName || 'Anonymous'}
                     </p>
                     <div className="flex items-center gap-2">
                       <StarRating rating={review.rating} />
-                      <span className="text-xs text-text-tertiary dark:text-dark-text-tertiary">
+                      <span className="text-xs text-text-tertiary">
                         {new Date(review.createdAt).toLocaleDateString('en-IN', {
                           year: 'numeric',
                           month: 'short',
@@ -201,12 +201,12 @@ export function ReviewsSection({
               </div>
 
               {review.title && (
-                <p className="mt-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+                <p className="mt-3 text-sm font-semibold text-text-primary">
                   {review.title}
                 </p>
               )}
               {review.review && (
-                <p className="mt-1 text-sm text-text-secondary dark:text-dark-text-secondary leading-relaxed">
+                <p className="mt-1 text-sm text-text-secondary leading-relaxed">
                   {review.review}
                 </p>
               )}
@@ -258,15 +258,15 @@ export function ReviewsSection({
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Write a Review">
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Rating *</label>
+            <label className="mb-1 block text-sm font-medium text-text-primary">Rating *</label>
             <StarRating rating={newRating} size="lg" interactive onChange={setNewRating} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Title (optional)</label>
+            <label className="mb-1 block text-sm font-medium text-text-primary">Title (optional)</label>
             <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Summary of your review" />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-text-primary dark:text-dark-text-primary">Review (optional)</label>
+            <label className="mb-1 block text-sm font-medium text-text-primary">Review (optional)</label>
             <Textarea value={newBody} onChange={(e) => setNewBody(e.target.value)} placeholder="Share your experience with this product..." rows={4} />
           </div>
           <div className="flex justify-end gap-3 pt-2">

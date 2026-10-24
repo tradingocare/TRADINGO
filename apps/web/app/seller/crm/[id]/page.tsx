@@ -25,7 +25,7 @@ const STATUS_STYLES: Record<string, string> = {
   NEW: 'bg-blue-500/20 text-blue-400', CONTACTED: 'bg-yellow-500/20 text-yellow-400',
   QUALIFIED: 'bg-purple-500/20 text-purple-400', PROPOSAL: 'bg-indigo-500/20 text-indigo-400',
   NEGOTIATION: 'bg-orange-500/20 text-orange-400', WON: 'bg-green-500/20 text-green-400',
-  LOST: 'bg-red-500/20 text-red-400', DISQUALIFIED: 'bg-bg-elevated text-gray-400',
+  LOST: 'bg-red-500/20 text-red-400', DISQUALIFIED: 'bg-bg-elevated text-text-secondary',
 };
 
 export default function LeadDetailPage({ params }: { params: { id: string } }) {
@@ -225,7 +225,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
               {(!timeline || timeline.length === 0) ? <p className="text-sm text-text-tertiary">No events</p> : timeline.map((ev: any) => (
                 <div key={ev.id} className="flex gap-3 text-sm">
-                  <Activity className="h-4 w-4 mt-0.5 text-gray-500 shrink-0" />
+                  <Activity className="h-4 w-4 mt-0.5 text-text-secondary shrink-0" />
                   <div><p>{ev.description}</p><p className="text-xs text-text-secondary">{new Date(ev.createdAt).toLocaleString()}</p></div>
                 </div>
               ))}

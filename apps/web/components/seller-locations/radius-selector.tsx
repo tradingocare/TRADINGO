@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import type { GeographicReach } from '@prisma/client';
 import { RADIUS_OPTIONS } from '@/data/master-data';
@@ -12,7 +12,7 @@ interface RadiusSelectorProps {
 export function RadiusSelector({ value, onChange, disabled }: RadiusSelectorProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary">
+      <label className="block text-sm font-medium text-text-primary">
         Visibility Radius
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
@@ -27,7 +27,7 @@ export function RadiusSelector({ value, onChange, disabled }: RadiusSelectorProp
               className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                 isSelected
                   ? 'border-primary bg-primary/10 text-primary dark:border-primary-dark dark:bg-primary-dark/10 dark:text-primary-dark'
-                  : 'border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface text-text-secondary dark:text-dark-text-secondary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary'
+                  : 'border-surface-border border-border bg-surface bg-surface text-text-secondary text-text-secondary hover:bg-surface-secondary hover:bg-surface-secondary'
               } disabled:opacity-50`}
             >
               <span className="block leading-tight">{option.label}</span>

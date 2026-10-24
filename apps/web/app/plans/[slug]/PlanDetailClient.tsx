@@ -49,11 +49,13 @@ export default function PlanDetailClient() {
   }, [slug, router])
 
   const handlePurchase = () => {
+    // P0-6 remediation: purchase routes to the canonical verified flow
+    // (/subscription/purchase -> POST /payment/razorpay/order -> HMAC-verified
+    // /payment/razorpay/verify). The legacy mock checkout has been removed.
     if (user) {
-      const params = new URLSearchParams({ planId: slug, tier })
-      router.push(`/plans/vendor/purchase?${params}`)
+      router.push(`/subscription/purchase?planId=${slug}`)
     } else {
-      const params = new URLSearchParams({ next: `/plans/vendor/purchase?planId=${slug}&tier=${tier}` })
+      const params = new URLSearchParams({ next: `/subscription/purchase?planId=${slug}` })
       router.push(`/login?${params}`)
     }
   }

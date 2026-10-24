@@ -6,8 +6,9 @@ import { OrderDocumentService } from './order-document.service';
 import { OrderAnalyticsService } from './order-analytics.service';
 import { ChatService } from '../chat/chat.service';
 import { NotificationService } from '../notification/notification.service';
-import { CreateOrderDto, UpdateOrderDto, CancelOrderDto, CreateReturnDto, ReviewReturnDto, CreateOrderDocumentDto } from './dto/order.dto';
-import { NotificationType, OrderStatus } from '@prisma/client';
+import { CreateOrderDto, CreateOrderItemDto, UpdateOrderDto, CancelOrderDto, CreateReturnDto, ReviewReturnDto, CreateOrderDocumentDto } from './dto/order.dto';
+import { NotificationType, OrderStatus, Prisma } from '@prisma/client';
+import { ProductPricingService } from '../products/services/product-pricing.service';
 
 const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
@@ -23,6 +24,20 @@ const STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
   RETURNED: [],
 };
 
+/** Server-resolved order line — all money is Decimal, never client-derived (catalog items). */
+interface ResolvedOrderItem {
+  productId: string | null;
+  productName: string;
+  sku: string | null;
+  quantity: number;
+  reservedQuantity: number;
+  unitPrice: Prisma.Decimal;
+  totalPrice: Prisma.Decimal;
+  taxPercent: null;
+  taxAmount: null;
+  currency: string | null;
+}
+
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
@@ -35,6 +50,7 @@ export class OrderService {
     private readonly analytics: OrderAnalyticsService,
     private readonly chatService: ChatService,
     private readonly notificationService: NotificationService,
+    private readonly pricingService: ProductPricingService,
   ) {}
 
   async create(buyerCompanyId: string, userId: string, dto: CreateOrderDto) {
@@ -47,6 +63,15 @@ export class OrderService {
 
     const seller = await this.prisma.company.findFirst({ where: { id: dto.sellerCompanyId, deletedAt: null } });
     if (!seller) throw new NotFoundException('Seller company not found');
+
+    // R2 — server-authoritative money: every monetary value persisted
+    // below is derived server-side (R1 slab pricing + Decimal totals).
+    // Client-supplied subtotal/totalAmount/unitPrice are never trusted
+    // as financial authority. All validation throws before any write.
+    const resolvedItems = await this.resolveItems(dto.sellerCompanyId, dto.items);
+    const subtotal = resolvedItems.reduce((sum, it) => sum.plus(it.totalPrice), new Prisma.Decimal(0));
+    const quantity = resolvedItems.reduce((sum, it) => sum + it.quantity, 0);
+    const currency = resolvedItems.find((it) => it.currency)?.currency ?? dto.currency ?? 'INR';
 
     const buyerLocation = await this.prisma.companyLocation.findFirst({
       where: { companyId: buyerCompanyId, isPrimary: true },
@@ -72,12 +97,12 @@ export class OrderService {
           quoteId: dto.quoteId ?? null,
           title: dto.title ?? null,
           description: dto.description ?? null,
-          currency: dto.currency ?? 'INR',
-          subtotal: dto.subtotal,
-          taxAmount: dto.taxAmount ?? null,
-          discountAmount: dto.discountAmount ?? null,
-          totalAmount: dto.totalAmount,
-          quantity: dto.quantity,
+          currency,
+          subtotal,
+          taxAmount: null,
+          discountAmount: null,
+          totalAmount: subtotal,
+          quantity,
           unit: dto.unit ?? null,
           deliveryMethod: dto.deliveryMethod ?? null,
           expectedDeliveryDate: dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : null,
@@ -85,16 +110,16 @@ export class OrderService {
           createdBy: userId,
           updatedBy: userId,
           items: {
-            create: dto.items.map((item) => ({
-              productId: item.productId ?? null,
+            create: resolvedItems.map((item) => ({
+              productId: item.productId,
               productName: item.productName,
-              sku: item.sku ?? null,
+              sku: item.sku,
               quantity: item.quantity,
               reservedQuantity: item.productId ? item.quantity : 0,
               unitPrice: item.unitPrice,
-              totalPrice: item.unitPrice * item.quantity,
-              taxPercent: item.taxPercent ?? null,
-              taxAmount: item.taxPercent ? (item.unitPrice * item.quantity * item.taxPercent) / 100 : null,
+              totalPrice: item.totalPrice,
+              taxPercent: null,
+              taxAmount: null,
             })),
           },
           locations: dto.locations?.length
@@ -117,7 +142,7 @@ export class OrderService {
 
     await this.timelineService.addEvent(order.id, 'PENDING', userId, 'BUYER');
     await this.analytics.trackEvent(buyerCompanyId, order.id, 'ORDER_CREATED', {
-      source: dto.source, type: dto.type, totalAmount: dto.totalAmount,
+      source: dto.source, type: dto.type, totalAmount: Number(subtotal.toFixed(2)),
     });
 
     try {
@@ -149,6 +174,91 @@ export class OrderService {
     }
 
     return order;
+  }
+
+  /**
+   * R2 — resolve every order line to server-authoritative values.
+   * Catalog items (productId present) are priced exclusively through the
+   * R1 ProductPricingService; client money is never consulted. Custom
+   * non-catalog items (no productId — services, custom work) have no
+   * authoritative price source, so client values are the only source;
+   * money math still uses Decimal so no float drift is introduced.
+   */
+  private async resolveItems(sellerCompanyId: string, items: CreateOrderItemDto[]): Promise<ResolvedOrderItem[]> {
+    if (!items || items.length === 0) {
+      throw new BadRequestException('Order must contain at least one item');
+    }
+    const resolved: ResolvedOrderItem[] = [];
+    for (const item of items) {
+      // DTO @IsNumber permits 2.5 — quantities are whole units only.
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+        throw new BadRequestException(
+          `Invalid quantity for item "${item.productName}": must be a positive whole number`,
+        );
+      }
+      resolved.push(
+        item.productId
+          ? await this.resolveCatalogItem(sellerCompanyId, item)
+          : this.resolveCustomItem(item),
+      );
+    }
+    return resolved;
+  }
+
+  private async resolveCatalogItem(sellerCompanyId: string, item: CreateOrderItemDto): Promise<ResolvedOrderItem> {
+    const product = await this.prisma.product.findFirst({
+      where: { id: item.productId, deletedAt: null, status: 'ACTIVE' },
+      select: { id: true, name: true, companyId: true, moq: true, maxOrderQty: true },
+    });
+    if (!product) throw new NotFoundException(`Product not found or not available: ${item.productId}`);
+    if (product.companyId !== sellerCompanyId) {
+      throw new BadRequestException(`Product ${item.productId} does not belong to the seller`);
+    }
+    if (item.quantity < product.moq) {
+      throw new BadRequestException(
+        `Quantity ${item.quantity} is below the minimum order quantity of ${product.moq}`,
+      );
+    }
+    if (product.maxOrderQty != null && item.quantity > product.maxOrderQty) {
+      throw new BadRequestException(
+        `Quantity ${item.quantity} exceeds the maximum order quantity of ${product.maxOrderQty}`,
+      );
+    }
+    const pricing = await this.pricingService.resolvePricing(product.id, item.quantity);
+    if (!pricing.purchasable || pricing.unitPrice == null || pricing.subtotal == null) {
+      throw new BadRequestException(pricing.message);
+    }
+    return {
+      productId: product.id,
+      productName: product.name,
+      sku: item.sku ?? null,
+      quantity: item.quantity,
+      reservedQuantity: item.quantity,
+      unitPrice: new Prisma.Decimal(pricing.unitPrice),
+      totalPrice: new Prisma.Decimal(pricing.subtotal),
+      taxPercent: null,
+      taxAmount: null,
+      currency: pricing.currency,
+    };
+  }
+
+  private resolveCustomItem(item: CreateOrderItemDto): ResolvedOrderItem {
+    if (!Number.isFinite(item.unitPrice) || item.unitPrice < 0) {
+      throw new BadRequestException(`Invalid unit price for item "${item.productName}"`);
+    }
+    const unitPrice = new Prisma.Decimal(String(item.unitPrice));
+    return {
+      productId: null,
+      productName: item.productName,
+      sku: item.sku ?? null,
+      quantity: item.quantity,
+      reservedQuantity: 0,
+      unitPrice,
+      totalPrice: unitPrice.times(item.quantity),
+      taxPercent: null,
+      taxAmount: null,
+      currency: null,
+    };
   }
 
   async findByBuyer(buyerCompanyId: string, status?: OrderStatus, page = 1, limit = 20) {

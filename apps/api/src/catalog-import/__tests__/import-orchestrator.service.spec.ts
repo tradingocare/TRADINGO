@@ -3,6 +3,7 @@ import { ImportOrchestratorService } from '../services/import-orchestrator.servi
 import { CsvParserService } from '../services/csv-parser.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchService } from '../../modules/search/search.service';
+import { CatalogTaxonomyPersistenceService } from '../../modules/marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { ConflictException } from '@nestjs/common';
 
 describe('ImportOrchestratorService', () => {
@@ -131,6 +132,10 @@ describe('ImportOrchestratorService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: SearchService, useValue: searchService },
         { provide: CsvParserService, useValue: csvParser },
+        {
+          provide: CatalogTaxonomyPersistenceService,
+          useValue: { resolvePersistableTaxonomy: jest.fn().mockResolvedValue(null), bridgeLegacyCategoryId: jest.fn().mockResolvedValue(null) },
+        },
       ],
     }).compile();
 

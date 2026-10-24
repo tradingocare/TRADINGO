@@ -8,7 +8,7 @@ import { CatalogImportSeeder, SeedMetadata } from './catalog-import.seed.ts';
 import { resolve } from 'path';
 import { slugify, BATCH_SIZE } from './seed.utils.ts';
 
-const CSV_PATH = resolve(process.cwd(), 'product service catalog.csv');
+const CSV_PATH = resolve(process.cwd(), 'product_service_catalog.csv');
 
 const prisma = new PrismaClient();
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 
@@ -29,15 +30,15 @@ export default function AboutTradingo() {
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-[1600px]"
         >
-          <div className="relative rounded-[24px] border border-border bg-bg-elevated backdrop-blur-2xl">
+          <div className="relative rounded-[24px] border border-border bg-surface backdrop-blur-2xl">
             <div className="pointer-events-none absolute inset-0 rounded-[24px] overflow-hidden">
               <div className="absolute -left-32 -top-32 h-64 w-64 rounded-full bg-[rgba(96,165,250,0.05)] blur-[80px]" />
               <div className="absolute -bottom-32 -right-32 h-64 w-64 rounded-full bg-[rgba(255,77,0,0.04)] blur-[80px]" />
             </div>
 
             <div className="relative z-10 flex flex-col items-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
-              <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy"
-                className="mx-auto h-10 w-auto opacity-40 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy"
+                className="mx-auto opacity-40" />
               <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent-500">
                 {'\u2728'} What is TRADINGO?
               </span>
@@ -74,7 +75,7 @@ export default function AboutTradingo() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.08 }}
-                  className="group relative overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300 h-full">
+                  className="group relative overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300 h-full">
                   <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
                     style={{ background: `radial-gradient(500px circle at 30% 50%, ${f.color}15, transparent 50%)` }} />
                   <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"

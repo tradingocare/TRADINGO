@@ -1,8 +1,23 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { getAccessToken, setAccessToken, clearTokens } from '@/lib/auth';
+import { getAccessToken, setAccessToken } from '@/lib/auth';
+import { clearSession } from '@/lib/auth/session';
 import { captureError, addBreadcrumb } from '@/lib/monitoring/sentry';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+// Dual-base API resolution (local SSR fix):
+// - Browser bundle → NEXT_PUBLIC_API_URL (e.g. http://localhost:3001/api/v1).
+// - Node/SSR → INTERNAL_API_URL when set (e.g. http://api:3001/api/v1 inside
+//   the compose network), otherwise the public fallback (production-safe:
+//   the public URL is reachable from everywhere, including the container).
+// INTERNAL_API_URL is intentionally NOT NEXT_PUBLIC_-prefixed so it never
+// leaks into browser JavaScript.
+function resolveBaseUrl(): string {
+  if (typeof window === 'undefined' && process.env.INTERNAL_API_URL) {
+    return process.env.INTERNAL_API_URL;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+}
+
+const BASE_URL = resolveBaseUrl();
 
 let csrfToken: string | null = null;
 let csrfPromise: Promise<string | null> | null = null;
@@ -106,7 +121,7 @@ apiClient.interceptors.response.use(
         }
         return apiClient(originalRequest);
       } else {
-        clearTokens();
+        clearSession();
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
         }
@@ -137,6 +152,24 @@ async function refreshAccessToken(): Promise<boolean> {
     } catch {
       return false;
     }
+  }
+}
+
+/**
+ * Completes an OAuth social-login session: the backend callback sets
+ * httpOnly refresh cookies and redirects to /login?socialLogin=true.
+ * This bridges that cookie-based session into the standard localStorage
+ * access-token flow by reusing the existing /auth/refresh + /auth/me
+ * endpoints — no parallel token mechanism.
+ */
+export async function completeSocialLogin(): Promise<{ user: any } | null> {
+  const ok = await refreshAccessToken();
+  if (!ok) return null;
+  try {
+    const res = await apiClient.get<{ user: any }>('/auth/me');
+    return { user: res.data?.user ?? res.data };
+  } catch {
+    return null;
   }
 }
 

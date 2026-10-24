@@ -39,7 +39,7 @@ export function ProductHeroPrice({
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="flex items-baseline gap-1 whitespace-nowrap">
           <span className="text-base font-semibold leading-none text-accent">₹</span>
-          <span className="text-2xl font-semibold leading-none tracking-tight text-text-primary lg:text-3xl">
+          <span className="text-xl font-semibold leading-none tracking-tight text-text-primary lg:text-2xl">
             {price.toLocaleString('en-IN')}
           </span>
           <span className="text-xs font-medium text-text-secondary">/ {unit || 'unit'}</span>

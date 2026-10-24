@@ -12,6 +12,8 @@ import { QaSection } from '@/components/product/qa-section';
 import { RelatedProducts } from '@/components/product/related-products';
 import { ProductHeroSeller } from '@/components/product/product-hero-seller';
 import { VariantSelector } from '@/components/product/variant-selector';
+import { openChat } from '@/lib/messaging/chat-navigation';
+import { toast } from '@/components/ui/use-toast';
 import { useAuthStore } from '@/store/auth-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useCompareStore } from '@/store/compare-store';
@@ -122,8 +124,17 @@ export function ProductDetailView({
   });
 
   const handleChat = () => requireAuth(() => {
-    const vendorId = data.seller.id || data.seller.slug || '';
-    router.push(`/messages?vendor=${encodeURIComponent(vendorId)}&product=${data.id}`);
+    openChat({ router, companyId: data.seller.id || data.seller.slug || '', productId: data.id, title: data.title });
+  });
+
+  // Seller phone is private: dial ONLY when the API explicitly exposes it,
+  // otherwise guide to Chat/RFQ instead of inventing a number.
+  const handleCall = () => requireAuth(() => {
+    if (data.seller.phone) {
+      window.open(`tel:${data.seller.phone}`);
+    } else {
+      toast({ title: 'Seller phone not shared', description: 'Chat with the seller or send an RFQ instead.' });
+    }
   });
 
   const handleShare = async () => {
@@ -219,6 +230,7 @@ export function ProductDetailView({
               onBuy={handleBuy}
               onRFQ={handleRFQ}
               onChat={handleChat}
+              onCall={handleCall}
               onSave={handleWishlist}
               onCompare={handleCompare}
               onShare={handleShare}
@@ -303,7 +315,13 @@ export function ProductDetailView({
         {related && related.length > 0 && (
           <section className="mt-10" id="similar">
             <SectionHeading kicker="Explore" title="Similar Products" />
-            <RelatedProducts products={related} title="Similar Products" viewAllHref={`/trading?category=${data.category?.slug || ''}`} />
+            <RelatedProducts
+              products={related}
+              title="Similar Products"
+              // Real, verified destination. (?category= on /trading is consumed as a
+              // categoryId, so a slug there never filtered — never link it that way.)
+              viewAllHref={data.category?.slug ? `/categories/${data.category.slug}` : undefined}
+            />
           </section>
         )}
       </div>

@@ -47,7 +47,7 @@ export function HealthScoreCard({ data, isLoading, error }: Props) {
             const pct = data.overallScore > 0 ? Math.round((d.contribution / data.overallScore) * 100) : 0
             return (
               <div key={d.key} className="flex items-center gap-2 text-xs">
-                <Icon className="h-3 w-3 shrink-0 text-gray-400" />
+                <Icon className="h-3 w-3 shrink-0 text-text-tertiary" />
                 <span className="w-20 text-text-secondary">{d.label}</span>
                 <Progress value={d.score} size="sm" variant="success" className="flex-1" />
                 <span className="w-8 text-right font-medium text-text-primary">{d.score}</span>

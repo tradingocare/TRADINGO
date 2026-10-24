@@ -6,8 +6,7 @@ test.describe('Category Templates (Admin)', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, ADMIN_USER);
-    await page.goto('/admin/category-templates');
-    await page.waitForLoadState('load');
+    await page.goto('/admin/category-templates', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1').first()).toContainText('Template', { timeout: 10000 });
     await context.close();
   });
@@ -16,8 +15,7 @@ test.describe('Category Templates (Admin)', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, ADMIN_USER);
-    await page.goto('/admin/category-templates');
-    await page.waitForLoadState('load');
+    await page.goto('/admin/category-templates', { waitUntil: 'domcontentloaded' });
     const newBtn = page.locator('a[href*="/admin/category-templates/new"], button:has-text("New Template")').first();
     await expect(newBtn).toBeVisible({ timeout: 10000 });
     await context.close();
@@ -27,8 +25,7 @@ test.describe('Category Templates (Admin)', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginAs(page, ADMIN_USER);
-    await page.goto('/admin/category-templates/new');
-    await page.waitForLoadState('load');
+    await page.goto('/admin/category-templates/new', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1').first()).toContainText('New', { timeout: 10000 });
     await context.close();
   });

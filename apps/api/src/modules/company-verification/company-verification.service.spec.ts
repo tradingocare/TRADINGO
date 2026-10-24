@@ -20,6 +20,7 @@ describe('CompanyVerificationService', () => {
         update: jest.fn(),
         count: jest.fn(),
       },
+      companyVerificationDocument: { findUnique: jest.fn() },
       user: { findUnique: jest.fn() },
       auditLog: { create: jest.fn() },
     };
@@ -189,6 +190,144 @@ describe('CompanyVerificationService', () => {
       const result = await service.findAll({});
       expect(result.data).toHaveLength(1);
       expect(result.meta.total).toBe(1);
+    });
+  });
+
+  // ── P0-1: cross-tenant + masking security ─────────────────────────────
+  describe('P0-1 masking (real DocumentType enum)', () => {
+    const verificationWithDocs = (types: string[]) => ({
+      id: 'ver-1',
+      documents: types.map((t, i) => ({ id: `doc-${i}`, documentType: t, documentUrl: 'https://s3.example.com/secret.pdf' })),
+    });
+
+    it.each([
+      'PAN', 'GST', 'AADHAAR', 'BUSINESS_REGISTRATION', 'CANCELLED_CHEQUE',
+      'BANK_VERIFICATION', 'LIABILITY_INSURANCE', 'PROFESSIONAL_MEMBERSHIP',
+      'CLIENT_REFERENCE', 'EXPERIENCE_LETTER',
+    ])('masks %s document URLs (previously GST/cheque/bank slipped through)', async (type) => {
+      prisma.companyVerification.findUnique.mockResolvedValue(verificationWithDocs([type]));
+      const result = await service.findById('ver-1');
+      expect(result.documents[0].documentUrl).toBe('[MASKED]');
+    });
+
+    it('masks every sensitive doc in a mixed document set', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue(
+        verificationWithDocs(['PAN', 'GST', 'CANCELLED_CHEQUE', 'BANK_VERIFICATION']),
+      );
+      const result = await service.findById('ver-1');
+      result.documents.forEach((d: any) => expect(d.documentUrl).toBe('[MASKED]'));
+    });
+
+    it('does not mask non-sensitive portfolio documents', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue(verificationWithDocs(['PORTFOLIO_SAMPLE']));
+      const result = await service.findById('ver-1');
+      expect(result.documents[0].documentUrl).toBe('https://s3.example.com/secret.pdf');
+    });
+
+    it('masks across list results (findByCompany)', async () => {
+      prisma.company.findFirst.mockResolvedValue({ id: 'company-1' });
+      prisma.companyVerification.findMany.mockResolvedValue([verificationWithDocs(['GST'])]);
+      const result = await service.findByCompany('company-1');
+      expect(result[0].documents[0].documentUrl).toBe('[MASKED]');
+    });
+  });
+
+  describe('P0-1 findAuthorizedById (cross-tenant read elimination)', () => {
+    const baseVerification = {
+      id: 'ver-1',
+      companyId: 'company-A',
+      documents: [{ id: 'doc-1', documentType: 'PAN', documentUrl: 'https://s3.example.com/pan.pdf' }],
+      company: { id: 'company-A', name: 'A', slug: 'a' },
+    };
+
+    it('admin reads any verification', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue(baseVerification);
+      const result = await service.findAuthorizedById('ver-1', 'admin-1', 'ADMIN');
+      expect(result.id).toBe('ver-1');
+      expect(prisma.companyOwner.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('SUPER_ADMIN reads any verification', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue(baseVerification);
+      await service.findAuthorizedById('ver-1', 'root-1', 'SUPER_ADMIN');
+      expect(prisma.companyOwner.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('company owner reads their own verification', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue(baseVerification);
+      prisma.companyOwner.findUnique.mockResolvedValue({ id: 'owner-1' });
+      const result = await service.findAuthorizedById('ver-1', 'owner-user', 'SELLER');
+      expect(result.id).toBe('ver-1');
+      expect(prisma.companyOwner.findUnique).toHaveBeenCalledWith({
+        where: { companyId_userId: { companyId: 'company-A', userId: 'owner-user' } },
+        select: { id: true },
+      });
+    });
+
+    it('another company user gets 404 — no existence disclosure', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue(baseVerification);
+      prisma.companyOwner.findUnique.mockResolvedValue(null);
+      await expect(
+        service.findAuthorizedById('ver-1', 'buyer-user', 'BUYER'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('unknown verification id → 404 before any ownership check', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue(null);
+      await expect(
+        service.findAuthorizedById('missing', 'user-1', 'BUYER'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('sensitive document URLs remain masked for the owner too (access is via presigned endpoint only)', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue(baseVerification);
+      prisma.companyOwner.findUnique.mockResolvedValue({ id: 'owner-1' });
+      const result = await service.findAuthorizedById('ver-1', 'owner-user', 'SELLER');
+      expect(result.documents[0].documentUrl).toBe('[MASKED]');
+    });
+  });
+
+  describe('P0-1 getDocumentForAuthorizedAccess', () => {
+    it('admin gets the raw document URL for presigning', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue({ companyId: 'company-A' });
+      prisma.companyVerificationDocument.findUnique.mockResolvedValue({
+        documentUrl: 'https://s3.example.com/pan.pdf',
+        verificationId: 'ver-1',
+      });
+      const result = await service.getDocumentForAuthorizedAccess('ver-1', 'doc-1', 'admin-1', 'ADMIN');
+      expect(result.documentUrl).toBe('https://s3.example.com/pan.pdf');
+      expect(result.companyId).toBe('company-A');
+    });
+
+    it('company owner gets their own document URL', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue({ companyId: 'company-A' });
+      prisma.companyOwner.findUnique.mockResolvedValue({ id: 'owner-1' });
+      prisma.companyVerificationDocument.findUnique.mockResolvedValue({
+        documentUrl: 'https://s3.example.com/pan.pdf',
+        verificationId: 'ver-1',
+      });
+      const result = await service.getDocumentForAuthorizedAccess('ver-1', 'doc-1', 'owner-user', 'SELLER');
+      expect(result.documentUrl).toBe('https://s3.example.com/pan.pdf');
+    });
+
+    it('another company user gets 404', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue({ companyId: 'company-A' });
+      prisma.companyOwner.findUnique.mockResolvedValue(null);
+      await expect(
+        service.getDocumentForAuthorizedAccess('ver-1', 'doc-1', 'buyer-user', 'BUYER'),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.companyVerificationDocument.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('document of a DIFFERENT verification cannot be fetched through this verification id', async () => {
+      prisma.companyVerification.findUnique.mockResolvedValue({ companyId: 'company-A' });
+      prisma.companyVerificationDocument.findUnique.mockResolvedValue({
+        documentUrl: 'https://s3.example.com/other.pdf',
+        verificationId: 'ver-OTHER', // mismatch — cross-verification attachment blocked
+      });
+      await expect(
+        service.getDocumentForAuthorizedAccess('ver-1', 'doc-of-other', 'admin-1', 'ADMIN'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

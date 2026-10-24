@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './auth-provider';
-import { clearTokens } from '@/lib/auth';
+import { clearSession } from '@/lib/auth/session';
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 const WARNING_BEFORE_MS = 60 * 1000;
@@ -33,10 +33,7 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
         setCountdown((c) => {
           if (c <= 1) {
             clearInterval(interval);
-            clearTokens();
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('rememberMe');
-            document.cookie = 'userRole=; path=/; max-age=0';
+            clearSession();
             router.push('/login');
             return 0;
           }
@@ -78,7 +75,7 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
     <>
       {children}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface-secondary p-6 text-center shadow-2xl dark:bg-dark-surface-secondary">
+        <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-surface-secondary p-6 text-center shadow-2xl">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent-500/20">
             <span className="text-2xl">&#9200;</span>
           </div>
@@ -96,9 +93,7 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
             <button
               onClick={() => {
                 clearTimers();
-                clearTokens();
-                localStorage.removeItem('userRole');
-                document.cookie = 'userRole=; path=/; max-age=0';
+                clearSession();
                 router.push('/login');
               }}
               className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface"

@@ -66,10 +66,10 @@ export default function SellerTradgoPage() {
             ) : (
               <div className="space-y-3">
                 {races.map((race: TradgoRace) => (
-                  <div key={race.id} className="flex items-center justify-between rounded-lg border border-border p-3 dark:border-dark-border">
+                  <div key={race.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div>
-                      <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{race.name}</p>
-                      <p className="text-xs text-text-secondary dark:text-dark-text-secondary">{race.participants} participants</p>
+                      <p className="text-sm font-medium text-text-primary">{race.name}</p>
+                      <p className="text-xs text-text-secondary">{race.participants} participants</p>
                     </div>
                     <div className="text-right">
                       <Badge variant={race.status === 'active' ? 'default' : 'secondary'}>{race.status}</Badge>
@@ -95,21 +95,21 @@ export default function SellerTradgoPage() {
                 {leaderboard.map((entry: LeaderboardEntry, index: number) => (
                   <div
                     key={entry.companyId || index}
-                    className="flex items-center gap-4 rounded-lg border border-border p-3 dark:border-dark-border"
+                    className="flex items-center gap-4 rounded-lg border border-border p-3"
                   >
                     <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
                       index === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                      index === 1 ? 'bg-surface text-text-secondary dark:bg-bg-base/30 dark:text-gray-400' :
+                      index === 1 ? 'bg-surface text-text-secondary dark:bg-bg-base/30 dark:text-text-secondary' :
                       index === 2 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                      'bg-surface-secondary text-text-secondary dark:bg-dark-surface-secondary'
+                      'bg-surface-secondary text-text-secondary bg-surface-secondary'
                     }`}>
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{entry.companyName}</p>
+                      <p className="text-sm font-medium text-text-primary">{entry.companyName}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">{entry.score}</p>
+                      <p className="text-sm font-semibold text-text-primary">{entry.score}</p>
                     </div>
                   </div>
                 ))}
@@ -130,12 +130,12 @@ export default function SellerTradgoPage() {
               {badges.map((badge: TradgoBadge) => {
                 const IconComponent = iconMap[badge.icon] || Trophy;
                 return (
-                  <div key={badge.id} className="rounded-xl border border-border bg-surface-secondary/50 p-4 dark:border-dark-border dark:bg-dark-surface-secondary/50">
+                  <div key={badge.id} className="rounded-xl border border-border bg-surface-secondary/50 p-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-accent-600 to-accent-500 text-white shadow-sm">
                       <IconComponent className="h-6 w-6" />
                     </div>
-                    <h3 className="mt-3 text-sm font-semibold text-text-primary dark:text-dark-text-primary">{badge.name}</h3>
-                    <p className="mt-1 text-xs text-text-secondary dark:text-dark-text-secondary">{badge.description}</p>
+                    <h3 className="mt-3 text-sm font-semibold text-text-primary">{badge.name}</h3>
+                    <p className="mt-1 text-xs text-text-secondary">{badge.description}</p>
                     {badge.earnedAt && (
                       <p className="mt-2 text-[10px] text-text-tertiary">Earned {new Date(badge.earnedAt).toLocaleDateString()}</p>
                     )}

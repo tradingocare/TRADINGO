@@ -10,7 +10,7 @@ const STATUS_STYLES: Record<string, string> = {
   SENT: 'bg-purple-100 text-purple-800',
   PAID: 'bg-green-100 text-green-800',
   VOID: 'bg-red-100 text-red-800',
-  CANCELLED: 'bg-surface text-gray-500',
+  CANCELLED: 'bg-surface text-text-secondary',
 }
 
 interface Invoice {

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -122,7 +122,7 @@ export default function VerifyEmailPage() {
             )}
           </Button>
 
-          <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+          <p className="text-sm text-text-secondary">
             Didn&apos;t receive the code?{' '}
             <button
               type="button"

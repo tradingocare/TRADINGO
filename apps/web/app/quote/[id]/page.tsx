@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+﻿import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const quote = await getQuote(id);
     return {
       title: `Quote #${quote.id.slice(0, 8)}`,
-      description: `Quote for ₹${quote.amount.toLocaleString()} - ${quote.status}`,
+      description: `Quote for â‚¹${quote.amount.toLocaleString()} - ${quote.status}`,
     };
   } catch {
     return { title: 'Quote Not Found' };
@@ -65,14 +65,14 @@ async function QuoteContent({ id }: { id: string }) {
 
   return (
     <>
-      <section className="border-b border-border pb-8 pt-24 dark:bg-dark-surface-secondary/50 dark:border-dark-border">
+      <section className="border-b border-border pb-8 pt-24 bg-surface-secondary/50">
         <div className="container-main">
-          <nav className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
-            <span className="text-text-primary dark:text-dark-text-primary">Quote #{quote.id.slice(0, 8)}</span>
+          <nav className="flex items-center gap-2 text-sm text-text-secondary">
+            <span className="text-text-primary">Quote #{quote.id.slice(0, 8)}</span>
           </nav>
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-dark-text-primary">
+              <h1 className="text-3xl font-bold tracking-tight text-text-primary">
                 Quote #{quote.id.slice(0, 8)}
               </h1>
               <div className="mt-2 flex items-center gap-3">
@@ -95,11 +95,11 @@ async function QuoteContent({ id }: { id: string }) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold text-text-primary dark:text-dark-text-primary">
-                    ₹{quote.amount.toLocaleString()}
+                  <p className="text-4xl font-bold text-text-primary">
+                    â‚¹{quote.amount.toLocaleString()}
                   </p>
                   {quote.deliveryDays && (
-                    <p className="mt-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <p className="mt-2 text-sm text-text-secondary">
                       Estimated delivery in {quote.deliveryDays} day{quote.deliveryDays !== 1 ? 's' : ''}
                     </p>
                   )}
@@ -115,7 +115,7 @@ async function QuoteContent({ id }: { id: string }) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-text-secondary dark:text-dark-text-secondary leading-relaxed">
+                    <p className="text-text-secondary leading-relaxed">
                       {quote.notes}
                     </p>
                   </CardContent>
@@ -130,25 +130,25 @@ async function QuoteContent({ id }: { id: string }) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <Hash className="h-4 w-4" /> Quote ID
                     </span>
-                    <span className="font-mono text-sm text-text-primary dark:text-dark-text-primary">
+                    <span className="font-mono text-sm text-text-primary">
                       {quote.id.slice(0, 8)}...
                     </span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <User className="h-4 w-4" /> Seller
                     </span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                    <span className="font-medium text-text-primary">
                       #{quote.sellerId.slice(0, 8)}
                     </span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <FileText className="h-4 w-4" /> RFQ
                     </span>
                     <Link href={`/rfq/${quote.rfqId}`} className="font-medium text-primary-600 hover:underline dark:text-primary-400">
@@ -157,24 +157,24 @@ async function QuoteContent({ id }: { id: string }) {
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <Clock className="h-4 w-4" /> Status
                     </span>
                     <StatusBadge status={quote.status} />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <CalendarDays className="h-4 w-4" /> Valid Until
                     </span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{validityDate}</span>
+                    <span className="font-medium text-text-primary">{validityDate}</span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+                    <span className="flex items-center gap-2 text-sm text-text-secondary">
                       <CalendarDays className="h-4 w-4" /> Created
                     </span>
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{createdDate}</span>
+                    <span className="font-medium text-text-primary">{createdDate}</span>
                   </div>
                 </CardContent>
               </Card>

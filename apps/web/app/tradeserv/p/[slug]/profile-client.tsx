@@ -376,9 +376,13 @@ export default function ProfileClient() {
             </div>
           </div>
 
-          {/* Related Professionals */}
+          {/* Related Professionals (O-11: canonical context derived from the
+              profile's own DB-proven service item IDs — no static mapping) */}
           <div className="mt-8">
-            <RelatedProfessionals currentSlug={slug} />
+            <RelatedProfessionals
+              currentSlug={slug}
+              catalogItemIds={services.map((s: any) => s?.catalogItemId).filter(Boolean)}
+            />
           </div>
         </div>
       </div>

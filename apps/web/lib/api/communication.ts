@@ -7,6 +7,12 @@ export const communicationApi = {
     },
     get(id: string) { return apiClient.get(`/communication/conversations/${id}`).then(r => r.data); },
     create(data: any) { return apiClient.post('/communication/conversations', data).then(r => r.data); },
+    // P1-02 Part 1 — open-or-create a 1:1 contact thread with a company.
+    // Participants resolve server-side; the client passes only what it
+    // legitimately knows (target company id/slug, optional product id).
+    open(data: { companyId: string; productId?: string; title?: string }) {
+      return apiClient.post('/communication/conversations/open', data).then(r => r.data);
+    },
     archive(id: string) { return apiClient.patch(`/communication/conversations/${id}/archive`).then(r => r.data); },
     mute(id: string, muted: boolean) { return apiClient.patch(`/communication/conversations/${id}/mute`, { muted }).then(r => r.data); },
     pin(id: string, pinned: boolean) { return apiClient.patch(`/communication/conversations/${id}/pin`, { pinned }).then(r => r.data); },

@@ -5,6 +5,7 @@ import { CatalogAdapterModule } from '../catalog-adapter/catalog-adapter.module'
 import { AiGatewayModule } from '../ai-gateway/ai-gateway.module';
 import { TradTrustModule } from '../tradtrust/tradtrust.module';
 import { MarketplaceIntelligenceModule } from '../marketplace-intelligence/marketplace-intelligence.module';
+import { MarketplaceCatalogBridgeModule } from '../marketplace-catalog-bridge/marketplace-catalog-bridge.module';
 import { PaymentModule } from '../payment/payment.module';
 import { GocashIntegrationModule } from '../gocash-integration/gocash-integration.module';
 import { CommissionModule } from '../commission/commission.module';
@@ -30,6 +31,7 @@ import { TradeservInquiryService } from './tradeserv-inquiry.service';
     AiGatewayModule,
     TradTrustModule,
     MarketplaceIntelligenceModule,
+    MarketplaceCatalogBridgeModule,
     PaymentModule,
     GocashIntegrationModule,
     CommissionModule,

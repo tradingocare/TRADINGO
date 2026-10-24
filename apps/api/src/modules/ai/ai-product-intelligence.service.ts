@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiGatewayService } from '../ai-gateway/ai-gateway.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 import { PromptService } from './prompt.service';
 import { AiJobType, TaskType } from '@prisma/client';
 import {
@@ -17,6 +18,8 @@ export class AiProductIntelligenceService {
     private readonly prisma: PrismaService,
     private readonly gateway: AiGatewayService,
     private readonly prompts: PromptService,
+    @Inject(forwardRef(() => CatalogTaxonomyPersistenceService))
+    private readonly taxonomy: CatalogTaxonomyPersistenceService,
   ) {}
 
   async generateDescription(dto: GenerateDescriptionDto, userId: string) {
@@ -88,12 +91,50 @@ export class AiProductIntelligenceService {
     return this.prisma.product.update({ where: { id: productId }, data: { metaTitle: dto.metaTitle, metaDescription: dto.metaDescription, focusKeywords: dto.focusKeywords, updatedBy: userId }, select: { id: true, name: true, metaTitle: true, metaDescription: true, focusKeywords: true } });
   }
 
+  /**
+   * P0-3 Step 9 (read safety): cache rows are returned with an explicit
+   * taxonomyVersion marker so consumers can distinguish canonical rows
+   * (taxonomyVersion 2 = server-validated triple; safe to use) from legacy
+   * rows (no marker = stale name/slug suggestions; NEVER a canonical
+   * persistable result — reclassify instead). The row itself is untouched;
+   * only the API view gains the marker. Legacy rows keep working exactly as
+   * before for generic JSON consumers.
+   */
   async getAiCache(productId: string, cacheType?: AiJobType) {
     const where: any = { productId };
     if (cacheType) where.cacheType = cacheType;
-    return this.prisma.productAiCache.findMany({ where, orderBy: { createdAt: 'desc' }, take: 20 });
+    const rows = await this.prisma.productAiCache.findMany({ where, orderBy: { createdAt: 'desc' }, take: 20 });
+    return rows.map((row) => {
+      const response = row.response as Record<string, unknown> | null;
+      const taxonomyVersion =
+        response && typeof response === 'object' && typeof (response as any).taxonomyVersion === 'number'
+          ? (response as any).taxonomyVersion
+          : null;
+      const engine =
+        response && typeof response === 'object' && typeof (response as any).engine === 'string'
+          ? (response as any).engine
+          : null;
+      return {
+        ...row,
+        // taxonomyVersion 2 = canonical (validated triple, catalog-classify-v1).
+        // null = legacy (names/slugs only — display-only, reclassify when needed).
+        taxonomyVersion,
+        engine,
+        taxonomyCanonical: taxonomyVersion === 2,
+      };
+    });
   }
 
+  /**
+   * P0-3 Step 9 (read safety): accept flow is deliberately flag-only for
+   * taxonomy types. CATEGORY_SUGGESTION rows — legacy (names/slugs) OR
+   * canonical (triple + taxonomyVersion 2) — NEVER write Product taxonomy
+   * columns here: a legacy row must never be persisted as canonical
+   * taxonomy, and even canonical cached rows are re-validated through the
+   * creation/update paths (`validateConfirmedTriple`) when actually applied.
+   * Only SEO/DESCRIPTION types write Product content fields (pre-existing
+   * behavior, untouched).
+   */
   async acceptSuggestion(dto: AcceptAiSuggestionDto, userId: string) {
     const cache = await this.prisma.productAiCache.findUnique({ where: { id: dto.cacheId }, include: { product: true } });
     if (!cache) throw new NotFoundException('Suggestion not found');
@@ -105,6 +146,10 @@ export class AiProductIntelligenceService {
     if (cache.cacheType === AiJobType.DESCRIPTION_GENERATION && response) {
       await this.prisma.product.update({ where: { id: cache.productId }, data: { shortDescription: response.shortDescription, description: response.longDescription || response.description, updatedBy: userId } });
     }
+    // CATEGORY_SUGGESTION (and every other taxonomy-bearing type): no
+    // Product writes — the accepted flag is the only effect. Taxonomy
+    // persistence happens exclusively through seller wizard/quick-list
+    // confirm → create/update validation chain.
     return { accepted: true, cacheId: dto.cacheId };
   }
 
@@ -136,20 +181,39 @@ export class AiProductIntelligenceService {
     return { productId: dto.productId, suggestions: content.suggestions || [] };
   }
 
+  /**
+   * P0-3: canonical delegation. The legacy-tree LLM prompt is retired; the
+   * suggestion now comes from the single canonical engine
+   * (CatalogClassifyService via the validated adapter), so the response
+   * carries {categoryId, subcategoryId, catalogItemId, confidence, band}
+   * with all IDs server-side verified. Route, DTO, guards, throttle, credit
+   * type (CATEGORY_SUGGESTION, 5) and cacheType are unchanged — but the charge
+   * is now attributed to the product's owning company (previously hardcoded
+   * 'system', i.e. effectively free). Accept flow stays flag-only for this
+   * type (no Product writes here). Exactly ONE gateway call happens, inside
+   * the engine's AI tier — never in both layers.
+   */
   async suggestCategory(dto: SuggestCategoryDto, userId: string) {
     const product = await this.prisma.product.findUnique({ where: { id: dto.productId }, include: { productBrand: true, specifications: true } });
     if (!product) throw new NotFoundException('Product not found');
-    const categories = await this.prisma.category.findMany({ where: { isActive: true }, include: { parent: true }, orderBy: { sortOrder: 'asc' } });
-    const catContext = categories.filter(c => !c.parentId).map(c => {
-      const children = categories.filter(ch => ch.parentId === c.id);
-      return `${c.name} (${c.slug})${children.length ? ` -> ${children.map(ch => ch.name).join(', ')}` : ''}`;
-    }).join('\n');
-    const result = await this.gateway.process({
-      taskType: TaskType.CATEGORY_SUGGESTION,
-      payload: { action: 'suggest_category', instructions: `For product "${product.name}" (Brand: ${product.productBrand?.name || product.brand || 'N/A'}, specs: ${product.specifications.slice(0, 5).map(s => `${s.key}: ${s.value}`).join(', ')}), suggest the best category from this hierarchy:\n${catContext}\n\nReturn JSON with keys: suggestedCategory (string - category name), suggestedSlug (string), confidence ("high"/"medium"/"low"), reasoning (string), alternatives (array of {name: string, slug: string, reasoning: string}).`, productName: product.name },
-    }, 'system', userId);
-    let content: any;
-    try { content = JSON.parse(result.content); } catch { content = { suggestedCategory: null, confidence: 'low' }; }
+    const attributes: Record<string, string> = {};
+    for (const s of product.specifications.slice(0, 8)) attributes[s.key] = s.value;
+    const classified = await this.taxonomy.classifyValidated(
+      {
+        name: product.name,
+        description: product.shortDescription || product.description || undefined,
+        brand: product.productBrand?.name || product.brand || undefined,
+        attributes: Object.keys(attributes).length ? attributes : undefined,
+        context: 'product',
+      },
+      product.companyId,
+      userId,
+      { expectedType: 'Product' },
+    );
+    // Step-10 cache versioning (no migration, no purge): canonical rows carry
+    // an explicit marker so readers can distinguish them from legacy
+    // name/slug rows. Generic JSON readers are unaffected.
+    const content = { ...classified, taxonomyVersion: 2, engine: 'catalog-classify-v1' };
     await this.createAiCache(dto.productId, AiJobType.CATEGORY_SUGGESTION, 'suggest_category', content);
     return { productId: dto.productId, suggestion: content };
   }

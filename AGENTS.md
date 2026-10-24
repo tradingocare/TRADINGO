@@ -90,8 +90,11 @@ NEVER introduce hardcoded UI colors. All functional surfaces use tokens only:
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `bg-bg-base` | `#00001C` | Page background ONLY |
-| `bg-surface` / `bg-bg-elevated` | `#00072D` | Card, container, section, table, modal, drawer, popover, sidebar, workspace, filter, search panel, dropdown, form panel, widget |
+| `bg-bg-base` | `#2C1608` | Page background ONLY (FOUNDER LOCKED) |
+| `bg-bg-elevated` | `#100C08` | Elevated surface (card level): cards, sections, panels, modals |
+| `bg-surface` | `#100C08` | Card, container, section, table, modal, drawer, popover, workspace, filter, search panel, dropdown, form panel, widget |
+
+**Brand Foundation (FOUNDER LOCKED — 2026-10-20):** Brand Primary `#2C1608` (nav, sidebar, header, footer); Brand Surface / Box `#100C08` (cards, sections, panels); Page background `#2C1608`. These supersede earlier Zaffre/Neon and `#00072D`/`#00001C` documentation values. The earlier `#030630` blue is deprecated and must not be used as the active page background.
 
 **FORBIDDEN as functional surfaces:** `bg-white`, `bg-gray-50`, `bg-gray-100`, `bg-black`, `bg-slate-*`, `bg-neutral-*`, `bg-zinc-*`, `bg-[#...]`, `bg-[rgba(...)]`, `style={{background}}`, `style={{backgroundColor}}`, `rgba(...)`, `rgb(...)`, `hsl(...)`, `linear-gradient(...)`
 
@@ -1839,6 +1842,19 @@ Replaced all invisible `text-white`/`text-white/*` classes on `#DBF1FD` light bl
 - **Sorting**: TRUST_SCORE/RATING → company trustScore desc; POPULARITY → isFeatured + trustScore; LATEST/NEWEST/RELEVANCE → createdAt desc; PRICE_ASC/PRICE_DESC → in-memory sort on min slab price (Prisma cannot sort on related slab min).
 - **Safety**: inner fallback wrapped in its own try/catch — any DB error degrades to empty result instead of 500. Outer catch keeps spell-check/facets graceful.
 - **Verification**: tsc api 0 errors ✅, tsc web 0 errors ✅, next build 298 routes ✅
+
+### Done (Phase 3ZB — AI Idempotency Integrity)
+- **Scope**: intent DTO optional `idempotencyKey`; company-scoped `(companyId, idempotencyKey)` uniqueness (migration `20261002000000_ai_usage_scoped_idempotency`); `claimKeyedAttempt` (fresh/takeover/duplicate) with cross-company + in-flight 409s; company-scoped cache keys; atomic deduct+finalize; `COMPANY_LESS_USAGE_KEY` sentinel — guests skip `AiCreditUsage`. Guest absolute quota explicitly deferred (no approved numeric value at the time).
+- **Verification**: tsc api 0 errors ✅, `ai-gateway.company-less.spec` 15/15 ✅ (cross-company/in-flight/stale/concurrent), ai-gateway+tradfind suites green ✅, `nest build` green ✅, local runtime: guest 201, DB P2003 contract proven live, `AiCreditUsage` 0 rows ✅
+
+### Done (Phase 3ZC — Guest AI Quota — CLOSED / VERIFIED)
+- **Founder-approved policy (APPROVED, UNCHANGED)**: 20 AI requests / trusted server-side IP (`req.ip`, existing `trustProxy:true`) / UTC calendar day; every NEW attempt counts (failures count); successful same-key replay consumes zero; validation 400 and quota 429 consume zero; existing 30/min throttle intact; company-owned users bypass; guests never create `AiCreditUsage`; Redis-backed atomic counter with UTC-midnight TTL; Redis outage fail-open with warning (existing convention).
+- **Implementation (IMPLEMENTED)**: `GuestAiQuotaService` — single-Lua INCR + EXPIRE-on-first + limit-check + DECR-rollback, key `ai:guest-quota:{UTC-date}:{ip}`; gateway ordering replay-lookup → consume-or-429 → claim → provider → finalize; keyed guests claim scoped rows and finalize usage-only (no tx deduct); `clientIp` threaded through ai-search (11 methods) + ai-gateway controllers; intent key forwarded end-to-end (DTO → gateway); exhaustion = 429 with standard throttle message (server-side `detail`/`retryAfterSec` preserved).
+- **Verification (VERIFIED)**: tsc 0 errors ✅, 27 suites / 262 tests green ✅ (24 new quota tests), `nest build` green ✅, api-only rebuild, controlled live run: 20×201 → 21st 429 ✅, replay zero-consume via cache-hit and lookup paths (single claim row) ✅, per-IP independent buckets ✅, multi-XFF leftmost-only ✅, malformed 400 ✅, `AiCreditUsage` 0 ✅, `/search/products` + `/trading` 200 ✅.
+- **Phase 3ZC-A (PASS / CLOSED)**: the single apparent unconsumed request was PROVEN a harness/observability artifact — a no-XFF probe on a reused keep-alive session arrived bearing the prior request's XFF below the application layer and consumed that XFF bucket (full 7-key Redis inventory reconciled every unit 1:1; zero fail-open warnings; no reachable no-IP HTTP bypass; no bypass primitive). NOT a TRADINGO application quota defect. Controlled replication confirmed.
+- **Residual limitations**: (1) below-app XFF bleed observable only in mixed-identity keep-alive test sessions — prod Cloudflare/nginx edge unchanged, not a demonstrated production defect; (2) owner-path live proof pending (no company-linked local credentials; unit/integration covered, zero regression).
+- **Files (3ZC)**: 3 created (`guest-ai-quota.service.ts` + 2 specs), 9 modified (gateway service/module/controller/specs, ai-search service/controller/specs); schema/migrations NONE (3ZB migration reused); throttle/proxy/production/WORCARE untouched.
+- **Phase 3ZD**: NOT STARTED / DEFERRED UNTIL NEXT APPROVED STEP.
 
 ### Next Steps
 1. **Cloud VPS/K8s Deployment** — Provision production cloud infrastructure, deploy all TRADINGO services with SSL/DNS, configure monitoring and CI/CD. Pre-requisites: rate limiting (✅ Phase 1 complete), security hardening (✅), CI/CD hardening (✅). Per roadmap: READY — waiting for START command.

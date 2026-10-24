@@ -17,6 +17,16 @@ export interface SearchFilters {
   kmRadius?:    number
   categoryId?:  string
   subCategory?: string
+  // P0-3 Step 8: canonical taxonomy auto-resolution (buyer never types it).
+  // Server-side validated on the search boundary (Step 5).
+  catalogCategoryId?:   string
+  catalogSubcategoryId?: string
+  catalogItemId?:        string
+  // Phase 3B: canonical URL slugs (locked CatalogBrowser links). Resolved to
+  // IDs against the cached bridge tree before the request is built — never
+  // sent as IDs directly, never hardcoded.
+  catalogCategorySlug?:   string
+  catalogSubcategorySlug?: string
   minPrice?:    number
   maxPrice?:    number
   minMoq?:      number

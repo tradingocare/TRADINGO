@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsEnum, IsBoolean, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsEnum, IsBoolean, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PlanVisibility } from '@prisma/client';
 
@@ -21,37 +21,9 @@ export class ValidateReferralDto {
   refereeCompanyId: string;
 }
 
-export class CreateOrderDto {
-  @IsString()
-  planId: string;
-
-  @IsString()
-  planTier: string;
-
-  @IsNumber()
-  @Min(1)
-  @Max(3)
-  duration: number;
-
-  @IsOptional()
-  @IsString()
-  couponCode?: string;
-
-  @IsOptional()
-  @IsString()
-  referralCode?: string;
-}
-
-export class ProcessPaymentDto {
-  @IsString()
-  orderId: string;
-
-  @IsString()
-  gateway: string;
-
-  @IsOptional()
-  paymentData: any;
-}
+// P0-6 remediation: legacy CreateOrderDto and ProcessPaymentDto were removed with the
+// retired mock-checkout endpoints (POST /membership/order, POST /membership/payment).
+// The canonical subscription purchase uses CreateSubscriptionOrderDto (payment module).
 
 export class CancelSubscriptionDto {
   @IsOptional()

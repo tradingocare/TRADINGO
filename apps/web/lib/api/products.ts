@@ -5,6 +5,7 @@ import type { ProductDetail, ProductDetailReview, ProductDetailQa } from '@/type
 export interface GetProductsParams {
   page?: number;
   limit?: number;
+  cursor?: string;
   category?: string;
   categoryId?: string;
   industryId?: string;
@@ -85,7 +86,11 @@ export interface WishlistItem {
     sku?: string;
     unit: string;
     moq: number;
-    price: number;
+    /** Never populated by the API (Product has no base price column) — display price derives from priceSlabs. */
+    price?: number;
+    priceSlabs?: { minQty: number; maxQty: number | null; price: number }[];
+    /** Present at runtime (wishlist query selects inventory); drives card availability. */
+    inventory?: { availableQuantity?: number | null; stockStatus?: string | null };
     originalPrice?: number;
     images?: string[];
     videoUrl?: string;

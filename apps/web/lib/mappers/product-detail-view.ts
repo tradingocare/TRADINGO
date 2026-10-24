@@ -54,11 +54,16 @@ export function toProductDetailView(product: ProductDetail, options: ProductDeta
   const verified = !!(company?.verificationLevel && company.verificationLevel !== 'LEVEL_0');
   const stockStatus = product.inventory?.stockStatus || 'OUT_OF_STOCK';
   const inStock = stockStatus === 'IN_STOCK' || stockStatus === 'LOW_STOCK';
+  // Location is vendor data: CompanyLocation city/state. No fallback invention —
+  // undefined lets the UI hide the slot or show an Ask-Seller state.
   const locationParts = [company?.city, company?.state].filter(Boolean);
   const reviewAvg = options.reviews?.average ?? 0;
   const reviewTotal = options.reviews?.total ?? 0;
+  // Buyer proof comes from the authoritative ProductReview aggregate only.
+  // monthlyOrders is order velocity, NOT fulfilled buyers — never used here.
+  // Zero/absent => undefined so the UI hides the metric instead of inventing it.
 
-  const specs: ProductDetailViewData['specs'] = [
+const specs: ProductDetailViewData['specs'] = [
     ...(product.specifications || []).map((spec) => ({ key: spec.key, label: spec.label || spec.key, value: spec.value })),
     ...Object.entries(options.specProps || {}).map(([label, value]) => ({ key: label, label, value })),
   ];
@@ -69,8 +74,10 @@ export function toProductDetailView(product: ProductDetail, options: ProductDeta
     product.gstInvoiceAvailable ? 'GST invoice available' : null,
     product.tradeCreditEligible ? 'Trade credit eligible' : null,
     product.deliveryEta ? `Lead time: ${product.deliveryEta}` : null,
-    product.returnPolicy ? `Returns: ${product.returnPolicy}` : null,
-    product.warrantyPeriod ? `Warranty: ${product.warrantyPeriod}` : null,
+    // Vendor policies are surfaced verbatim and labelled as vendor policy by
+    // the UI. Never reworded into a platform guarantee here.
+    product.returnPolicy ? `Returns: ${product.returnPolicy} (vendor policy)` : null,
+    product.warrantyPeriod ? `Warranty: ${product.warrantyPeriod} (vendor policy)` : null,
     inStock ? 'In stock and ready to ship' : 'Available on request',
   ].filter(Boolean).slice(0, 6) as string[];
 
@@ -81,22 +88,22 @@ export function toProductDetailView(product: ProductDetail, options: ProductDeta
     type: docTypeFrom(doc.title || '', doc.url),
   }));
 
-  const buyerCount = reviewTotal || product.savedCount || product.viewCount || 0;
-
-  return {
+return {
     id: product.id,
     productId: product.sku || product.id,
     slug: product.slug,
     title: product.name,
+    subtitle: product.shortDescription || undefined,
     brand: product.brand,
     category: product.category ? { name: product.category.name, slug: product.category.slug } : undefined,
     breadcrumb: [
       { label: 'Home', href: '/' },
-      { label: 'Products', href: '/trading' },
+      { label: 'Products', href: '/product' },
       ...(product.category ? [{ label: product.category.name, href: `/categories/${product.category.slug}` }] : []),
-      { label: product.name, href: `/trading/${product.slug}` },
+      { label: product.name, href: `/products/${product.slug}` },
     ],
     images,
+    videoUrl: product.videoUrl || undefined,
     price,
     mrp,
     discount,
@@ -114,9 +121,10 @@ export function toProductDetailView(product: ProductDetail, options: ProductDeta
       slug: company?.slug,
       logo: company?.logo,
       website: company?.website || undefined,
-      location: locationParts.length > 0 ? locationParts.join(', ') : 'Pan India',
+      location: locationParts.length > 0 ? locationParts.join(', ') : undefined,
       distance: (company as any)?.distanceKm ? `${(company as any).distanceKm} km away` : undefined,
       yearsInBusiness: company?.yearsActive,
+      businessType: company?.businessType || undefined,
       verified,
       elite: company?.isTradgoElite,
       gstVerified: !!(company?.gstNumber || company?.isGstRegistered),
@@ -124,6 +132,8 @@ export function toProductDetailView(product: ProductDetail, options: ProductDeta
       trustScore: company?.trustScore || product.trustScoreSnapshot || 0,
       responseRate: company?.responseRate,
       productsListed: company?.totalProducts,
+      // Pass through ONLY if the API exposes a public contact number.
+      phone: (company as any)?.mobile || (company as any)?.phone || undefined,
     },
     rating: reviewAvg || undefined,
     reviewCount: reviewTotal || undefined,
@@ -132,9 +142,11 @@ export function toProductDetailView(product: ProductDetail, options: ProductDeta
       earn: product.goCashEligible ? gocashFromPrice(price) : undefined,
     },
     stats: {
-      onTimeDelivery: product.deliveryEta || (product.trustScoreSnapshot >= 65 ? 'Verified track record' : 'Contact seller'),
-      responseRate: company?.responseRate ? `${Math.round(company.responseRate)}%` : 'Fast replies',
-      happyBuyers: `${formatCompactNumber(buyerCount || 0)}+`,
+      // Real signals only. Undefined => the UI hides the metric.
+      // On-time delivery % is not collected anywhere — never synthesized.
+      onTimeDelivery: product.deliveryEta || undefined,
+      responseRate: company?.responseRate ? `${Math.round(company.responseRate)}%` : undefined,
+      happyBuyers: reviewTotal > 0 ? `${formatCompactNumber(reviewTotal)}+` : undefined,
     },
     specs,
     highlights,
@@ -145,6 +157,6 @@ export function toProductDetailView(product: ProductDetail, options: ProductDeta
     warranty: product.warrantyPeriod,
     freeDeliveryAbove: product.freeDeliveryAbove != null ? Number(product.freeDeliveryAbove) : undefined,
     supportPhone: '+91 78277 28852',
-    supportEmail: 'support@tradingo.com',
+    supportEmail: 'tradingocare@tradingo.in',
   };
 }

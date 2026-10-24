@@ -76,7 +76,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-text-secondary">Support Email</label>
-                  <Input value={settings.support_email || 'support@tradingo.com'} onChange={(e) => setSettings(p => ({ ...p, support_email: e.target.value }))} />
+                  <Input value={settings.support_email || 'tradingocare@tradingo.in'} onChange={(e) => setSettings(p => ({ ...p, support_email: e.target.value }))} />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-text-secondary">Default Currency</label>

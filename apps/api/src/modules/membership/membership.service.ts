@@ -1,22 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException, UnauthorizedException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, PaymentGateway, PlanVisibility, PlanType } from '@prisma/client';
+import { Prisma, PlanVisibility, PlanType } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { InvoiceService } from '../billing/invoice.service';
 import { TaxService } from '../billing/tax.service';
 import { verifySignature } from '../payment/utils/signature';
-
-const PLAN_FEATURES: Record<string, string[]> = {
-  trade_start:   ['Buyer Visibility','GO Reach','Chat','RFQ (5/mo)','Basic Profile','1 Product','GOCASH Earning'],
-  trade_smart:   ['Buyer Visibility','GO Reach','Chat','RFQ (20/mo)','Flexible Pricing','Direct Orders','25 Products','Seller Badge','Basic Profile','Website','GST Invoice'],
-  trade_plus:    ['Buyer Visibility','GO Reach','Chat','RFQ (50/mo)','Flexible Pricing','Direct Orders','100 Products','Seller Badge','Branding','Business Profile','Website','Catalogue PDF','Basic Analytics'],
-  trade_pro:     ['Buyer Visibility','GO Reach','Chat','RFQ (100/mo)','Flexible Pricing','Direct Orders','500 Products','Seller Badge','Branding','Business Profile','Website','Catalogue PDF','Analytics','Response Badge','GOCASH 2x'],
-  trade_premium: ['Buyer Visibility','GO Reach','Chat','Unlimited RFQ','Flexible Pricing','Direct Orders','2000 Products','Seller Badge','Branding','Business Profile','Website','Catalogue PDF','Advanced Analytics','Relationship Manager','Featured Visibility','GOCASH 3x'],
-  trade_elite:   ['Everything in Premium','Unlimited Products','Unlimited RFQs','TRADGO Elite','GO DIGITAL Featured','Price Lock','Advanced Analytics','GOCASH 3x','Priority RM','API Access','White Label Options','Custom Integration'],
-  'trad-up':     ['Business Profile','Basic Verification','Product Listing (configurable)','Receive RFQs','Buyer Chat','Basic Search Visibility','Basic Dashboard','Basic Orders','Basic Notifications'],
-  'trade-smart-launch': ['Business Profile','Basic Verification','Product Listing','Receive RFQs','Buyer Chat','Search Visibility','Basic Dashboard','Basic Orders','Basic Notifications','GOCASH Enabled','Premium Badge','Priority Search Ranking','Advanced Analytics','Campaign Participation','Referral Rewards','Exports','Advanced RFQ','Premium Dashboard'],
-};
+import { RazorpayService } from '../payment/gateways/razorpay.service';
+import { isDelhiIntraState } from '../billing/utils/financial-year.util';
+import type { EntitlementMap } from './plan-entitlements';
+import { CORE_PLANS, PLAN_FEATURES } from './seed-data';
 
 @Injectable()
 export class MembershipService {
@@ -28,6 +21,7 @@ export class MembershipService {
     private readonly invoiceService: InvoiceService,
     @Inject(forwardRef(() => TaxService))
     private readonly taxService: TaxService,
+    private readonly razorpayService: RazorpayService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -678,11 +672,16 @@ export class MembershipService {
         data: {
           planId: 'trad-up',
           name: 'TRAD UP™',
-          description: 'Launch Membership — Start selling on TRADINGO with zero investment. Valid for 6 months.',
+          description: 'Launch Membership — Start selling on TRADINGO with zero investment. Valid for 90 days.',
           pricePlanA: 0,
           pricePlanB: 0,
           pricePlanC: 0,
-          duration: 6,
+          // Display/back-compat months field. The authoritative TRAD UP term is
+          // metadata.durationDays (days; founder-locked default 90 — see
+          // resolveTradUpDurationDays). Admin changes durationDays for future
+          // activations via PATCH /admin/plans/trad-up; existing activations
+          // keep their snapshotted expiresAt.
+          duration: 3,
           sortOrder: 1,
           visibility: PlanVisibility.LAUNCH,
           isFree: true,
@@ -690,7 +689,7 @@ export class MembershipService {
           features: PLAN_FEATURES['trad-up'] || [],
           upgradeRules: { allowedUpgrades: ['trade-smart-launch'] },
           gracePeriodDays: 7,
-          metadata: { launchPhase: 'v1', maxProducts: 5, gocashEnabled: false, premiumBadge: false, priorityRanking: false, campaignRewards: false, referralRewards: false, aiFeatures: false },
+          metadata: { launchPhase: 'v1', maxProducts: 5, gocashEnabled: false, premiumBadge: false, priorityRanking: false, campaignRewards: false, referralRewards: false, aiFeatures: false, durationDays: 90 },
         },
       });
       await this.prisma.planFeature.createMany({
@@ -733,14 +732,8 @@ export class MembershipService {
   }
 
   async seedPlans() {
-    const plans = [
-      { planId:'trade_start',   name:'Trade Start',  pricePlanA:6000,  pricePlanB:12000, pricePlanC:18000, sortOrder:1 },
-      { planId:'trade_smart',   name:'Trade Smart',  pricePlanA:12000, pricePlanB:18000, pricePlanC:30000, sortOrder:2 },
-      { planId:'trade_plus',    name:'Trade Plus',   pricePlanA:18000, pricePlanB:30000, pricePlanC:50000, sortOrder:3 },
-      { planId:'trade_pro',     name:'Trade Pro',    pricePlanA:24000, pricePlanB:50000, pricePlanC:75000, sortOrder:4 },
-      { planId:'trade_premium', name:'Trade Premium',pricePlanA:30000, pricePlanB:75000, pricePlanC:110000, sortOrder:5 },
-      { planId:'trade_elite',   name:'Trade Elite',  pricePlanA:40000, pricePlanB:110000,pricePlanC:150000, sortOrder:6 },
-    ];
+    // Canonical rows live in seed-data.ts (single source shared with E2E).
+    const plans = CORE_PLANS;
 
     const results: any[] = [];
 
@@ -791,26 +784,382 @@ export class MembershipService {
       results.push({ planId: p.planId, action: existing ? 'exists' : 'created' });
     }
 
-    return { message: `Plans seeded (${plans.length} core plans)`, results };
+    // Backfill machine-readable entitlement rows (Part 1 foundation). Never
+    // overwrites existing keys — admin edits via features/batch are preserved.
+    const entitlementSeed = await this.seedPlanEntitlements();
+
+    // Backfill v1 plan versions (D-1 approved foundation). Never overwrites
+    // existing versions; existing subscribers keep working (nullable refs).
+    const versionBackfill = await this.backfillPlanVersions();
+
+    return { message: `Plans seeded (${plans.length} core plans)`, results, entitlements: entitlementSeed, versions: versionBackfill };
+  }
+
+  /**
+   * Seed canonical entitlement rows (plan-entitlements.ts matrix) for the six
+   * plans. Idempotent per (planId, feature-key): existing keys are NEVER
+   * overwritten, so admin customizations survive reseeds. Safe to call
+   * standalone or as the seedPlans() tail.
+   */
+  async seedPlanEntitlements() {
+    const { SIX_PLAN_IDS, PLAN_ENTITLEMENT_MATRIX, PLAN_ENTITLEMENT_KEYS } = await import('./plan-entitlements');
+    const keyMeta = new Map(PLAN_ENTITLEMENT_KEYS.map((k) => [k.key, k]));
+    let created = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < SIX_PLAN_IDS.length; i++) {
+      const planId = SIX_PLAN_IDS[i];
+      const existing = await this.prisma.planFeature.findMany({
+        where: { planId },
+        select: { feature: true },
+      });
+      const present = new Set(existing.map((f) => f.feature));
+
+      for (let s = 0; s < PLAN_ENTITLEMENT_MATRIX.length; s++) {
+        const row = PLAN_ENTITLEMENT_MATRIX[s];
+        if (present.has(row.key)) {
+          skipped++;
+          continue;
+        }
+        const meta = keyMeta.get(row.key);
+        await this.prisma.planFeature.create({
+          data: {
+            planId,
+            category: meta?.category ?? 'entitlements',
+            feature: row.key,
+            included: row.included[i],
+            value: row.value[i],
+            sortOrder: 100 + s,
+          },
+        });
+        created++;
+      }
+    }
+
+    return { created, skipped };
+  }
+
+  /**
+   * D-1 approved v1 backfill: for every existing MembershipPlan row, create
+   * exactly one version-1 snapshot from currently recoverable data (row
+   * prices/duration/flags + PlanFeature rows) — ONLY when the plan has no
+   * version yet. Never overwrites, never fabricates history: pre-edit terms
+   * are NOT recoverable and are NOT reconstructed (see D-1 audit §9).
+   * Existing subscribers are untouched (no Company/PlanHistory writes here;
+   * version refs stay NULL until a future cutover assigns them).
+   */
+  async backfillPlanVersions() {
+    const plans = await this.prisma.membershipPlan.findMany({
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    let created = 0;
+    let skipped = 0;
+    for (const plan of plans) {
+      const latest = await this.prisma.membershipPlanVersion.findFirst({
+        where: { planId: plan.planId },
+        orderBy: { version: 'desc' },
+        select: { version: true },
+      });
+      if (latest) {
+        skipped++;
+        continue;
+      }
+
+      const features = await this.prisma.planFeature.findMany({
+        where: { planId: plan.planId },
+        orderBy: { sortOrder: 'asc' },
+      });
+
+      await this.prisma.membershipPlanVersion.create({
+        data: {
+          planId: plan.planId,
+          version: 1,
+          status: plan.visibility,
+          pricePlanA: plan.pricePlanA,
+          pricePlanB: plan.pricePlanB,
+          pricePlanC: plan.pricePlanC,
+          duration: plan.duration,
+          isFree: plan.isFree,
+          badgeText: plan.badgeText,
+          features: features.map((f) => ({
+            feature: f.feature,
+            category: f.category,
+            included: f.included,
+            value: f.value,
+            sortOrder: f.sortOrder,
+          })),
+        },
+      });
+      created++;
+    }
+
+    return { created, skipped };
+  }
+
+  /**
+   * Resolve a plan's machine-readable entitlements: { key: { included, value } }.
+   * Reads PlanFeature rows (structured keys from plan-entitlements.ts plus any
+   * admin-added keys, including `ai_credits` owned by AiCreditsService).
+   * Unknown/foreign keys pass through raw; known keys keep stored values.
+   */
+  async getPlanEntitlements(planId: string): Promise<EntitlementMap> {
+    const rows = await this.prisma.planFeature.findMany({
+      where: { planId },
+      orderBy: { sortOrder: 'asc' },
+    });
+    const map: EntitlementMap = {};
+    for (const r of rows) {
+      if (!(r.feature in map)) {
+        map[r.feature] = { included: r.included, value: r.value };
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Resolve the effective entitlements for a company — the single canonical
+   * version-aware resolver (Part 2B-1). Precedence (evidence-based):
+   *   1. valid currentPlanVersionId → purchased version snapshot (authoritative;
+   *      live PlanFeature values are NEVER consulted — grandfathering);
+   *   2. existing canonical subscription/plan relationship (currentPlanId,
+   *      then legacy enum) → live rows (pre-cutover subscribers, unchanged);
+   *   3. trade_start fallback (mirrors checkMembershipLimit's convention).
+   * A dangling version ref (row deleted) falls through to (2)/(3) — never
+   * fabricated, never an error for reads.
+   */
+  async getCompanyEntitlements(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { currentPlanId: true, subscriptionPlan: true, currentPlanVersionId: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+
+    if (company.currentPlanVersionId) {
+      const version = await this.prisma.membershipPlanVersion.findUnique({
+        where: { id: company.currentPlanVersionId },
+      });
+      if (version) {
+        const { versionFeaturesToMap } = await import('./plan-entitlements');
+        return {
+          planId: version.planId,
+          versionId: version.id,
+          version: version.version,
+          entitlements: versionFeaturesToMap(version.features),
+        };
+      }
+    }
+
+    const enumToPlanId: Record<string, string> = {
+      TRADE_START: 'trade_start',
+      TRADE_SMART: 'trade_smart',
+      TRADE_PLUS: 'trade_plus',
+      TRADE_PRO: 'trade_pro',
+      TRADE_PREMIUM: 'trade_premium',
+      TRADE_ELITE: 'trade_elite',
+    };
+    const planId =
+      company.currentPlanId ||
+      (company.subscriptionPlan ? enumToPlanId[company.subscriptionPlan] || 'trade_start' : 'trade_start');
+
+    return { planId, entitlements: await this.getPlanEntitlements(planId) };
+  }
+
+  /**
+   * Resolve the version a NEW acquisition should attach: latest PUBLIC
+   * version, falling back to latest LAUNCH version (covers LAUNCH-visibility
+   * plans such as trad-up), honoring the effective window. DRAFT/ARCHIVED
+   * versions are never served to new subscribers. Returns null when no
+   * acquirable version exists — callers must leave the ref unset (legacy
+   * fallback preserved), never fabricate one.
+   */
+  async getActivePlanVersion(planId: string, client?: Prisma.TransactionClient | PrismaService) {
+    const db = client ?? this.prisma;
+    const now = new Date();
+    const window = { effectiveFrom: { lte: now }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }] };
+    return (
+      (await db.membershipPlanVersion.findFirst({
+        where: { planId, status: PlanVisibility.PUBLIC, ...window },
+        orderBy: { version: 'desc' },
+      })) ??
+      (await db.membershipPlanVersion.findFirst({
+        where: { planId, status: PlanVisibility.LAUNCH, ...window },
+        orderBy: { version: 'desc' },
+      }))
+    );
+  }
+
+  /**
+   * Numeric convenience: allowance for `key` on a company's plan, or
+   * `fallback` when the key is absent. `included:false` resolves to 0,
+   * "unlimited" resolves to Infinity.
+   */
+  async getEntitlementLimit(companyId: string, key: string, fallback: number): Promise<number> {
+    const { entitlementLimit } = await import('./plan-entitlements');
+    const { entitlements } = await this.getCompanyEntitlements(companyId);
+    return entitlementLimit(entitlements, key, fallback);
+  }
+
+  /**
+   * P2A customer-facing comparison: deterministic assembly of the canonical
+   * entitlement matrix + presentation copy. Pure read path — no DB, no auth
+   * context, no legacy PlanFeature rows involved.
+   */
+  async getEntitlementMatrix() {
+    const { buildComparisonMatrix } = await import('./plan-entitlements');
+    return buildComparisonMatrix();
+  }
+
+  /**
+   * 2B-2B enforcement fork (canonical): the resolved version snapshot iff
+   * the company is version-pinned (currentPlanVersionId points at a live
+   * row); null for legacy subscribers (NULL ref or dangling row).
+   * Enforcement sites use the snapshot when non-null and keep their legacy
+   * behavior verbatim otherwise — pre-cutover subscribers can never be
+   * tightened by the newly-seeded matrix values.
+   */
+  async getVersionedEntitlements(companyId: string): Promise<EntitlementMap | null> {
+    const resolution = await this.getCompanyEntitlements(companyId);
+    if ('versionId' in resolution && resolution.versionId) return resolution.entitlements;
+    return null;
+  }
+
+  /**
+   * 2B-2B flexible-pricing enforcement: price-slab count cap from the
+   * version snapshot (`price_tiers`; "advanced" → Infinity). Legacy
+   * subscribers (null) keep unlimited slabs verbatim. An update to an
+   * existing product is never blocked merely because its current slab count
+   * already exceeds a reduced cap: the effective allowance is
+   * max(snapshot, existingCount).
+   */
+  async enforcePriceTierLimit(companyId: string, newCount: number, existingCount = 0): Promise<void> {
+    const snap = await this.getVersionedEntitlements(companyId);
+    if (!snap || !('price_tiers' in snap)) return;
+    const { entitlementLimit } = await import('./plan-entitlements');
+    const max = entitlementLimit(snap, 'price_tiers', Infinity);
+    if (newCount > Math.max(max, existingCount)) {
+      throw new BadRequestException(
+        `Plan allows a maximum of ${max === Infinity ? 'unlimited' : max} price slab(s) per product`,
+      );
+    }
   }
 
   // Map a planId (lowercase, frontend representation) to its canonical PlanType enum.
   // One consistent representation across plan selection → enrollment → membership.
+  // P0-2 remediation: launch plans (trad-up, trade-smart-launch) are NOT PlanType enum
+  // members (extending the enum would require a Prisma migration — deliberately out of
+  // this wave). Their canonical identity is carried by Company.currentPlanId (free-form
+  // string), with Company.subscriptionPlan/SubscriptionEvent.planType left NULL — both
+  // fields are nullable by schema, so no schema change is needed. resolvePlanTypeOrNullOrThrow
+  // is the single resolution point: core plans → enum value; known launch plans → null
+  // (legal, identity preserved elsewhere); unknown plans → hard failure BEFORE any
+  // payment capture, never after.
+  private static readonly CORE_PLAN_TYPE_MAP: Record<string, PlanType> = {
+    trade_start: PlanType.TRADE_START,
+    trade_smart: PlanType.TRADE_SMART,
+    trade_plus: PlanType.TRADE_PLUS,
+    trade_pro: PlanType.TRADE_PRO,
+    trade_premium: PlanType.TRADE_PREMIUM,
+    trade_elite: PlanType.TRADE_ELITE,
+  };
+
+  private static readonly LAUNCH_PLAN_IDS = new Set(['trad-up', 'trade-smart-launch']);
+
+  // ── TRAD UP final business policy (founder-locked) ─────────────────────
+  // TRAD UP is TRADINGO's free promotional/trial plan:
+  //   1. ONE PAN = ONE TRADINGO identity, lifetime (see auth.service PAN guards).
+  //   2. ONE PAN receives the TRAD UP benefit ONLY ONCE per lifetime
+  //      (server-side, history-anchored — see assertTradUpLifetimeEligible).
+  //   3. Default duration 90 DAYS — single canonical constant below, never
+  //      hardcoded anywhere else in the API.
+  //   4. Admin override for FUTURE activations via the plan row's
+  //      metadata.durationDays (existing canonical plan mechanism:
+  //      PATCH /admin/plans/trad-up { metadata: { durationDays: N } }).
+  //      Existing activations keep their snapshotted expiresAt/durationDays —
+  //      an admin change never retroactively alters them.
+  // MembershipPlan.duration stays a MONTHS display/back-compat field; the
+  // authoritative TRAD UP term is days (metadata → constant → snapshot).
+  private static readonly TRAD_UP_PLAN_ID = 'trad-up';
+  private static readonly TRAD_UP_DEFAULT_DURATION_DAYS = 90;
+  private static readonly TRAD_UP_DURATION_DAYS_MIN = 1;
+  private static readonly TRAD_UP_DURATION_DAYS_MAX = 3650;
+
+  // Resolve the TRAD UP term for a NEW activation: validated
+  // metadata.durationDays when present, otherwise the 90-day default.
+  private resolveTradUpDurationDays(plan: { planId: string; metadata?: unknown }): { days: number; source: 'plan-metadata' | 'trad-up-default' } {
+    const meta = (plan as { metadata?: unknown })?.metadata;
+    const raw = meta && typeof meta === 'object' ? (meta as Record<string, unknown>).durationDays : undefined;
+    const parsed = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw;
+    if (
+      typeof parsed === 'number' &&
+      Number.isInteger(parsed) &&
+      parsed >= MembershipService.TRAD_UP_DURATION_DAYS_MIN &&
+      parsed <= MembershipService.TRAD_UP_DURATION_DAYS_MAX
+    ) {
+      return { days: parsed, source: 'plan-metadata' };
+    }
+    return { days: MembershipService.TRAD_UP_DEFAULT_DURATION_DAYS, source: 'trad-up-default' };
+  }
+
+  // ONE PAN → ONE TRAD UP BENEFIT, lifetime. Server-side gate for
+  // activateFreePlan: resolves the company's canonical PAN (Company.panNumber
+  // is the F9-established legal source of truth) and rejects when ANY company
+  // sharing that PAN — including soft-deleted ones (no deletedAt filter, so
+  // delete/re-register cannot reset the clock) — has EVER consumed TRAD UP.
+  // Lifetime consumption = any PlanHistory row with planId 'trad-up' (every
+  // free activation writes one transactionally; enrollTrial can never mint
+  // one since toPlanType throws for launch ids before any write).
+  // Fail-closed: a lookup failure propagates and blocks activation.
+  // Companies without a PAN anchor skip this gate (per-company idempotency
+  // above still applies); the anchor binds on PAN declaration via the
+  // auth-service PAN guards.
+  private async assertTradUpLifetimeEligible(
+    db: Prisma.TransactionClient | PrismaService,
+    companyId: string,
+    panNumber: string | null | undefined,
+  ): Promise<void> {
+    const panKey = (panNumber ?? '').trim().toUpperCase();
+    if (!panKey) return;
+    const siblings = (await db.company.findMany({
+      where: { panNumber: { equals: panKey, mode: 'insensitive' } },
+      select: { id: true },
+    })) ?? [];
+    const companyIds = [companyId, ...siblings.map((s) => s.id)];
+    const prior = (await db.planHistory.findMany({
+      where: { companyId: { in: companyIds }, planId: MembershipService.TRAD_UP_PLAN_ID },
+      take: 1,
+      select: { id: true },
+    })) ?? [];
+    if (prior.length > 0) {
+      throw new BadRequestException('TRAD UP free benefit has already been consumed for this PAN and cannot be activated again');
+    }
+  }
+
   private toPlanType(planId: string): PlanType {
     const normalized = planId.trim().toLowerCase();
-    const planTypeMap: Record<string, PlanType> = {
-      trade_start: PlanType.TRADE_START,
-      trade_smart: PlanType.TRADE_SMART,
-      trade_plus: PlanType.TRADE_PLUS,
-      trade_pro: PlanType.TRADE_PRO,
-      trade_premium: PlanType.TRADE_PREMIUM,
-      trade_elite: PlanType.TRADE_ELITE,
-    };
-    const planType = planTypeMap[normalized];
+    const planType = MembershipService.CORE_PLAN_TYPE_MAP[normalized];
     if (!planType) {
       throw new BadRequestException(`Plan '${planId}' is not supported for subscription enrollment`);
     }
     return planType;
+  }
+
+  // P0-2: single plan-type resolution point for subscription writes. Returns the enum
+  // value for core plans, or null for the two known launch plans (identity preserved
+  // via currentPlanId / SubscriptionEvent metadata). Throws for anything else so an
+  // unmappable plan can NEVER be activated — and the throw now happens before payment
+  // capture commits (see verifySubscriptionPayment transaction).
+  private resolvePlanTypeOrNullOrThrow(planId: string): PlanType | null {
+    const normalized = planId.trim().toLowerCase();
+    if (MembershipService.CORE_PLAN_TYPE_MAP[normalized]) return MembershipService.CORE_PLAN_TYPE_MAP[normalized];
+    if (MembershipService.LAUNCH_PLAN_IDS.has(normalized)) return null;
+    throw new BadRequestException(`Plan '${planId}' is not supported for subscription enrollment`);
+  }
+
+  // P0-2: validation-only variant used at order-creation time to fail fast (before a
+  // gateway order exists) for any planId that could never activate.
+  private ensurePlanResolvable(planId: string): void {
+    this.resolvePlanTypeOrNullOrThrow(planId);
   }
 
   async getCurrentSubscription(companyId: string) {
@@ -828,129 +1177,135 @@ export class MembershipService {
     return company;
   }
 
-  async createOrder(companyId: string, planId: string, planTier: string, duration: number) {
-    const plan = await this.prisma.membershipPlan.findUnique({ where: { planId } });
-    if (!plan) throw new NotFoundException('Plan not found');
+  // P0-6 remediation: legacy `createOrder` (order computation without a gateway order)
+  // and `processPayment` (PENDING payment creation with client-supplied amount) were
+  // removed together with their only callers — the retired /plans/vendor/purchase
+  // mock checkout endpoints. The canonical subscription payment path is
+  // PaymentService.createSubscriptionGatewayOrder + verifySubscriptionPayment.
 
-    const price = planTier === 'B' ? plan.pricePlanB : planTier === 'C' ? plan.pricePlanC : plan.pricePlanA;
-    const totalAmount = price * duration;
+  async confirmPayment(companyId: string, paymentId: string, gatewayPaymentId: string, gatewaySignature: string) {
+    // P0-8 remediation: ownership + HMAC + status-guarded, idempotent, transactional confirmation.
 
-    const orderId = `ORD-${uuid().slice(0, 8).toUpperCase()}`;
-
-    return {
-      orderId,
-      planId: plan.planId,
-      planName: plan.name,
-      planTier,
-      amount: totalAmount,
-      currency: 'INR',
-      duration,
-      paymentStatus: 'PENDING',
-    };
-  }
-
-  async processPayment(
-    companyId: string,
-    userId: string,
-    orderId: string,
-    gateway: PaymentGateway,
-    paymentData: any,
-  ) {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
-    if (!company) throw new NotFoundException('Company not found');
-
-    // Create payment record
-    const payment = await this.prisma.payment.create({
-      data: {
-        companyId,
-        type: 'SUBSCRIPTION',
-        gateway,
-        status: 'PENDING',
-        amount: paymentData.amount,
-        currency: 'INR',
-        description: `Membership: ${paymentData.planName} (${paymentData.planTier})`,
-        gatewayOrderId: paymentData.gatewayOrderId,
-        notes: { orderId, planId: paymentData.planId, planTier: paymentData.planTier },
-      },
+    // 1. Load the payment scoped to the authenticated user's company (ownership).
+    //    findFirst on { id, companyId } -> cross-tenant paymentId simply looks "not found" (404).
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: paymentId, companyId },
     });
+    if (!payment) throw new NotFoundException('Payment record not found');
 
-    return payment;
-  }
-
-  async confirmPayment(paymentId: string, gatewayPaymentId: string, gatewaySignature: string) {
-    const payment = await this.prisma.payment.update({
-      where: { id: paymentId },
-      data: {
-        status: 'CAPTURED',
-        gatewayPaymentId,
-        gatewaySignature,
-        paidAt: new Date(),
-      },
+    // 2. Cryptographic verification via the canonical Razorpay integration.
+    //    The signed payload is the gateway order id | gateway payment id (Razorpay checkout handler contract).
+    const gatewayOrderId = payment.gatewayOrderId;
+    if (!gatewayOrderId) {
+      throw new BadRequestException('Payment has no gateway order reference; cannot verify');
+    }
+    const isValidSignature = this.razorpayService.verifyPayment({
+      gatewayOrderId,
+      gatewayPaymentId,
+      gatewaySignature,
     });
+    if (!isValidSignature) {
+      this.logger.warn(`Payment confirmation rejected: invalid gateway signature (payment ${payment.id})`);
+      throw new BadRequestException('Payment verification failed — signature mismatch');
+    }
 
-    // Activate subscription on company
-    const now = new Date();
-    const expiresAt = new Date(now);
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    // 3. Idempotency: an already-CAPTURED payment with this gatewayPaymentId is confirmed; return existing state.
+    //    Terminal failed/refunded states are never resurrected into success.
+    if (payment.status === 'CAPTURED') {
+      if (payment.gatewayPaymentId === gatewayPaymentId) {
+        const existingInvoice = await this.prisma.invoice.findUnique({
+          where: { paymentId: payment.id },
+          select: { invoiceNumber: true },
+        });
+        return { success: true, paymentId: payment.id, invoiceNumber: existingInvoice?.invoiceNumber || null, idempotent: true };
+      }
+      throw new BadRequestException('Payment already confirmed with a different gateway payment id');
+    }
+    if (payment.status !== 'PENDING' && payment.status !== 'PROCESSING') {
+      throw new BadRequestException(`Payment cannot be confirmed from status ${payment.status}`);
+    }
 
+    // 4. Order/payment consistency: the signature is bound to THIS payment's gateway order
+    //    (verified in step 2 via payment.gatewayOrderId), so a signature for an unrelated
+    //    order cannot confirm this payment. Amount/currency/plan are taken from the stored
+    //    payment row (never from the client request).
+
+    // 5. Transactional confirmation: capture + activation + invoice commit atomically.
+    //    (Amount representation is preserved EXACTLY as the existing canonical path expects —
+    //    no unit conversion added in this remediation.)
     const notes = (payment.notes as any) || {};
 
-    await this.prisma.company.update({
-      where: { id: payment.companyId },
-      data: {
-        subscriptionStatus: 'ACTIVE',
-        subscriptionPlan: notes.planId as any,
-        currentPlanId: notes.planId as string,
-        subscriptionActivatedAt: now,
-        subscriptionExpiresAt: expiresAt,
-        status: 'ACTIVE',
-      },
-    });
-
-    // Create subscription event
-    await this.prisma.subscriptionEvent.create({
-      data: {
-        companyId: payment.companyId,
-        status: 'ACTIVE',
-        planType: notes.planId as any,
-        metadata: {
-          paymentId: payment.id,
-          orderId: notes.orderId,
-          planTier: notes.planTier,
-          amount: payment.amount,
+    const result = await this.prisma.$transaction(async (tx) => {
+      const captured = await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'CAPTURED',
+          gatewayPaymentId,
+          gatewaySignature,
+          paidAt: new Date(),
         },
-      },
+      });
+
+      const now = new Date();
+      const expiresAt = new Date(now);
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+      await tx.company.update({
+        where: { id: captured.companyId },
+        data: {
+          subscriptionStatus: 'ACTIVE',
+          subscriptionPlan: notes.planId as any,
+          currentPlanId: notes.planId as string,
+          subscriptionActivatedAt: now,
+          subscriptionExpiresAt: expiresAt,
+          status: 'ACTIVE',
+        },
+      });
+
+      await tx.subscriptionEvent.create({
+        data: {
+          companyId: captured.companyId,
+          status: 'ACTIVE',
+          planType: notes.planId as any,
+          metadata: {
+            paymentId: captured.id,
+            orderId: notes.orderId,
+            planTier: notes.planTier,
+            amount: captured.amount,
+          },
+        },
+      });
+
+      await tx.planHistory.create({
+        data: {
+          companyId: captured.companyId,
+          planId: notes.planId as any || 'unknown',
+          changeType: 'RENEWAL',
+          toStatus: 'ACTIVE',
+          amount: captured.amount,
+          metadata: { paymentId: captured.id, orderId: notes.orderId, planTier: notes.planTier },
+        },
+      });
+
+      const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}-${uuid().slice(0,6).toUpperCase()}`;
+      await tx.invoice.create({
+        data: {
+          invoiceNumber,
+          companyId: captured.companyId,
+          paymentId: captured.id,
+          subtotal: captured.amount,
+          totalAmount: captured.amount,
+          currency: captured.currency,
+          status: 'PAID',
+          issuedAt: now,
+          paidAt: now,
+        },
+      });
+
+      return { success: true, paymentId: captured.id, invoiceNumber };
     });
 
-    // Record plan history
-    await this.prisma.planHistory.create({
-      data: {
-        companyId: payment.companyId,
-        planId: notes.planId as any || 'unknown',
-        changeType: 'RENEWAL',
-        toStatus: 'ACTIVE',
-        amount: payment.amount,
-        metadata: { paymentId: payment.id, orderId: notes.orderId, planTier: notes.planTier },
-      },
-    });
-
-    // Generate invoice
-    const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}-${uuid().slice(0,6).toUpperCase()}`;
-    await this.prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        companyId: payment.companyId,
-        paymentId: payment.id,
-        subtotal: payment.amount,
-        totalAmount: payment.amount,
-        currency: payment.currency,
-        status: 'PAID',
-        issuedAt: now,
-        paidAt: now,
-      },
-    });
-
-    return { success: true, paymentId: payment.id, invoiceNumber };
+    return result;
   }
 
   async handleWebhook(gateway: string, rawBody: string, signature: string) {
@@ -1088,45 +1443,68 @@ export class MembershipService {
     return { success: true, message: 'Subscription cancelled' };
   }
 
-  async activateSubscription(data: {
-    companyId: string;
-    planId: string;
-    planTier: string;
-    amount: number;
-    paymentId: string;
-    duration?: number;
-  }) {
+  // P0-2 remediation: activateSubscription now threads an optional Prisma transaction
+  // client (the same pattern enrollTrial has used since inception) so the verify path
+  // and the webhook can make capture → activation → invoice ATOMIC. Every write below
+  // goes through the provided client (tx when transacted, prisma when standalone).
+  // Plan-type resolution uses resolvePlanTypeOrNullOrThrow: core plans get their enum
+  // value; launch plans (trad-up / trade-smart-launch) intentionally carry identity via
+  // currentPlanId with a nullable subscriptionPlan (no enum falsification).
+  async activateSubscription(
+    data: {
+      companyId: string;
+      planId: string;
+      planTier: string;
+      amount: number;
+      paymentId: string;
+      duration?: number;
+    },
+    client?: Prisma.TransactionClient | PrismaService,
+  ) {
+    const db = client ?? this.prisma;
+
     const now = new Date();
     const months = (data.duration || 1) * 12;
     const expiresAt = new Date(now);
     expiresAt.setMonth(expiresAt.getMonth() + months);
 
-    await this.prisma.company.update({
+    const planType = this.resolvePlanTypeOrNullOrThrow(data.planId);
+
+    // Part 2B-1: attach the currently acquirable plan version (if any) so the
+    // new subscription resolves to its intended version going forward. Purely
+    // additive reference write — amounts, dates, plan identity, GST and invoice
+    // behavior below are untouched. When no acquirable version exists the field
+    // is left alone (legacy fallback preserved; nothing fabricated).
+    const activeVersion = await this.getActivePlanVersion(data.planId, db);
+
+    await db.company.update({
       where: { id: data.companyId },
       data: {
         subscriptionStatus: 'ACTIVE',
-        subscriptionPlan: this.toPlanType(data.planId),
+        subscriptionPlan: planType,
         currentPlanId: data.planId,
+        ...(activeVersion ? { currentPlanVersionId: activeVersion.id } : {}),
         subscriptionActivatedAt: now,
         subscriptionExpiresAt: expiresAt,
         status: 'ACTIVE',
       },
     });
 
-    await this.prisma.subscriptionEvent.create({
+    await db.subscriptionEvent.create({
       data: {
         companyId: data.companyId,
         status: 'ACTIVE',
-        planType: this.toPlanType(data.planId),
+        planType,
         metadata: {
           paymentId: data.paymentId,
           planTier: data.planTier,
           amount: data.amount,
+          planId: data.planId,
         },
       },
     });
 
-    await this.prisma.planHistory.create({
+    await db.planHistory.create({
       data: {
         companyId: data.companyId,
         planId: data.planId,
@@ -1140,17 +1518,27 @@ export class MembershipService {
     const planNames: Record<string, string> = {
       trade_start: 'Trade Start', trade_smart: 'Trade Smart', trade_plus: 'Trade Plus',
       trade_pro: 'Trade Pro', trade_premium: 'Trade Premium', trade_elite: 'Trade Elite',
+      'trad-up': 'TRAD UP™', 'trade-smart-launch': 'Trade Smart™ Launch',
     };
 
-    // Determine intra-state vs inter-state for GST
-    // Seller state is configured in seller.stateCode (default: '07' = Delhi)
-    // Buyer state is from their primary HEAD_OFFICE location
+    // Determine intra-state vs inter-state for GST (GST Rule 46(b)).
+    // isDelhiIntraState() accepts full state names, 2-digit codes, or GSTINs.
+    // Fails closed to inter-state (IGST) when buyer state cannot be resolved.
     const sellerStateCode = this.configService.get<string>('seller.stateCode') || '07';
-    const buyerLocation = await this.prisma.companyLocation.findFirst({
-      where: { companyId: data.companyId, type: 'HEAD_OFFICE', deletedAt: null },
-      orderBy: { isPrimary: 'desc' },
-    });
-    const isIntraState = buyerLocation?.state === sellerStateCode;
+    const [buyerLocation, buyerCompany] = await Promise.all([
+      db.companyLocation.findFirst({
+        where: { companyId: data.companyId, type: 'HEAD_OFFICE', deletedAt: null },
+        orderBy: { isPrimary: 'desc' },
+      }),
+      db.company.findUnique({
+        where: { id: data.companyId },
+        select: { gstNumber: true },
+      }),
+    ]);
+
+    // Prefer GSTIN prefix for state resolution; fall back to location.state name
+    const buyerStateInput = buyerCompany?.gstNumber || buyerLocation?.state;
+    const isIntraState = isDelhiIntraState(buyerStateInput, sellerStateCode);
 
     const invoice = await this.invoiceService.createSubscriptionInvoice({
       companyId: data.companyId,
@@ -1160,13 +1548,159 @@ export class MembershipService {
       planTier: data.planTier,
       amount: data.amount,
       isIntraState,
-    });
+      gstNumber: buyerCompany?.gstNumber || null,
+    }, client);
 
     return { success: true, companyId: data.companyId, planId: data.planId, invoiceNumber: invoice.invoiceNumber };
   }
 
   async getInvoice(invoiceId: string) {
     return this.invoiceService.getInvoiceWithDetails(invoiceId);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // P0-2 remediation: FREE-plan activation (TRAD UP™).
+  //
+  // A ₹0 plan must NEVER require a Razorpay order (the gateway rejects zero-amount
+  // orders, which dead-ended the TRAD UP flow). This method activates a free plan
+  // directly, transactionally, while preserving every existing control:
+  //   - plan must exist, be active, and be isFree
+  //   - launch plans (trad-up / trade-smart-launch) must pass the launch-mode gate
+  //     — identical visibility semantics to getPlans()
+  //   - one-activation-per-plan: idempotent if the company is ALREADY on this plan
+  //   - plan-type resolution runs BEFORE any write, so an unmappable plan can never
+  //     leave a half-activated state
+  // TRAD UP final business policy (founder-locked, additive — paid-plan paths
+  // untouched):
+  //   - term is DAYS (metadata.durationDays override, else 90-day default —
+  //     see resolveTradUpDurationDays), snapshotted per activation;
+  //   - one PAN consumes the benefit once per lifetime (history-anchored,
+  //     survives expiry/deletion/device/account changes);
+  //   - expiry only flips subscriptionStatus to EXPIRED via the existing
+  //     processor — the account, login and six-plan visibility are unaffected;
+  //   - NEVER touches the payment gateway (₹0 path).
+  // ─────────────────────────────────────────────────────────────────────────────
+  async activateFreePlan(companyId: string, planId: string) {
+    const plan = await this.prisma.membershipPlan.findUnique({ where: { planId } });
+    if (!plan) throw new NotFoundException('Plan not found');
+    if (!plan.isActive) throw new BadRequestException('Plan is not available');
+    if (!plan.isFree) throw new BadRequestException('Plan is not free; use the subscription purchase flow');
+
+    // Launch-mode gate: while launch_mode is ON, only trad-up + trade-smart-launch are
+    // selectable anywhere (getPlans()); while OFF, LAUNCH-visibility plans are hidden.
+    // apply the same rule here so the free activation cannot bypass admin control.
+    if (plan.visibility === PlanVisibility.LAUNCH) {
+      const setting = await this.prisma.appSetting.findUnique({ where: { key: 'launch_mode' } });
+      const launchModeOn = setting?.value === true || setting?.value === 'true';
+      if (!launchModeOn) {
+        throw new BadRequestException('This plan is currently not available');
+      }
+    }
+
+    // Fail fast on plan-type resolution before any write.
+    this.ensurePlanResolvable(plan.planId);
+
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    // Idempotency: already on this plan (and not expired) → no-op success.
+    if (
+      company.currentPlanId === plan.planId &&
+      company.subscriptionStatus === 'ACTIVE' &&
+      company.subscriptionExpiresAt &&
+      company.subscriptionExpiresAt.getTime() > Date.now()
+    ) {
+      return { success: true, planId: plan.planId, status: 'ACTIVE', idempotent: true };
+    }
+
+    const isTradUp = plan.planId.trim().toLowerCase() === MembershipService.TRAD_UP_PLAN_ID;
+
+    // One-PAN lifetime gate (TRAD UP only): a previous activation — even an
+    // expired one, even on a sibling/deleted company sharing the PAN — blocks
+    // a second benefit. Changing email/phone/device/account cannot reset it.
+    if (isTradUp) {
+      await this.assertTradUpLifetimeEligible(this.prisma, companyId, company.panNumber);
+    }
+
+    const now = new Date();
+    let expiresAt: Date;
+    let durationDays: number | null = null;
+    let durationSource: string | null = null;
+    if (isTradUp) {
+      // TRAD UP term is days-based and snapshotted per activation: later admin
+      // changes to metadata.durationDays govern NEW activations only.
+      const resolved = this.resolveTradUpDurationDays(plan);
+      durationDays = resolved.days;
+      durationSource = resolved.source;
+      expiresAt = new Date(now);
+      expiresAt.setDate(expiresAt.getDate() + resolved.days);
+    } else {
+      // Duration semantics preserved EXACTLY from the paid activation path for
+      // non-TRAD-UP free plans: MembershipPlan.duration is a MONTHS value.
+      expiresAt = new Date(now);
+      expiresAt.setMonth(expiresAt.getMonth() + (plan.duration || 6));
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const planType = this.resolvePlanTypeOrNullOrThrow(plan.planId);
+
+      // Race-safe re-validation inside the write transaction: two concurrent
+      // activations for the same PAN cannot both slip through the pre-check.
+      if (isTradUp) {
+        await this.assertTradUpLifetimeEligible(tx, companyId, company.panNumber);
+      }
+
+      // Part 2B-1: attach the currently acquirable plan version (if any).
+      // Same additive, non-financial reference write as the paid path —
+      // gates, amounts (₹0), dates and idempotency above are untouched.
+      const activeVersion = await this.getActivePlanVersion(plan.planId, tx);
+
+      await tx.company.update({
+        where: { id: companyId },
+        data: {
+          subscriptionStatus: 'ACTIVE',
+          subscriptionPlan: planType,
+          currentPlanId: plan.planId,
+          ...(activeVersion ? { currentPlanVersionId: activeVersion.id } : {}),
+          subscriptionActivatedAt: now,
+          subscriptionExpiresAt: expiresAt,
+          status: 'ACTIVE',
+        },
+      });
+
+      await tx.subscriptionEvent.create({
+        data: {
+          companyId,
+          status: 'ACTIVE',
+          planType,
+          metadata: {
+            planId: plan.planId,
+            freeActivation: true,
+            expiresAt: expiresAt.toISOString(),
+            ...(isTradUp ? { durationDays, durationSource } : {}),
+          },
+        },
+      });
+
+      await tx.planHistory.create({
+        data: {
+          companyId,
+          planId: plan.planId,
+          changeType: 'RENEWAL',
+          toStatus: 'ACTIVE',
+          amount: 0,
+          metadata: {
+            freeActivation: true,
+            previousPlanId: company.currentPlanId,
+            ...(isTradUp ? { durationDays, durationSource, expiresAt: expiresAt.toISOString() } : {}),
+          },
+        },
+      });
+
+      return { success: true, planId: plan.planId, status: 'ACTIVE', expiresAt, ...(isTradUp ? { durationDays } : {}) };
+    });
+
+    return result;
   }
 
   // ── Trial Enrollment ──────────────────────────────────
@@ -1181,9 +1715,21 @@ export class MembershipService {
     const plan = await db.membershipPlan.findUnique({ where: { planId } });
     if (!plan) throw new NotFoundException('Plan not found');
 
+    // Part 2B-2A: closed plans cannot start new enrollments (close-to-new).
+    // LAUNCH plans stay enrollable (launch-gated flows such as TRADUP depend
+    // on it); existing subscribers are unaffected (their rows are untouched).
+    if (!plan.isActive || (plan.visibility !== PlanVisibility.PUBLIC && plan.visibility !== PlanVisibility.LAUNCH)) {
+      throw new BadRequestException('Plan is not available for new enrollment');
+    }
+
     const now = new Date();
     const trialEnd = new Date(now);
     trialEnd.setDate(trialEnd.getDate() + (plan.trialPeriodDays || 14));
+
+    // Part 2B-1/2B-2A: attach the currently acquirable plan version (if any).
+    // Additive reference write only — eligibility, dates and trial semantics
+    // above are untouched; absent version leaves the field alone (legacy path).
+    const activeVersion = await this.getActivePlanVersion(planId, db);
 
     await db.company.update({
       where: { id: companyId },
@@ -1191,6 +1737,7 @@ export class MembershipService {
         subscriptionStatus: 'TRIAL',
         subscriptionPlan: this.toPlanType(planId),
         currentPlanId: planId,
+        ...(activeVersion ? { currentPlanVersionId: activeVersion.id } : {}),
         subscriptionActivatedAt: now,
         subscriptionExpiresAt: trialEnd,
       },

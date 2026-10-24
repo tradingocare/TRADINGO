@@ -124,11 +124,17 @@ cmd_backup() {
 
 cmd_restore() {
   local file="${1:-}"
+  local target="${2:-}"
   if [ -z "$file" ] || [ ! -f "$file" ]; then
-    fail "Usage: $0 restore <backup-file.sql.gz>"
+    fail "Usage: $0 restore <backup-artefact> <target-database>"
+    fail "  The target database must be named explicitly; the restore refuses to overwrite an existing database without --allow-overwrite."
   fi
-  info "Restoring from $file..."
-  gunzip -c "$file" | compose exec -T postgres psql -U tradingo tradingo
+  if [ -z "$target" ]; then
+    fail "Usage: $0 restore <backup-artefact> <target-database>"
+    fail "  The target database must be named explicitly; there is no default target."
+  fi
+  info "Restoring '$file' into '$target' (validated format contract; non-destructive by default)..."
+  bash "$(cd "$(dirname "$0")" && pwd)/restore-backup.sh" --file "$file" --target-db "$target" --db-container "${RESTORE_DB_CONTAINER:-tradingo-postgres}" "${@:3}"
   ok "Restore complete"
 }
 
@@ -145,11 +151,14 @@ cmd_shell() {
 }
 
 cmd_psql() {
-  compose exec postgres psql -U tradingo tradingo
+  # The live database is the legacy project container (fixed name), not a
+  # service of this compose project — the prod compose declares postgres only
+  # behind the opt-in `standalone-db` profile. Address it by name.
+  docker exec -it "${LIVE_DB_CONTAINER:-tradingo-postgres}" psql -U "${POSTGRES_USER:-tradingo}" "${POSTGRES_DB:-tradingo}"
 }
 
 cmd_redis_cli() {
-  compose exec redis redis-cli
+  docker exec -it "${LIVE_REDIS_CONTAINER:-tradingo-redis}" redis-cli
 }
 
 cmd_cleanup() {

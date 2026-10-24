@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AiGatewayService } from './ai-gateway.service';
 import { AiCreditsService } from './ai-credits.service';
+import { GuestAiQuotaService } from './guest-ai-quota.service';
 import { UsageTrackerService } from './usage-tracker.service';
 import { CostEngineService } from './cost-engine.service';
 import { ProviderRegistryService } from './provider-registry.service';
@@ -21,7 +22,7 @@ describe('AiGatewayService', () => {
     aiUsage: { findUnique: jest.fn().mockResolvedValue(null) },
   };
   const mockRedis = { get: jest.fn().mockResolvedValue(undefined), set: jest.fn(), del: jest.fn() };
-  const mockCredits = { checkCredits: jest.fn(), deductCredits: jest.fn().mockResolvedValue(undefined) };
+  const mockCredits = { checkCredits: jest.fn(), deductCredits: jest.fn().mockResolvedValue(undefined), isCompanyOwned: jest.fn().mockResolvedValue(true) };
   const mockUsage = { track: jest.fn().mockResolvedValue(undefined) };
   const mockCost = { calculateCost: jest.fn().mockResolvedValue({ totalCost: 0.001, currency: 'USD' }) };
   const mockRegistry = { getProviderInstance: jest.fn(), getProvider: jest.fn(), getBestProviderForTask: jest.fn() };
@@ -69,6 +70,7 @@ describe('AiGatewayService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: RedisService, useValue: mockRedis },
         { provide: AiCreditsService, useValue: mockCredits },
+        { provide: GuestAiQuotaService, useValue: { tryConsume: jest.fn().mockResolvedValue({ admitted: true, remaining: 19, resetAfterSec: 3600 }) } },
         { provide: UsageTrackerService, useValue: mockUsage },
         { provide: CostEngineService, useValue: mockCost },
         { provide: ProviderRegistryService, useValue: mockRegistry },

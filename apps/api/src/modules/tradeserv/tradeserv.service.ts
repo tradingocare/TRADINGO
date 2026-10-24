@@ -6,6 +6,7 @@ import { RazorpayService } from '../payment/gateways/razorpay.service';
 import { Prisma, ProfessionalCompanyStatus, BookingPaymentStatus, BookingStatus, NotificationType } from '@prisma/client';
 import { GocashIntegrationService } from '../gocash-integration/gocash-integration.service';
 import { BookingFinancialOrchestratorService } from './booking-financial-orchestrator.service';
+import { CatalogTaxonomyPersistenceService } from '../marketplace-catalog-bridge/catalog-taxonomy-persistence.service';
 
 @Injectable()
 export class TradeservService {
@@ -19,6 +20,7 @@ export class TradeservService {
     private readonly razorpayService: RazorpayService,
     private readonly gocashIntegration: GocashIntegrationService,
     private readonly financialOrchestrator: BookingFinancialOrchestratorService,
+    private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
   ) {}
 
   setIndexSyncService(service: { indexProfessional(companyId: string): Promise<void>; removeProfessional(companyId: string): Promise<void> }) {
@@ -26,6 +28,9 @@ export class TradeservService {
   }
 
   async getProfessionalBySlug(slug: string) {
+    // C-01 P1 P1-1: public detail is APPROVED-only — PENDING_REVIEW/REJECTED
+    // professionals must not be publicly viewable by slug (same gate as every
+    // listing path). Owner preview uses the owner-scoped workspace endpoints.
     const company = await this.prisma.company.findUnique({
       where: { slug },
       include: {
@@ -39,15 +44,16 @@ export class TradeservService {
         locations: true,
       },
     });
-    if (!company?.professionalType) {
+    if (!company?.professionalType || company.professionalStatus !== ProfessionalCompanyStatus.APPROVED) {
       throw new NotFoundException('Professional not found');
     }
     return company;
   }
 
   async getProfessionalSummary(slug: string) {
+    // C-01 P1 P1-1: APPROVED-only parity with the detail lookup above.
     const company = await this.prisma.company.findUnique({
-      where: { slug, professionalType: { not: null } },
+      where: { slug, professionalType: { not: null }, professionalStatus: ProfessionalCompanyStatus.APPROVED },
       select: {
         id: true, name: true, slug: true, logo: true, professionalType: true,
         description: true, trustScore: true, verificationLevel: true,
@@ -84,6 +90,9 @@ export class TradeservService {
     query?: string; category?: string; city?: string; professionalType?: string;
     minRating?: number; maxPrice?: number; sortBy?: string; sortOrder?: 'asc' | 'desc';
     page?: number; limit?: number;
+    // C-01 P1 F-8: canonical company-ID sets resolved by the controller
+    // (OpenSearch-fallback parity — same resolver, same honest-empty).
+    canonicalCompanyIds?: string[];
   }) {
     const { page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
@@ -92,6 +101,15 @@ export class TradeservService {
       professionalType: { not: null },
       professionalStatus: ProfessionalCompanyStatus.APPROVED,
     };
+
+    // C-01 P1 F-8: canonical filter parity with the OpenSearch path.
+    // `[]` = validated-but-unsatisfiable (honest empty via sentinel);
+    // non-empty = exact company-ID membership.
+    if (params.canonicalCompanyIds != null) {
+      where.id = params.canonicalCompanyIds.length === 0
+        ? { in: ['__canonical_no_match__'] }
+        : { in: params.canonicalCompanyIds };
+    }
 
     if (params.query) {
       where.OR = [
@@ -148,8 +166,256 @@ export class TradeservService {
     };
   }
 
+  /**
+   * C-01 P1 F-8: canonical taxonomy filter resolver for TradeServ search
+   * (Step-5 semantics, transposed to the professional-services domain).
+   *
+   * Server-side validation against the live catalog:
+   *  - every submitted ID must exist (category/subcategory) and be active;
+   *  - CatalogItem must be active AND type = 'Service' (product taxonomy can
+   *    never filter professionals — Phase 10 separation);
+   *  - parent/child chain respected: subcategory must belong to the submitted
+   *    category; item must belong to the submitted subcategory/category —
+   *    any contradictory combination resolves to the honest empty set.
+   *
+   * Resolves to the exact set of APPROVED professional company IDs whose
+   * active ProfessionalServices carry the validated canonical linkage.
+   * Returns `null` when NO canonical filter was submitted (chain unchanged);
+   * `[]` means validated-but-unsatisfiable — never unfiltered, never leaking.
+   */
+  async resolveCanonicalCompanyFilters(input: {
+    catalogCategoryId?: string;
+    catalogSubcategoryId?: string;
+    catalogItemId?: string;
+  }): Promise<string[] | null> {
+    if (!input.catalogCategoryId && !input.catalogSubcategoryId && !input.catalogItemId) {
+      return null;
+    }
+
+    try {
+      let allowedItemIds: string[] | null = null; // null = unconstrained so far
+
+      if (input.catalogCategoryId) {
+        const category = await this.prisma.catalogCategory.findFirst({
+          where: { id: input.catalogCategoryId, isActive: true },
+          select: { id: true },
+        });
+        if (!category) {
+          this.logger.warn(`Canonical tradeserv filter: catalogCategoryId ${input.catalogCategoryId} not found/active — honest empty`);
+          return [];
+        }
+        const services = await this.prisma.catalogItem.findMany({
+          where: {
+            isActive: true,
+            type: 'Service',
+            subcategory: { categoryId: input.catalogCategoryId },
+          },
+          select: { id: true },
+        });
+        allowedItemIds = services.map((s) => s.id);
+      }
+
+      if (input.catalogSubcategoryId) {
+        const sub = await this.prisma.catalogSubcategory.findFirst({
+          where: { id: input.catalogSubcategoryId },
+          select: { id: true, categoryId: true },
+        });
+        if (!sub) {
+          this.logger.warn(`Canonical tradeserv filter: catalogSubcategoryId ${input.catalogSubcategoryId} not found — honest empty`);
+          return [];
+        }
+        if (input.catalogCategoryId && sub.categoryId !== input.catalogCategoryId) {
+          this.logger.warn(
+            `Canonical tradeserv filter: subcategory ${input.catalogSubcategoryId} belongs to category ${sub.categoryId}, not the submitted ${input.catalogCategoryId} — honest empty`,
+          );
+          return [];
+        }
+        const services = await this.prisma.catalogItem.findMany({
+          where: { isActive: true, type: 'Service', subcategoryId: input.catalogSubcategoryId },
+          select: { id: true },
+        });
+        const subSet = services.map((s) => s.id);
+        allowedItemIds = allowedItemIds === null
+          ? subSet
+          : allowedItemIds.filter((id) => subSet.includes(id));
+      }
+
+      if (input.catalogItemId) {
+        const item = await this.prisma.catalogItem.findFirst({
+          where: { id: input.catalogItemId, isActive: true, type: 'Service' },
+          select: { id: true, subcategoryId: true, subcategory: { select: { categoryId: true } } },
+        });
+        if (!item) {
+          this.logger.warn(`Canonical tradeserv filter: catalogItemId ${input.catalogItemId} not found/active/Service — honest empty`);
+          return [];
+        }
+        allowedItemIds = allowedItemIds === null
+          ? [item.id]
+          : allowedItemIds.includes(item.id) ? [item.id] : [];
+      }
+
+      const itemIds = allowedItemIds ?? [];
+      if (itemIds.length === 0) return [];
+
+      const companies = await this.prisma.company.findMany({
+        where: {
+          professionalStatus: ProfessionalCompanyStatus.APPROVED,
+          professionalType: { not: null },
+          professionalServices: {
+            some: { isActive: true, catalogItemId: { in: itemIds } },
+          },
+        },
+        select: { id: true },
+      });
+      return companies.map((c) => c.id);
+    } catch (err) {
+      // Resolution infrastructure failure → honest empty (never unfiltered).
+      this.logger.warn(
+        `Canonical tradeserv filter resolution failed: ${(err as Error).message} — honest empty`,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * C-01 P1 F-8 (Phase 8 parity): canonical facet options + counts for the
+   * PostgreSQL fallback path. Counts are DISTINCT (company, value) pairs over
+   * active services of APPROVED professionals matching the base (non-taxonomy)
+   * filters — the same doc semantics the OpenSearch company-doc aggs produce
+   * (one count per matching professional). Display fields are enriched from
+   * the live catalog; the bucket KEY stays the canonical ID.
+   */
+  async computeCanonicalFacets(base?: {
+    query?: string;
+    city?: string;
+    professionalType?: string;
+    minRating?: number;
+    /** C-01 P1 F-8: the validated canonical company set (when a canonical
+     *  filter is active) — facets compute within the same filtered universe
+     *  as the OpenSearch aggregations (Phase 8 parity). */
+    canonicalCompanyIds?: string[];
+  }): Promise<{
+    catalogCategories: { key: string; doc_count: number; name?: string; slug?: string }[];
+    catalogSubcategories: { key: string; doc_count: number; name?: string; slug?: string; parentId?: string }[];
+    catalogItems: { key: string; doc_count: number; name?: string; slug?: string; parentId?: string }[];
+  }> {
+    const empty = { catalogCategories: [], catalogSubcategories: [], catalogItems: [] };
+    try {
+      const companyWhere: Prisma.CompanyWhereInput = {
+        professionalType: { not: null },
+        professionalStatus: ProfessionalCompanyStatus.APPROVED,
+      };
+      if (base?.query) {
+        companyWhere.OR = [
+          { name: { contains: base.query, mode: 'insensitive' } },
+          { description: { contains: base.query, mode: 'insensitive' } },
+        ];
+      }
+      if (base?.professionalType) companyWhere.professionalType = base.professionalType as any;
+      if (base?.city) companyWhere.locations = { some: { city: { contains: base.city, mode: 'insensitive' } } };
+      if (base?.minRating) companyWhere.reviewsAsProfessional = { some: { rating: { gte: base.minRating } } };
+      // Phase 8 parity: same filtered universe as the OpenSearch aggs.
+      if (base?.canonicalCompanyIds != null) {
+        companyWhere.id = base.canonicalCompanyIds.length === 0
+          ? { in: ['__canonical_no_match__'] }
+          : { in: base.canonicalCompanyIds };
+      }
+
+      const svcWhere = (col: 'catalogCategoryId' | 'catalogSubcategoryId' | 'catalogItemId') =>
+        ({
+          isActive: true,
+          [col]: { not: null },
+          company: companyWhere,
+        }) as Prisma.ProfessionalServiceWhereInput;
+
+      const [catPairs, subPairs, itemPairs] = await Promise.all([
+        this.prisma.professionalService.findMany({
+          where: svcWhere('catalogCategoryId'),
+          select: { companyId: true, catalogCategoryId: true },
+          distinct: ['companyId', 'catalogCategoryId'],
+        }),
+        this.prisma.professionalService.findMany({
+          where: svcWhere('catalogSubcategoryId'),
+          select: { companyId: true, catalogSubcategoryId: true },
+          distinct: ['companyId', 'catalogSubcategoryId'],
+        }),
+        this.prisma.professionalService.findMany({
+          where: svcWhere('catalogItemId'),
+          select: { companyId: true, catalogItemId: true },
+          distinct: ['companyId', 'catalogItemId'],
+        }),
+      ]);
+
+      const pairCounts = (
+        pairs: { companyId: string }[],
+        pick: (p: any) => string | null,
+      ) => {
+        const m = new Map<string, number>();
+        for (const p of pairs) {
+          const id = pick(p);
+          if (id) m.set(id, (m.get(id) ?? 0) + 1);
+        }
+        return [...m.entries()]
+          .map(([key, doc_count]) => ({ key, doc_count }))
+          .sort((a, b) => b.doc_count - a.doc_count)
+          .slice(0, 30);
+      };
+
+      const catCounts = pairCounts(catPairs, (p) => p.catalogCategoryId);
+      const subCounts = pairCounts(subPairs, (p) => p.catalogSubcategoryId);
+      const itemCounts = pairCounts(itemPairs, (p) => p.catalogItemId).slice(0, 40);
+
+      const [cats, subs, items] = await Promise.all([
+        catCounts.length > 0
+          ? this.prisma.catalogCategory.findMany({
+              where: { id: { in: catCounts.map((c) => c.key) } },
+              select: { id: true, name: true, slug: true },
+            })
+          : [],
+        subCounts.length > 0
+          ? this.prisma.catalogSubcategory.findMany({
+              where: { id: { in: subCounts.map((c) => c.key) } },
+              select: { id: true, name: true, slug: true, categoryId: true },
+            })
+          : [],
+        itemCounts.length > 0
+          ? this.prisma.catalogItem.findMany({
+              where: { id: { in: itemCounts.map((c) => c.key) } },
+              select: { id: true, name: true, slug: true, subcategoryId: true },
+            })
+          : [],
+      ]);
+      const catById = new Map(cats.map((c) => [c.id, c]));
+      const subById = new Map(subs.map((s) => [s.id, s]));
+      const itemById = new Map(items.map((i) => [i.id, i]));
+
+      return {
+        catalogCategories: catCounts.map((c) => {
+          const row = catById.get(c.key);
+          return { key: c.key, doc_count: c.doc_count, name: row?.name, slug: row?.slug };
+        }),
+        catalogSubcategories: subCounts.map((c) => {
+          const row = subById.get(c.key);
+          return { key: c.key, doc_count: c.doc_count, name: row?.name, slug: row?.slug, parentId: row?.categoryId };
+        }),
+        catalogItems: itemCounts.map((c) => {
+          const row = itemById.get(c.key);
+          return { key: c.key, doc_count: c.doc_count, name: row?.name, slug: row?.slug, parentId: row?.subcategoryId };
+        }),
+      };
+    } catch (err) {
+      // Facet computation is best-effort in the fallback path — search itself
+      // must never fail because facets could not be computed.
+      this.logger.warn(`Canonical tradeserv facets (fallback) failed: ${(err as Error).message}`);
+      return empty;
+    }
+  }
+
   async getFeaturedProfessionals(limit = 10) {
-    return this.prisma.company.findMany({
+    // C-01 P1 P0-1: normalize locations to display strings at the API
+    // boundary (sibling paths return city strings; raw `{city}` objects
+    // crash ProfessionalCard with React #31).
+    const rows = await this.prisma.company.findMany({
       where: { professionalType: { not: null }, professionalStatus: ProfessionalCompanyStatus.APPROVED },
       orderBy: { trustScore: 'desc' },
       take: limit,
@@ -161,12 +427,20 @@ export class TradeservService {
         _count: { select: { professionalServices: true, reviewsAsProfessional: true } },
       },
     });
+    return rows.map((r) => ({ ...r, locations: r.locations.map((l) => l.city) }));
   }
 
   async getProfessionalCategories(enriched?: boolean) {
+    // O-7: public category counts/names derive ONLY from publicly visible
+    // services — same APPROVED-company predicate as the established gates
+    // (featured/search/facets/detail).
     const raw = await this.prisma.professionalService.groupBy({
       by: ['category'],
-      where: { category: { not: null }, isActive: true },
+      where: {
+        category: { not: null },
+        isActive: true,
+        company: { professionalType: { not: null }, professionalStatus: ProfessionalCompanyStatus.APPROVED },
+      },
       _count: { category: true },
       orderBy: { _count: { category: 'desc' } },
     });
@@ -216,7 +490,16 @@ export class TradeservService {
   }
 
   async getEnrichedService(id: string) {
-    const service = await this.prisma.professionalService.findUnique({ where: { id } });
+    // O-7: public enriched-service lookup enforces the established public
+    // visibility gate (APPROVED company) plus isActive — non-public rows 404
+    // exactly like the professional detail lookup.
+    const service = await this.prisma.professionalService.findFirst({
+      where: {
+        id,
+        isActive: true,
+        company: { professionalType: { not: null }, professionalStatus: ProfessionalCompanyStatus.APPROVED },
+      },
+    });
     if (!service) throw new NotFoundException('Service not found');
 
     const catalogResult = service.category
@@ -313,7 +596,13 @@ export class TradeservService {
   }
 
   async addService(companyId: string, dto: any) {
-    const service = await this.prisma.professionalService.create({ data: { ...dto, companyId } });
+    // P0-2 (F-04): free-text category never persists alone — resolve to a
+    // canonical CatalogItem (service context) and persist the canonical
+    // linkage. The category string stays as a display echo only.
+    const taxonomyData = await this.serviceTaxonomyData(dto, 'create');
+    const service = await this.prisma.professionalService.create({
+      data: { ...taxonomyData, name: taxonomyData.name ?? dto.name, companyId } as any,
+    });
     this.indexSyncService?.indexProfessional(companyId).catch((err) => this.logger.warn(`Index sync failed: ${(err as Error).message}`));
     return service;
   }
@@ -321,9 +610,91 @@ export class TradeservService {
   async updateService(id: string, companyId: string, dto: any) {
     const existing = await this.prisma.professionalService.findFirst({ where: { id, companyId } });
     if (!existing) throw new NotFoundException('Service not found');
-    const service = await this.prisma.professionalService.update({ where: { id }, data: dto });
+    const service = await this.prisma.professionalService.update({
+      where: { id },
+      data: (await this.serviceTaxonomyData(dto, 'update', existing)) as any,
+    });
     this.indexSyncService?.indexProfessional(companyId).catch((err) => this.logger.warn(`Index sync failed: ${(err as Error).message}`));
     return service;
+  }
+
+  /**
+   * P0-2: canonical taxonomy handling for ProfessionalService writes.
+   * - Confirmed catalogItemId (Tick/Change) → validated server-side, persisted.
+   * - Otherwise deterministic classify (name/category, service context) →
+   *   persisted when trustworthy (exact-band only).
+   * - Free-text category is normalized to the canonical item name when the
+   *   chain resolves (display echo follows canonical truth).
+   * - Never fabricated; unresolvable keeps the raw string (zero-loss).
+   */
+  private async serviceTaxonomyData(
+    dto: Record<string, unknown>,
+    mode: 'create' | 'update',
+    existing?: { catalogItemId?: string | null },
+  ): Promise<Record<string, unknown>> {
+    // P1 O-5: canonical columns are server-derived — never accept them from
+    // the client (the DTOs don't declare them; the global pipe rejects them
+    // live). Strip defensively so a pipe bypass can never persist stale
+    // lineage through the spread below.
+    const data: Record<string, unknown> = { ...dto };
+    delete data.catalogCategoryId;
+    delete data.catalogSubcategoryId;
+
+    // Explicit null on update = deliberate canonical clear.
+    const explicitClear = mode === 'update' && dto.catalogItemId === null;
+    const confirmedItem = (dto.catalogItemId as string | undefined) || null;
+
+    let canonical: { categoryId: string; subcategoryId: string | null; catalogItemId: string | null } | null = null;
+    if (confirmedItem) {
+      canonical = await this.taxonomyPersistence.validateConfirmedTriple({
+        catalogItemId: confirmedItem,
+        expectedType: 'Service',
+      });
+      if (!canonical) {
+        // Invalid confirmed item — refuse rather than fabricate.
+        throw new BadRequestException('Invalid canonical service category — pick from the structured catalog');
+      }
+    }
+
+    if (!canonical && !explicitClear) {
+      // P1 O-5: preserve user-confirmed lineage — a rename-only update must
+      // not silently replace it with classifier output. Classification runs
+      // only when there is nothing confirmed to preserve.
+      const preserveConfirmed =
+        mode === 'update' && !!existing?.catalogItemId && dto.catalogItemId === undefined;
+      if (!preserveConfirmed) {
+        const classifyName =
+          (dto.name as string) || (dto.category as string) || '';
+        if (classifyName) {
+          canonical = await this.taxonomyPersistence.resolvePersistableTaxonomy({
+            name: classifyName,
+            description: (dto.description as string) || null,
+            context: 'service',
+            expectedType: 'Service',
+          });
+        }
+      }
+    }
+
+    if (canonical) {
+      // Full canonical triple persists (F-04): category, subcategory, item.
+      Object.assign(data, this.taxonomyPersistence.applyCanonicalTriple(canonical));
+      if (canonical.catalogItemId) {
+        // Display echo follows canonical truth when the chain resolves and the
+        // caller didn't provide its own display string.
+        if (dto.category === undefined || dto.category === null || dto.category === '') {
+          const triple = await this.taxonomyPersistence.tripleForCatalogItem(canonical.catalogItemId, 'Service');
+          if (triple) data.category = triple.itemName;
+        }
+      }
+    } else if (mode === 'create' || explicitClear) {
+      // P1 O-5: unresolvable create and deliberate clear both land on an
+      // all-null triple — never a partially-populated residue.
+      Object.assign(data, this.taxonomyPersistence.applyCanonicalTriple(null));
+    }
+    // update with no resolution and no explicit clear leaves the persisted
+    // lineage untouched (never silently dropped).
+    return data;
   }
 
   async deleteService(id: string, companyId: string) {

@@ -6,6 +6,7 @@ import {
   Star, Package, BadgeCheck, Crown, Sparkles, ShieldCheck,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Select } from '@/components/ui/select'
 import { CompanyFullProfileCard, CompanyFullProfileCardSkeleton } from '@/components/company/company-full-profile-card'
 import { toast } from '@/components/ui/use-toast'
@@ -50,10 +51,20 @@ const DEFAULT_FILTERS: Filters = {
 }
 
 export default function CompanyDirectoryClient() {
-  const [filters, setFilters] = useState<Filters>({ ...DEFAULT_FILTERS })
+  const searchParams = useSearchParams()
+  // Seed the EXISTING filters from the URL so deep links (e.g. the company profile's
+  // "View More" category link) genuinely filter. No new filtering mechanism — these
+  // are the same values the directory already sends to /companies/directory.
+  const [filters, setFilters] = useState<Filters>(() => ({
+    ...DEFAULT_FILTERS,
+    q: searchParams.get('q') || DEFAULT_FILTERS.q,
+    category: searchParams.get('category') || DEFAULT_FILTERS.category,
+    city: searchParams.get('city') || DEFAULT_FILTERS.city,
+    state: searchParams.get('state') || DEFAULT_FILTERS.state,
+  }))
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [inputVal, setInputVal] = useState('')
+  const [inputVal, setInputVal] = useState(searchParams.get('q') || '')
   const [categories, setCategories] = useState<{ slug: string; name: string }[]>([])
 
   useEffect(() => {

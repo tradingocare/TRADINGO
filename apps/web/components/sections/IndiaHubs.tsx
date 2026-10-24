@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   MapPin, Building2, Users, Store, Package, DollarSign, Shield,
   ArrowUpRight, Factory, Globe, CheckCircle, BarChart3,
@@ -31,7 +32,7 @@ function TopStatCard({ icon: Icon, label, display, color }: TopStatCardProps) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       whileHover={{ y: -2, scale: 1.01 }}
-      className="group relative overflow-hidden rounded-[16px] border border-border bg-surface-secondary transition-all duration-500 hover:border-[rgba(212,175,55,0.3)]"
+      className="group relative overflow-hidden rounded-[16px] border border-border bg-surface transition-all duration-500 hover:border-[rgba(212,175,55,0.3)]"
       style={{
         backdropFilter: 'blur(20px)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
@@ -61,7 +62,7 @@ function StateCard({ state, accent }: { state: StateData; accent: string }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       whileHover={{ y: -6 }}
-      className="group relative overflow-hidden rounded-[22px] h-full transition-all duration-300 bg-bg-elevated border border-border">
+      className="group relative overflow-hidden rounded-[22px] h-full transition-all duration-300 bg-surface border border-border">
       <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
         style={{ background: `radial-gradient(600px circle at 30% 50%, ${accent}18, transparent 50%)` }} />
       <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
@@ -104,7 +105,7 @@ function StateCard({ state, accent }: { state: StateData; accent: string }) {
           </div>
 
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            <Link href="/trading" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-surface-secondary border border-border hover:opacity-80 transition-opacity">
+            <Link href="/product" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 bg-surface-secondary border border-border hover:opacity-80 transition-opacity">
               <span className="text-xs leading-none">{'\uD83D\uDCE6'}</span>
               <span className="text-[10px] text-text-secondary leading-none">Products</span>
               <ArrowUpRight size={11} className="text-text-tertiary" />
@@ -197,7 +198,7 @@ export default function IndiaHubs() {
           className="mx-auto w-full text-center"
           style={{ maxWidth: '1600px' }}
         >
-          <div className="relative overflow-hidden rounded-[32px] border border-[rgba(212,175,55,0.1)] bg-surface-secondary px-10 sm:px-12 py-4 sm:py-5"
+          <div className="relative overflow-hidden rounded-[32px] border border-[rgba(212,175,55,0.1)] bg-surface px-10 sm:px-12 py-4 sm:py-5"
             style={{
               backdropFilter: 'blur(20px)',
               boxShadow: '0 0 60px rgba(212,175,55,0.04), 0 8px 32px rgba(0,0,0,0.2)',
@@ -208,10 +209,13 @@ export default function IndiaHubs() {
               <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-[rgba(212,175,55,0.03)] blur-[60px]" />
             </div>
 
-            <img
+            <Image
               src="/logo/trdn5.png"
               alt="TRADINGO"
-              className="mx-auto h-10 w-auto opacity-50 sm:h-12"
+              width={108}
+              height={72}
+              loading="lazy"
+              className="mx-auto opacity-50"
             />
 
             <div className="relative z-10 mt-4">
@@ -288,7 +292,7 @@ export default function IndiaHubs() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="group relative mx-auto mt-10 max-w-5xl overflow-hidden rounded-[22px] border border-border bg-bg-elevated transition-all duration-300"
+          className="group relative mx-auto mt-10 max-w-5xl overflow-hidden rounded-[22px] border border-border bg-surface transition-all duration-300"
         >
           <div className="pointer-events-none absolute inset-0 rounded-[22px] opacity-0 transition-all duration-300 group-hover:opacity-100"
             style={{ background: 'radial-gradient(600px circle at 30% 50%, rgba(212,175,55,0.08), transparent 50%)' }} />
@@ -337,14 +341,14 @@ export default function IndiaHubs() {
           className="mt-10"
         >
           {/* Section Header Banner */}
-          <div className="relative mx-auto max-w-[1600px] rounded-[24px] border border-border bg-bg-elevated backdrop-blur-2xl">
+          <div className="relative mx-auto max-w-[1600px] rounded-[24px] border border-border bg-surface backdrop-blur-2xl">
             <div className="pointer-events-none absolute inset-0 rounded-[24px] overflow-hidden">
               <div className="absolute -left-32 -top-32 h-64 w-64 rounded-full bg-[rgba(212,175,55,0.05)] blur-[80px]" />
               <div className="absolute -bottom-32 -right-32 h-64 w-64 rounded-full bg-[rgba(59,130,246,0.04)] blur-[80px]" />
             </div>
             <div className="relative z-10 flex flex-col items-center px-6 py-8 sm:px-10 sm:py-12 lg:px-14 lg:py-14 text-center">
-              <img src="/logo/trdn5.png" alt="TRADINGO" loading="lazy"
-                className="mx-auto h-10 w-auto opacity-40 sm:h-12" />
+              <Image src="/logo/trdn5.png" alt="TRADINGO" width={108} height={72} loading="lazy"
+                className="mx-auto opacity-40" />
               <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.25)] bg-[rgba(212,175,55,0.08)] px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37]">
                 <Layers className="h-3.5 w-3.5" />
                 TRADINGO Ecosystem
@@ -370,7 +374,7 @@ export default function IndiaHubs() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
               whileHover={{ y: -4 }}
-              className="group relative overflow-hidden rounded-[24px] border border-border bg-bg-elevated p-5 sm:p-6 flex flex-col justify-between transition-all duration-300 hover:border-[rgba(59,130,246,0.35)]"
+              className="group relative overflow-hidden rounded-[24px] border border-border bg-surface p-5 sm:p-6 flex flex-col justify-between transition-all duration-300 hover:border-[rgba(59,130,246,0.35)]"
               style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.35)' }}
             >
               {/* Glow overlay */}
@@ -453,7 +457,7 @@ export default function IndiaHubs() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
               whileHover={{ y: -4 }}
-              className="group relative overflow-hidden rounded-[24px] border border-border bg-bg-elevated p-5 sm:p-6 flex flex-col justify-between transition-all duration-300 hover:border-[rgba(139,92,246,0.35)]"
+              className="group relative overflow-hidden rounded-[24px] border border-border bg-surface p-5 sm:p-6 flex flex-col justify-between transition-all duration-300 hover:border-[rgba(139,92,246,0.35)]"
               style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.35)' }}
             >
               {/* Glow overlay */}

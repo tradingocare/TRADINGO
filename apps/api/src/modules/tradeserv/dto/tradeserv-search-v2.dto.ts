@@ -7,6 +7,20 @@ export class TradeservSearchV2Dto {
 
   @ApiPropertyOptional() @IsOptional() @IsString() category?: string;
 
+  // C-01 P1 F-8: canonical taxonomy filters (Step-5 contract). Server-side
+  // validated against the live catalog (existence + parent/child chain +
+  // Service type) and resolved to the exact set of APPROVED professional
+  // company IDs. Invalid IDs / mismatched parent-child combinations resolve
+  // to an honest empty result — never unfiltered, never fabricated.
+  @ApiPropertyOptional({ description: 'Canonical CatalogCategory ID' })
+  @IsOptional() @IsString() catalogCategoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Canonical CatalogSubcategory ID' })
+  @IsOptional() @IsString() catalogSubcategoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Canonical CatalogItem ID (Service leaf)' })
+  @IsOptional() @IsString() catalogItemId?: string;
+
   @ApiPropertyOptional() @IsOptional() @IsString() city?: string;
 
   @ApiPropertyOptional() @IsOptional() @IsString() state?: string;
@@ -40,6 +54,11 @@ export class TradeservSearchV2Response {
   };
   aggregations: {
     categories: { key: string; doc_count: number }[];
+    // C-01 P1 F-8: canonical taxonomy facets (IDs + display). Options come
+    // from real indexed professional docs — never static lists.
+    catalogCategories: { key: string; doc_count: number; name?: string; slug?: string; parentId?: string }[];
+    catalogSubcategories: { key: string; doc_count: number; name?: string; slug?: string; parentId?: string }[];
+    catalogItems: { key: string; doc_count: number; name?: string; slug?: string; parentId?: string }[];
     cities: { key: string; doc_count: number }[];
     states: { key: string; doc_count: number }[];
     verificationLevels: { key: string; doc_count: number }[];

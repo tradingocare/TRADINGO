@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import { engines } from '@/lib/data/tradhexa-engines';
@@ -40,10 +41,13 @@ export default function TradhexaEngines() {
               <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-[rgba(212,175,55,0.03)] blur-[60px]" />
             </div>
 
-            <img
+            <Image
               src="/logo/trdn5.png"
               alt="TRADINGO"
-              className="mx-auto h-10 w-auto opacity-50 sm:h-12"
+              width={108}
+              height={72}
+              loading="lazy"
+              className="mx-auto opacity-50"
             />
 
             <div className="relative z-10 mt-5">
@@ -75,7 +79,7 @@ export default function TradhexaEngines() {
                 <Link href={engine.href} className="flex flex-1 flex-col">
                   <motion.div
                     whileHover={{ y: -6, scale: 1.02 }}
-                    className="group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface-secondary p-5 sm:p-6 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
+                    className="group flex h-full flex-col cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface p-5 sm:p-6 transition-all duration-500 hover:border-[rgba(212,175,55,0.2)]"
                     style={{
                       backdropFilter: 'blur(20px)',
                       boxShadow: '0 8px 32px rgba(0,0,0,0.3)',

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsObject, IsArray, IsNumber, Min } from 'class-validator'
+import { IsString, IsOptional, IsObject, IsArray, IsNumber, Min, MaxLength } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class AiSemanticSearchDto {
@@ -31,6 +31,12 @@ export class AiSearchIntentDto {
   @IsString()
   @ApiProperty({ description: 'Search query' })
   query: string
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  @ApiPropertyOptional({ description: 'Client idempotency key for exactly-once billing (optional)' })
+  idempotencyKey?: string
 }
 
 export class AiSimilarProductsDto {

@@ -128,7 +128,7 @@ export default function BusinessCities() {
           </div>
 
           <div className="relative z-10 flex flex-col items-center text-center">
-            <Link href="/trading">
+            <Link href="/product">
               <img
                 src="/logo/trdn5.png"
                 alt="TRADINGO"
@@ -144,7 +144,7 @@ export default function BusinessCities() {
             <p className="mx-auto mt-2 max-w-7xl text-base leading-relaxed text-text-secondary sm:text-lg sm:text-justify">
               Discover India&apos;s major manufacturing, trading and industrial hubs. Explore live marketplace data across 15+ cities &mdash; track active sellers, product listings, service providers, and buyer demand in real-time.
             </p>
-            <Link href="/trading" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-surface-secondary px-5 py-2.5 text-xs font-semibold text-accent-500 transition-all hover:bg-surface-tertiary hover:shadow-[0_0_15px_rgba(255,77,0,0.15)]">
+            <Link href="/product" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-surface-secondary px-5 py-2.5 text-xs font-semibold text-accent-500 transition-all hover:bg-surface-tertiary hover:shadow-[0_0_15px_rgba(255,77,0,0.15)]">
               Browse All Cities <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
@@ -175,7 +175,7 @@ export default function BusinessCities() {
             {[...cities, ...cities].map((city, i) => (
               <Link
                 key={`${city.id}-${i}`}
-                href={`/trading?city=${city.slug}`}
+                href={`/product?city=${city.slug}`}
                 className="group/card flex-shrink-0"
               >
                 <motion.div
@@ -199,7 +199,7 @@ export default function BusinessCities() {
                     </Badge>
                   </div>
 
-                  <div className="p-4 bg-surface-secondary/80">
+                  <div className="p-4 bg-surface">
                     <div className="flex items-center gap-1.5">
                       <TrendingUp size={11} className="text-accent-500" />
                       <span className="text-xs sm:text-sm font-semibold text-text-tertiary">{city.industry}</span>
@@ -221,7 +221,7 @@ export default function BusinessCities() {
           </button>
         </div>
 
-        <Link href="/trading" className="mt-4 flex items-center justify-center gap-1.5 text-xs font-semibold text-accent-500 transition-colors hover:text-[#FF7A33] sm:hidden">
+        <Link href="/product" className="mt-4 flex items-center justify-center gap-1.5 text-xs font-semibold text-accent-500 transition-colors hover:text-[#FF7A33] sm:hidden">
           View All <ArrowRight size={13} />
         </Link>
       </div>

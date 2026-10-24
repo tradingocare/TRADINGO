@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ interface MarkerPopupProps {
 export function MarkerPopup({ product }: MarkerPopupProps) {
   return (
     <div className="min-w-[220px] max-w-[260px]" role="dialog" aria-label={`Product: ${product.name}`}>
-      <div className="relative h-28 w-full overflow-hidden rounded-t-md bg-surface-secondary dark:bg-dark-surface-secondary">
+      <div className="relative h-28 w-full overflow-hidden rounded-t-md bg-surface-secondary">
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
@@ -29,19 +29,19 @@ export function MarkerPopup({ product }: MarkerPopupProps) {
       </div>
 
       <div className="p-2.5 space-y-1.5">
-        <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary leading-tight line-clamp-2">
+        <h3 className="text-sm font-semibold text-text-primary leading-tight line-clamp-2">
           {product.name}
         </h3>
 
         <Link href={`/companies/${product.companySlug}`}
-          className="text-xs text-text-secondary dark:text-dark-text-secondary truncate hover:text-[#f97316] transition-colors inline-flex items-center gap-1"
+          className="text-xs text-text-secondary truncate hover:text-[#f97316] transition-colors inline-flex items-center gap-1"
           aria-label={`View ${product.companyName} profile`}>
           <Building2 size={11} /> {product.companyName}
         </Link>
 
         <div className="flex items-center gap-2 text-xs">
-          <span className="font-bold text-text-primary dark:text-dark-text-primary">
-            {product.price != null ? `₹${product.price.toLocaleString()}` : 'Price on request'}
+          <span className="font-bold text-text-primary">
+            {product.price != null ? `â‚¹${product.price.toLocaleString()}` : 'Price on request'}
           </span>
           <span className="flex items-center gap-0.5 text-accent-500">
             <Star className="h-3 w-3" aria-hidden="true" />
@@ -62,13 +62,13 @@ export function MarkerPopup({ product }: MarkerPopupProps) {
               TRADGO
             </span>
           )}
-          <span className="text-[10px] text-text-tertiary dark:text-dark-text-tertiary">
+          <span className="text-[10px] text-text-tertiary">
             MOQ: {product.moq}
           </span>
         </div>
 
         {product.deliveryEta && (
-          <p className="text-[10px] text-text-tertiary dark:text-dark-text-tertiary">
+          <p className="text-[10px] text-text-tertiary">
             Delivery: {product.deliveryEta}
           </p>
         )}
@@ -78,7 +78,7 @@ export function MarkerPopup({ product }: MarkerPopupProps) {
             {product.distanceLabel}
           </span>
           <Link
-            href={`/trading/${product.slug}`}
+            href={`/products/${product.slug}`}
             className="rounded-md bg-primary dark:bg-primary-dark px-2.5 py-1 text-[11px] font-medium text-gray-900 hover:opacity-90 transition-opacity"
             aria-label={`View ${product.name}`}
           >

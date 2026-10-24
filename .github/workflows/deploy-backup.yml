@@ -1,0 +1,249 @@
+name: Deploy Production Backup
+
+# Read-only backup deployment (SSH + Docker Compose, built on-host).
+# Performs ONLY the pre-deploy backup and verification steps from the
+# production deployment workflow. It does NOT build images, run migrations,
+# recreate containers, or run smoke tests.
+#
+# Design notes (do not weaken without founder approval):
+# - Manual dispatch only, and only from the `main` ref: a dispatch launched
+#   from any other workflow ref fails closed before any secret or SSH use.
+#   Each run requires the typed confirmation below. NOTE (verified 2026-10-17):
+#   the `production` environment currently has NO required reviewers, so its
+#   gate resolves immediately — effective approval is dispatch permission
+#   (write access) plus the typed confirmation. This is NOT two-person review.
+#   To restore a reviewer checkpoint, add an eligible reviewer under Settings
+#   → Environments → production (founder decision; weigh self-review
+#   protection for single-account operation). No push trigger.
+# - The release is pinned to the exact SHA of `origin/main` resolved on the
+#   VPS at deploy time — never an operator-supplied branch, tag, or SHA, and
+#   never "latest whatever happens to be on main at build time". The remote
+#   script fails closed unless the target ref is exactly `refs/heads/main`,
+#   then explicitly refreshes the `refs/remotes/origin/main` remote-tracking
+#   ref with a forced fetch refspec before resolving the SHA from it, so a
+#   stale/narrowed fetch config can never pin an outdated release.
+# - Host trust is pinned, not discovered: SSH uses a founder-provisioned
+#   `VPS_KNOWN_HOSTS` secret (verified out-of-band); runtime host lookup
+#   detection is forbidden here (TOFU against an unauthenticated network peer).
+# - Before checkout, a preservation gate (`scripts/deploy/checkout-preservation.sh`,
+#   read from the target release itself) relocates untracked files that collide
+#   with new target paths into a unique timestamped recovery directory outside
+#   the repository (`<app-dir>-recovery/untracked-<UTC>-<PID>/`, mode 700),
+#   verifies every copy by hash, and only then clears the sources. Any failure
+#   aborts before checkout with the working tree untouched. Ignored files that
+#   collide (secrets/certificates) abort the run for manual resolution.
+# - BACKUP-ONLY: This workflow performs ONLY the pre-deploy backup and
+#   verification steps from the production deployment workflow. It does NOT
+#   build images, run migrations, recreate containers, or run smoke tests.
+#   This is by design: the backup gate is the safety net before any release,
+#   and this workflow allows taking a fresh backup independently of a release.
+# - BACKUP POLICY (fail-closed): a database backup is attempted before every
+#   release via scripts/deploy/manage.sh backup, then
+#   scripts/deploy/verify-backup.sh requires a FRESH verified backup
+#   (status=OK, recent timestamp, existing non-empty artifact) BEFORE any
+#   migration or service recreation runs. Without one the rollout stops.
+#   The verification script is always executed. No bypass input exists.
+# - The workflow uses WORKFLOW_REF (set to ${{ github.ref }}) to verify the
+#   dispatch originates from the main ref (refs/heads/main), preventing accidental
+#   dispatches from feature branches or tags.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm production backup'
+        required: true
+        type: string
+
+# Serialize production deployments: a second dispatch waits instead of
+# running concurrently against the same VPS working tree. The remote script
+# additionally holds an advisory mkdir lock as defense in depth.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Backup Deployment
+    # Environment-scoped secrets (VPS_HOST/VPS_SSH_KEY/VPS_KNOWN_HOSTS) are
+    # visible ONLY to jobs declaring this environment. Without this line the
+    # presence check reads empty values and fails closed (see run 38514946256).
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        id: confirm
+        # Injection hygiene: operator-influenced contexts enter ONLY as step
+        # environment variables, never as ${{ }} fragments inside shell code.
+        # Quoted shell comparisons below then operate on plain data.
+        env:
+          CHECK_VPS_HOST: ${{ secrets.VPS_HOST }}
+          CHECK_VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          CHECK_VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          GITHUB_REF: ${{ github.ref }}
+          CONFIRM_INPUT: ${{ github.event.inputs.confirm }}
+        run: |
+          # Enforce dispatch from main ref only
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "ERROR: workflow must be dispatched from main ref (got: ${GITHUB_REF})"
+            exit 1
+          fi
+          # Validate confirmation input equals exactly "deploy"
+          if [ "${CONFIRM_INPUT}" != "deploy" ]; then
+            echo "ERROR: confirmation must be exactly 'deploy' (got: ${CONFIRM_INPUT})"
+            exit 1
+          fi
+          if [ -n "${CHECK_VPS_HOST}" ]; then echo "VPS_HOST: configured"; else echo "VPS_HOST: MISSING"; fi
+          if [ -n "${CHECK_VPS_SSH_KEY}" ]; then echo "VPS_SSH_KEY: configured"; else echo "VPS_SSH_KEY: MISSING"; fi
+          if [ -n "${CHECK_VPS_KNOWN_HOSTS}" ]; then echo "VPS_KNOWN_HOSTS: configured"; else echo "VPS_KNOWN_HOSTS: MISSING"; fi
+          if [ -z "${CHECK_VPS_HOST}" ] || [ -z "${CHECK_VPS_SSH_KEY}" ] || [ -z "${CHECK_VPS_KNOWN_HOSTS}" ]; then
+            echo "ERROR: one or more required production secrets are missing"
+            exit 1
+          fi
+          # Set target_ref output for downstream job
+          echo "target_ref=refs/heads/main" >> $GITHUB_OUTPUT
+          echo "valid=true" >> $GITHUB_OUTPUT
+
+      - name: Verify required secrets presence
+        env:
+          CHECK_VPS_HOST: ${{ secrets.VPS_HOST }}
+          CHECK_VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          CHECK_VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          if [ -z "${CHECK_VPS_HOST}" ] || [ -z "${CHECK_VPS_SSH_KEY}" ] || [ -z "${CHECK_VPS_KNOWN_HOSTS}" ]; then
+            echo "ERROR: one or more required production secrets are missing"
+            echo "VPS_KNOWN_HOSTS must hold verified known_hosts line(s) for the VPS (see docs/deployment/VPS-DEPLOYMENT-GUIDE.md section 12)"
+            exit 1
+          fi
+
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Install pinned VPS host keys
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          # Pinned trust only: host keys come from the founder-provisioned
+          # secret, verified out-of-band. Runtime host-key discovery via network
+          # probing is forbidden here (TOFU against an unauthenticated peer).
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          grep -qE '(ssh-(ed25519|rsa|ecdsa|dss)|sk-ssh-ed25519@|sk-ecdsa-sha2-)' ~/.ssh/known_hosts \
+            || { echo "ERROR: VPS_KNOWN_HOSTS does not contain a recognizable SSH host key"; exit 1; }
+          echo "Pinned VPS host keys installed (StrictHostKeyChecking stays enforced)."
+
+      - name: Deploy release to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          VPS_USER: ${{ secrets.VPS_USER || 'tradingo' }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR || '/home/tradingo/tradingo' }}
+          TARGET_REF: ${{ steps.confirm.outputs.target_ref }}
+        run: |
+          set -euo pipefail
+          # Fail closed on unexpected ref characters (branch/tag/SHA only).
+          if [[ ! "$TARGET_REF" =~ ^[A-Za-z0-9_./-]+$ ]]; then
+            echo "ERROR: target ref contains unexpected characters: $TARGET_REF"
+            exit 1
+          fi
+          # Non-revealing pre-flight: confirm the pinned known_hosts file has an
+          # entry for the exact configured target (host, or [host]:port when the
+          # port is non-default). ssh-keygen -F output, which echoes the matched
+          # host line, is discarded; only match/no-match is reported, so no key
+          # material or secret value ever reaches the logs.
+          KH_TARGET="$VPS_HOST"
+          if [ "$VPS_PORT" != "22" ]; then KH_TARGET="[$VPS_HOST]:$VPS_PORT"; fi
+          if ! ssh-keygen -F "$KH_TARGET" >/dev/null 2>&1; then
+            echo "ERROR: no pinned known_hosts entry for '$KH_TARGET'; refusing to connect (VPS_KNOWN_HOSTS must cover VPS_HOST/VPS_PORT)"
+            exit 1
+          fi
+          echo "Pinned known_hosts entry present for the configured target; proceeding."
+          SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=yes -p $VPS_PORT"
+          # Backstop: the whole remote session must finish within 50 minutes.
+          # Must stay below the job timeout (60 min) with margin for the
+          # status-report step and agent cleanup. Exit 124 means THIS backstop
+          # fired (remote backup exceeded 50 min), not the job timeout.
+          timeout 3000 ssh $SSH_OPTS "$VPS_USER@$VPS_HOST" "TARGET_REF='$TARGET_REF' APP_DIR='$VPS_APP_DIR' bash -s" << 'REMOTE_EOF'
+          set -euo pipefail
+          cd "$APP_DIR" || { echo "ERROR: app directory $APP_DIR missing on VPS"; exit 1; }
+          test -f docker-compose.prod.yml || { echo "ERROR: docker-compose.prod.yml missing in $APP_DIR"; exit 1; }
+          test -f .env.production.local || { echo "ERROR: .env.production.local missing in $APP_DIR (tracked placeholder .env.production must never be used)"; exit 1; }
+
+          COMPOSE="docker compose -p tradingo-prod --env-file .env.production.local -f docker-compose.prod.yml"
+
+          echo "=== Fetching release ==="
+          # Fail closed unless the requested target is exactly main. No other
+          # branch, tag, or operator-supplied SHA can be deployed. Validated
+          # here (on the VPS) as well as at dispatch time.
+          if [ "$TARGET_REF" != "refs/heads/main" ]; then
+            echo "ERROR: unexpected target ref (expected refs/heads/main): $TARGET_REF"
+            exit 1
+          fi
+          # Explicitly refresh the origin/main remote-tracking ref. A plain
+          # `git fetch origin` may leave refs/remotes/origin/main stale when
+          # the fetch refspec config is narrowed or pruned; the forced
+          # mapping below updates it from origin unconditionally, and the
+          # SHA is then resolved from that refreshed ref only.
+          git fetch origin "+refs/heads/main:refs/remotes/origin/main" || { echo "ERROR: git fetch failed"; exit 1; }
+          TARGET_SHA="$(git rev-parse refs/remotes/origin/main)" || { echo "ERROR: could not resolve refs/remotes/origin/main"; exit 1; }
+          PREV_SHA="$(git rev-parse HEAD)"
+          echo "Previous release: $PREV_SHA"
+          echo "Target release:   $TARGET_SHA"
+          if [ "$PREV_SHA" = "$TARGET_SHA" ]; then
+            echo "Target already deployed; refreshing containers to converge state."
+          fi
+
+          echo "=== Pre-checkout: preservation script retrieval ==="
+          # Obtain preservation script from target commit without checking it out.
+          PRESERVE_SCRIPT="$(mktemp /tmp/pres-XXXXXXXXXX)"
+          git cat-file blob "${TARGET_SHA}:scripts/deploy/checkout-preservation.sh" > "$PRESERVE_SCRIPT" || {
+            rm -f "$PRESERVE_SCRIPT"
+            echo "ERROR: could not retrieve preservation script from target SHA"
+            exit 1
+          }
+          chmod +x "$PRESERVE_SCRIPT"
+
+          echo "=== Pre-checkout: executing preservation gate ==="
+          # Run preservation BEFORE checkout. Preserve untracked collisions to recovery dir.
+          # The gate's invocation contract is environment-based (APP_DIR and
+          # TARGET_SHA); positional arguments are not part of its interface.
+          if ! APP_DIR="$APP_DIR" TARGET_SHA="$TARGET_SHA" bash "$PRESERVE_SCRIPT"; then
+            echo "ERROR: preservation gate failed; checkout aborted"
+            rm -f "$PRESERVE_SCRIPT"
+            exit 1
+          fi
+
+          echo "=== Checkout target release ==="
+          git checkout "$TARGET_SHA" || {
+            echo "ERROR: checkout of $TARGET_SHA failed"
+            rm -f "$PRESERVE_SCRIPT"
+            exit 1
+          }
+
+          # Cleanup preservation script after successful checkout.
+          rm -f "$PRESERVE_SCRIPT"
+
+          echo "=== Pre-deploy database backup (best effort, then verified) ==="
+          if bash scripts/deploy/manage.sh backup; then
+            echo "Pre-deploy backup complete."
+          else
+            echo "::error::Pre-deploy backup attempt failed; aborting."
+            exit 1
+          fi
+
+          echo "=== Verifying backup (fail-closed gate) ==="
+          # Always verify backup. No bypass input exists.
+          if ! bash scripts/deploy/verify-backup.sh; then
+            echo "ERROR: backup verification failed; aborting"
+            exit 1
+          fi
+          REMOTE_EOF
+
+      - name: Report backup status
+        if: always()
+        run: |
+          echo "Backup job status: ${{ job.status }} (target ref: ${{ steps.confirm.outputs.target_ref }})"

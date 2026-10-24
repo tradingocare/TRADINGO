@@ -9,8 +9,14 @@ import {
   Bookmark,
   ArrowLeftRight,
   Share2,
+  Phone,
   BadgeCheck,
   Truck,
+  IndianRupee,
+  Package,
+  RefreshCw,
+  ShieldCheck,
+  TrendingUp,
 } from 'lucide-react';
 import type { ProductDetail, ProductDetailMedia } from '@/types/product-detail';
 
@@ -29,6 +35,7 @@ interface ProductHeroPurchasePanelProps {
   onBuy: () => void;
   onRFQ: () => void;
   onChat: () => void;
+  onCall: () => void;
   onWishlist: () => void;
   onCompare: () => void;
   onShare: () => void;
@@ -48,13 +55,13 @@ export function ProductHeroPurchasePanel({
   onBuy,
   onRFQ,
   onChat,
+  onCall,
   onWishlist,
   onCompare,
   onShare,
   onSampleOrder,
 }: ProductHeroPurchasePanelProps) {
   void documents;
-  void price;
 
   const unitLabel = product.unit || 'Unit';
   const availabilityLabel = inStock
@@ -74,6 +81,15 @@ export function ProductHeroPurchasePanel({
       className="rounded-2xl border border-border bg-surface/95 p-4 shadow-lg shadow-black/10 lg:sticky lg:top-24"
     >
       <div className="space-y-4">
+        <div className="rounded-xl border border-accent/25 bg-accent/5 px-3 py-2.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">Offer Price</p>
+          <p className="mt-0.5 flex items-center text-xl font-bold text-text-primary">
+            <IndianRupee size={15} className="inline" />
+            {price.toLocaleString('en-IN')}
+            <span className="ml-1 text-xs font-medium text-text-secondary">/ {unitLabel}</span>
+          </p>
+        </div>
+
         <div className="grid gap-2 text-sm">
           <div className="flex items-center justify-between rounded-xl border border-border bg-bg-elevated px-3 py-2.5">
             <span className="text-text-secondary">Availability</span>
@@ -100,6 +116,52 @@ export function ProductHeroPurchasePanel({
               {leadTime}
             </span>
           </div>
+
+          {product.inventory && product.inventory.availableQuantity > 0 && (
+            <div className="flex items-center justify-between rounded-xl border border-border bg-bg-elevated px-3 py-2.5">
+              <span className="text-text-secondary">Stock</span>
+              <span className="inline-flex items-center gap-1 font-semibold text-text-primary">
+                <Package size={13} className="text-accent" />
+                {product.inventory.availableQuantity} units available
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between rounded-xl border border-border bg-bg-elevated px-3 py-2.5">
+            <span className="text-text-secondary">Est. Delivery</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-text-primary">
+              <RefreshCw size={13} className="text-accent" />
+              {leadTime}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-border bg-bg-elevated px-3 py-2.5">
+            <span className="text-text-secondary">GST Invoice</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-text-primary">
+              <BadgeCheck size={13} className="text-status-success" />
+              {product.gstInvoiceAvailable ? 'Available' : 'On request'}
+            </span>
+          </div>
+
+          {product.trustScoreSnapshot > 0 && (
+            <div className="flex items-center justify-between rounded-xl border border-border bg-bg-elevated px-3 py-2.5">
+              <span className="text-text-secondary">Trust Score</span>
+              <span className="inline-flex items-center gap-1 font-semibold text-accent">
+                <TrendingUp size={13} />
+                {product.trustScoreSnapshot}
+              </span>
+            </div>
+          )}
+
+          {product.company?.isGstRegistered && (
+            <div className="flex items-center justify-between rounded-xl border border-border bg-bg-elevated px-3 py-2.5">
+              <span className="text-text-secondary">Seller GST</span>
+              <span className="inline-flex items-center gap-1 font-semibold text-status-success">
+                <ShieldCheck size={13} />
+                Verified
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-border bg-bg-elevated px-3 py-3">
@@ -128,7 +190,23 @@ export function ProductHeroPurchasePanel({
                 </button>
               );
             })}
+            <input
+              type="number"
+              min={product.moq || 1}
+              value={quantity}
+              onChange={(event) => setQuantity(Number(event.target.value) || product.moq || 1)}
+              className="w-20 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm font-semibold text-text-primary outline-none transition-colors focus:border-accent"
+              aria-label="Custom quantity"
+            />
           </div>
+          <p className="mt-2 text-xs text-text-tertiary">
+            Price per unit at selected quantity:
+            <span className="ml-1 inline-flex items-center font-bold text-text-primary">
+              <IndianRupee size={11} className="inline" />
+              {price.toLocaleString('en-IN')}
+            </span>
+            {` / ${unitLabel}`}
+          </p>
         </div>
 
         <button
@@ -149,7 +227,7 @@ export function ProductHeroPurchasePanel({
           Request for Quote (RFQ)
         </button>
 
-        <div className="grid grid-cols-4 gap-2 pt-1">
+        <div className="grid grid-cols-5 gap-2 pt-1">
           <button
             type="button"
             onClick={onChat}
@@ -157,6 +235,14 @@ export function ProductHeroPurchasePanel({
           >
             <MessageCircle size={15} />
             <span className="text-[11px] font-medium">Chat</span>
+          </button>
+          <button
+            type="button"
+            onClick={onCall}
+            className="flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-bg-elevated px-2 py-2 text-text-secondary transition-colors hover:border-accent/30 hover:text-text-primary"
+          >
+            <Phone size={15} />
+            <span className="text-[11px] font-medium">Call</span>
           </button>
           <button
             type="button"

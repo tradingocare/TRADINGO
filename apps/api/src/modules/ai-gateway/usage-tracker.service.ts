@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
-import { TaskType } from '@prisma/client'
+import { Prisma, TaskType } from '@prisma/client'
 
 interface TrackUsageParams {
   companyId: string
@@ -55,6 +55,35 @@ export class UsageTrackerService {
       })
     } catch (error) {
       this.logger.error(`Failed to track AI usage: ${(error as Error).message}`)
+    }
+  }
+
+  /**
+   * Phase 3ZB: finalize a reservation row created for idempotent billing
+   * (success/failure outcome + usage details). Scoped update — the row is
+   * addressed by the same (companyId, idempotencyKey) pair that reserved it.
+   */
+  async updateByKey(
+    companyId: string,
+    key: string,
+    patch: { success: boolean; errorMessage?: string; promptTokens?: number; completionTokens?: number; totalTokens?: number; latencyMs?: number; estimatedCost?: number; providerId?: string; providerName?: string; modelName?: string; promptVersion?: number },
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    // Inside $transaction the caller owns commit/rollback — errors must
+    // propagate (no catch); standalone calls keep the log-and-continue
+    // behavior so finalization can never mask the provider outcome.
+    const run = () => (tx ?? this.prisma).aiUsage.update({
+      where: { companyId_idempotencyKey: { companyId, idempotencyKey: key } },
+      data: { ...patch, errorMessage: patch.errorMessage ?? undefined },
+    })
+    if (tx) {
+      await run()
+      return
+    }
+    try {
+      await run()
+    } catch (error) {
+      this.logger.error(`Failed to finalize AI usage ${companyId}/${key}: ${(error as Error).message}`)
     }
   }
 

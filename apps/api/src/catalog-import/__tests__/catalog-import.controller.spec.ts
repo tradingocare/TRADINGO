@@ -3,6 +3,7 @@ import { CatalogImportController } from '../catalog-import.controller';
 import { CatalogImportService } from '../catalog-import.service';
 import { CsvParserService } from '../services/csv-parser.service';
 import { ImportOrchestratorService } from '../services/import-orchestrator.service';
+import { ClamAvService } from '../../modules/malware/clamav.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CanActivate, BadRequestException } from '@nestjs/common';
@@ -45,6 +46,11 @@ describe('CatalogImportController', () => {
         { provide: CatalogImportService, useValue: service },
         { provide: CsvParserService, useValue: csvParser },
         { provide: ImportOrchestratorService, useValue: orchestrator },
+        // NOTE (catalog task): ClamAvService entered the controller's
+        // constructor via pre-existing working-tree drift (scanFileBuffer
+        // fail-closed uploads — not part of this task's diff). The mock
+        // below only restores this suite; it changes no production code.
+        { provide: ClamAvService, useValue: { scanBuffer: jest.fn().mockResolvedValue({ clean: true, signatures: [] }) } },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -113,6 +119,56 @@ describe('CatalogImportController', () => {
     it('should throw BadRequestException when no file', async () => {
       await expect(controller.importCsv(null as any, 'company-1', {} as any)).rejects.toThrow('File is required');
     });
+
+    it('should pass catalogOnly through only when explicitly true (backward compatible otherwise)', async () => {
+      const result = { jobId: 'job-1', status: 'COMPLETED' };
+      orchestrator.runFullImport.mockResolvedValue(result);
+      const file = { buffer: Buffer.from('csv,data'), originalname: 'test.csv', mimetype: 'text/csv', size: 10 } as any;
+      await controller.importCsv(file, 'company-1', { companyId: 'company-1' }, true);
+      expect(orchestrator.runFullImport).toHaveBeenCalledWith(
+        file.buffer, 'company-1', undefined, undefined, { catalogOnly: true },
+      );
+    });
+
+    // Multipart text fields always arrive as strings, so HTTP callers can
+    // only ever send "true" — never boolean true. Accept exactly those two.
+    it.each([true, 'true'])('should enable catalogOnly for %p', async (flag) => {
+      orchestrator.runFullImport.mockResolvedValue({ jobId: 'job-1', status: 'COMPLETED' });
+      const file = { buffer: Buffer.from('csv,data'), originalname: 'test.csv', mimetype: 'text/csv', size: 10 } as any;
+      await controller.importCsv(file, 'company-1', { companyId: 'company-1' }, flag as any);
+      expect(orchestrator.runFullImport).toHaveBeenCalledWith(
+        file.buffer, 'company-1', undefined, undefined, { catalogOnly: true },
+      );
+    });
+
+    // No generic truthy coercion: only true / "true" enable the flag.
+    it.each([false, 'false', '1', 'yes', 'on', 'TRUE', 'catalog'])(
+      'should NOT enable catalogOnly for %p',
+      async (flag) => {
+        orchestrator.runFullImport.mockResolvedValue({ jobId: 'job-1', status: 'COMPLETED' });
+        const file = { buffer: Buffer.from('csv,data'), originalname: 'test.csv', mimetype: 'text/csv', size: 10 } as any;
+        await controller.importCsv(file, 'company-1', { companyId: 'company-1' }, flag as any);
+        expect(orchestrator.runFullImport).toHaveBeenCalledWith(file.buffer, 'company-1');
+      },
+    );
+  });
+
+  describe('POST /catalog-import/file-import', () => {
+    it('should enable catalogOnly for "true" string via multipart', async () => {
+      orchestrator.runFullImport.mockResolvedValue({ jobId: 'job-1', status: 'COMPLETED' });
+      const file = { buffer: Buffer.from('PK'), originalname: 'cat.xlsx', mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size: 10 } as any;
+      await controller.importFile(file, 'company-1', { companyId: 'company-1' }, 'true' as any);
+      expect(orchestrator.runFullImport).toHaveBeenCalledWith(
+        file.buffer, 'company-1', undefined, 'xlsx', { catalogOnly: true },
+      );
+    });
+
+    it('should NOT enable catalogOnly for truthy-looking strings', async () => {
+      orchestrator.runFullImport.mockResolvedValue({ jobId: 'job-1', status: 'COMPLETED' });
+      const file = { buffer: Buffer.from('PK'), originalname: 'cat.xlsx', mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size: 10 } as any;
+      await controller.importFile(file, 'company-1', { companyId: 'company-1' }, 'TRUE' as any);
+      expect(orchestrator.runFullImport).toHaveBeenCalledWith(file.buffer, 'company-1', undefined, 'xlsx');
+    });
   });
 
   describe('POST /catalog-import/csv-import/:jobId/resume', () => {
@@ -132,6 +188,16 @@ describe('CatalogImportController', () => {
 
     it('should throw when no companyId available', async () => {
       await expect(controller.resumeImport('job-1', undefined, {} as any)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should resume with catalogOnly for true / "true" only', async () => {
+      orchestrator.resumeImport.mockResolvedValue({ jobId: 'job-1', status: 'COMPLETED' });
+      await controller.resumeImport('job-1', 'company-1', { companyId: 'company-1' }, true);
+      expect(orchestrator.resumeImport).toHaveBeenCalledWith('job-1', 'company-1', { catalogOnly: true });
+      await controller.resumeImport('job-1', 'company-1', { companyId: 'company-1' }, 'true' as any);
+      expect(orchestrator.resumeImport).toHaveBeenCalledWith('job-1', 'company-1', { catalogOnly: true });
+      await controller.resumeImport('job-1', 'company-1', { companyId: 'company-1' }, 'yes' as any);
+      expect(orchestrator.resumeImport).toHaveBeenCalledWith('job-1', 'company-1');
     });
   });
 

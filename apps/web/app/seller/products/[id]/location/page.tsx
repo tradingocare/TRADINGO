@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -107,7 +107,7 @@ export default function SingleProductLocationPage() {
         actions={
           <Link
             href="/seller/products/locations"
-            className="inline-flex items-center gap-2 rounded-lg border border-surface-border dark:border-dark-border px-4 py-2 text-sm font-medium text-text-secondary dark:text-dark-text-secondary hover:bg-surface-secondary dark:hover:bg-dark-surface-secondary transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg border border-surface-border border-border px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -115,10 +115,10 @@ export default function SingleProductLocationPage() {
         }
       />
 
-      <div className="rounded-xl border border-surface-border dark:border-dark-border bg-surface dark:bg-dark-surface p-6">
+      <div className="rounded-xl border border-surface-border border-border bg-surface p-6">
         <div className="flex items-center gap-2 mb-6">
           <MapPin className="h-5 w-5 text-primary dark:text-primary-dark" />
-          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+          <h2 className="text-lg font-semibold text-text-primary">
             Location Details
           </h2>
         </div>

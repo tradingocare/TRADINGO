@@ -1,119 +1,266 @@
 # CI/CD Deployment Guide — TRADINGO
 
-**Date:** 2026-08-04
-**Target platform:** GitHub Actions → AWS ECR → AWS ECS (Fargate)
-**Repo:** `https://github.com/tradingocare/TRADINGO.git` (branch `main`, tag `v0.3.0-tradfind`)
-
-> **CURRENT STATE WARNING:** Pipeline is configured end-to-end but **NOT FUNCTIONAL**. Blocker C1 (98 pre-existing TypeScript errors — `nest build` fails) keeps CI permanently red; therefore deploy.yml (gated on CI success) can never fire. See `docs/reports/SPRINT-5-BUILD-VERIFICATION.md`. All verification below is static/audit evidence until C1/C2 are remediated.
+**Date:** 2026-08-31 (updated)
+**Target platform:** GitHub Actions → Docker Compose → VPS (Ubuntu 24.04)
+**Repo:** https://github.com/tradingocare/TRADINGO.git (branch main)
 
 ---
 
 ## 1. Architecture
 
-```
+`
 ┌─────────────── GitHub Actions ───────────────┐
 │                                              │
-│  PR → ci.yml        main → ci.yml + deploy.yml│
-│  develop → ci.yml + deploy-staging.yml        │
-│  manual → deploy-production.yml (confirm=yes) │
+│  PR → ci.yml           main → ci.yml          │
 │                                              │
-│  ci.yml: lint → typecheck → unit tests → build│
+│  ci.yml: lint → typecheck → test → build     │
+│                                              │
+│  Manual: deploy-production.yml (workflow_dispatch) │
 └──────────────┬───────────────────────────────┘
-               ▼ docker/build-push-action
-        ┌──────────────┐   push :sha :latest   ┌──────────────┐
-        │  ECR         │◄──────────────────────│  ECS         │
-        │ tradingo-    │                       │ cluster      │
-        │ production-  │  render task def      │ tradingo-    │
-        │ api / web    │  (sed __AWS_ACCOUNT_ID__) │ production │
-        └──────────────┘  register + update     └──────┬───────┘
-                                                       ▼
-                                              api Fargate (3001)
-                                              web Fargate (3000)
-                                              migration one-shot
-                                              smoke-test.sh
-```
+               ▼
+        [Build Artifacts]
+               │
+               ▼
+        VPS Deployment
+        (docker compose)
+        ──────────────────────────────────────
+        Production Host: 200.141.15.162 (example)
+        Services: postgres, redis, api, web, 
+                  nginx, clamav, monitoring
+`
+
+### Production Stack
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| 
+ginx | 80, 443 | Reverse proxy, TLS termination |
+| pi | 3001 | NestJS API |
+| web | 3000 | Next.js (standalone) |
+| postgres | 5432 | PostgreSQL 16 |
+| edis | 6379 | Redis 7 |
+| clamav | 3310 | Malware scanning |
+| prometheus | 9090 | Metrics |
+| grafana | 3002 | Dashboards |
+
+---
 
 ## 2. Workflow Map
 
-| Workflow | Trigger | Environment | Jobs | Gate |
-|----------|---------|-------------|------|------|
-| `ci.yml` | push `main`/`develop`, PR → `main` | — | lint-and-typecheck (api+web), unit-tests (api jest), build | all jobs green |
-| `deploy.yml` | `workflow_run`: CI **completed+success** on `main` | `production` | validate → deploy (ECR+ECS) | CI green |
-| `deploy-production.yml` | manual `workflow_dispatch` with `confirm: yes` | `production` | validate (`AWS_ACCOUNT_ID` non-empty) → deploy | manual confirmation |
-| `deploy-staging.yml` | push `develop` | `staging` | build → push `:sha`+`:staging` → ECS staging | push only |
-| `playwright.yml` | PR/merge (E2E) | — | postgres+redis services, 6 E2E creds, Playwright | tests pass |
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| ci.yml | push main/develop, PR → main | lint, typecheck, test, build |
+| deploy-production.yml | manual workflow_dispatch | Build images + deploy to VPS |
 
-Concurrency: `production-manual` (cancel-in-progress: false) for manual deploys; `production` group for auto deploys — prevents concurrent prod deployments.
+### ci.yml Jobs
 
-## 3. Prerequisites (Founder/Org setup)
+1. **lint-and-typecheck** — ESLint + TypeScript checks for API and Web
+2. **test-api** — Jest tests with Postgres 16 + Redis 7 service containers
+3. **test-web** — Next.js tests
+4. **build** — Builds API and Web, uploads artifacts
 
-1. **GitHub repo** `tradingocare/TRADINGO` — exists ✅
-2. **Secrets & variables** — see `GITHUB_SECRETS_MATRIX.md` (rows 1–4, 9–14 secrets; `ECR_REGISTRY` variable)
-3. **AWS account**: IAM user with ECR + ECS + SSM permissions; ECR repos `tradingo-production-api`, `tradingo-production-web`; ECS cluster `tradingo-production`; task defs from `infrastructure/ecs/`
-4. **SSM parameters** `/tradingo/production/*` (see matrix §2)
-5. **Environments** `production` (required reviewers) + `staging` in repo settings
-6. **DNS/SSL** for `tradingo.in` / `api.tradingo.in` (blocker B3/B4 — currently NXDOMAIN/self-signed)
+### deploy-production.yml Jobs
 
-## 4. Local Equivalence (what CI will run)
+1. **validate** — Confirms  deploy input and checks required secrets
+2. **build-and-push** — Builds Docker images (template — requires registry configuration)
+3. **deploy** — Deployment via SSH to VPS
 
-```powershell
-# per-package checks (must pass BEFORE CI can pass)
-pnpm --filter @tradingo/api lint
-pnpm --filter @tradingo/api typecheck          # ❌ FAILS TODAY (C1: 92 errors / 17 files)
-pnpm --filter @tradingo/api build              # ❌ FAILS TODAY (same debt)
-pnpm --filter @tradingo/web lint
-pnpm --filter @tradingo/web typecheck
-pnpm --filter @tradingo/web build              # ✅ passes (298 routes)
+---
 
-# container build equivalence
-docker build --progress=plain -t verify-api -f apps/api/Dockerfile .   # ❌ FAILS (C1)
-docker build --progress=plain -t verify-web -f apps/web/Dockerfile .   # ✅ PASSES (230s)
-```
+## 3. Prerequisites (VPS Setup)
 
-## 5. Deployment Walkthrough (post-remediation)
+### 3.1 VPS Requirements
+- Ubuntu 24.04 LTS
+- Docker + Docker Compose v2
+- SSH access with key-based authentication
+- 2+ vCPU, 4+ GB RAM, 40+ GB storage
 
-**Auto (recommended):**
-1. Merge PR to `main` → `ci.yml` runs (lint/typecheck/tests/build)
-2. All green → `deploy.yml` fires automatically (workflow_run, environment `production`)
-3. validate job: `AWS_ACCOUNT_ID` present → deploy job:
-   - `docker/build-push-action@v6` builds both images, pushes `:sha` + `:latest` to ECR
-   - `sed` substitutes `__AWS_ACCOUNT_ID__` in `infrastructure/ecs/task-definition.*.json`
-   - `aws ecs register-task-definition` (api, web, migration)
-   - `aws ecs update-service --cluster tradingo-production --service api|web` (FARGATE, awsvpc)
-   - one-shot migration task runs `npx prisma migrate deploy`
-4. Deployment waits for service stable → `scripts/deploy/smoke-test.sh` hits health endpoints
+### 3.2 VPS Setup Steps
 
-**Manual:**
-1. Actions → Deploy to Production → Run workflow → input `confirm: yes`
-2. Same pipeline as above, but skipped if CI itself is broken (validate job guards secrets; build still required)
+`ash
+# 1. Clone repository
+cd /home/tradingo
+git clone https://github.com/tradingocare/TRADINGO.git
+cd TRADINGO
 
-**Staging:** push to `develop` → auto-deploy to `staging` environment (`us-east-1`, `vars.ECR_REGISTRY`, tags `:sha`+`:staging`).
+# 2. Setup environment
+cp .env.production.example .env.production.local
+# Edit .env.production.local with real secrets
 
-## 6. Verification Steps After a Deploy
+# 3. Pull latest
+git pull origin main
 
-1. `curl -f https://api.tradingo.in/live` → 200
-2. `curl -f https://api.tradingo.in/ready` → 200 (DB reachable)
-3. `curl -f https://tradingo.in/` → 200 (web)
-4. ECS service events: `aws ecs describe-services --cluster tradingo-production --services api web` → `steadyState`
-5. Check migration task exit code 0
-6. `scripts/deploy/smoke-test.sh` full run
-7. Verify Security Headers (Sprint 4): `X-Frame-Options DENY`, HSTS, `nosniff`, CSP
+# 4. Build & start
+docker compose --env-file .env.production.local -f docker-compose.prod.yml build
+docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d
 
-## 7. Troubleshooting
+# 5. Verify
+curl -f https://api.tradingo.in/health
+`
 
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| CI red on typecheck/build | C1: 92–98 TS errors in 17 files | TypeScript debt remediation sprint (see build verification report §10) |
-| `secret AWS_ACCOUNT_ID required` on validate | Secret missing | Create repo secret (matrix row 1) |
-| `host not found in upstream` (nginx) | Self-test without compose DNS | `--add-host web/api:127.0.0.1` for `nginx -t` |
-| ECS service never stable | Bad env/healthcheck | Check `aws logs` on task; verify SSM params exist (matrix §2) |
-| Image push 403 | ECR repo absent / IAM | Create ECR repos; verify IAM `ecr:PutImage` |
-| Deploy not triggered on merge | CI failed → workflow_run gated | Fix C1 first; deploy.yml only fires on CI success |
+### 3.3 Required GitHub Secrets
 
-## 8. Related Docs
+| Secret | Purpose |
+|--------|---------|
+| VPS_HOST | Production VPS hostname or IP |
+| VPS_SSH_KEY | SSH private key for VPS access |
+| VPS_USERNAME | SSH username (default: ubuntu) |
+| VPS_PORT | SSH port (default: 22) |
+| DOCKER_REGISTRY | Docker registry URL (optional) |
+| DOCKER_USERNAME | Registry username (optional) |
+| DOCKER_PASSWORD | Registry password/token (optional) |
 
-- `GITHUB_SECRETS_MATRIX.md` — every secret/var/SSM param required
-- `DEPLOYMENT_PIPELINE_FLOW.md` — detailed flow diagrams
-- `ROLLBACK_PIPELINE_FLOW.md` — rollback procedure
-- `docs/reports/SPRINT-5-BUILD-VERIFICATION.md` — C1/C2 blocker evidence
-- `docs/reports/SPRINT-4-PRODUCTION-INFRASTRUCTURE.md` — nginx/TLS/compose hardening (already verified working)
+---
+
+## 4. Deployment Walkthrough
+
+### 4.1 CI Pipeline (Automatic)
+
+Every push to main or develop, and every PR to main:
+
+`
+1. Checkout code
+2. Setup pnpm 9.15.0
+3. Install dependencies (frozen lockfile)
+4. Lint API
+5. Typecheck API
+6. Typecheck Web
+7. Test API (with Postgres + Redis services)
+8. Test Web
+9. Build API
+10. Build Web
+11. Upload artifacts
+`
+
+### 4.2 Production Deployment (Manual)
+
+1. Go to GitHub Actions → Deploy Production → Run workflow
+2. Enter confirm: deploy
+3. Workflow validates secrets and executes deployment
+
+**Or via VPS directly:**
+
+`ash
+# On the VPS
+cd /home/tradingo/TRADINGO
+
+# Pull latest code
+git pull origin main
+
+# Rebuild API (if API changed)
+docker compose --env-file .env.production.local -f docker-compose.prod.yml build api
+
+# Restart API
+docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d --force-recreate --no-deps api
+
+# Full restart (if needed)
+docker compose --env-file .env.production.local -f docker-compose.prod.yml restart
+`
+
+### 4.3 Migration Handling
+
+Migrations run automatically via the pi-migrate service:
+- Runs as a one-shot container before API starts
+- Uses prisma migrate deploy (idempotent)
+- Controlled by PRISMA_MIGRATE_DISABLED env var
+
+`ash
+# Manual migration (if needed)
+docker exec tradingo-api-migrate sh -c npx prisma migrate deploy
+`
+
+---
+
+## 5. Service Dependency Order
+
+`
+postgres (healthy) ──────┐
+                         ├──→ api-migrate ──→ api (healthy) ──→ web
+redis (healthy) ─────────┤
+clamav (healthy) ────────┘
+`
+
+The pi service waits for:
+- pi-migrate to complete successfully
+- postgres to be healthy
+- edis to be healthy
+- clamav to be healthy
+
+---
+
+## 6. Verification Steps After Deploy
+
+`ash
+# API health
+curl -f https://api.tradingo.in/live
+curl -f https://api.tradingo.in/ready
+
+# Web
+curl -f https://tradingo.in/
+
+# Check containers
+docker compose -f docker-compose.prod.yml ps
+
+# Check logs
+docker compose -f docker-compose.prod.yml logs api
+docker compose -f docker-compose.prod.yml logs web
+`
+
+---
+
+## 7. Rollback Procedure
+
+`ash
+# Identify previous image/tag
+docker images | grep tradingo
+
+# rollback to previous version
+git checkout <previous-commit>
+docker compose --env-file .env.production.local -f docker-compose.prod.yml build
+docker compose --env-file .env.production.local -f docker-compose.prod.yml up -d
+`
+
+---
+
+## 8. Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| API returns 502 | nginx can't reach api | Check docker compose logs api |
+| Migrations failed | DB not ready | Ensure postgres healthy before api starts |
+| Web shows old code | Cached chunks | docker compose up -d --force-recreate --no-deps web |
+| ClamAV scan hangs | Memory pressure | Ensure 1GB+ RAM for clamav container |
+| Redis connection refused | Redis not healthy | Check docker compose logs redis |
+
+---
+
+## 9. Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| PRODUCTION-RUNBOOK.md | Day-to-day operations |
+| PRODUCTION-DEPLOYMENT.md | Detailed deployment steps |
+| TRADING-MASTER-AUDIT-FINAL-REMEDIATION.md | Security and technical findings |
+| GITHUB_SECRETS_MATRIX.md | GitHub secret reference |
+| TRADINGO-v1.0.0-GA-RELEASE.md | Release notes |
+
+---
+
+## 10. Architecture Notes
+
+### What This Is NOT
+- **NOT AWS ECS/Fargate** — that architecture was deprecated
+- **NOT auto-deploy on merge** — production deploys are manual
+- **NOT Kubernetes** — uses Docker Compose directly on VPS
+
+### Why Docker Compose?
+- Simple, reliable, well-understood
+- Single host deployment (no orchestration overhead)
+- All services on one VPS
+- Manual operations with clear visibility
+
+### Security Considerations
+- All services except nginx are on private network (127.0.0.1)
+- Database credentials come from .env.production.local (not in git)
+- SSH key authentication required for GitHub Actions VPS access
+- No auto-deployment prevents accidental production changes

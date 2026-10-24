@@ -19,7 +19,7 @@ test.describe('Company Creation Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     const companySection = page.getByText(/Company|Business|Profile/i).filter({ visible: true }).first();
     await expect(companySection).toBeVisible({ timeout: 10000 });
     await context.close();
@@ -31,7 +31,7 @@ test.describe('Company Creation Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     const contactFields = page.locator('input[name*="email"], input[name*="phone"], input[name*="mobile"]');
     const count = await contactFields.count();
     expect(count).toBeGreaterThanOrEqual(0);
@@ -44,7 +44,7 @@ test.describe('Company Creation Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/profile');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     const companyCard = page.getByText('Company Information').first();
     await expect(companyCard).toBeVisible({ timeout: 10000 });
     await context.close();
@@ -56,7 +56,7 @@ test.describe('Company Creation Flow', () => {
     const flow = createFlowHelper(page);
     await flow.login(SELLER_USER);
     await flow.navigate('/seller/onboarding');
-    await page.waitForLoadState('load');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
     await context.close();
   });
