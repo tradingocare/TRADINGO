@@ -5,6 +5,7 @@ import type { ProductDetail, ProductDetailReview, ProductDetailQa } from '@/type
 export interface GetProductsParams {
   page?: number;
   limit?: number;
+  cursor?: string;
   category?: string;
   categoryId?: string;
   industryId?: string;

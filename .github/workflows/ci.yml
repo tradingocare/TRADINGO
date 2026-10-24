@@ -33,6 +33,11 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @tradingo/api exec prisma generate
 
+      - name: Validate Prisma schema
+        run: pnpm --filter @tradingo/api exec prisma validate
+        env:
+          DATABASE_URL: postgresql://validation:validation@localhost:5432/validation
+
       - name: Lint API
         run: pnpm --filter @tradingo/api lint
         continue-on-error: false
@@ -90,6 +95,16 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm --filter @tradingo/api exec prisma generate
+        env:
+          DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
+
+      - name: Apply committed migrations
+        run: pnpm --filter @tradingo/api exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
+
+      - name: Verify migrated database matches prisma/schema.prisma
+        run: pnpm --filter @tradingo/api exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel ../../prisma/schema.prisma --exit-code
         env:
           DATABASE_URL: postgresql://tradingo:testpassword@localhost:5432/tradingo_test
 

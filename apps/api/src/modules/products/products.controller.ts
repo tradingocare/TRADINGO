@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus, NotFoundException, ValidationPipe } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { Prisma } from '@prisma/client';
 import { RateLimits } from '../../common/constants/rate-limits.const';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
@@ -76,8 +77,10 @@ export class ProductsController {
   async adminFindAll(@Query('search') search?: string, @Query('status') status?: string, @Query('page') page = '1', @Query('limit') limit = '20') {
     const p = parseInt(page);
     const l = parseInt(limit);
-    const where: any = { deletedAt: null };
-    if (status) where.status = status;
+    const where: Prisma.ProductWhereInput = { deletedAt: null };
+    if (status && ['ACTIVE', 'DRAFT', 'ARCHIVED', 'DELETED'].includes(status)) {
+      where.status = status as Prisma.ProductWhereInput['status'];
+    }
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },

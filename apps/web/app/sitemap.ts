@@ -74,14 +74,14 @@ async function productRoutes(): Promise<Entry[]> {
   try {
     let cursor: string | undefined;
     for (let page = 0; page < MAX_PAGES; page++) {
-      const res: any = await getProducts({ limit: PAGE_SIZE, ...(cursor ? { cursor } as any : {}) });
+      const res = await getProducts({ limit: PAGE_SIZE, ...(cursor ? { cursor } : {}) });
       const data: any[] = res?.data ?? [];
       for (const p of data) {
         const token = p.slug || p.id; // detail route resolves slug (findBySlug)
         if (!token) continue;
         out.push({ url: `${baseUrl}/products/${token}`, lastModified: toLastModified(p.updatedAt), changeFrequency: 'weekly', priority: 0.8 });
       }
-      const nextCursor: string | undefined = res?.meta?.cursor ?? res?.cursor;
+      const nextCursor: string | undefined = res?.cursor;
       if (!nextCursor || data.length === 0) break; // exhausted / empty page
       cursor = nextCursor;
     }
