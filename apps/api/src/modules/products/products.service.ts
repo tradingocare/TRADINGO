@@ -39,7 +39,8 @@ export class ProductsService {
     private readonly taxonomyPersistence: CatalogTaxonomyPersistenceService,
   ) {}
 
-  private normalizeProduct(product: any) {
+  // Product with company relations (normalized from Prisma include)
+  private normalizeProduct(product: { id: string; company?: { id: string; name: string; slug: string; logo?: string | null; verificationLevel: string; trustScore: number; responseRate?: number | null; locations?: { city: string; state: string }[] | null; gstNumber?: string | null; certificationDocs?: { id: string; type: string; documentNumber: string | null }[] | null; } } & Record<string, unknown>) {
     const c = product?.company;
     if (!c) return product;
 
@@ -51,16 +52,16 @@ export class ProductsService {
         name:           c.name || 'Verified Supplier',
         slug:           c.slug,
         logo:           c.logo || undefined,
-        city:           loc.city || (product as any).city || undefined,
-        state:          loc.state || (product as any).state || undefined,
+        city:           (loc as { city?: string | null }).city || undefined,
+        state:          (loc as { state?: string | null }).state || undefined,
         isVerified:     c.verificationLevel !== 'LEVEL_0' && c.verificationLevel !== undefined && c.verificationLevel !== null,
-        isTradgoElite:  !!(c as any).isTradgoElite,
+        isTradgoElite:  !!(c as { isTradgoElite?: boolean }).isTradgoElite,
         trustScore:     c.trustScore || 0,
-        yearsActive:    (c as any).yearsActive || undefined,
+        yearsActive:    (c as { yearsActive?: string }).yearsActive || undefined,
         avgResponseTime: c.responseRate ? `< ${c.responseRate}` : undefined,
-        ordersFulfilled: (c as any).totalProducts || undefined,
+        ordersFulfilled: (c as { totalProducts?: number }).totalProducts || undefined,
         gstVerified:    !!c.gstNumber,
-        certifications: c.certificationDocs?.map((d: any) => ({
+        certifications: c.certificationDocs?.map((d: { id: string; type: string; documentNumber: string }) => ({
           id: d.id,
           type: d.type,
           documentNumber: d.documentNumber,
